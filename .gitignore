@@ -1,6 +1,19 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+.pub-cache/
+.pub/
+coverage/
+flutter_*.log
+
 # Gradle files
 .gradle/
-build/
+android/local.properties
+android/.gradle/
 
 # Local configuration file (sdk path, etc)
 local.properties

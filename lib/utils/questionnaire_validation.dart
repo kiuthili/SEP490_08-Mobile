@@ -1,0 +1,171 @@
+import '../models/ai_models.dart';
+
+bool _isEmpty(dynamic value) =>
+    value == null ||
+    value == '' ||
+    (value is List && value.isEmpty);
+
+String? validateQuestionnaireField(
+  QuestionnaireField field,
+  Map<String, dynamic> values,
+) {
+  final raw = values[field.fieldKey];
+  if (!field.required && _isEmpty(raw)) return null;
+
+  switch (field.inputType) {
+    case 'single_select':
+      if (_isEmpty(raw)) return '${field.label} là bắt buộc';
+      return null;
+    case 'multi_select':
+      final arr = raw is List ? raw : <dynamic>[];
+      if (field.required && arr.isEmpty) {
+        return 'Chọn ít nhất một sở thích du lịch';
+      }
+      return null;
+    case 'date':
+      if (_isEmpty(raw)) return '${field.label} là bắt buộc';
+      if (raw is String && !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(raw)) {
+        return 'Định dạng ngày: YYYY-MM-DD';
+      }
+      return null;
+    case 'number':
+      if (_isEmpty(raw)) {
+        return field.required ? '${field.label} là bắt buộc' : null;
+      }
+      final n = num.tryParse(raw.toString());
+      if (n == null || n < 0) return 'Giá trị phải là số không âm';
+      return null;
+    case 'boolean':
+      if (field.required && raw is! bool) {
+        return '${field.label} là bắt buộc';
+      }
+      return null;
+    case 'text':
+      if (field.required && _isEmpty(raw)) {
+        return '${field.label} là bắt buộc';
+      }
+      if (raw is String && raw.length > 100) {
+        return 'Tối đa 100 ký tự';
+      }
+      return null;
+    default:
+      if (field.required && _isEmpty(raw)) {
+        return '${field.label} là bắt buộc';
+      }
+      return null;
+  }
+}
+
+Map<String, String> validateQuestionnaireStep(
+  List<QuestionnaireField> fields,
+  Map<String, dynamic> values,
+) {
+  final errors = <String, String>{};
+  for (final field in fields) {
+    final msg = validateQuestionnaireField(field, values);
+    if (msg != null) errors[field.fieldKey] = msg;
+  }
+  return errors;
+}
+
+Map<String, String> validateExtraCounts(Map<String, dynamic> values) {
+  final errors = <String, String>{};
+
+  if (values['hasElderly'] == true) {
+    final count = values['elderlyCount'];
+    final n = count == null ? null : num.tryParse(count.toString());
+    if (n == null || n < 1) {
+      errors['elderlyCount'] = 'Nhập số người cao tuổi (≥ 1)';
+    } else if (n > 20) {
+      errors['elderlyCount'] = 'Tối đa 20 người';
+    }
+  }
+
+  if (values['hasChildren'] == true) {
+    final count = values['childrenCount'];
+    final n = count == null ? null : num.tryParse(count.toString());
+    if (n == null || n < 1) {
+      errors['childrenCount'] = 'Nhập số trẻ em (≥ 1)';
+    } else if (n > 20) {
+      errors['childrenCount'] = 'Tối đa 20 người';
+    }
+  }
+
+  final start = values['preferredStartDate']?.toString();
+  final end = values['preferredEndDate']?.toString();
+  if (start != null &&
+      end != null &&
+      end.isNotEmpty &&
+      end.compareTo(start) < 0) {
+    errors['preferredEndDate'] = 'Ngày kết thúc phải sau ngày bắt đầu';
+  }
+
+  final top = values['top'];
+  if (top != null && top.toString().isNotEmpty) {
+    final n = num.tryParse(top.toString());
+    if (n == null || n < 1 || n > 30) {
+      errors['top'] = 'Số kết quả từ 1 đến 30';
+    }
+  }
+
+  return errors;
+}
+
+Map<String, dynamic> buildRecommendPayload(
+  Map<String, dynamic> values,
+  String sessionId,
+) {
+  final interests = values['travelInterests'];
+  final travelInterests = interests is List
+      ? interests.map((e) => e.toString()).toList()
+      : interests != null
+          ? [interests.toString()]
+          : <String>[];
+
+  final payload = <String, dynamic>{
+    'companionType': values['companionType'],
+    'preferredStartDate': values['preferredStartDate'],
+    'hasElderly': values['hasElderly'] == true,
+    'hasChildren': values['hasChildren'] == true,
+    'travelInterests': travelInterests,
+    'nationalityType': values['nationalityType'],
+    'sessionId': sessionId,
+    'top': () {
+      final t = values['top'];
+      if (t == null || t.toString().isEmpty) return 8;
+      return int.tryParse(t.toString()) ?? 8;
+    }(),
+  };
+
+  if (values['preferredEndDate'] != null &&
+      values['preferredEndDate'].toString().isNotEmpty) {
+    payload['preferredEndDate'] = values['preferredEndDate'];
+  }
+  if (values['maxBudgetPerPerson'] != null &&
+      values['maxBudgetPerPerson'].toString().isNotEmpty) {
+    payload['maxBudgetPerPerson'] =
+        int.tryParse(values['maxBudgetPerPerson'].toString());
+  }
+  if (values['hasElderly'] == true && values['elderlyCount'] != null) {
+    payload['elderlyCount'] =
+        int.tryParse(values['elderlyCount'].toString());
+  }
+  if (values['hasChildren'] == true && values['childrenCount'] != null) {
+    payload['childrenCount'] =
+        int.tryParse(values['childrenCount'].toString());
+  }
+  if (values['preferredCity'] != null &&
+      values['preferredCity'].toString().trim().isNotEmpty) {
+    payload['preferredCity'] = values['preferredCity'].toString().trim();
+  }
+  if (values['preferredCountry'] != null &&
+      values['preferredCountry'].toString().trim().isNotEmpty) {
+    payload['preferredCountry'] =
+        values['preferredCountry'].toString().trim();
+  }
+
+  return payload;
+}
+
+bool isAiModelsNotReadyMessage(String message) =>
+    message.toLowerCase().contains('ai models are not ready');
