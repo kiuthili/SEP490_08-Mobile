@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:get/get.dart' hide Response;
 import '../constants/api_constants.dart';
 import '../models/api_response.dart';
@@ -22,6 +25,7 @@ class ApiClient {
         },
       ),
     );
+    _configureLocalDevCertificates();
 
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -42,7 +46,8 @@ class ApiClient {
               _isRefreshing = false;
               if (refreshed) {
                 final opts = error.requestOptions;
-                opts.headers['Authorization'] = 'Bearer ${_storage.accessToken}';
+                opts.headers['Authorization'] =
+                    'Bearer ${_storage.accessToken}';
                 final clone = await dio.fetch(opts);
                 return handler.resolve(clone);
               }
@@ -56,6 +61,42 @@ class ApiClient {
         },
       ),
     );
+  }
+
+  void _configureLocalDevCertificates() {
+    final apiUri = Uri.tryParse(ApiConstants.baseUrl);
+    if (apiUri?.scheme != 'https') return;
+
+    dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        return HttpClient()
+          ..badCertificateCallback = (_, host, port) {
+            return host == apiUri?.host &&
+                port == apiUri?.port &&
+                _isLocalDevHost(host);
+          };
+      },
+    );
+  }
+
+  bool _isLocalDevHost(String host) {
+    final normalized = host.toLowerCase();
+    if (normalized == 'localhost' ||
+        normalized == '::1' ||
+        normalized == '10.0.2.2' ||
+        normalized == '127.0.0.1') {
+      return true;
+    }
+    if (normalized.startsWith('127.') ||
+        normalized.startsWith('10.') ||
+        normalized.startsWith('192.168.')) {
+      return true;
+    }
+
+    final parts = normalized.split('.');
+    if (parts.length != 4 || parts.first != '172') return false;
+    final second = int.tryParse(parts[1]);
+    return second != null && second >= 16 && second <= 31;
   }
 
   Future<bool> _tryRefreshToken() async {
@@ -153,8 +194,7 @@ class ApiClient {
 
     if (status == 405) {
       return ApiError(
-        message:
-            'HTTP 405 — sai địa chỉ API hoặc phương thức. '
+        message: 'HTTP 405 — sai địa chỉ API hoặc phương thức. '
             'Dùng Gateway :7010 (Docker) hoặc :5046 (dotnet run).',
         statusCode: 405,
       );

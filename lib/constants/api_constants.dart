@@ -7,9 +7,9 @@ class ApiConstants {
   static String get baseUrl {
     const override = String.fromEnvironment('API_BASE_URL');
     if (override.isNotEmpty) return override;
-    // Docker gateway (deploy.sh) — host port 7010
-    if (Platform.isAndroid) return 'http://10.0.2.2:7010';
-    return 'http://127.0.0.1:7010';
+    // Android emulator reaches the host machine through 10.0.2.2.
+    if (Platform.isAndroid) return 'https://10.0.2.2:7010';
+    return 'https://localhost:7010';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
