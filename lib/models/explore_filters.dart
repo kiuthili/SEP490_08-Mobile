@@ -1,4 +1,4 @@
-/// Bộ lọc tìm tour — khớp query `GET /api/tours/search` (web TourSearch).
+/// Bộ lọc tìm tour, khớp query `GET /api/tours/search`.
 class ExploreFilters {
   static const maxPrice = 100000000;
   static const maxDurationDays = 30;
@@ -69,11 +69,9 @@ class ExploreFilters {
     return n;
   }
 
-  String? get startDateIso =>
-      startDate != null ? startDate!.toIso8601String().substring(0, 10) : null;
+  String? get startDateIso => startDate?.toIso8601String().substring(0, 10);
 
-  String? get endDateIso =>
-      endDate != null ? endDate!.toIso8601String().substring(0, 10) : null;
+  String? get endDateIso => endDate?.toIso8601String().substring(0, 10);
 }
 
 const exploreSortOptions = <String?, String>{

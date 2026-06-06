@@ -13,6 +13,7 @@ class TourController extends GetxController {
   final isLoading = false.obs;
   final detailLoading = false.obs;
   final isLoadingMore = false.obs;
+  final detailError = RxnString();
 
   int _currentPage = 1;
   int _totalPages = 1;
@@ -62,18 +63,29 @@ class TourController extends GetxController {
 
   Future<void> fetchTourDetail(int id) async {
     detailLoading.value = true;
+    detailError.value = null;
     if (selectedTour.value?.id != id) {
       selectedTour.value = null;
     }
     detailSchedules.clear();
     try {
-      selectedTour.value = await _tourService.getPublicTourDetail(id);
-      detailSchedules.assignAll(await _tourService.getSchedulesByTour(id));
+      final result = await _tourService.getPublicTourDetail(id);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      selectedTour.value = result.tour;
+      detailSchedules.assignAll(
+        result.schedules.where(
+          (schedule) => !schedule.returnDate.isBefore(today),
+        ),
+      );
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      detailError.value = e.message;
       selectedTour.value = null;
     } catch (e) {
-      SnackbarHelper.error('Không tải được chi tiết tour');
+      const message = 'Không tải được chi tiết tour';
+      SnackbarHelper.error(message);
+      detailError.value = message;
       selectedTour.value = null;
     } finally {
       detailLoading.value = false;

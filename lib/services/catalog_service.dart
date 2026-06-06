@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../constants/api_constants.dart';
+import '../utils/json_utils.dart';
 import 'base_service.dart';
 
 class CategoryModel {
@@ -37,24 +38,89 @@ class BannerModel {
 
 class TourItineraryModel {
   final int id;
+  final int tourId;
   final String? title;
   final String? description;
   final int? dayNumber;
+  final String? startDuration;
+  final String? endDuration;
+  final String? locationName;
+  final double? locationLat;
+  final double? locationLng;
+  final int? tourismInfoId;
 
   TourItineraryModel({
     required this.id,
+    required this.tourId,
     this.title,
     this.description,
     this.dayNumber,
+    this.startDuration,
+    this.endDuration,
+    this.locationName,
+    this.locationLat,
+    this.locationLng,
+    this.tourismInfoId,
   });
 
-  factory TourItineraryModel.fromJson(Map<String, dynamic> json) =>
-      TourItineraryModel(
-        id: json['id'] as int,
-        title: json['title'] as String? ?? json['locationName'] as String?,
-        description: json['description'] as String?,
-        dayNumber: json['dayNumber'] as int? ?? json['day'] as int?,
-      );
+  factory TourItineraryModel.fromJson(Map<String, dynamic> json) {
+    return TourItineraryModel(
+      id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
+      tourId: JsonUtils.readInt(JsonUtils.pick(json, ['tourId', 'TourId'])),
+      title: JsonUtils.readString(JsonUtils.pick(json, ['title', 'Title'])),
+      description: JsonUtils.readString(
+        JsonUtils.pick(json, ['description', 'Description']),
+      ),
+      dayNumber: JsonUtils.readInt(
+        JsonUtils.pick(json, ['dayNumber', 'DayNumber', 'day']),
+      ),
+      startDuration: JsonUtils.readString(
+        JsonUtils.pick(json, ['startDuration', 'StartDuration']),
+      ),
+      endDuration: JsonUtils.readString(
+        JsonUtils.pick(json, ['endDuration', 'EndDuration']),
+      ),
+      locationName: JsonUtils.readString(
+        JsonUtils.pick(json, ['locationName', 'LocationName']),
+      ),
+      locationLat: JsonUtils.readDouble(
+        JsonUtils.pick(json, ['locationLat', 'LocationLat']),
+      ),
+      locationLng: JsonUtils.readDouble(
+        JsonUtils.pick(json, ['locationLng', 'LocationLng']),
+      ),
+      tourismInfoId: () {
+        final value = JsonUtils.pick(
+          json,
+          ['tourismInfoId', 'TourismInfoId'],
+        );
+        return value == null ? null : JsonUtils.readInt(value);
+      }(),
+    );
+  }
+
+  String? get timeLabel {
+    final start = startTimeLabel;
+    final end = endTimeLabel;
+    if (start != null && end != null) return '$start - $end';
+    return start ?? end;
+  }
+
+  String? get startTimeLabel => _formatTime(startDuration);
+
+  String? get endTimeLabel => _formatTime(endDuration);
+
+  bool get hasCoordinates => locationLat != null && locationLng != null;
+
+  static String? _formatTime(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final trimmed = value.trim();
+    final match = RegExp(
+      r'^(?:\d+\.)?(\d{1,2}):(\d{2})',
+    ).firstMatch(trimmed);
+    if (match == null) return trimmed;
+    return '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
+  }
 }
 
 class CatalogService extends GetxService with BaseServiceMixin {
@@ -74,9 +140,33 @@ class CatalogService extends GetxService with BaseServiceMixin {
 
   Future<List<TourItineraryModel>> getTourItineraries(int tourId) async {
     return request(() async {
+      final detail = await api.dio.get('${ApiConstants.tours}/public/$tourId');
+      final map = JsonUtils.extractDataMap(detail.data);
+      final embedded = map == null
+          ? const <Map<String, dynamic>>[]
+          : JsonUtils.readMapList(
+              JsonUtils.pick(map, ['tourItineraries', 'TourItineraries']),
+            );
+      if (embedded.isNotEmpty) {
+        final itineraries = embedded.map(TourItineraryModel.fromJson).toList();
+        itineraries.sort(_compareItineraries);
+        return itineraries;
+      }
+
       final response =
           await api.dio.get('${ApiConstants.tours}/$tourId/itineraries');
-      return parseList(response.data, TourItineraryModel.fromJson);
+      final itineraries = parseList(response.data, TourItineraryModel.fromJson);
+      itineraries.sort(_compareItineraries);
+      return itineraries;
     });
+  }
+
+  static int _compareItineraries(
+    TourItineraryModel a,
+    TourItineraryModel b,
+  ) {
+    final byDay = (a.dayNumber ?? 0).compareTo(b.dayNumber ?? 0);
+    if (byDay != 0) return byDay;
+    return (a.startDuration ?? '').compareTo(b.startDuration ?? '');
   }
 }
