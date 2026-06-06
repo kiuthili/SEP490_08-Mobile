@@ -11,6 +11,7 @@ import '../services/social_service.dart';
 import '../services/storage_service.dart';
 import '../services/tour_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/ai_session.dart';
 
 class OrderController extends GetxController {
   final OrderService _service = Get.find<OrderService>();
@@ -343,11 +344,15 @@ class ReviewController extends GetxController {
 class AiController extends GetxController {
   final AiService _service = Get.find<AiService>();
   final recommendations = <TourRecommendationModel>[].obs;
+  final recommendationDetail = Rxn<PersonalizedRecommendationModel>();
+  final chatMessages = <AiChatMessageModel>[].obs;
   final summary = RxnString();
   final isLoading = false.obs;
+  final isSendingChat = false.obs;
   final questionnaireLoading = false.obs;
   final questionnaireSubmitting = false.obs;
   final questionnaire = Rxn<StandardQuestionnaire>();
+  final _chatSessionId = getOrCreateAiSessionId();
 
   Future<void> loadQuestionnaire() async {
     questionnaireLoading.value = true;
@@ -363,9 +368,10 @@ class AiController extends GetxController {
   Future<bool> submitQuestionnaire(Map<String, dynamic> payload) async {
     questionnaireSubmitting.value = true;
     try {
-      final list = await _service.recommendFromProfile(payload);
-      recommendations.assignAll(list);
-      summary.value = null;
+      final result = await _service.recommendFromProfile(payload);
+      recommendationDetail.value = result;
+      recommendations.assignAll(result.recommendedTours);
+      summary.value = result.summary.isEmpty ? null : result.summary;
       SnackbarHelper.success('Đã tạo gợi ý tour phù hợp');
       return true;
     } on ApiError catch (e) {
@@ -379,11 +385,53 @@ class AiController extends GetxController {
   Future<void> fetchRecommendations() async {
     isLoading.value = true;
     try {
-      recommendations.assignAll(await _service.getRecommendations());
+      final result = await _service.getRecommendations();
+      recommendationDetail.value = result;
+      recommendations.assignAll(result.recommendedTours);
+      summary.value = result.summary.isEmpty ? null : result.summary;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> sendChatMessage(String message) async {
+    final text = message.trim();
+    if (text.length < 2) {
+      SnackbarHelper.error('Tin nhắn phải có ít nhất 2 ký tự');
+      return;
+    }
+    if (text.length > 2000) {
+      SnackbarHelper.error('Tin nhắn tối đa 2000 ký tự');
+      return;
+    }
+
+    chatMessages.add(
+      AiChatMessageModel(
+        id: 'u-${DateTime.now().microsecondsSinceEpoch}',
+        role: 'user',
+        text: text,
+      ),
+    );
+    isSendingChat.value = true;
+    try {
+      final response = await _service.sendChatMessage(
+        message: text,
+        sessionId: _chatSessionId,
+      );
+      chatMessages.add(
+        AiChatMessageModel(
+          id: 'a-${DateTime.now().microsecondsSinceEpoch}',
+          role: 'assistant',
+          text: response.reply,
+          response: response,
+        ),
+      );
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+    } finally {
+      isSendingChat.value = false;
     }
   }
 }

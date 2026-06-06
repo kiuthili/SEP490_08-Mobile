@@ -9,6 +9,7 @@ import '../../theme/shell_layout.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/ios_grouped.dart';
+import '../../widgets/ai_floating_assistant.dart';
 
 class ProfileTab extends GetView<AuthController> {
   const ProfileTab({super.key});
@@ -121,13 +122,9 @@ class ProfileTab extends GetView<AuthController> {
                 ),
                 IosMenuTile(
                   icon: Icons.psychology_outlined,
-                  title: 'Trợ lý AI — khảo sát',
-                  onTap: () => Get.toNamed(AppRoutes.aiQuestionnaire),
-                ),
-                IosMenuTile(
-                  icon: Icons.auto_awesome_outlined,
-                  title: 'Gợi ý tour AI',
-                  onTap: () => Get.toNamed(AppRoutes.aiRecommendations),
+                  title: 'Trợ lý AI',
+                  onTap: () =>
+                      showAiAssistantPanel(context, AiPanelTab.assistant),
                 ),
               ],
             ),

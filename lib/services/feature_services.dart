@@ -4,7 +4,6 @@ import '../constants/app_constants.dart';
 import '../models/ai_models.dart';
 import '../models/feature_models.dart';
 import '../models/tour_model.dart';
-import '../utils/json_utils.dart';
 import 'base_service.dart';
 
 class NotificationService extends GetxService with BaseServiceMixin {
@@ -190,7 +189,7 @@ class AiService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<List<TourRecommendationModel>> recommendFromProfile(
+  Future<PersonalizedRecommendationModel> recommendFromProfile(
     Map<String, dynamic> payload,
   ) async {
     return request(() async {
@@ -202,16 +201,31 @@ class AiService extends GetxService with BaseServiceMixin {
       if (body is! Map<String, dynamic>) {
         throw StateError('Invalid recommend response');
       }
-      final tours = JsonUtils.readMapList(
-        JsonUtils.pick(body, ['recommendedTours', 'RecommendedTours']),
-      );
-      return tours
-          .map((e) => TourRecommendationModel.fromJson(e))
-          .toList();
+      return PersonalizedRecommendationModel.fromJson(body);
     });
   }
 
-  Future<List<TourRecommendationModel>> getRecommendations({
+  Future<AiChatResponseModel> sendChatMessage({
+    required String message,
+    required String sessionId,
+  }) async {
+    return request(() async {
+      final response = await api.dio.post(
+        '${ApiConstants.aiTourAssistant}/chat',
+        data: {
+          'message': message,
+          'sessionId': sessionId,
+        },
+      );
+      final body = response.data;
+      if (body is Map<String, dynamic>) {
+        return AiChatResponseModel.fromJson(body);
+      }
+      throw StateError('Invalid AI chat response');
+    });
+  }
+
+  Future<PersonalizedRecommendationModel> getRecommendations({
     int top = 8,
   }) async {
     return request(() async {
@@ -221,16 +235,16 @@ class AiService extends GetxService with BaseServiceMixin {
       );
       final body = response.data;
       if (body is Map<String, dynamic>) {
-        final tours = JsonUtils.readMapList(
-          JsonUtils.pick(body, ['recommendedTours', 'RecommendedTours']),
-        );
-        if (tours.isNotEmpty) {
-          return tours
-              .map((e) => TourRecommendationModel.fromJson(e))
-              .toList();
-        }
+        return PersonalizedRecommendationModel.fromJson(body);
       }
-      return parseList(response.data, TourRecommendationModel.fromJson);
+      return PersonalizedRecommendationModel(
+        sessionId: '',
+        summary: '',
+        recommendedTours: parseList(
+          response.data,
+          TourRecommendationModel.fromJson,
+        ),
+      );
     });
   }
 }

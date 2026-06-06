@@ -14,6 +14,7 @@ import '../../widgets/explore_filter_sheet.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/tour_card.dart';
+import '../../widgets/ai_floating_assistant.dart';
 
 class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
@@ -364,11 +365,11 @@ class _ExploreTabState extends State<ExploreTab> {
                 ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),
+                  onPressed: () => showAiAssistantPanel(context),
                   child: const Text('Khảo sát AI'),
                 ),
                 TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.aiRecommendations),
+                  onPressed: () => showAiAssistantPanel(context),
                   child: const Text('Gợi ý'),
                 ),
               ],
@@ -381,7 +382,7 @@ class _ExploreTabState extends State<ExploreTab> {
               }
               if (_aiController.recommendations.isEmpty) {
                 return TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),
+                  onPressed: () => showAiAssistantPanel(context),
                   child: const Text('Bắt đầu khảo sát AI →'),
                 );
               }
