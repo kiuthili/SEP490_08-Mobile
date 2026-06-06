@@ -58,6 +58,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       ever(_reviewController.reviews, (_) => refresh()),
       ever(_reviewController.myReview, (_) => refresh()),
       ever(_wishlistController.items, (_) => refresh()),
+      ever(_wishlistController.processingTourIds, (_) => refresh()),
     ]);
 
     if (_tourId != null) {
@@ -214,22 +215,31 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
             builder: (context) {
               final tour = _tourController.selectedTour.value!;
               final inWishlist = _isInWishlist(tour.id);
+              final busy = _wishlistController.isProcessing(tour.id);
               return IconButton(
                 style: IconButton.styleFrom(
                   backgroundColor: inWishlist
                       ? Colors.red.withValues(alpha: 0.1)
                       : AppColors.surfaceGrouped,
                 ),
-                icon: Icon(
-                  inWishlist
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color: inWishlist ? Colors.red : null,
-                ),
-                onPressed: () => _wishlistController.toggleWishlist(
-                  tour.id,
-                  isInWishlist: inWishlist,
-                ),
+                icon: busy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        inWishlist
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: inWishlist ? AppColors.error : null,
+                      ),
+                onPressed: busy
+                    ? null
+                    : () => _wishlistController.toggleWishlist(
+                          tour.id,
+                          isInWishlist: inWishlist,
+                        ),
               );
             },
           ),

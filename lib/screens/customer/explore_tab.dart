@@ -20,6 +20,7 @@ import '../../widgets/explore_filter_sheet.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/tour_card.dart';
+import '../../widgets/ai_floating_assistant.dart';
 import '../../utils/snackbar_helper.dart';
 
 class ExploreTab extends StatefulWidget {
@@ -36,6 +37,7 @@ class _ExploreTabState extends State<ExploreTab> {
   final _catalog = Get.find<CatalogService>();
   final _shell = Get.find<ShellController>();
   final _aiController = Get.find<AiController>();
+  final _wishlistController = Get.find<WishlistController>();
 
   ExploreFilters _filters = ExploreFilters();
   List<CategoryModel> _categories = [];
@@ -50,6 +52,8 @@ class _ExploreTabState extends State<ExploreTab> {
   var _requestVersion = 0;
   Worker? _searchSeedWorker;
   Worker? _filterOpenWorker;
+  Worker? _wishlistWorker;
+  Worker? _wishlistProcessingWorker;
 
   @override
   void initState() {
@@ -74,6 +78,16 @@ class _ExploreTabState extends State<ExploreTab> {
         });
       }
     });
+    _wishlistWorker = ever(_wishlistController.items, (_) {
+      if (mounted) setState(() {});
+    });
+    _wishlistProcessingWorker = ever(
+      _wishlistController.processingTourIds,
+      (_) {
+        if (mounted) setState(() {});
+      },
+    );
+    _wishlistController.fetchWishlist();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final seed = _shell.exploreSearchTerm.value;
       if (seed != null && seed.isNotEmpty) {
@@ -90,6 +104,8 @@ class _ExploreTabState extends State<ExploreTab> {
   void dispose() {
     _searchSeedWorker?.dispose();
     _filterOpenWorker?.dispose();
+    _wishlistWorker?.dispose();
+    _wishlistProcessingWorker?.dispose();
     _searchDebounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
@@ -511,6 +527,19 @@ class _ExploreTabState extends State<ExploreTab> {
                         padding: const EdgeInsets.only(bottom: 14),
                         child: TourCard(
                           tour: entry.value,
+                          isInWishlist: _wishlistController.containsTour(
+                            entry.value.id,
+                          ),
+                          wishlistBusy: _wishlistController.isProcessing(
+                            entry.value.id,
+                          ),
+                          onWishlistTap: () =>
+                              _wishlistController.toggleWishlist(
+                            entry.value.id,
+                            isInWishlist: _wishlistController.containsTour(
+                              entry.value.id,
+                            ),
+                          ),
                           onTap: () => Get.toNamed(
                             AppRoutes.tourDetail,
                             arguments: entry.value.id,
@@ -535,11 +564,11 @@ class _ExploreTabState extends State<ExploreTab> {
                     style: Theme.of(context).textTheme.titleMedium),
                 const Spacer(),
                 TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),
+                  onPressed: () => showAiAssistantPanel(context),
                   child: const Text('Khảo sát AI'),
                 ),
                 TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.aiRecommendations),
+                  onPressed: () => showAiAssistantPanel(context),
                   child: const Text('Gợi ý'),
                 ),
               ],
@@ -552,7 +581,7 @@ class _ExploreTabState extends State<ExploreTab> {
               }
               if (_aiController.recommendations.isEmpty) {
                 return TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),
+                  onPressed: () => showAiAssistantPanel(context),
                   child: const Text('Bắt đầu khảo sát AI →'),
                 );
               }

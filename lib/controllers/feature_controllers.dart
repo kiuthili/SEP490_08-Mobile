@@ -11,6 +11,7 @@ import '../services/social_service.dart';
 import '../services/storage_service.dart';
 import '../services/tour_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/ai_session.dart';
 
 class OrderController extends GetxController {
   final OrderService _service = Get.find<OrderService>();
@@ -178,6 +179,17 @@ class WishlistController extends GetxController {
   final WishlistService _service = Get.find<WishlistService>();
   final items = <WishlistItemModel>[].obs;
   final isLoading = false.obs;
+  final processingTourIds = <int>{}.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchWishlist();
+  }
+
+  bool containsTour(int tourId) => items.any((i) => i.tourId == tourId);
+
+  bool isProcessing(int tourId) => processingTourIds.contains(tourId);
 
   Future<void> fetchWishlist() async {
     isLoading.value = true;
@@ -192,17 +204,31 @@ class WishlistController extends GetxController {
     }
   }
 
-  Future<void> toggleWishlist(int tourId, {required bool isInWishlist}) async {
+  Future<bool> toggleWishlist(
+    int tourId, {
+    required bool isInWishlist,
+    bool showMessage = true,
+  }) async {
+    if (processingTourIds.contains(tourId)) return false;
+    processingTourIds.add(tourId);
+    processingTourIds.refresh();
     try {
       if (isInWishlist) {
         await _service.removeFromWishlist(tourId);
         items.removeWhere((i) => i.tourId == tourId);
+        if (showMessage) SnackbarHelper.success('Đã xóa khỏi wishlist');
       } else {
         await _service.addToWishlist(tourId);
         await fetchWishlist();
+        if (showMessage) SnackbarHelper.success('Đã thêm vào wishlist');
       }
+      return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      return false;
+    } finally {
+      processingTourIds.remove(tourId);
+      processingTourIds.refresh();
     }
   }
 }
@@ -211,6 +237,7 @@ class VoucherController extends GetxController {
   final VoucherService _service = Get.find<VoucherService>();
   final vouchers = <VoucherModel>[].obs;
   final isLoading = false.obs;
+  final isSaving = false.obs;
 
   Future<void> fetchVouchers() async {
     isLoading.value = true;
@@ -227,6 +254,7 @@ class VoucherController extends GetxController {
   }
 
   Future<bool> saveVoucher(String code) async {
+    isSaving.value = true;
     try {
       await _service.saveVoucher(code);
       await fetchVouchers();
@@ -235,6 +263,8 @@ class VoucherController extends GetxController {
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
+    } finally {
+      isSaving.value = false;
     }
   }
 }
@@ -314,11 +344,15 @@ class ReviewController extends GetxController {
 class AiController extends GetxController {
   final AiService _service = Get.find<AiService>();
   final recommendations = <TourRecommendationModel>[].obs;
+  final recommendationDetail = Rxn<PersonalizedRecommendationModel>();
+  final chatMessages = <AiChatMessageModel>[].obs;
   final summary = RxnString();
   final isLoading = false.obs;
+  final isSendingChat = false.obs;
   final questionnaireLoading = false.obs;
   final questionnaireSubmitting = false.obs;
   final questionnaire = Rxn<StandardQuestionnaire>();
+  final _chatSessionId = getOrCreateAiSessionId();
 
   Future<void> loadQuestionnaire() async {
     questionnaireLoading.value = true;
@@ -334,9 +368,10 @@ class AiController extends GetxController {
   Future<bool> submitQuestionnaire(Map<String, dynamic> payload) async {
     questionnaireSubmitting.value = true;
     try {
-      final list = await _service.recommendFromProfile(payload);
-      recommendations.assignAll(list);
-      summary.value = null;
+      final result = await _service.recommendFromProfile(payload);
+      recommendationDetail.value = result;
+      recommendations.assignAll(result.recommendedTours);
+      summary.value = result.summary.isEmpty ? null : result.summary;
       SnackbarHelper.success('Đã tạo gợi ý tour phù hợp');
       return true;
     } on ApiError catch (e) {
@@ -350,11 +385,53 @@ class AiController extends GetxController {
   Future<void> fetchRecommendations() async {
     isLoading.value = true;
     try {
-      recommendations.assignAll(await _service.getRecommendations());
+      final result = await _service.getRecommendations();
+      recommendationDetail.value = result;
+      recommendations.assignAll(result.recommendedTours);
+      summary.value = result.summary.isEmpty ? null : result.summary;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> sendChatMessage(String message) async {
+    final text = message.trim();
+    if (text.length < 2) {
+      SnackbarHelper.error('Tin nhắn phải có ít nhất 2 ký tự');
+      return;
+    }
+    if (text.length > 2000) {
+      SnackbarHelper.error('Tin nhắn tối đa 2000 ký tự');
+      return;
+    }
+
+    chatMessages.add(
+      AiChatMessageModel(
+        id: 'u-${DateTime.now().microsecondsSinceEpoch}',
+        role: 'user',
+        text: text,
+      ),
+    );
+    isSendingChat.value = true;
+    try {
+      final response = await _service.sendChatMessage(
+        message: text,
+        sessionId: _chatSessionId,
+      );
+      chatMessages.add(
+        AiChatMessageModel(
+          id: 'a-${DateTime.now().microsecondsSinceEpoch}',
+          role: 'assistant',
+          text: response.reply,
+          response: response,
+        ),
+      );
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+    } finally {
+      isSendingChat.value = false;
     }
   }
 }
@@ -418,10 +495,7 @@ class SocialController extends GetxController {
 
   Future<void> respondRequest(int requestId, bool accept) async {
     try {
-      await _service.respondFriendRequest(
-        requestId: requestId,
-        accept: accept,
-      );
+      await _service.respondFriendRequest(requestId: requestId, accept: accept);
       pendingRequests.removeWhere((r) => r.id == requestId);
       if (accept) await fetchFriends();
     } on ApiError catch (e) {
@@ -611,9 +685,7 @@ class StaffController extends GetxController {
 
   Future<void> fetchCustomers(int scheduleId) async {
     try {
-      customers.assignAll(
-        await _orderService.getScheduleCustomers(scheduleId),
-      );
+      customers.assignAll(await _orderService.getScheduleCustomers(scheduleId));
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     }
@@ -621,9 +693,7 @@ class StaffController extends GetxController {
 
   Future<void> fetchTickets(int scheduleId) async {
     try {
-      tickets.assignAll(
-        await _orderService.getTicketsBySchedule(scheduleId),
-      );
+      tickets.assignAll(await _orderService.getTicketsBySchedule(scheduleId));
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     }
@@ -683,6 +753,7 @@ class BookingController extends GetxController {
   final voucherCode = ''.obs;
   final discountAmount = 0.obs;
   final isLoading = false.obs;
+  final isApplyingVoucher = false.obs;
   final ticketsLoading = false.obs;
   final note = ''.obs;
 
@@ -705,8 +776,9 @@ class BookingController extends GetxController {
 
   int get finalAmount => (subtotal - discountAmount.value).clamp(0, 1 << 31);
 
-  List<ScheduleTicketModel> get activeTickets =>
-      tickets.where((t) => t.isActive != false && t.availableQuantity > 0).toList();
+  List<ScheduleTicketModel> get activeTickets => tickets
+      .where((t) => t.isActive != false && t.availableQuantity > 0)
+      .toList();
 
   void resetCheckout() {
     tickets.clear();
@@ -743,9 +815,7 @@ class BookingController extends GetxController {
     );
     ticketsLoading.value = true;
     try {
-      tickets.assignAll(
-        await _tourService.getScheduleTickets(scheduleId),
-      );
+      tickets.assignAll(await _tourService.getScheduleTickets(scheduleId));
       ticketQuantities.clear();
       for (final t in activeTickets) {
         ticketQuantities[t.id] = 0;
@@ -798,22 +868,35 @@ class BookingController extends GetxController {
     return slots;
   }
 
-  Future<void> applyVoucher() async {
+  Future<bool> applyVoucher({bool saveBeforeApply = false}) async {
     final schedule = selectedSchedule.value;
     if (schedule == null || voucherCode.value.isEmpty || subtotal <= 0) {
-      return;
+      return false;
     }
+    isApplyingVoucher.value = true;
     try {
+      if (saveBeforeApply) {
+        try {
+          await _voucherService.saveVoucher(voucherCode.value);
+        } on ApiError catch (e) {
+          final msg = e.message.toLowerCase();
+          if (!msg.contains('already saved')) rethrow;
+        }
+      }
       final result = await _voucherService.applyVoucher(
         code: voucherCode.value,
         billAmount: subtotal,
         tourId: schedule.tourId,
       );
-      discountAmount.value =
-          (result['discountAmount'] as num?)?.toInt() ?? 0;
+      discountAmount.value = (result['discountAmount'] as num?)?.toInt() ?? 0;
       SnackbarHelper.success('Áp dụng voucher thành công');
+      return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      discountAmount.value = 0;
+      return false;
+    } finally {
+      isApplyingVoucher.value = false;
     }
   }
 
@@ -864,8 +947,7 @@ class BookingController extends GetxController {
       final order = await _orderService.createOrder(
         scheduleId: schedule.id,
         finalAmount: finalAmount,
-        voucherCode:
-            voucherCode.value.isNotEmpty ? voucherCode.value : null,
+        voucherCode: voucherCode.value.isNotEmpty ? voucherCode.value : null,
         note: orderNote,
         orderDetails: orderDetails,
       );

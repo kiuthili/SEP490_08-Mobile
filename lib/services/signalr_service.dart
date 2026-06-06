@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import '../constants/api_constants.dart';
@@ -20,7 +22,7 @@ class SignalRService extends GetxService {
     _chatConnection = HubConnectionBuilder()
         .withUrl(
           ApiConstants.chatHubUrl,
-          options: HttpConnectionOptions(
+          options: _connectionOptions(
             accessTokenFactory: () async => _token ?? '',
           ),
         )
@@ -70,7 +72,7 @@ class SignalRService extends GetxService {
     _trackingConnection = HubConnectionBuilder()
         .withUrl(
           ApiConstants.trackingHubUrl,
-          options: HttpConnectionOptions(
+          options: _connectionOptions(
             accessTokenFactory: () async => _token ?? '',
           ),
         )
@@ -114,7 +116,7 @@ class SignalRService extends GetxService {
   }) async {
     await _publicTrackingConnection?.stop();
     _publicTrackingConnection = HubConnectionBuilder()
-        .withUrl(ApiConstants.trackingHubUrl)
+        .withUrl(ApiConstants.trackingHubUrl, options: _connectionOptions())
         .withAutomaticReconnect()
         .build();
 
@@ -150,5 +152,69 @@ class SignalRService extends GetxService {
     disconnectTracking();
     disconnectPublicTracking();
     super.onClose();
+  }
+
+  HttpConnectionOptions _connectionOptions({
+    AccessTokenFactory? accessTokenFactory,
+  }) {
+    final localDev = _isLocalDevBaseUrl(ApiConstants.baseUrl);
+    return HttpConnectionOptions(
+      accessTokenFactory: accessTokenFactory,
+      httpClient: localDev
+          ? WebSupportingHttpClient(
+              null,
+              httpClientCreateCallback: (_) {
+                HttpOverrides.global = _SignalRLocalDevHttpOverrides();
+              },
+            )
+          : null,
+      transport: localDev ? HttpTransportType.LongPolling : null,
+      requestTimeout: 30000,
+    );
+  }
+
+  bool _isLocalDevBaseUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    final host = uri.host.toLowerCase();
+    if (host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2') {
+      return true;
+    }
+    if (host.startsWith('127.') ||
+        host.startsWith('10.') ||
+        host.startsWith('192.168.')) {
+      return true;
+    }
+    final parts = host.split('.');
+    if (parts.length != 4 || parts.first != '172') return false;
+    final second = int.tryParse(parts[1]);
+    return second != null && second >= 16 && second <= 31;
+  }
+}
+
+class _SignalRLocalDevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (_, host, __) => _isLocalDevHost(host);
+  }
+
+  bool _isLocalDevHost(String host) {
+    final normalized = host.toLowerCase();
+    if (normalized == 'localhost' ||
+        normalized == '::1' ||
+        normalized == '10.0.2.2' ||
+        normalized == '127.0.0.1') {
+      return true;
+    }
+    if (normalized.startsWith('127.') ||
+        normalized.startsWith('10.') ||
+        normalized.startsWith('192.168.')) {
+      return true;
+    }
+    final parts = normalized.split('.');
+    if (parts.length != 4 || parts.first != '172') return false;
+    final second = int.tryParse(parts[1]);
+    return second != null && second >= 16 && second <= 31;
   }
 }

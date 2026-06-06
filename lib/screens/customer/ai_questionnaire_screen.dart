@@ -23,6 +23,27 @@ class AiQuestionnaireScreen extends StatefulWidget {
 }
 
 class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return AppScreen(
+      title: 'Trợ lý AI',
+      body: AiQuestionnaireTab(
+        onCompleted: () => Get.offNamed(AppRoutes.aiRecommendations),
+      ),
+    );
+  }
+}
+
+class AiQuestionnaireTab extends StatefulWidget {
+  const AiQuestionnaireTab({super.key, this.onCompleted});
+
+  final VoidCallback? onCompleted;
+
+  @override
+  State<AiQuestionnaireTab> createState() => _AiQuestionnaireTabState();
+}
+
+class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
   late final AiController _ai;
   var _step = 0;
   final _values = <String, dynamic>{
@@ -51,7 +72,8 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
         if (field.inputType == 'boolean' && _values[field.fieldKey] == null) {
           _values[field.fieldKey] = false;
         }
-        if (field.inputType == 'multi_select' && _values[field.fieldKey] == null) {
+        if (field.inputType == 'multi_select' &&
+            _values[field.fieldKey] == null) {
           _values[field.fieldKey] = <String>[];
         }
       }
@@ -72,7 +94,9 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
     for (var i = 0; i < questions.length; i += _stepsPerPage) {
       chunks.add(questions.sublist(
         i,
-        i + _stepsPerPage > questions.length ? questions.length : i + _stepsPerPage,
+        i + _stepsPerPage > questions.length
+            ? questions.length
+            : i + _stepsPerPage,
       ));
     }
     chunks.add([]); // extra step
@@ -128,7 +152,9 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
         ...validateExtraCounts(_values),
       };
       if (allErrors.isNotEmpty) {
-        setState(() => _errors..clear()..addAll(allErrors));
+        setState(() => _errors
+          ..clear()
+          ..addAll(allErrors));
         return;
       }
       final payload = buildRecommendPayload(
@@ -137,7 +163,12 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
       );
       final ok = await _ai.submitQuestionnaire(payload);
       if (ok && mounted) {
-        Get.offNamed(AppRoutes.aiRecommendations);
+        final onCompleted = widget.onCompleted;
+        if (onCompleted != null) {
+          onCompleted();
+        } else {
+          Get.offNamed(AppRoutes.aiRecommendations);
+        }
       }
       return;
     }
@@ -149,108 +180,103 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScreen(
-      title: 'Trợ lý AI',
-      body: Obx(() {
-        if (_ai.questionnaireLoading.value &&
-            _ai.questionnaire.value == null) {
-          return const LoadingWidget(message: 'Đang tải khảo sát...');
-        }
-        final questions = _ai.questionnaire.value?.questions ?? [];
-        if (questions.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Không tải được khảo sát AI'),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _ai.loadQuestionnaire,
-                    child: const Text('Thử lại'),
-                  ),
-                ],
-              ),
+    return Obx(() {
+      if (_ai.questionnaireLoading.value && _ai.questionnaire.value == null) {
+        return const LoadingWidget(message: 'Đang tải khảo sát...');
+      }
+      final questions = _ai.questionnaire.value?.questions ?? [];
+      if (questions.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Không tải được khảo sát AI'),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _ai.loadQuestionnaire,
+                  child: const Text('Thử lại'),
+                ),
+              ],
             ),
-          );
-        }
-
-        final steps = _steps;
-        final total = steps.length;
-        final progress = ((_step + 1) / total).clamp(0.0, 1.0);
-
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.brand),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Bước ${_step + 1}/$total',
-                        style: AppTextStyles.textTheme.titleSmall,
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${(progress * 100).round()}%',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: AppColors.brandLight,
-                    color: AppColors.brand,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                children: _isLastStep
-                    ? _buildExtraStep()
-                    : _buildFields(steps[_step]),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: Row(
-                children: [
-                  if (_step > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() {
-                          _step--;
-                          _errors.clear();
-                        }),
-                        child: const Text('Quay lại'),
-                      ),
-                    ),
-                  if (_step > 0) const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: Obx(
-                      () => CustomButton(
-                        label: _isLastStep ? 'Nhận gợi ý tour' : 'Tiếp tục',
-                        isLoading: _ai.questionnaireSubmitting.value,
-                        onPressed: _next,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         );
-      }),
-    );
+      }
+
+      final steps = _steps;
+      final total = steps.length;
+      final progress = ((_step + 1) / total).clamp(0.0, 1.0);
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, color: AppColors.brand),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Bước ${_step + 1}/$total',
+                      style: AppTextStyles.textTheme.titleSmall,
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${(progress * 100).round()}%',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: AppColors.brandLight,
+                  color: AppColors.brand,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              children:
+                  _isLastStep ? _buildExtraStep() : _buildFields(steps[_step]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Row(
+              children: [
+                if (_step > 0)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() {
+                        _step--;
+                        _errors.clear();
+                      }),
+                      child: const Text('Quay lại'),
+                    ),
+                  ),
+                if (_step > 0) const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Obx(
+                    () => CustomButton(
+                      label: _isLastStep ? 'Nhận gợi ý tour' : 'Tiếp tục',
+                      isLoading: _ai.questionnaireSubmitting.value,
+                      onPressed: _next,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   List<Widget> _buildFields(List<QuestionnaireField> fields) {
@@ -279,12 +305,13 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
           }),
         );
       case 'multi_select':
-        final selected = (_values[field.fieldKey] as List?)?.cast<String>() ??
-            <String>[];
+        final selected =
+            (_values[field.fieldKey] as List?)?.cast<String>() ?? <String>[];
         input = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(field.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(field.label,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             if (field.hint != null)
               Text(field.hint!, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 8),

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -17,6 +19,7 @@ import 'controllers/auth_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = _StayHubHttpOverrides();
   GoogleFonts.config.allowRuntimeFetching = false;
   await GetStorage.init();
 
@@ -37,4 +40,31 @@ Future<void> main() async {
   Get.put(AuthController(), permanent: true);
 
   runApp(const StayHubApp());
+}
+
+class _StayHubHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (_, host, __) => _isLocalDevHost(host);
+  }
+
+  bool _isLocalDevHost(String host) {
+    final normalized = host.toLowerCase();
+    if (normalized == 'localhost' ||
+        normalized == '::1' ||
+        normalized == '10.0.2.2' ||
+        normalized == '127.0.0.1') {
+      return true;
+    }
+    if (normalized.startsWith('127.') ||
+        normalized.startsWith('10.') ||
+        normalized.startsWith('192.168.')) {
+      return true;
+    }
+    final parts = normalized.split('.');
+    if (parts.length != 4 || parts.first != '172') return false;
+    final second = int.tryParse(parts[1]);
+    return second != null && second >= 16 && second <= 31;
+  }
 }

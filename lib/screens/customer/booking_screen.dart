@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../controllers/shell_controller.dart';
+import '../../models/feature_models.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/booking_args.dart';
 import '../../utils/currency_formatter.dart';
@@ -44,8 +45,11 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   final _booking = Get.find<BookingController>();
+  final _voucher = Get.isRegistered<VoucherController>()
+      ? Get.find<VoucherController>()
+      : Get.put(VoucherController());
   final _formKey = GlobalKey<FormState>();
-  final _voucherController = TextEditingController();
+  final _voucherCodeController = TextEditingController();
   final _noteController = TextEditingController();
   final _passengers = <_PassengerForm>[];
   final _workers = <Worker>[];
@@ -64,7 +68,25 @@ class _BookingScreenState extends State<BookingScreen> {
       });
       return;
     }
-    _workers.add(ever(_booking.ticketQuantities, (_) => _syncPassengers()));
+    _workers.addAll([
+      ever(_booking.ticketQuantities, (_) => _syncPassengers()),
+      ever(_booking.discountAmount, (_) {
+        if (mounted) setState(() {});
+      }),
+      ever(_booking.voucherCode, (_) {
+        if (mounted) setState(() {});
+      }),
+      ever(_booking.isApplyingVoucher, (_) {
+        if (mounted) setState(() {});
+      }),
+      ever(_booking.isLoading, (_) {
+        if (mounted) setState(() {});
+      }),
+      ever(_voucher.vouchers, (_) {
+        if (mounted) setState(() {});
+      }),
+    ]);
+    _voucher.fetchVouchers();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final ok = await _booking.initCheckout(
@@ -111,7 +133,7 @@ class _BookingScreenState extends State<BookingScreen> {
     for (final w in _workers) {
       w.dispose();
     }
-    _voucherController.dispose();
+    _voucherCodeController.dispose();
     _noteController.dispose();
     for (final p in _passengers) {
       p.dispose();
@@ -169,6 +191,134 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
+  List<VoucherModel> get _usableSavedVouchers {
+    final tourId = _booking.checkoutTourId;
+    return _voucher.vouchers
+        .where(
+          (v) =>
+              v.isAvailable &&
+              (v.tourId == null || tourId == null || v.tourId == tourId),
+        )
+        .toList();
+  }
+
+  Future<void> _applyVoucherCode({bool saveBeforeApply = true}) async {
+    final code = _voucherCodeController.text.trim().toUpperCase();
+    final err = Validators.voucherCode(code);
+    if (err != null) {
+      SnackbarHelper.error(err);
+      return;
+    }
+    if (_booking.subtotal <= 0) {
+      SnackbarHelper.error('Chọn vé trước khi áp dụng voucher');
+      return;
+    }
+
+    _booking.voucherCode.value = code;
+    final ok = await _booking.applyVoucher(saveBeforeApply: saveBeforeApply);
+    if (ok && saveBeforeApply) {
+      await _voucher.fetchVouchers();
+    }
+  }
+
+  void _selectSavedVoucher(VoucherModel voucher) {
+    _voucherCodeController.text = voucher.code;
+    _applyVoucherCode(saveBeforeApply: false);
+  }
+
+  Widget _buildVoucherSection() {
+    final saved = _usableSavedVouchers;
+    final selectedCode = _booking.voucherCode.value;
+
+    return IosSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Voucher', style: AppTextStyles.textTheme.titleSmall),
+          if (saved.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: saved.map((voucher) {
+                final selected = selectedCode == voucher.code;
+                return ChoiceChip(
+                  selected: selected,
+                  label: Text(
+                    '${voucher.code} • ${_voucherDiscountText(voucher)}',
+                  ),
+                  onSelected: _booking.isApplyingVoucher.value
+                      ? null
+                      : (_) => _selectSavedVoucher(voucher),
+                );
+              }).toList(),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: _voucherCodeController,
+                  label: 'Mã voucher',
+                  textCapitalization: TextCapitalization.characters,
+                  onSubmitted: (_) => _applyVoucherCode(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  onPressed: _booking.isApplyingVoucher.value
+                      ? null
+                      : () => _applyVoucherCode(),
+                  child: _booking.isApplyingVoucher.value
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Áp dụng'),
+                ),
+              ),
+            ],
+          ),
+          if (_booking.discountAmount.value > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 18,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Đã áp dụng ${_booking.voucherCode.value}: '
+                    '-${CurrencyFormatter.format(_booking.discountAmount.value)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _voucherDiscountText(VoucherModel voucher) {
+    final value = voucher.discountValue ?? 0;
+    final type = voucher.discountType?.toLowerCase() ?? '';
+    if (type.contains('percent')) return '-$value%';
+    return '-${CurrencyFormatter.format(value)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_initDone) {
@@ -187,7 +337,8 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.event_busy, size: 48, color: AppColors.textSecondary),
+                const Icon(Icons.event_busy,
+                    size: 48, color: AppColors.textSecondary),
                 const SizedBox(height: 12),
                 const Text(
                   'Lịch này chưa có vé bán',
@@ -225,12 +376,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 returnDate: schedule.returnDate,
               ),
               const SizedBox(height: 20),
-              Text('Chọn số lượng vé', style: AppTextStyles.textTheme.titleMedium),
+              Text('Chọn số lượng vé',
+                  style: AppTextStyles.textTheme.titleMedium),
               const SizedBox(height: 8),
               if (_booking.ticketsLoading.value)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  child:
+                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 )
               else
                 ..._booking.activeTickets.map((t) {
@@ -245,7 +398,8 @@ class _BookingScreenState extends State<BookingScreen> {
                             children: [
                               Text(
                                 'Loại vé #${t.ticketTypeId}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
                               ),
                               Text(
                                 '${CurrencyFormatter.format(t.price)} • Còn ${t.availableQuantity}',
@@ -333,11 +487,14 @@ class _BookingScreenState extends State<BookingScreen> {
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           initialValue: p.gender,
-                          decoration: const InputDecoration(labelText: 'Giới tính'),
+                          decoration:
+                              const InputDecoration(labelText: 'Giới tính'),
                           items: const [
                             DropdownMenuItem(value: 'Male', child: Text('Nam')),
-                            DropdownMenuItem(value: 'Female', child: Text('Nữ')),
-                            DropdownMenuItem(value: 'Other', child: Text('Khác')),
+                            DropdownMenuItem(
+                                value: 'Female', child: Text('Nữ')),
+                            DropdownMenuItem(
+                                value: 'Other', child: Text('Khác')),
                           ],
                           onChanged: (v) {
                             if (v != null) setState(() => p.gender = v);
@@ -363,32 +520,15 @@ class _BookingScreenState extends State<BookingScreen> {
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(
-                      controller: _voucherController,
-                      label: 'Mã voucher',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () {
-                      _booking.voucherCode.value =
-                          _voucherController.text.trim();
-                      _booking.applyVoucher();
-                    },
-                    child: const Text('Áp dụng'),
-                  ),
-                ],
-              ),
+              _buildVoucherSection(),
               if (_booking.subtotal > 0) ...[
                 const SizedBox(height: 12),
                 IosSurfaceCard(
                   color: AppColors.brandLight,
                   child: Column(
                     children: [
-                      _SummaryRow('Tạm tính', CurrencyFormatter.format(_booking.subtotal)),
+                      _SummaryRow('Tạm tính',
+                          CurrencyFormatter.format(_booking.subtotal)),
                       if (_booking.discountAmount.value > 0)
                         _SummaryRow(
                           'Giảm giá',
@@ -485,12 +625,10 @@ class _CheckoutSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tourName,
-                    style: AppTextStyles.textTheme.titleMedium),
+                Text(tourName, style: AppTextStyles.textTheme.titleMedium),
                 if (location != null && location!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(location!,
-                      style: Theme.of(context).textTheme.bodySmall),
+                  Text(location!, style: Theme.of(context).textTheme.bodySmall),
                 ],
                 const SizedBox(height: 8),
                 Row(
