@@ -20,10 +20,14 @@ if ! flutter doctor 2>/dev/null | grep -q 'Linux toolchain.*• Ubuntu clang'; t
 fi
 
 if [[ -z "${API_BASE_URL:-}" ]]; then
-  if RESP=$(curl -sf --max-time 2 "http://127.0.0.1:7010/api/tours/public?pageSize=1" 2>/dev/null) \
+  if RESP=$(curl -ksf --max-time 2 "https://127.0.0.1:7010/api/tours/public?pageSize=1" 2>/dev/null) \
+     && [[ "$RESP" == *'"data"'* || "$RESP" == *'"total"'* ]]; then
+    API_URL="https://127.0.0.1:7010"
+    echo "Phát hiện Gateway HTTPS :7010."
+  elif RESP=$(curl -sf --max-time 2 "http://127.0.0.1:7010/api/tours/public?pageSize=1" 2>/dev/null) \
      && [[ "$RESP" == *'"data"'* || "$RESP" == *'"total"'* ]]; then
     API_URL="http://127.0.0.1:7010"
-    echo "Phát hiện backend Docker (gateway :7010)."
+    echo "Phát hiện backend Docker HTTP :7010."
   else
     API_URL="http://127.0.0.1:5046"
     echo "Dùng Gateway local :5046 (dotnet run). Docker thường là :7010."

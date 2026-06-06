@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../controllers/feature_controllers.dart';
 import '../../controllers/shell_controller.dart';
 import '../../controllers/tour_controller.dart';
 import '../../models/tour_model.dart';
@@ -32,6 +33,7 @@ class _TripType {
 
 class _HomeTabState extends State<HomeTab> {
   final _controller = Get.find<TourController>();
+  final _wishlistController = Get.find<WishlistController>();
   final _scrollController = ScrollController();
   List<BannerModel> _banners = [];
 
@@ -78,8 +80,7 @@ class _HomeTabState extends State<HomeTab> {
           onRefresh: () => _controller.fetchTours(refresh: true),
           child: Obx(() {
             final tours = _controller.tours;
-            final loadingFirst =
-                _controller.isLoading.value && tours.isEmpty;
+            final loadingFirst = _controller.isLoading.value && tours.isEmpty;
             return CustomScrollView(
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
@@ -137,7 +138,8 @@ class _HomeTabState extends State<HomeTab> {
                       ShellLayout.bottomInset(context),
                     ),
                     sliver: SliverList.separated(
-                      itemCount: tours.length +
+                      itemCount:
+                          tours.length +
                           (_controller.isLoadingMore.value ? 1 : 0),
                       separatorBuilder: (_, __) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
@@ -148,8 +150,20 @@ class _HomeTabState extends State<HomeTab> {
                           );
                         }
                         final tour = tours[index];
+                        final inWishlist = _wishlistController.containsTour(
+                          tour.id,
+                        );
                         return TourCard(
                           tour: tour,
+                          isInWishlist: inWishlist,
+                          wishlistBusy: _wishlistController.isProcessing(
+                            tour.id,
+                          ),
+                          onWishlistTap: () =>
+                              _wishlistController.toggleWishlist(
+                                tour.id,
+                                isInWishlist: inWishlist,
+                              ),
                           onTap: () => _openTour(tour.id),
                         );
                       },
@@ -164,8 +178,7 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  void _openTour(int id) =>
-      Get.toNamed(AppRoutes.tourDetail, arguments: id);
+  void _openTour(int id) => Get.toNamed(AppRoutes.tourDetail, arguments: id);
 
   Widget _buildHeader() {
     final user = Get.find<StorageService>().user;
@@ -182,10 +195,7 @@ class _HomeTabState extends State<HomeTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Xin chào,',
-                      style: AppTextStyles.textTheme.bodySmall,
-                    ),
+                    Text('Xin chào,', style: AppTextStyles.textTheme.bodySmall),
                     Text(
                       name,
                       maxLines: 1,
@@ -209,8 +219,7 @@ class _HomeTabState extends State<HomeTab> {
                       ? CachedNetworkImageProvider(user!.avatarUrl!)
                       : null,
                   child: user?.avatarUrl == null
-                      ? const Icon(Icons.person_rounded,
-                          color: AppColors.brand)
+                      ? const Icon(Icons.person_rounded, color: AppColors.brand)
                       : null,
                 ),
               ),
@@ -248,13 +257,14 @@ class _HomeTabState extends State<HomeTab> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          const Icon(Icons.search_rounded,
-                              color: AppColors.brand),
+                          const Icon(
+                            Icons.search_rounded,
+                            color: AppColors.brand,
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             'Tìm tour, điểm đến...',
-                            style: AppTextStyles.textTheme.bodyMedium
-                                ?.copyWith(
+                            style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                               color: AppColors.textTertiary,
                             ),
                           ),
@@ -276,8 +286,11 @@ class _HomeTabState extends State<HomeTab> {
                         gradient: AppColors.brandGradient,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.tune_rounded,
-                          color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -419,7 +432,9 @@ class _FeaturedCard extends StatelessWidget {
                   right: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -427,8 +442,11 @@ class _FeaturedCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 14, color: Color(0xFFFFB800)),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: Color(0xFFFFB800),
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           tour.averageStar!.toStringAsFixed(1),
@@ -463,8 +481,11 @@ class _FeaturedCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.place_rounded,
-                            size: 14, color: Colors.white70),
+                        const Icon(
+                          Icons.place_rounded,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -571,9 +592,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
               width: i == _current ? 18 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: i == _current
-                    ? AppColors.brand
-                    : AppColors.border,
+                color: i == _current ? AppColors.brand : AppColors.border,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

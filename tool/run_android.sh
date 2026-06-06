@@ -6,7 +6,7 @@ cd "$ROOT"
 # shellcheck source=/dev/null
 source "$ROOT/tool/flutter_env.sh"
 
-API_URL="${API_BASE_URL:-http://10.0.2.2:5046}"
+API_URL="${API_BASE_URL:-https://10.0.2.2:7010}"
 DEVICE="${FLUTTER_DEVICE:-}"
 
 echo "API_BASE_URL=$API_URL"
