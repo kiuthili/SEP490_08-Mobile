@@ -100,20 +100,26 @@ class TourItineraryModel {
   }
 
   String? get timeLabel {
-    final start = _formatTime(startDuration);
-    final end = _formatTime(endDuration);
+    final start = startTimeLabel;
+    final end = endTimeLabel;
     if (start != null && end != null) return '$start - $end';
     return start ?? end;
   }
+
+  String? get startTimeLabel => _formatTime(startDuration);
+
+  String? get endTimeLabel => _formatTime(endDuration);
 
   bool get hasCoordinates => locationLat != null && locationLng != null;
 
   static String? _formatTime(String? value) {
     if (value == null || value.trim().isEmpty) return null;
-    final normalized = value.trim().split('.').last;
-    final parts = normalized.split(':');
-    if (parts.length < 2) return value.trim();
-    return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+    final trimmed = value.trim();
+    final match = RegExp(
+      r'^(?:\d+\.)?(\d{1,2}):(\d{2})',
+    ).firstMatch(trimmed);
+    if (match == null) return trimmed;
+    return '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
   }
 }
 

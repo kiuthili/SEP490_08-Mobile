@@ -896,45 +896,29 @@ class _ItineraryActivityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 70,
+            width: 28,
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     color: AppColors.brandLight,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.brand.withValues(alpha: 0.25),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.schedule_rounded,
-                        size: 14,
-                        color: AppColors.brand,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          itinerary.timeLabel ?? 'Linh hoạt',
-                          maxLines: 2,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.textTheme.labelSmall?.copyWith(
-                            color: AppColors.brandDeep,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: const Icon(
+                    Icons.schedule_rounded,
+                    size: 15,
+                    color: AppColors.brand,
                   ),
                 ),
                 if (!isLast)
                   Container(
                     width: 2,
-                    height: 72,
+                    height: 92,
                     margin: const EdgeInsets.only(top: 6),
                     color: AppColors.border,
                   ),
@@ -958,6 +942,26 @@ class _ItineraryActivityCard extends StatelessWidget {
                         ? itinerary.title!.trim()
                         : 'Hoạt động trong ngày',
                     style: AppTextStyles.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 9),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ItineraryTimeChip(
+                        icon: Icons.play_arrow_rounded,
+                        label: 'Bắt đầu',
+                        value: itinerary.startTimeLabel ?? 'Linh hoạt',
+                        color: AppColors.brand,
+                      ),
+                      if (itinerary.endTimeLabel != null)
+                        _ItineraryTimeChip(
+                          icon: Icons.flag_rounded,
+                          label: 'Kết thúc',
+                          value: itinerary.endTimeLabel!,
+                          color: AppColors.accent,
+                        ),
+                    ],
                   ),
                   if (hasLocation) ...[
                     const SizedBox(height: 7),
@@ -1011,6 +1015,52 @@ class _ItineraryActivityCard extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItineraryTimeChip extends StatelessWidget {
+  const _ItineraryTimeChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 5),
+          Text(
+            '$label ',
+            style: AppTextStyles.textTheme.labelSmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.textTheme.labelMedium?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

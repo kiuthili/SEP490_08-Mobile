@@ -73,8 +73,24 @@ void main() {
 
     expect(itinerary.dayNumber, 2);
     expect(itinerary.timeLabel, '08:30 - 10:15');
+    expect(itinerary.startTimeLabel, '08:30');
+    expect(itinerary.endTimeLabel, '10:15');
     expect(itinerary.locationName, 'Hoi An Ancient Town');
     expect(itinerary.hasCoordinates, isTrue);
     expect(itinerary.tourismInfoId, 7);
+  });
+
+  test('tour itinerary formats TimeOnly and TimeSpan variants', () {
+    final itinerary = TourItineraryModel.fromJson({
+      'id': 11,
+      'tourId': 4,
+      'dayNumber': 2,
+      'startDuration': '0.08:30:00',
+      'endDuration': '10:15:00.0000000',
+    });
+
+    expect(itinerary.startTimeLabel, '08:30');
+    expect(itinerary.endTimeLabel, '10:15');
+    expect(itinerary.timeLabel, '08:30 - 10:15');
   });
 }
