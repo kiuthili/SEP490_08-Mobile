@@ -1,19 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../controllers/shell_controller.dart';
+import '../../models/api_response.dart';
 import '../../models/explore_filters.dart';
 import '../../models/tour_model.dart';
 import '../../routes/app_routes.dart';
+import '../../services/base_service.dart';
 import '../../services/catalog_service.dart';
 import '../../services/tour_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_text_styles.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/explore_filter_sheet.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/tour_card.dart';
+import '../../utils/snackbar_helper.dart';
 
 class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
@@ -35,8 +42,12 @@ class _ExploreTabState extends State<ExploreTab> {
   List<TourModel> _tours = [];
   var _page = 1;
   var _totalPages = 1;
+  var _totalResults = 0;
   var _isLoading = false;
   var _isLoadingMore = false;
+  String? _errorMessage;
+  Timer? _searchDebounce;
+  var _requestVersion = 0;
   Worker? _searchSeedWorker;
   Worker? _filterOpenWorker;
 
@@ -79,6 +90,7 @@ class _ExploreTabState extends State<ExploreTab> {
   void dispose() {
     _searchSeedWorker?.dispose();
     _filterOpenWorker?.dispose();
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -95,30 +107,22 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   Future<void> _runSearch({bool refresh = false}) async {
+    final requestVersion = ++_requestVersion;
     if (refresh) {
       _page = 1;
       _totalPages = 1;
+      setState(() {
+        _tours = [];
+        _totalResults = 0;
+        _errorMessage = null;
+        _isLoading = true;
+      });
+    } else {
+      setState(() => _errorMessage = null);
     }
-    setState(() => _isLoading = refresh);
     try {
-      final result = await _tourService.searchTours(
-        page: _page,
-        searchTerm: _filters.searchTerm.trim().isEmpty
-            ? null
-            : _filters.searchTerm.trim(),
-        city: _filters.city.trim().isEmpty ? null : _filters.city.trim(),
-        country:
-            _filters.country.trim().isEmpty ? null : _filters.country.trim(),
-        categoryId: _filters.categoryId,
-        minPrice: _filters.minPrice > 0 ? _filters.minPrice : null,
-        maxPrice: _filters.maxPriceValue < ExploreFilters.maxPrice
-            ? _filters.maxPriceValue
-            : null,
-        startDate: _filters.startDateIso,
-        endDate: _filters.endDateIso,
-        duration: _filters.durationDays > 0 ? _filters.durationDays : null,
-        sortBy: _filters.sortBy,
-      );
+      final result = await _searchPage(_page);
+      if (!mounted || requestVersion != _requestVersion) return;
       setState(() {
         if (refresh) {
           _tours = result.data;
@@ -126,46 +130,91 @@ class _ExploreTabState extends State<ExploreTab> {
           _tours = [..._tours, ...result.data];
         }
         _totalPages = result.totalPages;
+        _totalResults = result.total;
+        _page = result.currentPage;
       });
+    } on ApiError catch (error) {
+      if (!mounted || requestVersion != _requestVersion) return;
+      setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (!mounted || requestVersion != _requestVersion) return;
+      setState(() => _errorMessage = 'Không tải được danh sách tour');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && requestVersion == _requestVersion) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _loadMore() async {
-    if (_page >= _totalPages) return;
+    if (_page >= _totalPages || _isLoadingMore) return;
     setState(() => _isLoadingMore = true);
-    _page++;
+    final nextPage = _page + 1;
+    final requestVersion = _requestVersion;
     try {
-      final result = await _tourService.searchTours(
-        page: _page,
-        searchTerm: _filters.searchTerm.trim().isEmpty
-            ? null
-            : _filters.searchTerm.trim(),
-        city: _filters.city.trim().isEmpty ? null : _filters.city.trim(),
-        country:
-            _filters.country.trim().isEmpty ? null : _filters.country.trim(),
-        categoryId: _filters.categoryId,
-        minPrice: _filters.minPrice > 0 ? _filters.minPrice : null,
-        maxPrice: _filters.maxPriceValue < ExploreFilters.maxPrice
-            ? _filters.maxPriceValue
-            : null,
-        startDate: _filters.startDateIso,
-        endDate: _filters.endDateIso,
-        duration: _filters.durationDays > 0 ? _filters.durationDays : null,
-        sortBy: _filters.sortBy,
-      );
+      final result = await _searchPage(nextPage);
+      if (!mounted || requestVersion != _requestVersion) return;
       setState(() {
-        _tours = [..._tours, ...result.data];
+        final knownIds = _tours.map((tour) => tour.id).toSet();
+        _tours = [
+          ..._tours,
+          ...result.data.where((tour) => knownIds.add(tour.id)),
+        ];
+        _page = result.currentPage;
         _totalPages = result.totalPages;
+        _totalResults = result.total;
       });
+    } on ApiError catch (error) {
+      SnackbarHelper.error(error.message);
+    } catch (_) {
+      SnackbarHelper.error('Không tải thêm được tour');
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
+  Future<PaginationModel<TourModel>> _searchPage(int page) {
+    return _tourService.searchTours(
+      page: page,
+      searchTerm: _filters.searchTerm.trim().isEmpty
+          ? null
+          : _filters.searchTerm.trim(),
+      city: _filters.city.trim().isEmpty ? null : _filters.city.trim(),
+      country: _filters.country.trim().isEmpty ? null : _filters.country.trim(),
+      categoryId: _filters.categoryId,
+      minPrice: _filters.minPrice > 0 ? _filters.minPrice : null,
+      maxPrice: _filters.maxPriceValue < ExploreFilters.maxPrice
+          ? _filters.maxPriceValue
+          : null,
+      startDate: _filters.startDateIso,
+      endDate: _filters.endDateIso,
+      duration: _filters.durationDays > 0 ? _filters.durationDays : null,
+      sortBy: _filters.sortBy,
+    );
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    setState(() {});
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      _filters = _filters.copyWith(searchTerm: value.trim());
+      _runSearch(refresh: true);
+    });
+  }
+
   void _submitSearch() {
+    _searchDebounce?.cancel();
     _filters = _filters.copyWith(searchTerm: _searchController.text.trim());
+    FocusScope.of(context).unfocus();
+    _runSearch(refresh: true);
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    _filters = _filters.copyWith(searchTerm: '');
+    FocusScope.of(context).unfocus();
     _runSearch(refresh: true);
   }
 
@@ -192,28 +241,19 @@ class _ExploreTabState extends State<ExploreTab> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Khám phá tour'),
+        title: const Text('Khám phá'),
         actions: [
-          PopupMenuButton<String?>(
-            icon: const Icon(Icons.sort_rounded),
-            tooltip: 'Sắp xếp',
-            onSelected: (sort) {
-              setState(() {
-                _filters = _filters.copyWith(
-                  sortBy: sort,
-                  clearSort: sort == null,
-                );
-              });
-              _runSearch(refresh: true);
-            },
-            itemBuilder: (_) => exploreSortOptions.entries
-                .map(
-                  (e) => PopupMenuItem(
-                    value: e.key,
-                    child: Text(e.value),
-                  ),
-                )
-                .toList(),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton.filledTonal(
+              onPressed: _openFilters,
+              tooltip: 'Bộ lọc',
+              icon: Badge(
+                isLabelVisible: filterBadge > 0,
+                label: Text('$filterBadge'),
+                child: const Icon(Icons.tune_rounded),
+              ),
+            ),
           ),
         ],
       ),
@@ -232,50 +272,100 @@ class _ExploreTabState extends State<ExploreTab> {
             ShellLayout.bottomInset(context),
           ),
           children: [
-            IosSurfaceCard(
-              margin: EdgeInsets.zero,
+            Text(
+              'Chuyến đi tiếp theo\nđang chờ bạn',
+              style: AppTextStyles.textTheme.headlineLarge?.copyWith(
+                color: AppColors.navy,
+                height: 1.12,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tìm điểm đến phù hợp với lịch trình và ngân sách của bạn.',
+              style: AppTextStyles.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.navy.withValues(alpha: 0.08),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
+                  const SizedBox(width: 8),
+                  const Icon(Icons.search_rounded, color: AppColors.brand),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
                       decoration: const InputDecoration(
-                        hintText: 'Tìm tour, điểm đến...',
-                        prefixIcon: Icon(Icons.search_rounded),
+                        hintText: 'Bạn muốn đi đâu?',
                         border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10),
                       ),
+                      textInputAction: TextInputAction.search,
+                      onChanged: _onSearchChanged,
                       onSubmitted: (_) => _submitSearch(),
                     ),
                   ),
-                  IconButton(
-                    onPressed: _openFilters,
-                    icon: Badge(
-                      isLabelVisible: filterBadge > 0,
-                      label: Text('$filterBadge'),
-                      child: const Icon(Icons.tune_rounded),
+                  if (_searchController.text.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Xóa từ khóa',
+                      onPressed: _clearSearch,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                  FilledButton(
-                    onPressed: _submitSearch,
-                    child: const Text('Tìm'),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        gradient: AppColors.brandGradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: _submitSearch,
+                        tooltip: 'Tìm kiếm',
+                        icon: const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
             if (_categories.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 18),
               SizedBox(
-                height: 40,
+                height: 42,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    FilterChip(
-                      label: const Text('Tất cả'),
+                    ChoiceChip(
+                      avatar: _filters.categoryId == null
+                          ? const Icon(Icons.apps_rounded, size: 17)
+                          : null,
+                      label: const Text('Tất cả tour'),
                       selected: _filters.categoryId == null,
                       onSelected: (_) {
                         setState(
-                          () => _filters =
-                              _filters.copyWith(clearCategory: true),
+                          () =>
+                              _filters = _filters.copyWith(clearCategory: true),
                         );
                         _runSearch(refresh: true);
                       },
@@ -283,7 +373,7 @@ class _ExploreTabState extends State<ExploreTab> {
                     ..._categories.map(
                       (c) => Padding(
                         padding: const EdgeInsets.only(left: 8),
-                        child: FilterChip(
+                        child: ChoiceChip(
                           label: Text(c.name),
                           selected: _filters.categoryId == c.id,
                           onSelected: (_) {
@@ -300,34 +390,135 @@ class _ExploreTabState extends State<ExploreTab> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            if (filterBadge > 0) ...[
+              const SizedBox(height: 12),
+              _ActiveFilterBar(
+                filters: _filters,
+                onClear: () {
+                  setState(() {
+                    _filters = ExploreFilters(
+                      searchTerm: _searchController.text.trim(),
+                    );
+                  });
+                  _runSearch(refresh: true);
+                },
+              ),
+            ],
+            const SizedBox(height: 22),
             if (_isLoading && _tours.isEmpty)
-              const LoadingWidget(message: 'Đang tải tour...')
+              const _TourListSkeleton()
+            else if (_errorMessage != null)
+              EmptyStateWidget(
+                icon: Icons.cloud_off_rounded,
+                title: 'Không tải được tour',
+                subtitle: _errorMessage,
+                onRetry: () => _runSearch(refresh: true),
+              )
             else if (_tours.isEmpty)
               const EmptyStateWidget(
+                icon: Icons.travel_explore_rounded,
                 title: 'Không tìm thấy tour',
                 subtitle: 'Thử đổi bộ lọc hoặc từ khóa khác',
               )
             else ...[
-              Text(
-                '${_tours.length} tour',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              ..._tours.map(
-                (tour) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: TourCard(
-                    tour: tour,
-                    onTap: () => Get.toNamed(
-                      AppRoutes.tourDetail,
-                      arguments: tour.id,
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tour dành cho bạn',
+                          style: AppTextStyles.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$_totalResults lựa chọn phù hợp',
+                          style: AppTextStyles.textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  PopupMenuButton<String?>(
+                    tooltip: 'Sắp xếp',
+                    onSelected: (sort) {
+                      setState(() {
+                        _filters = _filters.copyWith(
+                          sortBy: sort,
+                          clearSort: sort == null,
+                        );
+                      });
+                      _runSearch(refresh: true);
+                    },
+                    itemBuilder: (_) => exploreSortOptions.entries
+                        .map(
+                          (entry) => PopupMenuItem(
+                            value: entry.key,
+                            child: Row(
+                              children: [
+                                if (_filters.sortBy == entry.key)
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    size: 18,
+                                    color: AppColors.brand,
+                                  )
+                                else
+                                  const SizedBox(width: 18),
+                                const SizedBox(width: 8),
+                                Text(entry.value),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.swap_vert_rounded, size: 18),
+                          SizedBox(width: 5),
+                          Text('Sắp xếp'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 14),
+              ..._tours.asMap().entries.map(
+                    (entry) => TweenAnimationBuilder<double>(
+                      key: ValueKey(entry.value.id),
+                      duration: Duration(
+                        milliseconds: 260 + (entry.key.clamp(0, 5) * 45),
+                      ),
+                      tween: Tween(begin: 0, end: 1),
+                      builder: (context, value, child) => Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(0, 14 * (1 - value)),
+                          child: child,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: TourCard(
+                          tour: entry.value,
+                          onTap: () => Get.toNamed(
+                            AppRoutes.tourDetail,
+                            arguments: entry.value.id,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               if (_isLoadingMore)
                 const Padding(
                   padding: EdgeInsets.all(16),
@@ -337,7 +528,8 @@ class _ExploreTabState extends State<ExploreTab> {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Icon(Icons.auto_awesome, size: 20, color: AppColors.brand),
+                const Icon(Icons.auto_awesome,
+                    size: 20, color: AppColors.brand),
                 const SizedBox(width: 8),
                 Text('Gợi ý từ AI',
                     style: Theme.of(context).textTheme.titleMedium),
@@ -395,6 +587,81 @@ class _ExploreTabState extends State<ExploreTab> {
               );
             }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveFilterBar extends StatelessWidget {
+  const _ActiveFilterBar({
+    required this.filters,
+    required this.onClear,
+  });
+
+  final ExploreFilters filters;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppColors.brandLight,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.tune_rounded, size: 18, color: AppColors.brand),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${filters.activeFilterCount} bộ lọc đang áp dụng',
+              style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                color: AppColors.brandDeep,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              child: Text(
+                'Xóa',
+                style: TextStyle(
+                  color: AppColors.brand,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TourListSkeleton extends StatelessWidget {
+  const _TourListSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(
+        2,
+        (index) => Container(
+          height: 310,
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.card,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
         ),
       ),
     );

@@ -11,6 +11,8 @@ class TourModel {
   final String? imageUrl;
   final String? status;
   final double? averageStar;
+  final int? startingPrice;
+  final DateTime? nextDeparture;
 
   TourModel({
     required this.id,
@@ -23,9 +25,60 @@ class TourModel {
     this.imageUrl,
     this.status,
     this.averageStar,
+    this.startingPrice,
+    this.nextDeparture,
   });
 
   factory TourModel.fromJson(Map<String, dynamic> json) {
+    final schedules = JsonUtils.readMapList(
+      JsonUtils.pick(json, ['tourSchedules', 'TourSchedules']),
+    );
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int? startingPrice;
+    DateTime? nextDeparture;
+
+    for (final schedule in schedules) {
+      final departure = JsonUtils.readDateTime(
+        JsonUtils.pick(schedule, ['departureDate', 'DepartureDate']),
+      );
+      if (departure == null || departure.isBefore(today)) continue;
+
+      final tickets = JsonUtils.readMapList(
+        JsonUtils.pick(
+          schedule,
+          ['tourScheduleTickets', 'TourScheduleTickets'],
+        ),
+      );
+      var hasAvailableTicket = false;
+      for (final ticket in tickets) {
+        final isActive = JsonUtils.readBool(
+          JsonUtils.pick(ticket, ['isActive', 'IsActive']),
+          fallback: true,
+        );
+        final available = JsonUtils.readInt(
+          JsonUtils.pick(
+            ticket,
+            ['availableQuantity', 'AvailableQuantity'],
+          ),
+        );
+        if (!isActive || available <= 0) continue;
+
+        hasAvailableTicket = true;
+        final price = JsonUtils.readInt(
+          JsonUtils.pick(ticket, ['price', 'Price']),
+        );
+        if (startingPrice == null || price < startingPrice) {
+          startingPrice = price;
+        }
+      }
+
+      if (hasAvailableTicket &&
+          (nextDeparture == null || departure.isBefore(nextDeparture))) {
+        nextDeparture = departure;
+      }
+    }
+
     return TourModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
       categoryId: (json['categoryId'] as num?)?.toInt() ?? 0,
@@ -37,12 +90,14 @@ class TourModel {
       imageUrl: json['imageUrl'] as String?,
       status: json['status'] as String?,
       averageStar: (json['averageStar'] as num?)?.toDouble(),
+      startingPrice: startingPrice,
+      nextDeparture: nextDeparture,
     );
   }
 
   String get locationLabel {
     final parts = [city, country].where((e) => e != null && e.isNotEmpty);
-    return parts.isEmpty ? '—' : parts.join(', ');
+    return parts.isEmpty ? 'Chưa cập nhật' : parts.join(', ');
   }
 }
 

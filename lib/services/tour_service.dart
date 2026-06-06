@@ -5,6 +5,16 @@ import '../models/tour_model.dart';
 import '../utils/json_utils.dart';
 import 'base_service.dart';
 
+class TourDetailResult {
+  const TourDetailResult({
+    required this.tour,
+    required this.schedules,
+  });
+
+  final TourModel tour;
+  final List<TourScheduleModel> schedules;
+}
+
 class TourService extends GetxService with BaseServiceMixin {
   Future<PaginationModel<TourModel>> getPublicTours({
     int page = 1,
@@ -56,41 +66,29 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<TourModel> getPublicTourDetail(int id) async {
+  Future<TourDetailResult> getPublicTourDetail(int id) async {
     return request(() async {
       final response = await api.dio.get('${ApiConstants.tours}/public/$id');
-      return parseData(response.data, TourModel.fromJson);
-    });
-  }
+      final map = JsonUtils.extractDataMap(response.data);
+      if (map == null) {
+        throw StateError('Unexpected tour detail response');
+      }
 
-  Future<List<TourScheduleModel>> getSchedulesByTour(int tourId) async {
-    return request(() async {
-      // Ưu tiên lịch nhúng trong GET /api/tours/public/{id}
-      try {
-        final detail = await api.dio.get(
-          '${ApiConstants.tours}/public/$tourId',
-        );
-        final map = JsonUtils.extractDataMap(detail.data);
-        if (map != null) {
-          final embedded = JsonUtils.readMapList(
-            JsonUtils.pick(map, ['tourSchedules', 'TourSchedules']),
-          );
-          if (embedded.isNotEmpty) {
-            return embedded.map(TourScheduleModel.fromJson).toList();
-          }
-        }
-      } catch (_) {}
+      final schedules = JsonUtils.readMapList(
+        JsonUtils.pick(map, ['tourSchedules', 'TourSchedules']),
+      ).map(TourScheduleModel.fromJson).toList()
+        ..sort((a, b) => a.departureDate.compareTo(b.departureDate));
 
-      final response = await api.dio.get(ApiConstants.tourSchedules);
-      final all = parseList(response.data, TourScheduleModel.fromJson);
-      return all.where((s) => s.tourId == tourId).toList();
+      return TourDetailResult(
+        tour: TourModel.fromJson(map),
+        schedules: schedules,
+      );
     });
   }
 
   Future<TourScheduleModel> getScheduleDetail(int id) async {
     return request(() async {
-      final response =
-          await api.dio.get('${ApiConstants.tourSchedules}/$id');
+      final response = await api.dio.get('${ApiConstants.tourSchedules}/$id');
       return parseData(response.data, TourScheduleModel.fromJson);
     });
   }
