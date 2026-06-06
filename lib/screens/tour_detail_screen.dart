@@ -54,6 +54,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       ever(_reviewController.reviews, (_) => refresh()),
       ever(_reviewController.myReview, (_) => refresh()),
       ever(_wishlistController.items, (_) => refresh()),
+      ever(_wishlistController.processingTourIds, (_) => refresh()),
     ]);
 
     if (_tourId != null) {
@@ -79,9 +80,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
 
   bool _scheduleAvailable(TourScheduleModel s) {
     if (s.tickets.isEmpty) return true;
-    return s.tickets.any(
-      (t) => t.isActive != false && t.availableQuantity > 0,
-    );
+    return s.tickets.any((t) => t.isActive != false && t.availableQuantity > 0);
   }
 
   int? _scheduleMinPrice(TourScheduleModel s) {
@@ -177,15 +176,24 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
             builder: (context) {
               final tour = _tourController.selectedTour.value!;
               final inWishlist = _isInWishlist(tour.id);
+              final busy = _wishlistController.isProcessing(tour.id);
               return IconButton(
-                icon: Icon(
-                  inWishlist ? Icons.favorite : Icons.favorite_border,
-                  color: inWishlist ? Colors.red : null,
-                ),
-                onPressed: () => _wishlistController.toggleWishlist(
-                  tour.id,
-                  isInWishlist: inWishlist,
-                ),
+                icon: busy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        inWishlist ? Icons.favorite : Icons.favorite_border,
+                        color: inWishlist ? AppColors.error : null,
+                      ),
+                onPressed: busy
+                    ? null
+                    : () => _wishlistController.toggleWishlist(
+                          tour.id,
+                          isInWishlist: inWishlist,
+                        ),
               );
             },
           ),
@@ -208,174 +216,156 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       return const Center(child: Text('Không tìm thấy tour'));
     }
     return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHero(tour),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildQuickInfo(),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Tổng quan',
-                      style: AppTextStyles.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      tour.description ?? 'Chưa có mô tả',
-                      style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Bao gồm trong tour',
-                      style: AppTextStyles.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHighlights(),
-                    if (_itineraries.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        'Lịch trình tour',
-                        style: AppTextStyles.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildItineraryTimeline(),
-                    ],
-                    const SizedBox(height: 24),
-                    Text(
-                      'Lịch khởi hành',
-                      style: AppTextStyles.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    if (_tourController.detailSchedules.isEmpty)
-                      const Text('Chưa có lịch trình mở bán')
-                    else ...[
-                      Text(
-                        'Chọn ngày khởi hành để tiếp tục đặt tour',
-                        style: AppTextStyles.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Column(
-                        children:
-                            _tourController.detailSchedules.map((s) {
-                          final available = _scheduleAvailable(s);
-                          final minPrice = _scheduleMinPrice(s);
-                          final selected = _selectedSchedule?.id == s.id;
-                          return IosPickRow(
-                            key: ValueKey('schedule-${s.id}'),
-                            selected: selected,
-                            leading: Icon(
-                              Icons.calendar_month,
-                              color: available
-                                  ? AppColors.brand
-                                  : AppColors.textSecondary,
-                            ),
-                            title: Text(
-                              '${s.departureDate.toString().substring(0, 10)} → '
-                              '${s.returnDate.toString().substring(0, 10)}',
-                            ),
-                            subtitle: minPrice != null
-                                ? Text(
-                                    'Từ ${CurrencyFormatter.format(minPrice)}',
-                                  )
-                                : Text(
-                                    available
-                                        ? 'Chọn lịch này'
-                                        : 'Đã hết chỗ',
-                                  ),
-                            trailing: selected
-                                ? const Icon(Icons.check_circle,
-                                    color: AppColors.brand)
-                                : null,
-                            onTap: available
-                                ? () => _selectSchedule(s)
-                                : null,
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    Text(
-                      'Đánh giá',
-                      style: AppTextStyles.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    if (_reviewController.myReview.value != null)
-                      OutlinedButton.icon(
-                        onPressed: () => _showReviewDialog(
-                          tour.id,
-                          existing: _reviewController.myReview.value,
-                        ),
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Sửa đánh giá của tôi'),
-                      )
-                    else
-                      OutlinedButton.icon(
-                        onPressed: () => _showReviewDialog(tour.id),
-                        icon: const Icon(Icons.rate_review_outlined),
-                        label: const Text('Viết đánh giá'),
-                      ),
-                    const SizedBox(height: 8),
-                    if (_reviewController.reviews.isEmpty)
-                      const Text('Chưa có đánh giá')
-                    else
-                      ..._reviewController.reviews.map(
-                        (r) => IosSurfaceCard(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 88,
-                                child: Row(
-                                  children: List.generate(
-                                    5,
-                                    (i) => Icon(
-                                      i < r.rating
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      size: 14,
-                                      color: Colors.amber,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      r.customerName ?? 'Khách',
-                                      style: AppTextStyles
-                                          .textTheme.titleSmall,
-                                    ),
-                                    if (r.comment != null &&
-                                        r.comment!.isNotEmpty)
-                                      Text(
-                                        r.comment!,
-                                        style: AppTextStyles
-                                            .textTheme.bodySmall,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHero(tour),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildQuickInfo(),
+                const SizedBox(height: 20),
+                Text('Tổng quan', style: AppTextStyles.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text(
+                  tour.description ?? 'Chưa có mô tả',
+                  style: AppTextStyles.textTheme.bodyMedium?.copyWith(
+                    height: 1.5,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Text(
+                  'Bao gồm trong tour',
+                  style: AppTextStyles.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                _buildHighlights(),
+                if (_itineraries.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Lịch trình tour',
+                    style: AppTextStyles.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildItineraryTimeline(),
+                ],
+                const SizedBox(height: 24),
+                Text(
+                  'Lịch khởi hành',
+                  style: AppTextStyles.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                if (_tourController.detailSchedules.isEmpty)
+                  const Text('Chưa có lịch trình mở bán')
+                else ...[
+                  Text(
+                    'Chọn ngày khởi hành để tiếp tục đặt tour',
+                    style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Column(
+                    children: _tourController.detailSchedules.map((s) {
+                      final available = _scheduleAvailable(s);
+                      final minPrice = _scheduleMinPrice(s);
+                      final selected = _selectedSchedule?.id == s.id;
+                      return IosPickRow(
+                        key: ValueKey('schedule-${s.id}'),
+                        selected: selected,
+                        leading: Icon(
+                          Icons.calendar_month,
+                          color: available
+                              ? AppColors.brand
+                              : AppColors.textSecondary,
+                        ),
+                        title: Text(
+                          '${s.departureDate.toString().substring(0, 10)} → '
+                          '${s.returnDate.toString().substring(0, 10)}',
+                        ),
+                        subtitle: minPrice != null
+                            ? Text('Từ ${CurrencyFormatter.format(minPrice)}')
+                            : Text(available ? 'Chọn lịch này' : 'Đã hết chỗ'),
+                        trailing: selected
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: AppColors.brand,
+                              )
+                            : null,
+                        onTap: available ? () => _selectSchedule(s) : null,
+                      );
+                    }).toList(),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Text('Đánh giá', style: AppTextStyles.textTheme.titleMedium),
+                const SizedBox(height: 8),
+                if (_reviewController.myReview.value != null)
+                  OutlinedButton.icon(
+                    onPressed: () => _showReviewDialog(
+                      tour.id,
+                      existing: _reviewController.myReview.value,
+                    ),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Sửa đánh giá của tôi'),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: () => _showReviewDialog(tour.id),
+                    icon: const Icon(Icons.rate_review_outlined),
+                    label: const Text('Viết đánh giá'),
+                  ),
+                const SizedBox(height: 8),
+                if (_reviewController.reviews.isEmpty)
+                  const Text('Chưa có đánh giá')
+                else
+                  ..._reviewController.reviews.map(
+                    (r) => IosSurfaceCard(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 88,
+                            child: Row(
+                              children: List.generate(
+                                5,
+                                (i) => Icon(
+                                  i < r.rating ? Icons.star : Icons.star_border,
+                                  size: 14,
+                                  color: Colors.amber,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  r.customerName ?? 'Khách',
+                                  style: AppTextStyles.textTheme.titleSmall,
+                                ),
+                                if (r.comment != null && r.comment!.isNotEmpty)
+                                  Text(
+                                    r.comment!,
+                                    style: AppTextStyles.textTheme.bodySmall,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        );
+        ],
+      ),
+    );
   }
 
   Widget _buildHero(tour) {
@@ -398,9 +388,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 )
               : _heroFallback(),
         ),
-        Positioned.fill(
+        const Positioned.fill(
           child: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -452,8 +442,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.place_rounded,
-                      size: 16, color: Colors.white70),
+                  const Icon(
+                    Icons.place_rounded,
+                    size: 16,
+                    color: Colors.white70,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -505,8 +498,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               ),
               child: Column(
                 children: [
-                  Icon(items[i][0] as IconData,
-                      color: AppColors.brand, size: 22),
+                  Icon(
+                    items[i][0] as IconData,
+                    color: AppColors.brand,
+                    size: 22,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     items[i][1] as String,
@@ -547,8 +543,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     color: AppColors.brandLight,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
-                  child: Icon(h[0] as IconData,
-                      color: AppColors.brand, size: 20),
+                  child: Icon(
+                    h[0] as IconData,
+                    color: AppColors.brand,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -557,8 +556,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     style: AppTextStyles.textTheme.bodyMedium,
                   ),
                 ),
-                const Icon(Icons.check_circle_rounded,
-                    color: AppColors.success, size: 18),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  size: 18,
+                ),
               ],
             ),
           ),
@@ -595,10 +597,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     ),
                     if (i < _itineraries.length - 1)
                       Expanded(
-                        child: Container(
-                          width: 2,
-                          color: AppColors.border,
-                        ),
+                        child: Container(width: 2, color: AppColors.border),
                       ),
                   ],
                 ),
@@ -634,8 +633,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   Widget _heroFallback() => Container(
         color: AppColors.brandLight,
         child: const Center(
-          child: Icon(Icons.landscape_rounded,
-              size: 64, color: AppColors.brand),
+          child:
+              Icon(Icons.landscape_rounded, size: 64, color: AppColors.brand),
         ),
       );
 
@@ -671,8 +670,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   }
 
   void _showReviewDialog(int tourId, {ReviewModel? existing}) {
-    final commentController =
-        TextEditingController(text: existing?.comment ?? '');
+    final commentController = TextEditingController(
+      text: existing?.comment ?? '',
+    );
     var rating = existing?.rating ?? 5;
     showDialog(
       context: context,

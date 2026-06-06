@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
+import '../../models/feature_models.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/date_formatter.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
@@ -54,9 +56,17 @@ class _VouchersScreenState extends State<VouchersScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _save,
-                  child: const Text('Lưu'),
+                Obx(
+                  () => FilledButton(
+                    onPressed: _controller.isSaving.value ? null : _save,
+                    child: _controller.isSaving.value
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Lưu'),
+                  ),
                 ),
               ],
             ),
@@ -105,11 +115,13 @@ class _VouchersScreenState extends State<VouchersScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final v = _controller.vouchers[index];
+        final statusLabel = _statusLabel(v.status, v.voucherStatus);
+        final discountText = _discountText(v);
         return IosSurfaceCard(
           margin: EdgeInsets.zero,
           padding: EdgeInsets.zero,
           child: ListTile(
-            leading: CircleAvatar(
+            leading: const CircleAvatar(
               backgroundColor: AppColors.brandLight,
               child: Icon(
                 Icons.percent_rounded,
@@ -121,20 +133,62 @@ class _VouchersScreenState extends State<VouchersScreen> {
               v.code,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: Text(v.description ?? v.status ?? ''),
-            trailing: v.discountValue != null
-                ? Text(
-                    '-${CurrencyFormatter.format(v.discountValue!)}',
-                    style: const TextStyle(
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : null,
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (v.description != null && v.description!.isNotEmpty)
+                    Text(v.description!),
+                  Text(
+                    [
+                      statusLabel,
+                      'Còn ${v.quantity} lượt',
+                      if (v.tourName != null && v.tourName!.isNotEmpty)
+                        v.tourName!,
+                      if (v.endDate != null)
+                        'HSD ${DateFormatter.display(v.endDate)}',
+                    ].join(' • '),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: v.isAvailable
+                              ? AppColors.textSecondary
+                              : AppColors.error,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            trailing: Text(
+              discountText,
+              style: const TextStyle(
+                color: AppColors.accent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         );
       },
     );
+  }
+
+  String _discountText(VoucherModel voucher) {
+    final value = voucher.discountValue ?? 0;
+    final type = voucher.discountType?.toLowerCase() ?? '';
+    if (type.contains('percent')) return '-$value%';
+    return '-${CurrencyFormatter.format(value)}';
+  }
+
+  String _statusLabel(String? userStatus, String? voucherStatus) {
+    final status = (userStatus?.isNotEmpty == true ? userStatus : voucherStatus)
+            ?.toLowerCase() ??
+        '';
+    return switch (status) {
+      'available' || 'active' => 'Có thể dùng',
+      'used' => 'Đã dùng',
+      'expired' => 'Hết hạn',
+      'inactive' => 'Tạm ngưng',
+      _ => 'Voucher',
+    };
   }
 
   Future<void> _save() async {
