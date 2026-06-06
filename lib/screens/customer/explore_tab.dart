@@ -29,6 +29,7 @@ class _ExploreTabState extends State<ExploreTab> {
   final _catalog = Get.find<CatalogService>();
   final _shell = Get.find<ShellController>();
   final _aiController = Get.find<AiController>();
+  final _wishlistController = Get.find<WishlistController>();
 
   ExploreFilters _filters = ExploreFilters();
   List<CategoryModel> _categories = [];
@@ -39,6 +40,8 @@ class _ExploreTabState extends State<ExploreTab> {
   var _isLoadingMore = false;
   Worker? _searchSeedWorker;
   Worker? _filterOpenWorker;
+  Worker? _wishlistWorker;
+  Worker? _wishlistProcessingWorker;
 
   @override
   void initState() {
@@ -63,6 +66,15 @@ class _ExploreTabState extends State<ExploreTab> {
         });
       }
     });
+    _wishlistWorker = ever(_wishlistController.items, (_) {
+      if (mounted) setState(() {});
+    });
+    _wishlistProcessingWorker = ever(_wishlistController.processingTourIds, (
+      _,
+    ) {
+      if (mounted) setState(() {});
+    });
+    _wishlistController.fetchWishlist();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final seed = _shell.exploreSearchTerm.value;
       if (seed != null && seed.isNotEmpty) {
@@ -79,6 +91,8 @@ class _ExploreTabState extends State<ExploreTab> {
   void dispose() {
     _searchSeedWorker?.dispose();
     _filterOpenWorker?.dispose();
+    _wishlistWorker?.dispose();
+    _wishlistProcessingWorker?.dispose();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -207,12 +221,7 @@ class _ExploreTabState extends State<ExploreTab> {
               _runSearch(refresh: true);
             },
             itemBuilder: (_) => exploreSortOptions.entries
-                .map(
-                  (e) => PopupMenuItem(
-                    value: e.key,
-                    child: Text(e.value),
-                  ),
-                )
+                .map((e) => PopupMenuItem(value: e.key, child: Text(e.value)))
                 .toList(),
           ),
         ],
@@ -274,8 +283,8 @@ class _ExploreTabState extends State<ExploreTab> {
                       selected: _filters.categoryId == null,
                       onSelected: (_) {
                         setState(
-                          () => _filters =
-                              _filters.copyWith(clearCategory: true),
+                          () =>
+                              _filters = _filters.copyWith(clearCategory: true),
                         );
                         _runSearch(refresh: true);
                       },
@@ -288,8 +297,9 @@ class _ExploreTabState extends State<ExploreTab> {
                           selected: _filters.categoryId == c.id,
                           onSelected: (_) {
                             setState(
-                              () => _filters =
-                                  _filters.copyWith(categoryId: c.id),
+                              () => _filters = _filters.copyWith(
+                                categoryId: c.id,
+                              ),
                             );
                             _runSearch(refresh: true);
                           },
@@ -316,18 +326,23 @@ class _ExploreTabState extends State<ExploreTab> {
                     ),
               ),
               const SizedBox(height: 8),
-              ..._tours.map(
-                (tour) => Padding(
+              ..._tours.map((tour) {
+                final inWishlist = _wishlistController.containsTour(tour.id);
+                return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: TourCard(
                     tour: tour,
-                    onTap: () => Get.toNamed(
-                      AppRoutes.tourDetail,
-                      arguments: tour.id,
+                    isInWishlist: inWishlist,
+                    wishlistBusy: _wishlistController.isProcessing(tour.id),
+                    onWishlistTap: () => _wishlistController.toggleWishlist(
+                      tour.id,
+                      isInWishlist: inWishlist,
                     ),
+                    onTap: () =>
+                        Get.toNamed(AppRoutes.tourDetail, arguments: tour.id),
                   ),
-                ),
-              ),
+                );
+              }),
               if (_isLoadingMore)
                 const Padding(
                   padding: EdgeInsets.all(16),
@@ -337,10 +352,16 @@ class _ExploreTabState extends State<ExploreTab> {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Icon(Icons.auto_awesome, size: 20, color: AppColors.brand),
+                const Icon(
+                  Icons.auto_awesome,
+                  size: 20,
+                  color: AppColors.brand,
+                ),
                 const SizedBox(width: 8),
-                Text('Gợi ý từ AI',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Gợi ý từ AI',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 TextButton(
                   onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),

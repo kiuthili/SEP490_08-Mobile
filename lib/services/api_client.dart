@@ -31,13 +31,23 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           final token = _storage.accessToken;
-          if (token != null && token.isNotEmpty) {
+          if (token != null && token.isNotEmpty && _shouldAttachAuth(options)) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           handler.next(options);
         },
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401 &&
+          var currentError = error;
+          try {
+            final redirect = await _tryFollowPreservedRedirect(currentError);
+            if (redirect != null) {
+              return handler.resolve(redirect);
+            }
+          } on DioException catch (redirectError) {
+            currentError = redirectError;
+          }
+
+          if (currentError.response?.statusCode == 401 &&
               !_isRefreshing &&
               _storage.refreshToken != null) {
             try {
@@ -45,7 +55,7 @@ class ApiClient {
               final refreshed = await _tryRefreshToken();
               _isRefreshing = false;
               if (refreshed) {
-                final opts = error.requestOptions;
+                final opts = currentError.requestOptions;
                 opts.headers['Authorization'] =
                     'Bearer ${_storage.accessToken}';
                 final clone = await dio.fetch(opts);
@@ -57,23 +67,80 @@ class ApiClient {
             await _storage.clearSession();
             Get.offAllNamed(AppRoutes.login);
           }
-          handler.next(error);
+          handler.next(currentError);
         },
       ),
     );
   }
 
-  void _configureLocalDevCertificates() {
-    final apiUri = Uri.tryParse(ApiConstants.baseUrl);
-    if (apiUri?.scheme != 'https') return;
+  bool _shouldAttachAuth(RequestOptions options) {
+    final path = options.path.toLowerCase();
+    final uri = Uri.tryParse(path);
+    final normalizedPath = uri?.path.toLowerCase() ?? path;
+    const publicAuthPaths = {
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/google-login',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password',
+      '/api/auth/refresh-token',
+    };
+    return !publicAuthPaths.contains(normalizedPath);
+  }
 
+  Future<Response<dynamic>?> _tryFollowPreservedRedirect(
+    DioException error,
+  ) async {
+    final status = error.response?.statusCode;
+    if (status != 307 && status != 308) return null;
+
+    final rawLocation = error.response?.headers.value('location');
+    if (rawLocation == null || rawLocation.isEmpty) return null;
+
+    final current = error.requestOptions.uri;
+    final target = current.resolve(rawLocation);
+    if (!_isAllowedLocalRedirect(current, target)) return null;
+
+    final redirectCount =
+        (error.requestOptions.extra['redirectCount'] as int?)?.clamp(0, 10) ??
+            0;
+    if (redirectCount >= 3) return null;
+
+    final normalizedTarget = _normalizeLocalRedirectHost(current, target);
+    final opts = error.requestOptions.copyWith(
+      baseUrl: '',
+      path: normalizedTarget.toString(),
+      queryParameters: const {},
+      extra: {
+        ...error.requestOptions.extra,
+        'redirectCount': redirectCount + 1,
+      },
+    );
+
+    return dio.fetch<dynamic>(opts);
+  }
+
+  bool _isAllowedLocalRedirect(Uri current, Uri target) {
+    if (current.scheme != 'http' || target.scheme != 'https') return false;
+    if (!_isLocalDevHost(current.host) || !_isLocalDevHost(target.host)) {
+      return false;
+    }
+    return current.path == target.path;
+  }
+
+  Uri _normalizeLocalRedirectHost(Uri current, Uri target) {
+    if (target.host == 'localhost' || target.host == '127.0.0.1') {
+      return target.replace(host: current.host);
+    }
+    return target;
+  }
+
+  void _configureLocalDevCertificates() {
     dio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () {
         return HttpClient()
           ..badCertificateCallback = (_, host, port) {
-            return host == apiUri?.host &&
-                port == apiUri?.port &&
-                _isLocalDevHost(host);
+            return _isLocalDevHost(host);
           };
       },
     );

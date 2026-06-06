@@ -18,6 +18,7 @@ class CustomTextField extends StatefulWidget {
   final int maxLines;
   final List<TextInputFormatter>? inputFormatters;
   final TextInputAction? textInputAction;
+  final TextCapitalization textCapitalization;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final bool enabled;
@@ -36,6 +37,7 @@ class CustomTextField extends StatefulWidget {
     this.maxLines = 1,
     this.inputFormatters,
     this.textInputAction,
+    this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.onSubmitted,
     this.enabled = true,
@@ -60,9 +62,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
     if (widget.obscureText) {
       suffix = IconButton(
         icon: Icon(
-          _obscured
-              ? Icons.visibility_off_rounded
-              : Icons.visibility_rounded,
+          _obscured ? Icons.visibility_off_rounded : Icons.visibility_rounded,
           size: 20,
           color: AppColors.textSecondary,
         ),
@@ -91,6 +91,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           maxLines: widget.obscureText ? 1 : widget.maxLines,
           inputFormatters: widget.inputFormatters,
           textInputAction: widget.textInputAction,
+          textCapitalization: widget.textCapitalization,
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onSubmitted,
           autovalidateMode: AutovalidateMode.onUserInteraction,

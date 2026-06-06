@@ -9,8 +9,18 @@ import '../theme/app_text_styles.dart';
 class TourCard extends StatelessWidget {
   final TourModel tour;
   final VoidCallback onTap;
+  final bool? isInWishlist;
+  final bool wishlistBusy;
+  final VoidCallback? onWishlistTap;
 
-  const TourCard({super.key, required this.tour, required this.onTap});
+  const TourCard({
+    super.key,
+    required this.tour,
+    required this.onTap,
+    this.isInWishlist,
+    this.wishlistBusy = false,
+    this.onWishlistTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,22 +40,69 @@ class TourCard extends StatelessWidget {
                 ),
                 child: AspectRatio(
                   aspectRatio: 16 / 10,
-                  child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: tour.imageUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => ColoredBox(
-                            color: AppColors.brandLight,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.brand.withValues(alpha: 0.5),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child:
+                            tour.imageUrl != null && tour.imageUrl!.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: tour.imageUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => ColoredBox(
+                                  color: AppColors.brandLight,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.brand.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (_, __, ___) =>
+                                    _placeholderImage(),
+                              )
+                            : _placeholderImage(),
+                      ),
+                      if (isInWishlist != null && onWishlistTap != null)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Material(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            shape: const CircleBorder(),
+                            elevation: 2,
+                            child: SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                tooltip: isInWishlist!
+                                    ? 'Xóa khỏi wishlist'
+                                    : 'Thêm vào wishlist',
+                                icon: wishlistBusy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Icon(
+                                        isInWishlist!
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: isInWishlist!
+                                            ? AppColors.error
+                                            : AppColors.textSecondary,
+                                      ),
+                                onPressed: wishlistBusy ? null : onWishlistTap,
                               ),
                             ),
                           ),
-                          errorWidget: (_, __, ___) => _placeholderImage(),
-                        )
-                      : _placeholderImage(),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
@@ -99,9 +156,9 @@ class TourCard extends StatelessWidget {
                                   tour.averageStar!.toStringAsFixed(1),
                                   style: AppTextStyles.textTheme.labelMedium
                                       ?.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ],
                             ),

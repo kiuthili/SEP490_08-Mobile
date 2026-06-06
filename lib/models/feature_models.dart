@@ -38,26 +38,56 @@ class NotificationModel {
 
 class VoucherModel {
   final int id;
+  final int voucherId;
+  final int? tourId;
+  final String? tourName;
   final String code;
   final String? description;
   final int? discountValue;
   final String? discountType;
+  final int? maxDiscountAmount;
   final String? status;
+  final String? voucherStatus;
+  final int quantity;
+  final bool isActive;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final DateTime? expiryDate;
 
   VoucherModel({
     required this.id,
+    required this.voucherId,
+    this.tourId,
+    this.tourName,
     required this.code,
     this.description,
     this.discountValue,
     this.discountType,
+    this.maxDiscountAmount,
     this.status,
+    this.voucherStatus,
+    required this.quantity,
+    required this.isActive,
+    this.startDate,
+    this.endDate,
     this.expiryDate,
   });
 
   factory VoucherModel.fromJson(Map<String, dynamic> json) => VoucherModel(
         id: JsonUtils.readInt(
-          JsonUtils.pick(json, ['id', 'voucherId']),
+          JsonUtils.pick(json, ['userVoucherId', 'id']),
+        ),
+        voucherId: JsonUtils.readInt(
+          JsonUtils.pick(json, ['voucherId', 'id']),
+        ),
+        tourId: () {
+          final v = JsonUtils.pick(json, ['tourId', 'TourId']);
+          if (v == null) return null;
+          final id = JsonUtils.readInt(v);
+          return id > 0 ? id : null;
+        }(),
+        tourName: JsonUtils.readString(
+          JsonUtils.pick(json, ['tourName', 'TourName']),
         ),
         code: JsonUtils.readString(json['code']) ?? '',
         description: JsonUtils.readString(json['description']),
@@ -67,9 +97,29 @@ class VoucherModel {
           return JsonUtils.readInt(v);
         }(),
         discountType: JsonUtils.readString(json['discountType']),
+        maxDiscountAmount: () {
+          final v = JsonUtils.pick(json, ['maxDiscountAmount']);
+          if (v == null) return null;
+          return JsonUtils.readInt(v);
+        }(),
         status: JsonUtils.readString(json['status']),
-        expiryDate: JsonUtils.readDateTime(json['expiryDate']),
+        voucherStatus: JsonUtils.readString(json['voucherStatus']),
+        quantity: JsonUtils.readInt(json['quantity'], fallback: 1),
+        isActive: JsonUtils.readBool(json['isActive'], fallback: true),
+        startDate: JsonUtils.readDateTime(json['startDate']),
+        endDate: JsonUtils.readDateTime(json['endDate']),
+        expiryDate: JsonUtils.readDateTime(
+          JsonUtils.pick(json, ['expiryDate', 'endDate']),
+        ),
       );
+
+  bool get isAvailable =>
+      isActive &&
+      quantity > 0 &&
+      (status ?? '').toLowerCase() == 'available' &&
+      (voucherStatus == null ||
+          voucherStatus!.isEmpty ||
+          voucherStatus!.toLowerCase() == 'active');
 }
 
 class ReviewModel {
@@ -351,9 +401,7 @@ class MomentModel {
       commentCount: JsonUtils.readInt(
         JsonUtils.pick(json, ['commentCount', 'commentsCount']),
       ),
-      comments: rawComments
-          .map(MomentCommentModel.fromJson)
-          .toList(),
+      comments: rawComments.map(MomentCommentModel.fromJson).toList(),
     );
   }
 }
