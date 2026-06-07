@@ -4,8 +4,10 @@ import '../models/auth_models.dart';
 import '../models/user_model.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
+import '../services/signalr_service.dart';
 import '../services/storage_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'feature_controllers.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -99,6 +101,12 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    if (Get.isRegistered<SignalRService>()) {
+      await Get.find<SignalRService>().disconnectChat();
+    }
+    if (Get.isRegistered<SocialController>()) {
+      Get.find<SocialController>().clearSocialState();
+    }
     await _authService.logout();
     currentUser.value = null;
     Get.offAllNamed(AppRoutes.login);

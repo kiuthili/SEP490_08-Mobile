@@ -86,10 +86,32 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<TourScheduleModel> getScheduleDetail(int id) async {
+  Future<TourScheduleModel> getScheduleById(int id) async {
     return request(() async {
       final response = await api.dio.get('${ApiConstants.tourSchedules}/$id');
       return parseData(response.data, TourScheduleModel.fromJson);
+    });
+  }
+
+  Future<TourScheduleModel> getScheduleDetail(int id) => getScheduleById(id);
+
+  Future<List<TourScheduleItineraryModel>> getScheduleItineraries(
+    int scheduleId,
+  ) async {
+    return request(() async {
+      final response = await api.dio.get(
+        '${ApiConstants.tourScheduleItineraries}/schedule/$scheduleId',
+      );
+      final itineraries = parseList(
+        response.data,
+        TourScheduleItineraryModel.fromJson,
+      );
+      itineraries.sort((a, b) {
+        final byDay = a.dayNumber.compareTo(b.dayNumber);
+        if (byDay != 0) return byDay;
+        return (a.startDuration ?? '').compareTo(b.startDuration ?? '');
+      });
+      return itineraries;
     });
   }
 

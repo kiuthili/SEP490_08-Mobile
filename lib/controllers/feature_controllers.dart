@@ -447,9 +447,24 @@ class SocialController extends GetxController {
   final chatRooms = <ChatRoomModel>[].obs;
   final groupChatRooms = <ChatRoomModel>[].obs;
   final isLoading = false.obs;
+  final isChatLoading = false.obs;
 
   List<ChatRoomModel> get tourGroupChats =>
       chatRooms.where((r) => r.isGroup && r.scheduleId != null).toList();
+
+  List<ChatRoomModel> get directChats =>
+      chatRooms.where((r) => !r.isGroup).toList();
+
+  void clearSocialState() {
+    friends.clear();
+    pendingRequests.clear();
+    searchResults.clear();
+    moments.clear();
+    chatRooms.clear();
+    groupChatRooms.clear();
+    isLoading.value = false;
+    isChatLoading.value = false;
+  }
 
   Future<void> searchUsers(String query) async {
     if (query.trim().isEmpty) return;
@@ -606,10 +621,13 @@ class SocialController extends GetxController {
   }
 
   Future<void> fetchChatRooms() async {
+    isChatLoading.value = true;
     try {
       chatRooms.assignAll(await _service.getChatRooms());
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+    } finally {
+      isChatLoading.value = false;
     }
   }
 

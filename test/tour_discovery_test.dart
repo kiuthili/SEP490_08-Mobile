@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stayhub_mobile/models/explore_filters.dart';
+import 'package:stayhub_mobile/models/feature_models.dart';
 import 'package:stayhub_mobile/models/tour_model.dart';
 import 'package:stayhub_mobile/services/catalog_service.dart';
+import 'package:stayhub_mobile/utils/text_encoding.dart';
 
 void main() {
   test('tour list metadata uses available future tickets', () {
@@ -113,5 +115,103 @@ void main() {
     expect(heritage.name, 'Hoi An Ancient Town');
     expect(heritage.locationLabel, 'Minh An Ward, Hoi An, Vietnam');
     expect(heritage.imageUrl, 'https://example.com/hoi-an.jpg');
+  });
+
+  test('chat room parses SocialAPI room contract', () {
+    final room = ChatRoomModel.fromJson({
+      'id': 21,
+      'roomName': 'Da Nang Summer Group',
+      'isGroupChat': true,
+      'scheduleId': 88,
+      'avatarUrl': 'https://example.com/group.jpg',
+      'latestMessage': 'See you at the airport',
+      'latestMessageTime': '2026-06-07T08:30:00Z',
+      'isPinned': true,
+      'isMuted': false,
+    });
+
+    expect(room.name, 'Da Nang Summer Group');
+    expect(room.isGroup, isTrue);
+    expect(room.scheduleId, 88);
+    expect(room.lastMessage, 'See you at the airport');
+    expect(room.lastMessageAt, isNotNull);
+    expect(room.isPinned, isTrue);
+  });
+
+  test('chat message parses SignalR payload contract', () {
+    final message = ChatMessageModel.fromJson({
+      'id': 31,
+      'chatRoomId': 21,
+      'senderId': 9,
+      'senderName': 'Minh Anh',
+      'senderAvatar': 'https://example.com/avatar.jpg',
+      'content': 'Hello everyone',
+      'isRead': false,
+      'sentAt': '2026-06-07T08:35:00Z',
+    });
+
+    expect(message.chatRoomId, 21);
+    expect(message.senderName, 'Minh Anh');
+    expect(message.senderAvatar, 'https://example.com/avatar.jpg');
+    expect(message.content, 'Hello everyone');
+  });
+
+  test('chat repairs UTF-8 text decoded as Windows-1252', () {
+    expect(
+      TextEncoding.repairMojibake('cÃ³ ai á»Ÿ Ä‘Ã³ k'),
+      'có ai ở đó k',
+    );
+  });
+
+  test('chat keeps valid Vietnamese text unchanged', () {
+    const text = 'Có ai ở đó không?';
+    expect(TextEncoding.repairMojibake(text), text);
+  });
+
+  test('tour schedule parses group chat identification details', () {
+    final schedule = TourScheduleModel.fromJson({
+      'id': 88,
+      'tourId': 7,
+      'departureDate': '2026-07-10T08:00:00',
+      'returnDate': '2026-07-13T18:00:00',
+      'note': 'Meet at the airport',
+      'tour': {
+        'id': 7,
+        'categoryId': 2,
+        'name': 'Da Nang Discovery',
+        'city': 'Da Nang',
+        'country': 'Vietnam',
+        'imageUrl': 'https://example.com/da-nang.jpg',
+      },
+    });
+
+    expect(schedule.id, 88);
+    expect(schedule.tour?.name, 'Da Nang Discovery');
+    expect(schedule.tour?.locationLabel, 'Da Nang, Vietnam');
+    expect(schedule.note, 'Meet at the airport');
+  });
+
+  test('schedule itinerary parses order detail timeline contract', () {
+    final itinerary = TourScheduleItineraryModel.fromJson({
+      'id': 19,
+      'scheduleId': 88,
+      'itineraryDate': '2026-07-11T00:00:00',
+      'dayNumber': 2,
+      'title': 'Explore Hoi An',
+      'description': 'Walk through the ancient town.',
+      'startDuration': '08:30:00.0000000',
+      'endDuration': '0.10:15:00',
+      'locationName': 'Hoi An Ancient Town',
+      'locationLat': 15.8801,
+      'locationLng': 108.338,
+      'tourismInfoId': 7,
+    });
+
+    expect(itinerary.scheduleId, 88);
+    expect(itinerary.dayNumber, 2);
+    expect(itinerary.itineraryDate, DateTime(2026, 7, 11));
+    expect(itinerary.timeLabel, '08:30 - 10:15');
+    expect(itinerary.locationName, 'Hoi An Ancient Town');
+    expect(itinerary.tourismInfoId, 7);
   });
 }

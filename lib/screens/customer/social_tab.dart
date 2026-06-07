@@ -21,7 +21,7 @@ class _SocialTabState extends State<SocialTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _social.fetchFriends();
     _social.fetchPendingRequests();
     _social.fetchMoments();
@@ -42,14 +42,20 @@ class _SocialTabState extends State<SocialTab>
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Xã hội'),
+        actions: [
+          IconButton(
+            tooltip: 'Tin nhắn',
+            onPressed: () => Get.toNamed(AppRoutes.chatInbox),
+            icon: const Icon(Icons.forum_outlined),
+          ),
+          const SizedBox(width: 6),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           tabs: const [
             Tab(text: 'Bạn bè'),
             Tab(text: 'Moments'),
-            Tab(text: 'Chat'),
-            Tab(text: 'Nhóm tour'),
           ],
         ),
       ),
@@ -69,8 +75,6 @@ class _SocialTabState extends State<SocialTab>
             searchController: _searchController,
           ),
           _MomentsPanel(social: _social),
-          _ChatPanel(social: _social),
-          _GroupChatPanel(social: _social),
         ],
       ),
     );
@@ -159,13 +163,11 @@ class _FriendsPanel extends StatelessWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.check, color: Colors.green),
-                            onPressed: () =>
-                                social.respondRequest(r.id, true),
+                            onPressed: () => social.respondRequest(r.id, true),
                           ),
                           IconButton(
                             icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed: () =>
-                                social.respondRequest(r.id, false),
+                            onPressed: () => social.respondRequest(r.id, false),
                           ),
                         ],
                       ),
@@ -276,42 +278,40 @@ class _MomentsPanel extends StatelessWidget {
                 arguments: m.id,
               ),
               child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      child: Text(m.userName?.isNotEmpty == true
+                          ? m.userName![0].toUpperCase()
+                          : '?'),
+                    ),
+                    title: Text(m.userName ?? 'Người dùng'),
+                  ),
+                  if (m.content != null) Text(m.content!),
+                  if (m.imageUrl != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Image.network(m.imageUrl!, fit: BoxFit.cover),
+                    ),
+                  Row(
                     children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          child: Text(m.userName?.isNotEmpty == true
-                              ? m.userName![0].toUpperCase()
-                              : '?'),
+                      IconButton(
+                        icon: Icon(
+                          m.hasReacted ? Icons.favorite : Icons.favorite_border,
                         ),
-                        title: Text(m.userName ?? 'Người dùng'),
+                        onPressed: () => social.reactMoment(m.id),
                       ),
-                      if (m.content != null) Text(m.content!),
-                      if (m.imageUrl != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Image.network(m.imageUrl!, fit: BoxFit.cover),
-                        ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              m.hasReacted
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                            ),
-                            onPressed: () => social.reactMoment(m.id),
-                          ),
-                          Text('${m.reactionCount}'),
-                          IconButton(
-                            icon: const Icon(Icons.comment_outlined),
-                            onPressed: () => _showCommentDialog(context, m.id),
-                          ),
-                          Text('${m.commentCount}'),
-                        ],
+                      Text('${m.reactionCount}'),
+                      IconButton(
+                        icon: const Icon(Icons.comment_outlined),
+                        onPressed: () => _showCommentDialog(context, m.id),
                       ),
+                      Text('${m.commentCount}'),
                     ],
+                  ),
+                ],
               ),
             );
           },
@@ -346,96 +346,5 @@ class _MomentsPanel extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _ChatPanel extends StatelessWidget {
-  final SocialController social;
-
-  const _ChatPanel({required this.social});
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final directRooms =
-          social.chatRooms.where((r) => !r.isGroup).toList();
-      if (directRooms.isEmpty) {
-        return const Center(child: Text('Chưa có tin nhắn riêng'));
-      }
-      return ListView.builder(
-        itemCount: directRooms.length,
-        itemBuilder: (context, index) {
-          final room = directRooms[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: room.avatarUrl != null
-                  ? NetworkImage(room.avatarUrl!)
-                  : null,
-              child: room.avatarUrl == null
-                  ? const Icon(Icons.person)
-                  : null,
-            ),
-            title: Text(room.name ?? 'Chat #${room.id}'),
-            subtitle: Text(room.lastMessage ?? ''),
-            onTap: () => Get.toNamed(
-              AppRoutes.chatRoom,
-              arguments: {
-                'roomId': room.id,
-                'title': room.name,
-                'isGroup': false,
-              },
-            ),
-          );
-        },
-      );
-    });
-  }
-}
-
-class _GroupChatPanel extends StatelessWidget {
-  final SocialController social;
-
-  const _GroupChatPanel({required this.social});
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final groups = social.tourGroupChats;
-      if (groups.isEmpty) {
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Tham gia tour để vào nhóm chat.\n'
-              'Nhóm chat được tạo theo lịch trình tour.',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-      }
-      return ListView.builder(
-        itemCount: groups.length,
-        itemBuilder: (context, index) {
-          final room = groups[index];
-          return ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.groups)),
-            title: Text(room.name ?? 'Nhóm tour #${room.scheduleId}'),
-            subtitle: Text(
-              room.lastMessage ??
-                  'Schedule ${room.scheduleId ?? ''}',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Get.toNamed(
-              AppRoutes.chatRoom,
-              arguments: {
-                'roomId': room.id,
-                'title': room.name ?? 'Nhóm tour',
-                'isGroup': true,
-              },
-            ),
-          );
-        },
-      );
-    });
   }
 }
