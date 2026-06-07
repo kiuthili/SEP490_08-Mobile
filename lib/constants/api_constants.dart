@@ -31,6 +31,7 @@ class ApiConstants {
   static const users = '/api/users';
   static const tours = '/api/tours';
   static const tourSchedules = '/api/TourSchedules';
+  static const tourScheduleItineraries = '/api/TourScheduleItineraries';
   static const tourScheduleTickets = '/api/TourScheduleTickets';
   static const wishlists = '/api/wishlists';
   static const reviews = '/api/reviews';

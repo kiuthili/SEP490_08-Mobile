@@ -1,4 +1,5 @@
 import '../utils/json_utils.dart';
+import '../utils/text_encoding.dart';
 
 class NotificationModel {
   final int id;
@@ -413,6 +414,9 @@ class ChatRoomModel {
   final int? scheduleId;
   final String? avatarUrl;
   final String? lastMessage;
+  final DateTime? lastMessageAt;
+  final bool isPinned;
+  final bool isMuted;
 
   ChatRoomModel({
     required this.id,
@@ -421,13 +425,21 @@ class ChatRoomModel {
     this.scheduleId,
     this.avatarUrl,
     this.lastMessage,
+    this.lastMessageAt,
+    this.isPinned = false,
+    this.isMuted = false,
   });
 
   factory ChatRoomModel.fromJson(Map<String, dynamic> json) => ChatRoomModel(
-        id: JsonUtils.readInt(json['id']),
-        name: JsonUtils.readString(json['name']),
+        id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
+        name: _readChatText(
+          JsonUtils.pick(json, ['roomName', 'RoomName', 'name', 'Name']),
+        ),
         isGroup: JsonUtils.readBool(
-          JsonUtils.pick(json, ['isGroup', 'group']),
+          JsonUtils.pick(
+            json,
+            ['isGroupChat', 'IsGroupChat', 'isGroup', 'group'],
+          ),
         ),
         scheduleId: () {
           final v = JsonUtils.pick(json, ['scheduleId', 'ScheduleId']);
@@ -435,46 +447,83 @@ class ChatRoomModel {
           return JsonUtils.readInt(v);
         }(),
         avatarUrl: JsonUtils.readString(
-          JsonUtils.pick(json, ['avatarUrl', 'roomAvatarUrl']),
+          JsonUtils.pick(
+            json,
+            ['avatarUrl', 'AvatarUrl', 'roomAvatarUrl', 'RoomAvatarUrl'],
+          ),
         ),
-        lastMessage: JsonUtils.readString(
-          JsonUtils.pick(json, ['lastMessage', 'latestMessage']),
+        lastMessage: _readChatText(
+          JsonUtils.pick(
+            json,
+            ['latestMessage', 'LatestMessage', 'lastMessage'],
+          ),
+        ),
+        lastMessageAt: JsonUtils.readDateTime(
+          JsonUtils.pick(
+            json,
+            ['latestMessageTime', 'LatestMessageTime', 'lastMessageAt'],
+          ),
+        ),
+        isPinned: JsonUtils.readBool(
+          JsonUtils.pick(json, ['isPinned', 'IsPinned']),
+        ),
+        isMuted: JsonUtils.readBool(
+          JsonUtils.pick(json, ['isMuted', 'IsMuted']),
         ),
       );
 }
 
 class ChatMessageModel {
   final int id;
+  final int chatRoomId;
   final int senderId;
   final String? senderName;
+  final String? senderAvatar;
   final String content;
+  final bool isRead;
   final DateTime? sentAt;
 
   ChatMessageModel({
     required this.id,
+    required this.chatRoomId,
     required this.senderId,
     this.senderName,
+    this.senderAvatar,
     required this.content,
+    this.isRead = false,
     this.sentAt,
   });
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) =>
       ChatMessageModel(
         id: JsonUtils.readInt(json['id']),
+        chatRoomId: JsonUtils.readInt(
+          JsonUtils.pick(json, ['chatRoomId', 'ChatRoomId', 'roomId']),
+        ),
         senderId: JsonUtils.readInt(
           JsonUtils.pick(json, ['senderId', 'userId']),
         ),
-        senderName: JsonUtils.readString(
+        senderName: _readChatText(
           JsonUtils.pick(json, ['senderName', 'fullName']),
         ),
-        content: JsonUtils.readString(
-              JsonUtils.pick(json, ['content', 'message', 'text']),
-            ) ??
+        senderAvatar: JsonUtils.readString(
+          JsonUtils.pick(json, ['senderAvatar', 'SenderAvatar', 'avatarUrl']),
+        ),
+        content: _readChatText(
+                JsonUtils.pick(json, ['content', 'message', 'text'])) ??
             '',
+        isRead: JsonUtils.readBool(
+          JsonUtils.pick(json, ['isRead', 'IsRead']),
+        ),
         sentAt: JsonUtils.readDateTime(
           JsonUtils.pick(json, ['sentAt', 'createdAt', 'timestamp']),
         ),
       );
+}
+
+String? _readChatText(dynamic value) {
+  final text = JsonUtils.readString(value);
+  return text == null ? null : TextEncoding.repairMojibake(text);
 }
 
 class LiveLocationModel {

@@ -19,6 +19,7 @@ class AppRoutes {
   static const String socialMap = '/social-map';
   static const String shareMoment = '/share-moment';
   static const String qrScan = '/qr-scan';
+  static const String chatInbox = '/chat-inbox';
   static const String chatRoom = '/chat-room';
   static const String momentDetail = '/moment-detail';
   static const String userProfile = '/user-profile';

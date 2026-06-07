@@ -1,11 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/feature_controllers.dart';
 import '../../models/order_model.dart';
+import '../../models/tour_model.dart';
 import '../../routes/app_routes.dart';
+import '../../services/catalog_service.dart';
 import '../../services/payment_service.dart';
+import '../../services/tour_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
@@ -25,7 +29,15 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final _controller = Get.find<OrderController>();
+  final _tourService = Get.find<TourService>();
+  final _catalogService = Get.find<CatalogService>();
   PaymentProvider _payProvider = PaymentProvider.vnpay;
+  List<TourScheduleItineraryModel> _itineraries = [];
+  Map<int, TourismInformationModel> _tourismInformation = {};
+  Set<int> _expandedDays = {};
+  bool _loadingItineraries = false;
+  String? _itineraryError;
+  int? _loadedScheduleId;
 
   @override
   void initState() {
@@ -36,9 +48,84 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         if (_controller.selectedOrder.value?.id != id) {
           _controller.selectedOrder.value = null;
         }
-        _controller.fetchOrderDetail(id);
+        _refreshOrder(id);
       });
     }
+  }
+
+  Future<void> _refreshOrder(int orderId) async {
+    await _controller.fetchOrderDetail(orderId);
+    final order = _controller.selectedOrder.value;
+    if (!mounted || order?.id != orderId) return;
+    await _loadItineraries(order!);
+  }
+
+  Future<void> _loadItineraries(
+    OrderModel order, {
+    bool force = false,
+  }) async {
+    final scheduleId =
+        order.scheduleId > 0 ? order.scheduleId : order.schedule?.id ?? 0;
+    if (scheduleId <= 0) return;
+    if (!force && _loadedScheduleId == scheduleId && _itineraries.isNotEmpty) {
+      return;
+    }
+
+    setState(() {
+      _loadedScheduleId = scheduleId;
+      _loadingItineraries = true;
+      _itineraryError = null;
+      if (force || _itineraries.isNotEmpty) {
+        _itineraries = [];
+        _tourismInformation = {};
+        _expandedDays = {};
+      }
+    });
+
+    try {
+      final itineraries = await _tourService.getScheduleItineraries(scheduleId);
+      if (!mounted || _loadedScheduleId != scheduleId) return;
+      final tourismInformation = await _loadTourismInformation(itineraries);
+      if (!mounted || _loadedScheduleId != scheduleId) return;
+      final days = itineraries.map((item) => item.dayNumber).toSet();
+      setState(() {
+        _itineraries = itineraries;
+        _tourismInformation = tourismInformation;
+        _expandedDays = days.length <= 2 ? days : {days.first};
+      });
+    } catch (e) {
+      if (!mounted || _loadedScheduleId != scheduleId) return;
+      setState(() => _itineraryError = e.toString());
+    } finally {
+      if (mounted && _loadedScheduleId == scheduleId) {
+        setState(() => _loadingItineraries = false);
+      }
+    }
+  }
+
+  Future<Map<int, TourismInformationModel>> _loadTourismInformation(
+    List<TourScheduleItineraryModel> itineraries,
+  ) async {
+    final ids = itineraries
+        .map((item) => item.tourismInfoId)
+        .whereType<int>()
+        .where((id) => id > 0)
+        .toSet();
+    if (ids.isEmpty) return {};
+
+    final entries = await Future.wait(
+      ids.map((id) async {
+        try {
+          final info = await _catalogService.getTourismInformationById(id);
+          return MapEntry(id, info);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    return Map.fromEntries(
+        entries.whereType<MapEntry<int, TourismInformationModel>>());
   }
 
   @override
@@ -52,7 +139,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             : [
                 IconButton(
                   tooltip: 'Làm mới',
-                  onPressed: () => _controller.fetchOrderDetail(order.id),
+                  onPressed: () => _refreshOrder(order.id),
                   icon: const Icon(Icons.refresh_rounded),
                 ),
                 const SizedBox(width: 6),
@@ -71,7 +158,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => _controller.fetchOrderDetail(order.id),
+      onRefresh: () => _refreshOrder(order.id),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 36),
@@ -89,6 +176,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             const SizedBox(height: 10),
             _TripTimeline(order: order),
+            const SizedBox(height: 12),
+            _ScheduleItineraryPanel(
+              itineraries: _itineraries,
+              tourismInformation: _tourismInformation,
+              expandedDays: _expandedDays,
+              loading: _loadingItineraries,
+              error: _itineraryError,
+              onRetry: () => _loadItineraries(order, force: true),
+              onToggleDay: (day) {
+                setState(() {
+                  if (_expandedDays.contains(day)) {
+                    _expandedDays.remove(day);
+                  } else {
+                    _expandedDays.add(day);
+                  }
+                });
+              },
+              onToggleAll: () {
+                final allDays =
+                    _itineraries.map((item) => item.dayNumber).toSet();
+                setState(() {
+                  _expandedDays =
+                      _expandedDays.containsAll(allDays) ? <int>{} : allDays;
+                });
+              },
+            ),
             const SizedBox(height: 20),
             const _SectionTitle(
               icon: Icons.receipt_long_outlined,
@@ -558,6 +671,740 @@ class _TripTimeline extends StatelessWidget {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _ScheduleItineraryPanel extends StatelessWidget {
+  const _ScheduleItineraryPanel({
+    required this.itineraries,
+    required this.tourismInformation,
+    required this.expandedDays,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+    required this.onToggleDay,
+    required this.onToggleAll,
+  });
+
+  final List<TourScheduleItineraryModel> itineraries;
+  final Map<int, TourismInformationModel> tourismInformation;
+  final Set<int> expandedDays;
+  final bool loading;
+  final String? error;
+  final VoidCallback onRetry;
+  final ValueChanged<int> onToggleDay;
+  final VoidCallback onToggleAll;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && itineraries.isEmpty) {
+      return const _ItineraryLoadingCard();
+    }
+    if (error != null && itineraries.isEmpty) {
+      return _ItineraryErrorCard(onRetry: onRetry);
+    }
+    if (itineraries.isEmpty) {
+      return const _EmptyItineraryCard();
+    }
+
+    final grouped = <int, List<TourScheduleItineraryModel>>{};
+    for (final itinerary in itineraries) {
+      grouped.putIfAbsent(itinerary.dayNumber, () => []).add(itinerary);
+    }
+    final days = grouped.keys.toList()..sort();
+    final allExpanded = expandedDays.containsAll(days);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF05073C), Color(0xFF0048B0)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(
+                    Icons.map_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lịch trình chi tiết',
+                        style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${days.length} ngày • ${itineraries.length} hoạt động',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white70,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: onToggleAll,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: Text(allExpanded ? 'Thu gọn' : 'Mở hết'),
+                ),
+              ],
+            ),
+          ),
+          for (var index = 0; index < days.length; index++)
+            _ItineraryDayCard(
+              day: days[index],
+              activities: grouped[days[index]]!,
+              tourismInformation: tourismInformation,
+              expanded: expandedDays.contains(days[index]),
+              isLast: index == days.length - 1,
+              onTap: () => onToggleDay(days[index]),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItineraryDayCard extends StatelessWidget {
+  const _ItineraryDayCard({
+    required this.day,
+    required this.activities,
+    required this.tourismInformation,
+    required this.expanded,
+    required this.isLast,
+    required this.onTap,
+  });
+
+  final int day;
+  final List<TourScheduleItineraryModel> activities;
+  final Map<int, TourismInformationModel> tourismInformation;
+  final bool expanded;
+  final bool isLast;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = activities
+        .map((item) => item.itineraryDate)
+        .whereType<DateTime>()
+        .firstOrNull;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: isLast
+            ? null
+            : const Border(
+                bottom: BorderSide(color: AppColors.separator),
+              ),
+      ),
+      child: Column(
+        children: [
+          Material(
+            color: expanded ? AppColors.brandLight : Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        gradient: AppColors.brandGradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$day',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ngày $day',
+                            style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            date == null
+                                ? '${activities.length} hoạt động'
+                                : '${DateFormatter.display(date)} • ${activities.length} hoạt động',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.brand,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 15),
+              child: Column(
+                children: [
+                  for (var index = 0; index < activities.length; index++)
+                    _ScheduleActivity(
+                      itinerary: activities[index],
+                      tourismInformation: activities[index].tourismInfoId ==
+                              null
+                          ? null
+                          : tourismInformation[activities[index].tourismInfoId],
+                      isLast: index == activities.length - 1,
+                    ),
+                ],
+              ),
+            ),
+            crossFadeState:
+                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 240),
+            sizeCurve: Curves.easeInOutCubic,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScheduleActivity extends StatelessWidget {
+  const _ScheduleActivity({
+    required this.itinerary,
+    required this.isLast,
+    this.tourismInformation,
+  });
+
+  final TourScheduleItineraryModel itinerary;
+  final bool isLast;
+  final TourismInformationModel? tourismInformation;
+
+  @override
+  Widget build(BuildContext context) {
+    final heritage = tourismInformation;
+    final title = heritage?.name.trim().isNotEmpty == true
+        ? heritage!.name.trim()
+        : itinerary.title?.trim().isNotEmpty == true
+            ? itinerary.title!.trim()
+            : 'Hoạt động trong ngày';
+    final description = heritage?.description?.trim().isNotEmpty == true
+        ? heritage!.description!.trim()
+        : itinerary.description?.trim();
+    final location = heritage?.locationLabel ??
+        (itinerary.locationName?.trim().isNotEmpty == true
+            ? itinerary.locationName!.trim()
+            : null);
+    final imageUrl = heritage?.imageUrl?.trim();
+    final sourceUri = _sourceUri(heritage?.sourceUrl);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 34,
+            child: Column(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    gradient: heritage != null ? AppColors.brandGradient : null,
+                    color: heritage == null ? AppColors.accentLight : null,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: (heritage != null
+                              ? AppColors.brand
+                              : AppColors.accent)
+                          .withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Icon(
+                    heritage != null
+                        ? Icons.account_balance_rounded
+                        : Icons.place_rounded,
+                    size: 15,
+                    color: heritage != null ? Colors.white : AppColors.accent,
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: AppColors.brand.withValues(alpha: 0.16),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color:
+                      heritage != null ? AppColors.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: heritage != null
+                      ? Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.18),
+                        )
+                      : null,
+                ),
+                clipBehavior: heritage != null ? Clip.antiAlias : Clip.none,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (imageUrl?.isNotEmpty == true)
+                      Stack(
+                        children: [
+                          SizedBox(
+                            height: 132,
+                            width: double.infinity,
+                            child: CachedNetworkImage(
+                              imageUrl: imageUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) =>
+                                  const _HeritageImageFallback(),
+                            ),
+                          ),
+                          const Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Color(0x9905073C),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 10,
+                            bottom: 10,
+                            child: _HeritageBadge(
+                              label: heritage?.type?.trim().isNotEmpty == true
+                                  ? heritage!.type!.trim()
+                                  : 'Điểm di sản',
+                            ),
+                          ),
+                        ],
+                      ),
+                    Padding(
+                      padding: EdgeInsets.all(heritage != null ? 12 : 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (itinerary.timeLabel != null)
+                                Container(
+                                  margin: const EdgeInsets.only(right: 7),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.brandLight,
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                  child: Text(
+                                    itinerary.timeLabel!,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: AppColors.brand,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                  ),
+                                ),
+                              if (heritage != null &&
+                                  (imageUrl == null || imageUrl.isEmpty))
+                                _HeritageBadge(
+                                  label:
+                                      heritage.type?.trim().isNotEmpty == true
+                                          ? heritage.type!.trim()
+                                          : 'Điểm di sản',
+                                ),
+                            ],
+                          ),
+                          if (itinerary.timeLabel != null || heritage != null)
+                            const SizedBox(height: 7),
+                          Text(
+                            title,
+                            style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (heritage != null &&
+                              itinerary.title?.trim().isNotEmpty == true &&
+                              itinerary.title!.trim() != title) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              itinerary.title!.trim(),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.brand,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                          if (location?.isNotEmpty == true) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 15,
+                                  color: AppColors.accent,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    location!,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (description?.isNotEmpty == true) ...[
+                            const SizedBox(height: 7),
+                            Text(
+                              description!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                          if (sourceUri != null) ...[
+                            const SizedBox(height: 10),
+                            _HeritageSourceLink(
+                              sourceName:
+                                  heritage?.sourceName?.trim().isNotEmpty ==
+                                          true
+                                      ? heritage!.sourceName!.trim()
+                                      : 'Nguồn tham khảo',
+                              uri: sourceUri,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Uri? _sourceUri(String? rawUrl) {
+    final value = rawUrl?.trim();
+    if (value == null || value.isEmpty) return null;
+    final normalized = value.contains('://') ? value : 'https://$value';
+    final uri = Uri.tryParse(normalized);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty) {
+      return null;
+    }
+    return uri;
+  }
+}
+
+class _HeritageImageFallback extends StatelessWidget {
+  const _HeritageImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFFF1EB), Color(0xFFE8F2FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.account_balance_rounded,
+          size: 38,
+          color: AppColors.accent,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeritageBadge extends StatelessWidget {
+  const _HeritageBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.accent,
+        borderRadius: BorderRadius.circular(99),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accent.withValues(alpha: 0.22),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.account_balance_rounded,
+            size: 13,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeritageSourceLink extends StatelessWidget {
+  const _HeritageSourceLink({
+    required this.sourceName,
+    required this.uri,
+  });
+
+  final String sourceName;
+  final Uri uri;
+
+  Future<void> _openSource(BuildContext context) async {
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể mở liên kết nguồn')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openSource(context),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            color: AppColors.brandLight.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: AppColors.brand.withValues(alpha: 0.12),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.public_rounded,
+                size: 17,
+                color: AppColors.brand,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  sourceName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppColors.brandDeep,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                uri.host.replaceFirst(RegExp(r'^www\.'), ''),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.open_in_new_rounded,
+                size: 16,
+                color: AppColors.brand,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ItineraryLoadingCard extends StatelessWidget {
+  const _ItineraryLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 12),
+          Text('Đang tải lịch trình chi tiết...'),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItineraryErrorCard extends StatelessWidget {
+  const _ItineraryErrorCard({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.route_outlined, color: AppColors.error),
+          const SizedBox(width: 10),
+          const Expanded(child: Text('Chưa tải được lịch trình chuyến đi.')),
+          TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyItineraryCard extends StatelessWidget {
+  const _EmptyItineraryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceGrouped,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.event_note_outlined, color: AppColors.textSecondary),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text('Lịch trình chi tiết đang được cập nhật.'),
+          ),
+        ],
+      ),
     );
   }
 }

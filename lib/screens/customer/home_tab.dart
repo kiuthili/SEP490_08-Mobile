@@ -306,6 +306,15 @@ class _HomeTabState extends State<HomeTab> {
                       ],
                     ),
                   ),
+                  if (user != null) ...[
+                    _CircleIconButton(
+                      icon: Icons.forum_outlined,
+                      onTap: () => Get.toNamed(AppRoutes.chatInbox),
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   _CircleIconButton(
                     icon: Icons.notifications_none_rounded,
                     onTap: () => Get.toNamed(AppRoutes.notifications),

@@ -12,29 +12,86 @@ class SignalRService extends GetxService {
   HubConnection? _chatConnection;
   HubConnection? _trackingConnection;
   HubConnection? _publicTrackingConnection;
+  String? _chatToken;
+  void Function(ChatMessageModel msg)? _messageHandler;
+  Future<HubConnection>? _chatConnecting;
 
   String? get _token => _storage.accessToken;
 
   Future<HubConnection> _connectChat() async {
-    if (_chatConnection?.state == HubConnectionState.Connected) {
-      return _chatConnection!;
+    final token = _token;
+    final current = _chatConnection;
+    if (current?.state == HubConnectionState.Connected && _chatToken == token) {
+      return current!;
     }
-    _chatConnection = HubConnectionBuilder()
+
+    final pending = _chatConnecting;
+    if (pending != null) {
+      return pending;
+    }
+
+    if (token == null || token.isEmpty) {
+      throw StateError('Bạn cần đăng nhập để dùng chat');
+    }
+
+    final connecting = _establishChatConnection(token);
+    _chatConnecting = connecting;
+    try {
+      return await connecting;
+    } finally {
+      if (identical(_chatConnecting, connecting)) {
+        _chatConnecting = null;
+      }
+    }
+  }
+
+  Future<HubConnection> _establishChatConnection(String token) async {
+    final oldConnection = _chatConnection;
+    _chatConnection = null;
+    if (oldConnection != null) {
+      try {
+        await oldConnection.stop();
+      } catch (_) {
+        // The stale connection may already be stopped by automatic reconnect.
+      }
+    }
+
+    _chatToken = token;
+    final connection = HubConnectionBuilder()
         .withUrl(
           ApiConstants.chatHubUrl,
           options: _connectionOptions(
-            accessTokenFactory: () async => _token ?? '',
+            accessTokenFactory: () async => _chatToken ?? '',
           ),
         )
         .withAutomaticReconnect()
         .build();
-    await _chatConnection!.start();
-    return _chatConnection!;
+    _chatConnection = connection;
+    _bindMessageHandler();
+    await connection.start();
+    await _waitUntilConnected(connection);
+    return connection;
+  }
+
+  Future<void> _waitUntilConnected(HubConnection connection) async {
+    for (var attempt = 0; attempt < 40; attempt++) {
+      if (connection.state == HubConnectionState.Connected) return;
+      await Future<void>.delayed(const Duration(milliseconds: 125));
+    }
+    throw StateError('Không thể thiết lập kết nối chat');
   }
 
   Future<void> joinChatRoom(int roomId) async {
-    final conn = await _connectChat();
-    await conn.invoke('JoinRoom', args: [roomId]);
+    try {
+      final conn = await _connectChat();
+      await _waitUntilConnected(conn);
+      await conn.invoke('JoinRoom', args: [roomId]);
+    } catch (_) {
+      await disconnectChat(keepHandler: true);
+      final conn = await _connectChat();
+      await _waitUntilConnected(conn);
+      await conn.invoke('JoinRoom', args: [roomId]);
+    }
   }
 
   Future<void> leaveChatRoom(int roomId) async {
@@ -44,6 +101,14 @@ class SignalRService extends GetxService {
   }
 
   void onReceiveMessage(void Function(ChatMessageModel msg) handler) {
+    _messageHandler = handler;
+    _bindMessageHandler();
+  }
+
+  void _bindMessageHandler() {
+    final handler = _messageHandler;
+    if (handler == null || _chatConnection == null) return;
+    _chatConnection?.off('ReceiveMessage');
     _chatConnection?.on('ReceiveMessage', (args) {
       if (args == null || args.isEmpty) return;
       final raw = args[0];
@@ -56,13 +121,35 @@ class SignalRService extends GetxService {
   }
 
   Future<void> sendChatMessage(int roomId, String content) async {
-    final conn = await _connectChat();
-    await conn.invoke('SendMessage', args: [roomId, content.trim()]);
+    final text = content.trim();
+    if (text.isEmpty) return;
+    try {
+      final conn = await _connectChat();
+      await _waitUntilConnected(conn);
+      await conn.invoke('SendMessage', args: [roomId, text]);
+    } catch (_) {
+      await disconnectChat(keepHandler: true);
+      final conn = await _connectChat();
+      await _waitUntilConnected(conn);
+      await conn.invoke('JoinRoom', args: [roomId]);
+      await conn.invoke('SendMessage', args: [roomId, text]);
+    }
   }
 
-  Future<void> disconnectChat() async {
+  Future<void> disconnectChat({bool keepHandler = false}) async {
+    final pending = _chatConnecting;
+    _chatConnecting = null;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {
+        // Connection setup already failed; continue clearing local state.
+      }
+    }
     await _chatConnection?.stop();
     _chatConnection = null;
+    _chatToken = null;
+    if (!keepHandler) _messageHandler = null;
   }
 
   Future<HubConnection> connectTracking({
@@ -168,7 +255,7 @@ class SignalRService extends GetxService {
               },
             )
           : null,
-      transport: localDev ? HttpTransportType.LongPolling : null,
+      transport: localDev ? HttpTransportType.WebSockets : null,
       requestTimeout: 30000,
     );
   }

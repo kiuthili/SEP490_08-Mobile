@@ -135,7 +135,7 @@ class TourScheduleModel {
       tourId: JsonUtils.readInt(JsonUtils.pick(json, ['tourId', 'TourId'])),
       departureDate: dep ?? DateTime.now(),
       returnDate: ret ?? DateTime.now(),
-      note: JsonUtils.readString(json['note']),
+      note: JsonUtils.readString(JsonUtils.pick(json, ['note', 'Note'])),
       tour: () {
         final t = JsonUtils.pick(json, ['tour', 'Tour']);
         if (t is Map<String, dynamic>) {
@@ -145,6 +145,92 @@ class TourScheduleModel {
       }(),
       tickets: rawTickets.map(ScheduleTicketModel.fromJson).toList(),
     );
+  }
+}
+
+class TourScheduleItineraryModel {
+  final int id;
+  final int scheduleId;
+  final DateTime? itineraryDate;
+  final int dayNumber;
+  final String? title;
+  final String? description;
+  final String? startDuration;
+  final String? endDuration;
+  final String? locationName;
+  final double? locationLat;
+  final double? locationLng;
+  final int? tourismInfoId;
+
+  const TourScheduleItineraryModel({
+    required this.id,
+    required this.scheduleId,
+    required this.dayNumber,
+    this.itineraryDate,
+    this.title,
+    this.description,
+    this.startDuration,
+    this.endDuration,
+    this.locationName,
+    this.locationLat,
+    this.locationLng,
+    this.tourismInfoId,
+  });
+
+  factory TourScheduleItineraryModel.fromJson(Map<String, dynamic> json) {
+    final tourismInfoValue = JsonUtils.pick(
+      json,
+      ['tourismInfoId', 'TourismInfoId'],
+    );
+    return TourScheduleItineraryModel(
+      id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
+      scheduleId: JsonUtils.readInt(
+        JsonUtils.pick(json, ['scheduleId', 'ScheduleId']),
+      ),
+      itineraryDate: JsonUtils.readDateTime(
+        JsonUtils.pick(json, ['itineraryDate', 'ItineraryDate']),
+      ),
+      dayNumber: JsonUtils.readInt(
+        JsonUtils.pick(json, ['dayNumber', 'DayNumber']),
+      ),
+      title: JsonUtils.readString(JsonUtils.pick(json, ['title', 'Title'])),
+      description: JsonUtils.readString(
+        JsonUtils.pick(json, ['description', 'Description']),
+      ),
+      startDuration: JsonUtils.readString(
+        JsonUtils.pick(json, ['startDuration', 'StartDuration']),
+      ),
+      endDuration: JsonUtils.readString(
+        JsonUtils.pick(json, ['endDuration', 'EndDuration']),
+      ),
+      locationName: JsonUtils.readString(
+        JsonUtils.pick(json, ['locationName', 'LocationName']),
+      ),
+      locationLat: JsonUtils.readDouble(
+        JsonUtils.pick(json, ['locationLat', 'LocationLat']),
+      ),
+      locationLng: JsonUtils.readDouble(
+        JsonUtils.pick(json, ['locationLng', 'LocationLng']),
+      ),
+      tourismInfoId:
+          tourismInfoValue == null ? null : JsonUtils.readInt(tourismInfoValue),
+    );
+  }
+
+  String? get timeLabel {
+    final start = _formatTime(startDuration);
+    final end = _formatTime(endDuration);
+    if (start != null && end != null) return '$start - $end';
+    return start ?? end;
+  }
+
+  static String? _formatTime(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final match = RegExp(
+      r'^(?:\d+\.)?(\d{1,2}):(\d{2})',
+    ).firstMatch(value.trim());
+    if (match == null) return value.trim();
+    return '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
   }
 }
 
