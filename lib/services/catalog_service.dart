@@ -36,6 +36,79 @@ class BannerModel {
       );
 }
 
+class TourismInformationModel {
+  final int id;
+  final String name;
+  final String? type;
+  final String? description;
+  final String? address;
+  final String? city;
+  final String? country;
+  final double? latitude;
+  final double? longitude;
+  final String? imageUrl;
+  final String? sourceName;
+  final String? sourceUrl;
+
+  TourismInformationModel({
+    required this.id,
+    required this.name,
+    this.type,
+    this.description,
+    this.address,
+    this.city,
+    this.country,
+    this.latitude,
+    this.longitude,
+    this.imageUrl,
+    this.sourceName,
+    this.sourceUrl,
+  });
+
+  factory TourismInformationModel.fromJson(Map<String, dynamic> json) {
+    return TourismInformationModel(
+      id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
+      name: JsonUtils.readString(JsonUtils.pick(json, ['name', 'Name'])) ?? '',
+      type: JsonUtils.readString(JsonUtils.pick(json, ['type', 'Type'])),
+      description: JsonUtils.readString(
+        JsonUtils.pick(json, ['description', 'Description']),
+      ),
+      address: JsonUtils.readString(
+        JsonUtils.pick(json, ['address', 'Address']),
+      ),
+      city: JsonUtils.readString(JsonUtils.pick(json, ['city', 'City'])),
+      country:
+          JsonUtils.readString(JsonUtils.pick(json, ['country', 'Country'])),
+      latitude: JsonUtils.readDouble(
+        JsonUtils.pick(json, ['latitude', 'Latitude']),
+      ),
+      longitude: JsonUtils.readDouble(
+        JsonUtils.pick(json, ['longitude', 'Longitude']),
+      ),
+      imageUrl: JsonUtils.readString(
+        JsonUtils.pick(json, ['imageUrl', 'ImageUrl']),
+      ),
+      sourceName: JsonUtils.readString(
+        JsonUtils.pick(json, ['sourceName', 'SourceName']),
+      ),
+      sourceUrl: JsonUtils.readString(
+        JsonUtils.pick(json, ['sourceUrl', 'SourceUrl']),
+      ),
+    );
+  }
+
+  String? get locationLabel {
+    final parts = <String>[];
+    for (final value in [address, city, country]) {
+      final text = value?.trim();
+      if (text != null && text.isNotEmpty && !parts.contains(text)) {
+        parts.add(text);
+      }
+    }
+    return parts.isEmpty ? null : parts.join(', ');
+  }
+}
+
 class TourItineraryModel {
   final int id;
   final int tourId;
@@ -135,6 +208,18 @@ class CatalogService extends GetxService with BaseServiceMixin {
     return request(() async {
       final response = await api.dio.get(ApiConstants.banners);
       return parseList(response.data, BannerModel.fromJson);
+    });
+  }
+
+  Future<TourismInformationModel> getTourismInformationById(int id) async {
+    return request(() async {
+      final response =
+          await api.dio.get('${ApiConstants.tourismInformation}/$id');
+      final map = JsonUtils.extractDataMap(response.data);
+      if (map == null) {
+        throw const FormatException('Invalid tourism information response');
+      }
+      return TourismInformationModel.fromJson(map);
     });
   }
 
