@@ -27,6 +27,7 @@ class ApiConstants {
   static const momo = '/api/momo';
   static const categories = '/api/categories';
   static const banners = '/api/banners';
+  static const tourismInformation = '/api/tourisminformation';
   static const users = '/api/users';
   static const tours = '/api/tours';
   static const tourSchedules = '/api/TourSchedules';

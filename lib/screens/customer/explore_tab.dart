@@ -19,6 +19,7 @@ import '../../widgets/empty_state_widget.dart';
 import '../../widgets/explore_filter_sheet.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
+import '../../widgets/scroll_to_top_button.dart';
 import '../../widgets/tour_card.dart';
 import '../../widgets/ai_floating_assistant.dart';
 import '../../utils/snackbar_helper.dart';
@@ -54,6 +55,7 @@ class _ExploreTabState extends State<ExploreTab> {
   Worker? _filterOpenWorker;
   Worker? _wishlistWorker;
   Worker? _wishlistProcessingWorker;
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
@@ -113,6 +115,10 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   void _onScroll() {
+    final showScrollToTop = _scrollController.offset > 520;
+    if (showScrollToTop != _showScrollToTop && mounted) {
+      setState(() => _showScrollToTop = showScrollToTop);
+    }
     if (_scrollController.position.pixels <
             _scrollController.position.maxScrollExtent - 200 ||
         _isLoadingMore ||
@@ -120,6 +126,14 @@ class _ExploreTabState extends State<ExploreTab> {
       return;
     }
     _loadMore();
+  }
+
+  Future<void> _scrollToTop() {
+    return _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 620),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Future<void> _runSearch({bool refresh = false}) async {
@@ -273,348 +287,584 @@ class _ExploreTabState extends State<ExploreTab> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await _runSearch(refresh: true);
-          await _aiController.fetchRecommendations();
-        },
-        child: ListView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(
-            16,
-            8,
-            16,
-            ShellLayout.bottomInset(context),
-          ),
-          children: [
-            Text(
-              'Chuyến đi tiếp theo\nđang chờ bạn',
-              style: AppTextStyles.textTheme.headlineLarge?.copyWith(
-                color: AppColors.navy,
-                height: 1.12,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tìm điểm đến phù hợp với lịch trình và ngân sách của bạn.',
-              style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.navy.withValues(alpha: 0.08),
-                    blurRadius: 28,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
+      body: Stack(
+        children: [
+          DecoratedBox(
+            decoration: const BoxDecoration(gradient: AppColors.pageGradient),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _runSearch(refresh: true);
+                await _aiController.fetchRecommendations();
+              },
+              child: ListView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  ShellLayout.bottomInset(context),
+                ),
                 children: [
-                  const SizedBox(width: 8),
-                  const Icon(Icons.search_rounded, color: AppColors.brand),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Bạn muốn đi đâu?',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                      ),
-                      textInputAction: TextInputAction.search,
-                      onChanged: _onSearchChanged,
-                      onSubmitted: (_) => _submitSearch(),
-                    ),
-                  ),
-                  if (_searchController.text.isNotEmpty)
-                    IconButton(
-                      tooltip: 'Xóa từ khóa',
-                      onPressed: _clearSearch,
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: DecoratedBox(
-                      decoration: const BoxDecoration(
-                        gradient: AppColors.brandGradient,
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        onPressed: _submitSearch,
-                        tooltip: 'Tìm kiếm',
-                        icon: const Icon(
-                          Icons.arrow_forward_rounded,
-                          color: Colors.white,
+                  _buildExploreHero(filterBadge),
+                  if (_categories.isNotEmpty) ...[
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Text(
+                          'Khám phá theo phong cách',
+                          style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
+                        const Spacer(),
+                        Text(
+                          '${_categories.length} danh mục',
+                          style: AppTextStyles.textTheme.labelMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 42,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          ChoiceChip(
+                            avatar: _filters.categoryId == null
+                                ? const Icon(Icons.apps_rounded, size: 17)
+                                : null,
+                            label: const Text('Tất cả tour'),
+                            selected: _filters.categoryId == null,
+                            onSelected: (_) {
+                              setState(
+                                () => _filters =
+                                    _filters.copyWith(clearCategory: true),
+                              );
+                              _runSearch(refresh: true);
+                            },
+                          ),
+                          ..._categories.map(
+                            (c) => Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: ChoiceChip(
+                                label: Text(c.name),
+                                selected: _filters.categoryId == c.id,
+                                onSelected: (_) {
+                                  setState(
+                                    () => _filters =
+                                        _filters.copyWith(categoryId: c.id),
+                                  );
+                                  _runSearch(refresh: true);
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (_categories.isNotEmpty) ...[
-              const SizedBox(height: 18),
-              SizedBox(
-                height: 42,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    ChoiceChip(
-                      avatar: _filters.categoryId == null
-                          ? const Icon(Icons.apps_rounded, size: 17)
-                          : null,
-                      label: const Text('Tất cả tour'),
-                      selected: _filters.categoryId == null,
-                      onSelected: (_) {
-                        setState(
-                          () =>
-                              _filters = _filters.copyWith(clearCategory: true),
-                        );
+                  ],
+                  if (filterBadge > 0) ...[
+                    const SizedBox(height: 12),
+                    _ActiveFilterBar(
+                      filters: _filters,
+                      onClear: () {
+                        setState(() {
+                          _filters = ExploreFilters(
+                            searchTerm: _searchController.text.trim(),
+                          );
+                        });
                         _runSearch(refresh: true);
                       },
                     ),
-                    ..._categories.map(
-                      (c) => Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: ChoiceChip(
-                          label: Text(c.name),
-                          selected: _filters.categoryId == c.id,
-                          onSelected: (_) {
-                            setState(
-                              () => _filters =
-                                  _filters.copyWith(categoryId: c.id),
-                            );
-                            _runSearch(refresh: true);
-                          },
+                  ],
+                  const SizedBox(height: 22),
+                  if (_isLoading && _tours.isEmpty)
+                    const _TourListSkeleton()
+                  else if (_errorMessage != null)
+                    EmptyStateWidget(
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Không tải được tour',
+                      subtitle: _errorMessage,
+                      onRetry: () => _runSearch(refresh: true),
+                    )
+                  else if (_tours.isEmpty)
+                    const EmptyStateWidget(
+                      icon: Icons.travel_explore_rounded,
+                      title: 'Không tìm thấy tour',
+                      subtitle: 'Thử đổi bộ lọc hoặc từ khóa khác',
+                    )
+                  else ...[
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.navy.withValues(alpha: 0.04),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.brandLight,
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: const Icon(
+                              Icons.travel_explore_rounded,
+                              color: AppColors.brand,
+                            ),
+                          ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tour dành cho bạn',
+                                  style: AppTextStyles.textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$_totalResults lựa chọn phù hợp',
+                                  style: AppTextStyles.textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuButton<String?>(
+                            tooltip: 'Sắp xếp',
+                            onSelected: (sort) {
+                              setState(() {
+                                _filters = _filters.copyWith(
+                                  sortBy: sort,
+                                  clearSort: sort == null,
+                                );
+                              });
+                              _runSearch(refresh: true);
+                            },
+                            itemBuilder: (_) => exploreSortOptions.entries
+                                .map(
+                                  (entry) => PopupMenuItem(
+                                    value: entry.key,
+                                    child: Row(
+                                      children: [
+                                        if (_filters.sortBy == entry.key)
+                                          const Icon(
+                                            Icons.check_rounded,
+                                            size: 18,
+                                            color: AppColors.brand,
+                                          )
+                                        else
+                                          const SizedBox(width: 18),
+                                        const SizedBox(width: 8),
+                                        Text(entry.value),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.swap_vert_rounded, size: 18),
+                                  SizedBox(width: 5),
+                                  Text('Sắp xếp'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    ..._tours.asMap().entries.map(
+                          (entry) => TweenAnimationBuilder<double>(
+                            key: ValueKey(entry.value.id),
+                            duration: Duration(
+                              milliseconds: 260 + (entry.key.clamp(0, 5) * 45),
+                            ),
+                            tween: Tween(begin: 0, end: 1),
+                            builder: (context, value, child) => Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 14 * (1 - value)),
+                                child: child,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: TourCard(
+                                tour: entry.value,
+                                isInWishlist: _wishlistController.containsTour(
+                                  entry.value.id,
+                                ),
+                                wishlistBusy: _wishlistController.isProcessing(
+                                  entry.value.id,
+                                ),
+                                onWishlistTap: () =>
+                                    _wishlistController.toggleWishlist(
+                                  entry.value.id,
+                                  isInWishlist:
+                                      _wishlistController.containsTour(
+                                    entry.value.id,
+                                  ),
+                                ),
+                                onTap: () => Get.toNamed(
+                                  AppRoutes.tourDetail,
+                                  arguments: entry.value.id,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    if (_isLoadingMore)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                  ],
+                  const SizedBox(height: 18),
+                  _buildAiHeader(),
+                  const SizedBox(height: 10),
+                  Obx(() {
+                    if (_aiController.isLoading.value &&
+                        _aiController.recommendations.isEmpty) {
+                      return const LoadingWidget();
+                    }
+                    if (_aiController.recommendations.isEmpty) {
+                      return TextButton(
+                        onPressed: () => showAiAssistantPanel(context),
+                        child: const Text('Bắt đầu khảo sát AI →'),
+                      );
+                    }
+                    return Column(
+                      children:
+                          _aiController.recommendations.take(4).map((rec) {
+                        return IosSurfaceCard(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: EdgeInsets.zero,
+                          child: ListTile(
+                            onTap: () => Get.toNamed(
+                              AppRoutes.tourDetail,
+                              arguments: rec.tourId,
+                            ),
+                            leading: rec.imageUrl != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.network(
+                                      rec.imageUrl!,
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          const Icon(Icons.tour_rounded),
+                                    ),
+                                  )
+                                : const Icon(Icons.tour_rounded),
+                            title: Text(rec.name),
+                            subtitle: Text(rec.reason ?? rec.city ?? ''),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          ScrollToTopButton(
+            visible: _showScrollToTop,
+            onTap: _scrollToTop,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExploreHero(int filterBadge) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF05073C), Color(0xFF0048B0), Color(0xFF1485FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brand.withValues(alpha: 0.24),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -36,
+            top: -48,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 15,
+                      color: Color(0xFFFFD166),
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'StayHub Discovery',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+              Text(
+                'Chuyến đi tiếp theo\nđang chờ bạn.',
+                style: AppTextStyles.textTheme.headlineLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  height: 1.12,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tìm hành trình phù hợp với lịch trình, sở thích và ngân sách.',
+                style: AppTextStyles.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.navy.withValues(alpha: 0.18),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    const Icon(Icons.search_rounded, color: AppColors.brand),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: const InputDecoration(
+                          hintText: 'Bạn muốn đi đâu?',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                        textInputAction: TextInputAction.search,
+                        onChanged: _onSearchChanged,
+                        onSubmitted: (_) => _submitSearch(),
+                      ),
+                    ),
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
+                        tooltip: 'Xóa từ khóa',
+                        onPressed: _clearSearch,
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          gradient: AppColors.brandGradient,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: _submitSearch,
+                          tooltip: 'Tìm kiếm',
+                          icon: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-            if (filterBadge > 0) ...[
               const SizedBox(height: 12),
-              _ActiveFilterBar(
-                filters: _filters,
-                onClear: () {
-                  setState(() {
-                    _filters = ExploreFilters(
-                      searchTerm: _searchController.text.trim(),
-                    );
-                  });
-                  _runSearch(refresh: true);
-                },
-              ),
-            ],
-            const SizedBox(height: 22),
-            if (_isLoading && _tours.isEmpty)
-              const _TourListSkeleton()
-            else if (_errorMessage != null)
-              EmptyStateWidget(
-                icon: Icons.cloud_off_rounded,
-                title: 'Không tải được tour',
-                subtitle: _errorMessage,
-                onRetry: () => _runSearch(refresh: true),
-              )
-            else if (_tours.isEmpty)
-              const EmptyStateWidget(
-                icon: Icons.travel_explore_rounded,
-                title: 'Không tìm thấy tour',
-                subtitle: 'Thử đổi bộ lọc hoặc từ khóa khác',
-              )
-            else ...[
               Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Tour dành cho bạn',
-                          style: AppTextStyles.textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$_totalResults lựa chọn phù hợp',
-                          style: AppTextStyles.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
+                  _ExploreHeroStat(
+                    icon: Icons.map_rounded,
+                    label: _totalResults > 0
+                        ? '$_totalResults hành trình'
+                        : 'Nhiều hành trình',
                   ),
-                  PopupMenuButton<String?>(
-                    tooltip: 'Sắp xếp',
-                    onSelected: (sort) {
-                      setState(() {
-                        _filters = _filters.copyWith(
-                          sortBy: sort,
-                          clearSort: sort == null,
-                        );
-                      });
-                      _runSearch(refresh: true);
-                    },
-                    itemBuilder: (_) => exploreSortOptions.entries
-                        .map(
-                          (entry) => PopupMenuItem(
-                            value: entry.key,
-                            child: Row(
-                              children: [
-                                if (_filters.sortBy == entry.key)
-                                  const Icon(
-                                    Icons.check_rounded,
-                                    size: 18,
-                                    color: AppColors.brand,
-                                  )
-                                else
-                                  const SizedBox(width: 18),
-                                const SizedBox(width: 8),
-                                Text(entry.value),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.swap_vert_rounded, size: 18),
-                          SizedBox(width: 5),
-                          Text('Sắp xếp'),
-                        ],
-                      ),
-                    ),
+                  const SizedBox(width: 8),
+                  _ExploreHeroStat(
+                    icon: Icons.tune_rounded,
+                    label: filterBadge > 0
+                        ? '$filterBadge bộ lọc'
+                        : 'Lọc thông minh',
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              ..._tours.asMap().entries.map(
-                    (entry) => TweenAnimationBuilder<double>(
-                      key: ValueKey(entry.value.id),
-                      duration: Duration(
-                        milliseconds: 260 + (entry.key.clamp(0, 5) * 45),
-                      ),
-                      tween: Tween(begin: 0, end: 1),
-                      builder: (context, value, child) => Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 14 * (1 - value)),
-                          child: child,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: TourCard(
-                          tour: entry.value,
-                          isInWishlist: _wishlistController.containsTour(
-                            entry.value.id,
-                          ),
-                          wishlistBusy: _wishlistController.isProcessing(
-                            entry.value.id,
-                          ),
-                          onWishlistTap: () =>
-                              _wishlistController.toggleWishlist(
-                            entry.value.id,
-                            isInWishlist: _wishlistController.containsTour(
-                              entry.value.id,
-                            ),
-                          ),
-                          onTap: () => Get.toNamed(
-                            AppRoutes.tourDetail,
-                            arguments: entry.value.id,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              if (_isLoadingMore)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
             ],
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome,
-                    size: 20, color: AppColors.brand),
-                const SizedBox(width: 8),
-                Text('Gợi ý từ AI',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => showAiAssistantPanel(context),
-                  child: const Text('Khảo sát AI'),
-                ),
-                TextButton(
-                  onPressed: () => showAiAssistantPanel(context),
-                  child: const Text('Gợi ý'),
-                ),
-              ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiHeader() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => showAiAssistantPanel(context),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE8F2FF), Color(0xFFFFF1EB)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(height: 8),
-            Obx(() {
-              if (_aiController.isLoading.value &&
-                  _aiController.recommendations.isEmpty) {
-                return const LoadingWidget();
-              }
-              if (_aiController.recommendations.isEmpty) {
-                return TextButton(
-                  onPressed: () => showAiAssistantPanel(context),
-                  child: const Text('Bắt đầu khảo sát AI →'),
-                );
-              }
-              return Column(
-                children: _aiController.recommendations.take(4).map((rec) {
-                  return IosSurfaceCard(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: EdgeInsets.zero,
-                    child: ListTile(
-                      onTap: () => Get.toNamed(
-                        AppRoutes.tourDetail,
-                        arguments: rec.tourId,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.brand.withValues(alpha: 0.1)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  gradient: AppColors.brandGradient,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Gợi ý riêng từ AI Guide',
+                      style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      leading: rec.imageUrl != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                rec.imageUrl!,
-                                width: 48,
-                                height: 48,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.tour_rounded),
-                              ),
-                            )
-                          : const Icon(Icons.tour_rounded),
-                      title: Text(rec.name),
-                      subtitle: Text(rec.reason ?? rec.city ?? ''),
                     ),
-                  );
-                }).toList(),
-              );
-            }),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Trả lời vài câu để tìm chuyến đi hợp gu nhất.',
+                      style: AppTextStyles.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: AppColors.brand,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExploreHeroStat extends StatelessWidget {
+  const _ExploreHeroStat({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: Colors.white),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
         ),
       ),

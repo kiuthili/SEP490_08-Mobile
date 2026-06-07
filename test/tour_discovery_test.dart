@@ -93,4 +93,25 @@ void main() {
     expect(itinerary.endTimeLabel, '10:15');
     expect(itinerary.timeLabel, '08:30 - 10:15');
   });
+
+  test('tourism information parses heritage detail response', () {
+    final heritage = TourismInformationModel.fromJson({
+      'id': 7,
+      'name': 'Hoi An Ancient Town',
+      'type': 'Cultural Heritage',
+      'description': 'A preserved trading port.',
+      'address': 'Minh An Ward',
+      'city': 'Hoi An',
+      'country': 'Vietnam',
+      'latitude': 15.8801,
+      'longitude': 108.338,
+      'imageUrl': 'https://example.com/hoi-an.jpg',
+      'sourceName': 'UNESCO',
+    });
+
+    expect(heritage.id, 7);
+    expect(heritage.name, 'Hoi An Ancient Town');
+    expect(heritage.locationLabel, 'Minh An Ward, Hoi An, Vietnam');
+    expect(heritage.imageUrl, 'https://example.com/hoi-an.jpg');
+  });
 }
