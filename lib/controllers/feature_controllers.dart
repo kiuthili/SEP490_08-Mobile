@@ -951,7 +951,9 @@ class BookingController extends GetxController {
         note: orderNote,
         orderDetails: orderDetails,
       );
-      SnackbarHelper.success('Đã tạo đơn — chuyển sang cổng thanh toán');
+      SnackbarHelper.success(
+        'Đã tạo đơn. Hoàn tất thanh toán để xác nhận chỗ.',
+      );
       return order;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);

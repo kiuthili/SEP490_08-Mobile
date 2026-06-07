@@ -60,6 +60,12 @@ class OrderService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<void> markOrderPaid(int id) async {
+    await request(() async {
+      await api.dio.patch('${ApiConstants.orders}/$id/mark-paid');
+    });
+  }
+
   Future<void> requestCancellation({
     required int orderId,
     required String reason,
