@@ -13,6 +13,8 @@ class OrderModel {
   final DateTime? orderedAt;
   final OrderTourInfo? tour;
   final OrderScheduleInfo? schedule;
+  final List<OrderDetailModel> orderDetails;
+  final List<TicketModel> tickets;
 
   OrderModel({
     required this.id,
@@ -29,15 +31,26 @@ class OrderModel {
     this.orderedAt,
     this.tour,
     this.schedule,
+    this.orderDetails = const [],
+    this.tickets = const [],
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final orderDetails = _readMapList(json['orderDetails'])
+        .map(OrderDetailModel.fromJson)
+        .toList();
+    final detailTickets =
+        orderDetails.expand((detail) => detail.tickets).toList();
+    final topLevelTickets =
+        _readMapList(json['tickets']).map(TicketModel.fromJson).toList();
+    final tickets = detailTickets.isNotEmpty ? detailTickets : topLevelTickets;
+
     return OrderModel(
       id: json['id'] as int,
       customerId: json['customerId'] as int? ?? 0,
       scheduleId: json['scheduleId'] as int? ?? 0,
       totalQuantity: json['totalQuantity'] as int? ?? 0,
-      ticketCount: json['ticketCount'] as int? ?? 0,
+      ticketCount: json['ticketCount'] as int? ?? tickets.length,
       totalAmount: (json['totalAmount'] as num?)?.toInt() ?? 0,
       discountValue: (json['discountValue'] as num?)?.toInt(),
       voucherCode: json['voucherCode'] as String?,
@@ -53,6 +66,65 @@ class OrderModel {
       schedule: json['schedule'] != null
           ? OrderScheduleInfo.fromJson(json['schedule'] as Map<String, dynamic>)
           : null,
+      orderDetails: orderDetails,
+      tickets: tickets,
+    );
+  }
+}
+
+List<Map<String, dynamic>> _readMapList(dynamic value) {
+  if (value is! List) return const [];
+  return value
+      .whereType<Map>()
+      .map((item) => Map<String, dynamic>.from(item))
+      .toList();
+}
+
+class OrderDetailModel {
+  final int id;
+  final int orderId;
+  final int ticketTypeId;
+  final int tourScheduleTicketId;
+  final int quantity;
+  final int unitPrice;
+  final int totalPrice;
+  final List<TicketModel> tickets;
+
+  OrderDetailModel({
+    required this.id,
+    required this.orderId,
+    required this.ticketTypeId,
+    required this.tourScheduleTicketId,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+    this.tickets = const [],
+  });
+
+  factory OrderDetailModel.fromJson(Map<String, dynamic> json) {
+    final detailId = (json['id'] as num?)?.toInt() ?? 0;
+    final orderId = (json['orderId'] as num?)?.toInt();
+    final ticketTypeId = (json['ticketTypeId'] as num?)?.toInt() ?? 0;
+
+    return OrderDetailModel(
+      id: detailId,
+      orderId: orderId ?? 0,
+      ticketTypeId: ticketTypeId,
+      tourScheduleTicketId:
+          (json['tourScheduleTicketId'] as num?)?.toInt() ?? 0,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+      unitPrice: (json['unitPrice'] as num?)?.toInt() ?? 0,
+      totalPrice: (json['totalPrice'] as num?)?.toInt() ?? 0,
+      tickets: _readMapList(json['tickets'])
+          .map(
+            (ticket) => TicketModel.fromJson(
+              ticket,
+              fallbackOrderId: orderId,
+              fallbackOrderDetailId: detailId,
+              fallbackTicketTypeId: ticketTypeId,
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -121,14 +193,16 @@ class ScheduleCustomerModel {
       fullName: json['fullName'] as String? ?? json['customerName'] as String?,
       email: json['email'] as String?,
       phoneNumber: json['phoneNumber'] as String?,
-      ticketCount: json['ticketCount'] as int? ?? json['totalTickets'] as int? ?? 0,
+      ticketCount:
+          json['ticketCount'] as int? ?? json['totalTickets'] as int? ?? 0,
     );
   }
 }
 
 class TicketModel {
   final int id;
-  final int orderId;
+  final int? orderId;
+  final int orderDetailId;
   final String attendeeName;
   final String idCard;
   final String? qrCode;
@@ -137,7 +211,8 @@ class TicketModel {
 
   TicketModel({
     required this.id,
-    required this.orderId,
+    this.orderId,
+    required this.orderDetailId,
     required this.attendeeName,
     required this.idCard,
     this.qrCode,
@@ -145,13 +220,24 @@ class TicketModel {
     required this.ticketTypeId,
   });
 
-  factory TicketModel.fromJson(Map<String, dynamic> json) => TicketModel(
-        id: json['id'] as int,
-        orderId: json['orderId'] as int? ?? 0,
+  factory TicketModel.fromJson(
+    Map<String, dynamic> json, {
+    int? fallbackOrderId,
+    int? fallbackOrderDetailId,
+    int? fallbackTicketTypeId,
+  }) =>
+      TicketModel(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        orderId: (json['orderId'] as num?)?.toInt() ?? fallbackOrderId,
+        orderDetailId: (json['orderDetailId'] as num?)?.toInt() ??
+            fallbackOrderDetailId ??
+            0,
         attendeeName: json['attendeeName'] as String? ?? '',
         idCard: json['idCard'] as String? ?? '',
         qrCode: json['qrCode'] as String?,
         checkInStatus: json['checkInStatus'] as String?,
-        ticketTypeId: json['ticketTypeId'] as int? ?? 0,
+        ticketTypeId: (json['ticketTypeId'] as num?)?.toInt() ??
+            fallbackTicketTypeId ??
+            0,
       );
 }

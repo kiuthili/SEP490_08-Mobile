@@ -28,6 +28,7 @@ class ApiConstants {
   static const categories = '/api/categories';
   static const banners = '/api/banners';
   static const tourismInformation = '/api/tourisminformation';
+  static const ticketTypes = '/api/tickettypes';
   static const users = '/api/users';
   static const tours = '/api/tours';
   static const tourSchedules = '/api/TourSchedules';

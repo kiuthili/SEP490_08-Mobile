@@ -36,6 +36,34 @@ class BannerModel {
       );
 }
 
+class TicketTypeModel {
+  final int id;
+  final String name;
+  final String? description;
+  final bool isActive;
+
+  TicketTypeModel({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.isActive,
+  });
+
+  factory TicketTypeModel.fromJson(Map<String, dynamic> json) =>
+      TicketTypeModel(
+        id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
+        name:
+            JsonUtils.readString(JsonUtils.pick(json, ['name', 'Name'])) ?? '',
+        description: JsonUtils.readString(
+          JsonUtils.pick(json, ['description', 'Description']),
+        ),
+        isActive: JsonUtils.readBool(
+          JsonUtils.pick(json, ['isActive', 'IsActive']),
+          fallback: true,
+        ),
+      );
+}
+
 class TourismInformationModel {
   final int id;
   final String name;
@@ -208,6 +236,17 @@ class CatalogService extends GetxService with BaseServiceMixin {
     return request(() async {
       final response = await api.dio.get(ApiConstants.banners);
       return parseList(response.data, BannerModel.fromJson);
+    });
+  }
+
+  Future<TicketTypeModel> getTicketTypeById(int id) async {
+    return request(() async {
+      final response = await api.dio.get('${ApiConstants.ticketTypes}/$id');
+      final map = JsonUtils.extractDataMap(response.data);
+      if (map == null) {
+        throw const FormatException('Invalid ticket type response');
+      }
+      return TicketTypeModel.fromJson(map);
     });
   }
 

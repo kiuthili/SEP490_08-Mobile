@@ -114,8 +114,8 @@ class OrderService extends GetxService with BaseServiceMixin {
   }
 
   Future<List<TicketModel>> getTicketsForOrder(int orderId) async {
-    final all = await getMyTickets();
-    return all.where((t) => t.orderId == orderId).toList();
+    final order = await getOrderDetail(orderId);
+    return order.tickets;
   }
 
   Future<List<TicketModel>> getTicketsBySchedule(int scheduleId) async {
