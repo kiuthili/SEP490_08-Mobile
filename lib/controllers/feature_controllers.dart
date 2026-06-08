@@ -5,6 +5,7 @@ import '../models/feature_models.dart';
 import '../models/order_model.dart';
 import '../models/tour_model.dart';
 import '../services/feature_services.dart';
+import '../services/catalog_service.dart';
 import '../services/location_helper.dart';
 import '../services/order_service.dart';
 import '../services/social_service.dart';
@@ -764,8 +765,10 @@ class BookingController extends GetxController {
   final TourService _tourService = Get.find<TourService>();
   final OrderService _orderService = Get.find<OrderService>();
   final VoucherService _voucherService = Get.find<VoucherService>();
+  final CatalogService _catalogService = Get.find<CatalogService>();
 
   final tickets = <ScheduleTicketModel>[].obs;
+  final ticketTypeNames = <int, String>{}.obs;
   final selectedSchedule = Rxn<TourScheduleModel>();
   final ticketQuantities = <int, int>{}.obs;
   final voucherCode = ''.obs;
@@ -800,6 +803,7 @@ class BookingController extends GetxController {
 
   void resetCheckout() {
     tickets.clear();
+    ticketTypeNames.clear();
     selectedSchedule.value = null;
     ticketQuantities.clear();
     voucherCode.value = '';
@@ -834,6 +838,7 @@ class BookingController extends GetxController {
     ticketsLoading.value = true;
     try {
       tickets.assignAll(await _tourService.getScheduleTickets(scheduleId));
+      await _loadTicketTypeNames();
       ticketQuantities.clear();
       for (final t in activeTickets) {
         ticketQuantities[t.id] = 0;
@@ -851,6 +856,35 @@ class BookingController extends GetxController {
   }
 
   int ticketQty(int ticketId) => ticketQuantities[ticketId] ?? 0;
+
+  String ticketTypeName(int ticketTypeId) {
+    final name = ticketTypeNames[ticketTypeId]?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'Loại vé #$ticketTypeId';
+  }
+
+  Future<void> _loadTicketTypeNames() async {
+    final ids = tickets
+        .map((ticket) => ticket.ticketTypeId)
+        .where((id) => id > 0)
+        .toSet();
+    if (ids.isEmpty) return;
+
+    final entries = await Future.wait(
+      ids.map((id) async {
+        try {
+          final ticketType = await _catalogService.getTicketTypeById(id);
+          final name = ticketType.name.trim();
+          if (name.isEmpty) return null;
+          return MapEntry(id, name);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    ticketTypeNames.addEntries(entries.whereType<MapEntry<int, String>>());
+  }
 
   void setTicketQty(int ticketId, int qty) {
     final ticket = tickets.firstWhereOrNull((t) => t.id == ticketId);
@@ -878,7 +912,7 @@ class BookingController extends GetxController {
             tourScheduleTicketId: t.id,
             ticketTypeId: t.ticketTypeId,
             unitPrice: t.price,
-            ticketLabel: 'Loại vé #${t.ticketTypeId}',
+            ticketLabel: ticketTypeName(t.ticketTypeId),
           ),
         );
       }

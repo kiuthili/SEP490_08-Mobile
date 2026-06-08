@@ -99,43 +99,25 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 }
 
 /// Vé theo một đơn hàng (dùng trong order detail).
-class OrderTicketsPanel extends StatefulWidget {
-  const OrderTicketsPanel({super.key, required this.orderId});
+class OrderTicketsPanel extends StatelessWidget {
+  const OrderTicketsPanel({
+    super.key,
+    required this.tickets,
+    this.ticketTypeNames = const {},
+  });
 
-  final int orderId;
+  final List<TicketModel> tickets;
+  final Map<int, String> ticketTypeNames;
 
-  @override
-  State<OrderTicketsPanel> createState() => _OrderTicketsPanelState();
-}
-
-class _OrderTicketsPanelState extends State<OrderTicketsPanel> {
-  final _service = Get.find<OrderService>();
-  var _loading = true;
-  List<TicketModel> _tickets = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      _tickets = await _service.getTicketsForOrder(widget.orderId);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+  String _ticketTypeName(int ticketTypeId) {
+    final name = ticketTypeNames[ticketTypeId]?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'Loại vé #$ticketTypeId';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    if (_tickets.isEmpty) return const SizedBox.shrink();
+    if (tickets.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +149,7 @@ class _OrderTicketsPanelState extends State<OrderTicketsPanel> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_tickets.length} vé điện tử sẵn sàng sử dụng',
+                    '${tickets.length} vé điện tử sẵn sàng sử dụng',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -176,7 +158,7 @@ class _OrderTicketsPanelState extends State<OrderTicketsPanel> {
           ],
         ),
         const SizedBox(height: 10),
-        ..._tickets.map((t) {
+        ...tickets.map((t) {
           final checkedIn =
               t.checkInStatus?.toLowerCase().contains('checked') == true ||
                   t.checkInStatus?.toLowerCase().contains('đã') == true;
@@ -219,7 +201,7 @@ class _OrderTicketsPanelState extends State<OrderTicketsPanel> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'CCCD ${t.idCard} • Loại vé #${t.ticketTypeId}',
+                              'CCCD ${t.idCard} - ${_ticketTypeName(t.ticketTypeId)}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],

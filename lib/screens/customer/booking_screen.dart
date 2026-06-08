@@ -516,7 +516,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ..._booking.activeTickets.map((t) {
                   final qty = _booking.ticketQty(t.id);
                   return _TicketQuantityCard(
-                    label: 'Loại vé #${t.ticketTypeId}',
+                    label: _booking.ticketTypeName(t.ticketTypeId),
                     price: t.price,
                     available: t.availableQuantity,
                     quantity: qty,

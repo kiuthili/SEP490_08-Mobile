@@ -34,6 +34,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   PaymentProvider _payProvider = PaymentProvider.vnpay;
   List<TourScheduleItineraryModel> _itineraries = [];
   Map<int, TourismInformationModel> _tourismInformation = {};
+  Map<int, String> _ticketTypeNames = {};
   Set<int> _expandedDays = {};
   bool _loadingItineraries = false;
   String? _itineraryError;
@@ -57,7 +58,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     await _controller.fetchOrderDetail(orderId);
     final order = _controller.selectedOrder.value;
     if (!mounted || order?.id != orderId) return;
-    await _loadItineraries(order!);
+    await Future.wait([
+      _loadItineraries(order!),
+      _loadTicketTypeNames(order),
+    ]);
   }
 
   Future<void> _loadItineraries(
@@ -126,6 +130,37 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     return Map.fromEntries(
         entries.whereType<MapEntry<int, TourismInformationModel>>());
+  }
+
+  Future<void> _loadTicketTypeNames(OrderModel order) async {
+    final ids = <int>{
+      ...order.orderDetails.map((detail) => detail.ticketTypeId),
+      ...order.tickets.map((ticket) => ticket.ticketTypeId),
+    }.where((id) => id > 0).toSet();
+
+    if (ids.isEmpty) {
+      if (mounted) setState(() => _ticketTypeNames = {});
+      return;
+    }
+
+    final entries = await Future.wait(
+      ids.map((id) async {
+        try {
+          final ticketType = await _catalogService.getTicketTypeById(id);
+          final name = ticketType.name.trim();
+          if (name.isEmpty) return null;
+          return MapEntry(id, name);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    if (!mounted || _controller.selectedOrder.value?.id != order.id) return;
+    setState(() {
+      _ticketTypeNames =
+          Map.fromEntries(entries.whereType<MapEntry<int, String>>());
+    });
   }
 
   @override
@@ -209,7 +244,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               subtitle: 'Chi tiết thanh toán và ưu đãi',
             ),
             const SizedBox(height: 10),
-            _OrderInformationCard(order: order),
+            _OrderInformationCard(
+              order: order,
+              ticketTypeNames: _ticketTypeNames,
+            ),
             if (order.status == 'Pending') ...[
               const SizedBox(height: 20),
               const _SectionTitle(
@@ -231,7 +269,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ],
             if (order.status == 'Paid' || order.status == 'Completed') ...[
               const SizedBox(height: 20),
-              OrderTicketsPanel(orderId: order.id),
+              OrderTicketsPanel(
+                tickets: order.tickets,
+                ticketTypeNames: _ticketTypeNames,
+              ),
               const SizedBox(height: 16),
               _PostPaymentActions(
                 completed: order.status == 'Completed',
@@ -1450,12 +1491,17 @@ class _TimelineDate extends StatelessWidget {
 }
 
 class _OrderInformationCard extends StatelessWidget {
-  const _OrderInformationCard({required this.order});
+  const _OrderInformationCard({
+    required this.order,
+    required this.ticketTypeNames,
+  });
 
   final OrderModel order;
+  final Map<int, String> ticketTypeNames;
 
   @override
   Widget build(BuildContext context) {
+    final hasNote = order.note?.isNotEmpty == true;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
@@ -1474,10 +1520,15 @@ class _OrderInformationCard extends StatelessWidget {
             label: 'Ngày đặt',
             value: DateFormatter.display(order.orderedAt),
           ),
+          _TicketBreakdownSection(
+            order: order,
+            ticketTypeNames: ticketTypeNames,
+          ),
           _DetailRow(
             icon: Icons.payments_outlined,
             label: 'Tạm tính',
             value: CurrencyFormatter.format(order.totalAmount),
+            isAmount: true,
           ),
           if ((order.discountValue ?? 0) > 0)
             _DetailRow(
@@ -1485,6 +1536,7 @@ class _OrderInformationCard extends StatelessWidget {
               label: 'Ưu đãi',
               value: '-${CurrencyFormatter.format(order.discountValue!)}',
               valueColor: AppColors.success,
+              isAmount: true,
             ),
           if (order.voucherCode?.isNotEmpty == true)
             _DetailRow(
@@ -1497,9 +1549,10 @@ class _OrderInformationCard extends StatelessWidget {
             label: 'Thành tiền',
             value: CurrencyFormatter.format(order.finalAmount),
             valueColor: AppColors.brand,
-            isLast: order.note?.isNotEmpty != true,
+            isAmount: true,
+            isLast: !hasNote,
           ),
-          if (order.note?.isNotEmpty == true)
+          if (hasNote)
             _DetailRow(
               icon: Icons.notes_rounded,
               label: 'Ghi chú',
@@ -1512,12 +1565,200 @@ class _OrderInformationCard extends StatelessWidget {
   }
 }
 
+class _TicketBreakdownSection extends StatelessWidget {
+  const _TicketBreakdownSection({
+    required this.order,
+    required this.ticketTypeNames,
+  });
+
+  final OrderModel order;
+  final Map<int, String> ticketTypeNames;
+
+  List<_TicketBreakdownItem> get _items {
+    if (order.orderDetails.isNotEmpty) {
+      return order.orderDetails
+          .where((detail) => detail.quantity > 0 || detail.tickets.isNotEmpty)
+          .map((detail) {
+        final quantity =
+            detail.quantity > 0 ? detail.quantity : detail.tickets.length;
+        final totalPrice = detail.totalPrice > 0
+            ? detail.totalPrice
+            : detail.unitPrice * quantity;
+        return _TicketBreakdownItem(
+          ticketTypeId: detail.ticketTypeId,
+          quantity: quantity,
+          unitPrice: detail.unitPrice,
+          totalPrice: totalPrice,
+        );
+      }).toList();
+    }
+
+    final grouped = <int, int>{};
+    for (final ticket in order.tickets) {
+      grouped[ticket.ticketTypeId] = (grouped[ticket.ticketTypeId] ?? 0) + 1;
+    }
+
+    return grouped.entries
+        .where((entry) => entry.key > 0 && entry.value > 0)
+        .map(
+          (entry) => _TicketBreakdownItem(
+            ticketTypeId: entry.key,
+            quantity: entry.value,
+            unitPrice: 0,
+            totalPrice: 0,
+          ),
+        )
+        .toList();
+  }
+
+  String _ticketTypeName(int ticketTypeId) {
+    final name = ticketTypeNames[ticketTypeId]?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'Loại vé #$ticketTypeId';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _items;
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.separator),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceGrouped,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.confirmation_number_outlined,
+              size: 17,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 5, bottom: 8),
+                  child: Text(
+                    'Chi tiết vé',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                ...items.map(
+                  (item) => _TicketBreakdownRow(
+                    name: _ticketTypeName(item.ticketTypeId),
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    totalPrice: item.totalPrice,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TicketBreakdownItem {
+  const _TicketBreakdownItem({
+    required this.ticketTypeId,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
+
+  final int ticketTypeId;
+  final int quantity;
+  final int unitPrice;
+  final int totalPrice;
+}
+
+class _TicketBreakdownRow extends StatelessWidget {
+  const _TicketBreakdownRow({
+    required this.name,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
+
+  final String name;
+  final int quantity;
+  final int unitPrice;
+  final int totalPrice;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPrice = unitPrice > 0 || totalPrice > 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasPrice
+                      ? '$quantity vé x ${CurrencyFormatter.format(unitPrice)}'
+                      : '$quantity vé',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 124,
+            child: Text(
+              hasPrice ? CurrencyFormatter.format(totalPrice) : '',
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DetailRow extends StatelessWidget {
   const _DetailRow({
     required this.icon,
     required this.label,
     required this.value,
     this.valueColor,
+    this.isAmount = false,
     this.isLast = false,
   });
 
@@ -1525,6 +1766,7 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final bool isAmount;
   final bool isLast;
 
   @override
@@ -1561,12 +1803,18 @@ class _DetailRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Flexible(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 5),
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: isAmount ? 124 : 88,
+                maxWidth: MediaQuery.sizeOf(context).width * 0.46,
+              ),
               child: Text(
                 value,
                 textAlign: TextAlign.right,
+                maxLines: isAmount ? 1 : 3,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: valueColor ?? AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
