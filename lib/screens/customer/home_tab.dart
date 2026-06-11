@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../controllers/shell_controller.dart';
 import '../../controllers/tour_controller.dart';
@@ -37,6 +38,7 @@ class _TripType {
 class _HomeTabState extends State<HomeTab> {
   final _controller = Get.find<TourController>();
   final _wishlistController = Get.find<WishlistController>();
+  final _notificationController = Get.put(NotificationController());
   final _scrollController = ScrollController();
   List<BannerModel> _banners = [];
   bool _showScrollToTop = false;
@@ -315,12 +317,23 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     const SizedBox(width: 10),
                   ],
-                  _CircleIconButton(
-                    icon: Icons.notifications_none_rounded,
-                    onTap: () => Get.toNamed(AppRoutes.notifications),
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.white.withValues(alpha: 0.12),
-                  ),
+                  // Trong _buildHeader của HomeTab
+                  Obx(() {
+                    final unreadCount = _notificationController.unreadCount;
+                    return Badge(
+                      label: Text(unreadCount.toString()),
+                      isLabelVisible: unreadCount > 0,
+                      backgroundColor: AppColors.error,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      largeSize: 18,
+                      child: _CircleIconButton(
+                        icon: Icons.notifications_none_rounded,
+                        onTap: () => Get.toNamed(AppRoutes.notifications),
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    );
+                  }),
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => Get.find<ShellController>().changeTab(4),

@@ -124,57 +124,7 @@ class OrderController extends GetxController {
   }
 }
 
-class NotificationController extends GetxController {
-  final NotificationService _service = Get.find<NotificationService>();
-  final notifications = <NotificationModel>[].obs;
-  final isLoading = false.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetchNotifications();
-  }
-
-  Future<void> fetchNotifications() async {
-    isLoading.value = true;
-    try {
-      notifications.assignAll(await _service.getNotifications());
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> markRead(int id) async {
-    try {
-      await _service.markAsRead(id);
-      final idx = notifications.indexWhere((n) => n.id == id);
-      if (idx >= 0) {
-        final n = notifications[idx];
-        notifications[idx] = NotificationModel(
-          id: n.id,
-          title: n.title,
-          message: n.message,
-          type: n.type,
-          isRead: true,
-          createdAt: n.createdAt,
-        );
-      }
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    }
-  }
-
-  Future<void> deleteNotification(int id) async {
-    try {
-      await _service.deleteNotification(id);
-      notifications.removeWhere((n) => n.id == id);
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    }
-  }
-}
 
 class WishlistController extends GetxController {
   final WishlistService _service = Get.find<WishlistService>();

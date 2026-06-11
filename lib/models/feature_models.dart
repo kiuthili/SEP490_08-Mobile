@@ -1,41 +1,7 @@
 import '../utils/json_utils.dart';
 import '../utils/text_encoding.dart';
 
-class NotificationModel {
-  final int id;
-  final String title;
-  final String? message;
-  final String? type;
-  final bool isRead;
-  final DateTime? createdAt;
 
-  NotificationModel({
-    required this.id,
-    required this.title,
-    this.message,
-    this.type,
-    required this.isRead,
-    this.createdAt,
-  });
-
-  factory NotificationModel.fromJson(Map<String, dynamic> json) {
-    return NotificationModel(
-      id: JsonUtils.readInt(json['id']),
-      title: JsonUtils.readString(
-            JsonUtils.pick(json, ['title', 'subject']),
-          ) ??
-          '',
-      message: JsonUtils.readString(
-        JsonUtils.pick(json, ['message', 'content']),
-      ),
-      type: JsonUtils.readString(json['type']),
-      isRead: JsonUtils.readBool(
-        JsonUtils.pick(json, ['isRead', 'read']),
-      ),
-      createdAt: JsonUtils.readDateTime(json['createdAt']),
-    );
-  }
-}
 
 class VoucherModel {
   final int id;

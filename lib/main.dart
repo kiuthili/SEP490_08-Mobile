@@ -1,9 +1,13 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:stayhub_mobile/firebase_options.dart';
+import 'package:stayhub_mobile/services/notification_service.dart';
+import 'package:stayhub_mobile/services/push_notification_service.dart';
 import 'app.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
@@ -22,7 +26,10 @@ Future<void> main() async {
   HttpOverrides.global = _StayHubHttpOverrides();
   GoogleFonts.config.allowRuntimeFetching = false;
   await GetStorage.init();
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await Get.putAsync(() => PushNotificationService().init());
   Get.put(StorageService(), permanent: true);
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthService(), permanent: true);

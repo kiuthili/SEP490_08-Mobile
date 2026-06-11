@@ -7,8 +7,15 @@ class ApiConstants {
   static String get baseUrl {
     const override = String.fromEnvironment('API_BASE_URL');
     if (override.isNotEmpty) return override;
-    // Android emulator reaches the host machine through 10.0.2.2.
-    if (Platform.isAndroid) return 'https://192.168.1.174:7010';
+
+    if (Platform.isAndroid) {
+      return 'https://192.168.1.174:7010';
+    }
+
+    if (Platform.isIOS) {
+      return 'http://192.168.110.213:5046';
+    }
+
     return 'https://localhost:7010';
   }
 
