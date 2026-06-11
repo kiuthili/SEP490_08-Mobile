@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/shell_controller.dart';
 import '../controllers/tour_controller.dart';

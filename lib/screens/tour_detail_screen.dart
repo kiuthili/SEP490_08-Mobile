@@ -411,23 +411,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   subtitle: _reviewController.reviews.isEmpty
                       ? 'Chưa có đánh giá'
                       : '${_reviewController.reviews.length} đánh giá gần đây',
-                  trailing: OutlinedButton.icon(
-                    onPressed: () => _showReviewDialog(
-                      tour.id,
-                      existing: _reviewController.myReview.value,
-                    ),
-                    icon: Icon(
-                      _reviewController.myReview.value != null
-                          ? Icons.edit_rounded
-                          : Icons.add_rounded,
-                      size: 18,
-                    ),
-                    label: Text(
-                      _reviewController.myReview.value != null
-                          ? 'Chỉnh sửa'
-                          : 'Viết đánh giá',
-                    ),
-                  ),
                   child: _reviewController.reviews.isEmpty
                       ? const Text(
                           'Hãy là người đầu tiên chia sẻ trải nghiệm về tour này.',
