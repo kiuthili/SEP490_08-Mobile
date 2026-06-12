@@ -35,10 +35,9 @@ class PushNotificationService extends GetxService {
       requestSoundPermission: false,
     );
     await _localNotifications.initialize(
-      settings: const InitializationSettings(android: androidInit, iOS: iosInit),
+      settings: const InitializationSettings(android: androidInit),
     );
 
-    // ✅ Tạo Android Notification Channel (bắt buộc Android 8+)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'stayhub_channel',
       'Thông báo StayHub',
@@ -49,12 +48,10 @@ class PushNotificationService extends GetxService {
     <AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    // ✅ Xử lý tap khi app đang TẮT HOÀN TOÀN
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) _handleNotificationTap(message.data);
     });
 
-    // ✅ Xử lý tap khi app đang BACKGROUND
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _handleNotificationTap(message.data);
     });
@@ -63,7 +60,7 @@ class PushNotificationService extends GetxService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
         _localNotifications.show(
-          id: DateTime.now().millisecondsSinceEpoch % 100000, // ✅ fix tránh trùng id
+          id: DateTime.now().millisecondsSinceEpoch % 100000,
           title: message.notification!.title,
           body: message.notification!.body,
           notificationDetails: const NotificationDetails(
@@ -72,11 +69,6 @@ class PushNotificationService extends GetxService {
               'Thông báo StayHub',
               importance: Importance.max,
               priority: Priority.high,
-            ),
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentSound: true,
-              presentBadge: true,
             ),
           ),
         );
@@ -93,13 +85,10 @@ class PushNotificationService extends GetxService {
     return this;
   }
 
-  // ✅ Xử lý khi user tap vào thông báo
   void _handleNotificationTap(Map<String, dynamic> data) {
     if (Get.isRegistered<NotificationController>()) {
       Get.find<NotificationController>().fetchNotifications();
     }
-    // Điều hướng nếu cần, ví dụ:
-    // Get.toNamed('/notifications');
   }
 
   // Gửi FCM Token lên Backend

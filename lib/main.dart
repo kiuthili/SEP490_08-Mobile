@@ -29,7 +29,12 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await Get.putAsync(() => PushNotificationService().init());
+
+  // ✅ Chỉ khởi tạo push notification trên Android
+  if (Platform.isAndroid) {
+    await Get.putAsync(() => PushNotificationService().init());
+  }
+
   Get.put(StorageService(), permanent: true);
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthService(), permanent: true);
