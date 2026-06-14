@@ -177,9 +177,20 @@ class AuthService extends GetxService with BaseServiceMixin {
   }
 
   Future<LoginResponse> _handleAuthResponse(Map<String, dynamic> map) async {
-    final data = map['data'] as Map<String, dynamic>;
+    final data = map['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiError(message: 'Phản hồi đăng nhập không hợp lệ');
+    }
     final loginResponse = LoginResponse.fromJson(data);
     final user = _withRoles(loginResponse.user, loginResponse.token);
+    if (!user.isCustomerOnly) {
+      await _revokeRejectedSession(loginResponse.refreshToken);
+      await _storage.clearSession();
+      throw ApiError(
+        message: 'Ứng dụng di động chỉ dành cho tài khoản Customer',
+        statusCode: 403,
+      );
+    }
     await _storage.saveSession(
       token: loginResponse.token,
       refreshToken: loginResponse.refreshToken,
@@ -190,6 +201,18 @@ class AuthService extends GetxService with BaseServiceMixin {
       token: loginResponse.token,
       refreshToken: loginResponse.refreshToken,
     );
+  }
+
+  Future<void> _revokeRejectedSession(String refreshToken) async {
+    if (refreshToken.isEmpty) return;
+    try {
+      await api.dio.post(
+        '${ApiConstants.auth}/logout',
+        data: {'refreshToken': refreshToken},
+      );
+    } catch (_) {
+      // The local session is still cleared when server-side revocation fails.
+    }
   }
 
   UserModel _withRoles(UserModel user, [String? token]) {
