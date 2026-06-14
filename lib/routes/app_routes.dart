@@ -24,7 +24,6 @@ class AppRoutes {
   static const String momentDetail = '/moment-detail';
   static const String userProfile = '/user-profile';
   static const String payment = '/payment';
-  static const String bankPaymentDemo = '/bank-payment-demo';
   static const String myTickets = '/my-tickets';
   static const String myReviews = '/my-reviews';
   static const String requestCancellation = '/request-cancellation';

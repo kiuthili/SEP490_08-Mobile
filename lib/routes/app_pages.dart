@@ -9,7 +9,6 @@ import '../screens/customer/public_tracking_screen.dart';
 import '../screens/legal/privacy_screen.dart';
 import '../screens/legal/terms_screen.dart';
 import '../screens/customer/booking_screen.dart';
-import '../screens/customer/bank_payment_demo_screen.dart';
 import '../screens/customer/chat_inbox_screen.dart';
 import '../screens/customer/my_reviews_screen.dart';
 import '../screens/customer/request_cancellation_screen.dart';
@@ -161,10 +160,6 @@ class AppPages {
     ),
     GetPage(name: AppRoutes.userProfile, page: () => const UserProfileScreen()),
     GetPage(name: AppRoutes.payment, page: () => const PaymentScreen()),
-    GetPage(
-      name: AppRoutes.bankPaymentDemo,
-      page: () => const BankPaymentDemoScreen(),
-    ),
     GetPage(name: AppRoutes.myTickets, page: () => const MyTicketsScreen()),
     GetPage(
       name: AppRoutes.myReviews,

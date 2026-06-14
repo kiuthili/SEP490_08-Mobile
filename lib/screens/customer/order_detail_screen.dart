@@ -8,7 +8,6 @@ import '../../models/order_model.dart';
 import '../../models/tour_model.dart';
 import '../../routes/app_routes.dart';
 import '../../services/catalog_service.dart';
-import '../../services/payment_service.dart';
 import '../../services/tour_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
@@ -31,7 +30,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final _controller = Get.find<OrderController>();
   final _tourService = Get.find<TourService>();
   final _catalogService = Get.find<CatalogService>();
-  PaymentProvider _payProvider = PaymentProvider.vnpay;
   List<TourScheduleItineraryModel> _itineraries = [];
   Map<int, TourismInformationModel> _tourismInformation = {};
   Map<int, String> _ticketTypeNames = {};
@@ -250,22 +248,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             if (order.status == 'Pending') ...[
               const SizedBox(height: 20),
-              const _SectionTitle(
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Hoàn tất thanh toán',
-                subtitle: 'Chọn phương thức phù hợp để xác nhận chỗ',
-              ),
-              const SizedBox(height: 10),
-              _PendingPaymentPanel(
-                order: order,
-                provider: _payProvider,
-                onProviderChanged: (provider) {
-                  setState(() => _payProvider = provider);
-                },
-                onDemoPayment: () => _openDemoPayment(order),
-                onGatewayPayment: () => _openGatewayPayment(order),
-                onCancel: () => _cancelOrder(order),
-              ),
+              const _PendingOrderNotice(),
             ],
             if (order.status == 'Paid' || order.status == 'Completed') ...[
               const SizedBox(height: 20),
@@ -289,40 +272,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _openDemoPayment(OrderModel order) async {
-    final ok = await Get.toNamed(
-      AppRoutes.bankPaymentDemo,
-      arguments: {
-        'orderId': order.id,
-        'amount': order.finalAmount,
-      },
-    );
-    if (ok == true && mounted) {
-      await _controller.fetchOrderDetail(order.id);
-    }
-  }
-
-  Future<void> _openGatewayPayment(OrderModel order) async {
-    final ok = await Get.toNamed(
-      AppRoutes.payment,
-      arguments: {
-        'orderId': order.id,
-        'amount': order.finalAmount,
-        'provider': _payProvider == PaymentProvider.momo ? 'momo' : 'vnpay',
-      },
-    );
-    if (ok == true && mounted) {
-      await _controller.fetchOrderDetail(order.id);
-    }
-  }
-
-  Future<void> _cancelOrder(OrderModel order) async {
-    await _controller.cancelOrder(order.id);
-    if (mounted) {
-      await _controller.fetchOrderDetail(order.id);
-    }
   }
 
   Future<void> _openCancellationRequest(int orderId) async {
@@ -1828,140 +1777,34 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _PendingPaymentPanel extends StatelessWidget {
-  const _PendingPaymentPanel({
-    required this.order,
-    required this.provider,
-    required this.onProviderChanged,
-    required this.onDemoPayment,
-    required this.onGatewayPayment,
-    required this.onCancel,
-  });
-
-  final OrderModel order;
-  final PaymentProvider provider;
-  final ValueChanged<PaymentProvider> onProviderChanged;
-  final VoidCallback onDemoPayment;
-  final VoidCallback onGatewayPayment;
-  final VoidCallback onCancel;
+class _PendingOrderNotice extends StatelessWidget {
+  const _PendingOrderNotice();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(
-            color: AppColors.brandLight,
-            borderRadius: AppRadius.card,
-            border: Border.all(
-              color: AppColors.brand.withValues(alpha: 0.14),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.1),
+        borderRadius: AppRadius.card,
+        border: Border.all(
+          color: AppColors.accent.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.schedule_rounded, color: AppColors.accent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Giao dịch chưa hoàn tất. Đơn này không thể thanh toán lại; '
+              'hệ thống sẽ tự hủy nếu cổng thanh toán không xác nhận thành công.',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.brandGradient,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'Ngân hàng nội địa',
-                                style: AppTextStyles.textTheme.titleSmall,
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                            const _DemoBadge(),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Mô phỏng thanh toán và xác thực OTP',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              CustomButton(
-                label: 'Thanh toán ngân hàng demo',
-                onPressed: onDemoPayment,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
-            borderRadius: AppRadius.card,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Cổng thanh toán thật',
-                style: AppTextStyles.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 10),
-              SegmentedButton<PaymentProvider>(
-                segments: const [
-                  ButtonSegment(
-                    value: PaymentProvider.vnpay,
-                    icon: Icon(Icons.credit_card_rounded),
-                    label: Text('VNPay'),
-                  ),
-                  ButtonSegment(
-                    value: PaymentProvider.momo,
-                    icon: Icon(Icons.account_balance_wallet_rounded),
-                    label: Text('MoMo'),
-                  ),
-                ],
-                selected: {provider},
-                onSelectionChanged: (values) {
-                  onProviderChanged(values.first);
-                },
-              ),
-              const SizedBox(height: 12),
-              CustomButton(
-                label: 'Mở cổng thanh toán',
-                outlined: true,
-                onPressed: onGatewayPayment,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextButton.icon(
-          onPressed: onCancel,
-          icon: const Icon(Icons.delete_outline_rounded),
-          label: const Text('Hủy đơn đặt tour'),
-          style: TextButton.styleFrom(foregroundColor: AppColors.error),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -2143,30 +1986,6 @@ class _StatusPill extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DemoBadge extends StatelessWidget {
-  const _DemoBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.accentLight,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: const Text(
-        'DEMO',
-        style: TextStyle(
-          color: AppColors.accent,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.5,
-        ),
       ),
     );
   }

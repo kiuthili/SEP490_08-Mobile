@@ -9,14 +9,14 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      return 'https://pgfglbkq-7010.asse.devtunnels.ms';
+      return 'https://jmlg8qxx-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
-      return 'https://pgfglbkq-7010.asse.devtunnels.ms';
+      return 'https://jmlg8qxx-7010.asse.devtunnels.ms';
     }
 
-    return 'https://pgfglbkq-7010.asse.devtunnels.ms';
+    return 'https://jmlg8qxx-7010.asse.devtunnels.ms';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
