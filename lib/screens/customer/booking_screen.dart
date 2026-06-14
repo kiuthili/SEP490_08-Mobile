@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
 import '../../routes/app_routes.dart';
+import '../../services/payment_service.dart';
 import '../../utils/booking_args.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/snackbar_helper.dart';
@@ -57,6 +58,7 @@ class _BookingScreenState extends State<BookingScreen> {
   final _workers = <Worker>[];
   var _initDone = false;
   var _initFailed = false;
+  PaymentProvider _paymentProvider = PaymentProvider.vnpay;
 
   @override
   void initState() {
@@ -174,23 +176,14 @@ class _BookingScreenState extends State<BookingScreen> {
     );
     if (order == null || !mounted) return;
 
-    final result = await Get.toNamed(
-      AppRoutes.bankPaymentDemo,
+    await Get.toNamed(
+      AppRoutes.payment,
       arguments: {
         'orderId': order.id,
         'amount': order.finalAmount,
+        'provider': _paymentProvider == PaymentProvider.momo ? 'momo' : 'vnpay',
       },
     );
-    if (!mounted) return;
-    if (result != true && Get.isRegistered<OrderController>()) {
-      await Get.find<OrderController>().fetchOrders(refresh: true);
-    }
-    Get.offNamed(AppRoutes.orderDetail, arguments: order.id);
-    if (result != true) {
-      SnackbarHelper.info(
-        'Đơn đã được tạo. Bạn có thể thanh toán tiếp trong chi tiết đơn.',
-      );
-    }
   }
 
   Future<void> _pickDateOfBirth(_PassengerForm passenger) async {
@@ -713,7 +706,12 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ],
               const SizedBox(height: 16),
-              const _PaymentMethodCard(),
+              _PaymentMethodCard(
+                provider: _paymentProvider,
+                onChanged: (provider) {
+                  setState(() => _paymentProvider = provider);
+                },
+              ),
             ],
           ),
         ),
@@ -1288,7 +1286,13 @@ class _DarkSummaryRow extends StatelessWidget {
 }
 
 class _PaymentMethodCard extends StatelessWidget {
-  const _PaymentMethodCard();
+  const _PaymentMethodCard({
+    required this.provider,
+    required this.onChanged,
+  });
+
+  final PaymentProvider provider;
+  final ValueChanged<PaymentProvider> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1299,76 +1303,36 @@ class _PaymentMethodCard extends StatelessWidget {
         borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: AppColors.brandGradient,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.account_balance_rounded,
-              color: Colors.white,
-            ),
+          Text(
+            'Phương thức thanh toán',
+            style: AppTextStyles.textTheme.titleSmall,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Ngân hàng nội địa',
-                        style: AppTextStyles.textTheme.titleSmall,
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentLight,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Text(
-                        'DEMO',
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Mô phỏng thanh toán thẻ và xác thực OTP',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          SegmentedButton<PaymentProvider>(
+            segments: const [
+              ButtonSegment(
+                value: PaymentProvider.vnpay,
+                icon: Icon(Icons.credit_card_rounded),
+                label: Text('VNPay'),
+              ),
+              ButtonSegment(
+                value: PaymentProvider.momo,
+                icon: Icon(Icons.account_balance_wallet_rounded),
+                label: Text('MoMo'),
+              ),
+            ],
+            selected: {provider},
+            onSelectionChanged: (values) => onChanged(values.first),
           ),
-          const SizedBox(width: 8),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.lock_rounded,
-              size: 17,
-              color: AppColors.success,
-            ),
+          const SizedBox(height: 10),
+          Text(
+            provider == PaymentProvider.vnpay
+                ? 'Thanh toán qua cổng VNPay sandbox.'
+                : 'Thanh toán theo luồng ứng dụng MoMo.',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),
