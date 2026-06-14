@@ -27,6 +27,11 @@ class UserModel {
 
   bool get isStaff => roles.any((r) => r.toLowerCase() == 'staff');
 
+  bool get isCustomerOnly {
+    if (roles.isEmpty) return false;
+    return roles.every((role) => role.toLowerCase() == 'customer');
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final rawRoles = JsonUtils.pick(json, ['roles', 'Roles']);
     final roles = <String>[];

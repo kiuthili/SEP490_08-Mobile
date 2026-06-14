@@ -42,9 +42,13 @@ class _SplashScreenState extends State<SplashScreen>
       const Duration(milliseconds: AppConstants.splashDelayMs),
     );
     final storage = Get.find<StorageService>();
-    if (storage.isLoggedIn) {
+    final user = storage.user;
+    if (storage.isLoggedIn && user?.isCustomerOnly == true) {
       Get.offAllNamed(AppRoutes.home);
     } else {
+      if (storage.isLoggedIn) {
+        await storage.clearSession();
+      }
       Get.offAllNamed(AppRoutes.login);
     }
   }
