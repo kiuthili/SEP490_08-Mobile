@@ -15,7 +15,12 @@ class SocialService extends GetxService with BaseServiceMixin {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.users}/search',
-        queryParameters: {'q': query, 'page': page, 'pageSize': pageSize},
+        queryParameters: {
+          'q': query,
+          'page': page,
+          'pageSize': pageSize,
+          'role': 'Customer',
+        },
       );
       return parsePagination(response.data, UserSearchModel.fromJson);
     });
@@ -64,16 +69,10 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<PaginationModel<FriendModel>> getFriends({
-    int page = 1,
-    int pageSize = AppConstants.defaultPageSize,
-  }) async {
+  Future<List<FriendModel>> getFriends() async {
     return request(() async {
-      final response = await api.dio.get(
-        '${ApiConstants.friends}/list',
-        queryParameters: {'page': page, 'pageSize': pageSize},
-      );
-      return parsePagination(response.data, FriendModel.fromJson);
+      final response = await api.dio.get(ApiConstants.friends);
+      return parseList(response.data, FriendModel.fromJson);
     });
   }
 

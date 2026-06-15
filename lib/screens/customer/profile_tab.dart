@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/shell_controller.dart';
+import '../../models/user_model.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
 import '../../theme/shell_layout.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
@@ -47,15 +49,282 @@ class _ProfileTabState extends State<ProfileTab> {
     return value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa cập nhật';
   }
 
-  Widget _trailingValue(String value) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 160),
-      child: Text(
-        value,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.end,
-        style: AppTextStyles.textTheme.bodySmall,
+  Future<void> _openEditProfile() async {
+    await Get.toNamed(AppRoutes.editProfile);
+    await _controller.loadProfile();
+  }
+
+  Widget _buildProfileOverview(UserModel user) {
+    final hasAvatar = user.avatarUrl?.isNotEmpty == true;
+    final initial = user.fullName.trim().isNotEmpty
+        ? user.fullName.trim()[0].toUpperCase()
+        : '?';
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+            decoration: const BoxDecoration(
+              gradient: AppColors.homeHeroGradient,
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.2),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 46,
+                    backgroundColor: AppColors.brandLight,
+                    backgroundImage: hasAvatar
+                        ? CachedNetworkImageProvider(user.avatarUrl!)
+                        : null,
+                    child: !hasAvatar
+                        ? Text(
+                            initial,
+                            style: AppTextStyles.textTheme.headlineMedium
+                                ?.copyWith(
+                                  color: AppColors.brandDeep,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  user.fullName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user.email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.82),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.verified_rounded,
+                        size: 17,
+                        color: Color(0xFF8FE5B0),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Tài khoản đã xác minh',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (user.roles.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: user.roles
+                        .map(
+                          (role) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
+                            ),
+                            child: Text(
+                              role,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.brandLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.badge_outlined,
+                    color: AppColors.brand,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    'Thông tin cá nhân',
+                    style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _openEditProfile,
+                  icon: const Icon(Icons.edit_outlined, size: 17),
+                  label: const Text('Chỉnh sửa'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.brand,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _profileInfoRow(
+            icon: Icons.person_outline_rounded,
+            label: 'Họ và tên',
+            value: user.fullName,
+          ),
+          _profileInfoRow(
+            icon: Icons.mail_outline_rounded,
+            label: 'Email',
+            value: user.email,
+          ),
+          _profileInfoRow(
+            icon: Icons.phone_outlined,
+            label: 'Số điện thoại',
+            value: _valueOrFallback(user.phoneNumber),
+          ),
+          _profileInfoRow(
+            icon: Icons.people_outline_rounded,
+            label: 'Giới tính',
+            value: _genderLabel(user.gender),
+          ),
+          _profileInfoRow(
+            icon: Icons.calendar_today_outlined,
+            label: 'Ngày sinh',
+            value: _valueOrFallback(user.dateOfBirth),
+          ),
+          _profileInfoRow(
+            icon: Icons.login_rounded,
+            label: 'Phương thức đăng nhập',
+            value: _valueOrFallback(user.provider),
+            showDivider: false,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool showDivider = true,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.brandLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: AppColors.brand, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        value,
+                        style: AppTextStyles.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showDivider)
+            const Divider(height: 1, indent: 46, color: AppColors.separator),
+        ],
       ),
     );
   }
@@ -90,107 +359,11 @@ class _ProfileTabState extends State<ProfileTab> {
               bottom: ShellLayout.bottomInset(context),
             ),
             children: [
-              IosSurfaceCard(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 44,
-                      backgroundColor: AppColors.brandLight,
-                      backgroundImage: user.avatarUrl?.isNotEmpty == true
-                          ? CachedNetworkImageProvider(user.avatarUrl!)
-                          : null,
-                      child: user.avatarUrl?.isNotEmpty != true
-                          ? Text(
-                              user.fullName.isNotEmpty
-                                  ? user.fullName[0].toUpperCase()
-                                  : '?',
-                              style: AppTextStyles.textTheme.headlineMedium,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      user.fullName,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.textTheme.headlineMedium,
-                    ),
-                    Text(user.email, style: AppTextStyles.textTheme.bodySmall),
-                    const SizedBox(height: 10),
-                    const Chip(
-                      avatar: Icon(
-                        Icons.verified_rounded,
-                        size: 18,
-                        color: AppColors.success,
-                      ),
-                      label: Text('Tài khoản đã xác minh'),
-                    ),
-                    if (user.roles.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Wrap(
-                          spacing: 8,
-                          children: user.roles
-                              .map((role) => Chip(label: Text(role)))
-                              .toList(),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              IosGroupedSection(
-                header: 'Thông tin cá nhân',
-                margin: const EdgeInsets.only(top: 20),
-                children: [
-                  IosMenuTile(
-                    icon: Icons.person_outline_rounded,
-                    title: 'Họ và tên',
-                    trailing: _trailingValue(user.fullName),
-                  ),
-                  IosMenuTile(
-                    icon: Icons.mail_outline_rounded,
-                    title: 'Email',
-                    trailing: _trailingValue(user.email),
-                  ),
-                  IosMenuTile(
-                    icon: Icons.phone_outlined,
-                    title: 'Số điện thoại',
-                    trailing: _trailingValue(
-                      _valueOrFallback(user.phoneNumber),
-                    ),
-                  ),
-                  IosMenuTile(
-                    icon: Icons.people_outline_rounded,
-                    title: 'Giới tính',
-                    trailing: _trailingValue(_genderLabel(user.gender)),
-                  ),
-                  IosMenuTile(
-                    icon: Icons.calendar_today_outlined,
-                    title: 'Ngày sinh',
-                    trailing: _trailingValue(
-                      _valueOrFallback(user.dateOfBirth),
-                    ),
-                  ),
-                  IosMenuTile(
-                    icon: Icons.login_rounded,
-                    title: 'Phương thức đăng nhập',
-                    trailing: _trailingValue(
-                      _valueOrFallback(user.provider),
-                    ),
-                  ),
-                ],
-              ),
+              _buildProfileOverview(user),
               IosGroupedSection(
                 header: 'Tài khoản',
-                margin: const EdgeInsets.only(top: 8),
+                margin: const EdgeInsets.only(top: 18),
                 children: [
-                  IosMenuTile(
-                    icon: Icons.edit_rounded,
-                    title: 'Cập nhật hồ sơ',
-                    onTap: () async {
-                      await Get.toNamed(AppRoutes.editProfile);
-                      await _controller.loadProfile();
-                    },
-                  ),
                   IosMenuTile(
                     icon: Icons.lock_outline_rounded,
                     title: 'Đổi mật khẩu',

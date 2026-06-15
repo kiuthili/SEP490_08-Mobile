@@ -13,9 +13,11 @@ import '../../services/social_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/tour_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_screen.dart';
+import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
 
 class ChatRoomScreen extends StatefulWidget {
@@ -1325,6 +1327,7 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final _social = Get.find<SocialService>();
+  final _socialController = Get.find<SocialController>();
   UserSearchModel? _user;
   var _loading = true;
 
@@ -1336,8 +1339,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _load() async {
     final id = Get.arguments as int?;
-    if (id != null) _user = await _social.getUserProfile(id);
-    if (mounted) setState(() => _loading = false);
+    try {
+      if (id != null) {
+        _user = await _social.getUserProfile(id);
+        await Future.wait([
+          _socialController.fetchFriends(),
+          _socialController.fetchPendingRequests(),
+        ]);
+      }
+    } catch (_) {
+      SnackbarHelper.error('Không thể tải hồ sơ người dùng');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openChat() async {
+    final user = _user;
+    if (user == null) return;
+    final room = await _socialController.createDirectChat(user.id);
+    if (room == null) return;
+    await Get.toNamed(
+      AppRoutes.chatRoom,
+      arguments: {
+        'roomId': room.id,
+        'title':
+            room.name?.trim().isNotEmpty == true ? room.name : user.fullName,
+        'isGroup': false,
+        'avatarUrl': room.avatarUrl ?? user.avatarUrl,
+      },
+    );
   }
 
   @override
@@ -1348,47 +1379,434 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ? const LoadingWidget()
           : _user == null
               ? const Center(child: Text('Không tìm thấy'))
-              : Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage: _user!.avatarUrl != null
-                            ? NetworkImage(_user!.avatarUrl!)
-                            : null,
-                        child: _user!.avatarUrl == null
-                            ? Text(
-                                _user!.fullName.isNotEmpty
-                                    ? _user!.fullName[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(fontSize: 28),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(_user!.fullName,
-                          style: Theme.of(context).textTheme.headlineSmall),
-                      Text(_user!.email ?? ''),
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        onPressed: () => Get.find<SocialController>()
-                            .sendFriendRequest(_user!.id),
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Kết bạn'),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => Get.toNamed(
-                          AppRoutes.chatRoom,
-                          arguments: _user!.id,
-                        ),
-                        icon: const Icon(Icons.chat),
-                        label: const Text('Nhắn tin'),
-                      ),
+                      _buildProfileHeader(_user!),
+                      const SizedBox(height: 18),
+                      _buildActions(_user!),
+                      const SizedBox(height: 18),
+                      _buildProfileInformation(_user!),
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _buildProfileHeader(UserSearchModel user) {
+    final initial = user.fullName.trim().isEmpty
+        ? '?'
+        : user.fullName.trim()[0].toUpperCase();
+    return IosSurfaceCard(
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: AppRadius.card,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 174,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned.fill(
+                    bottom: 42,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        gradient: AppColors.homeHeroGradient,
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: -30,
+                            top: -46,
+                            child: _profileDecorationCircle(
+                              128,
+                              Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          Positioned(
+                            left: -22,
+                            bottom: -48,
+                            child: _profileDecorationCircle(
+                              104,
+                              Colors.white.withValues(alpha: 0.06),
+                            ),
+                          ),
+                          Positioned(
+                            left: 18,
+                            top: 17,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.14),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.14),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.explore_outlined,
+                                    size: 15,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'StayHub Traveler',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 104,
+                    height: 104,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.navy.withValues(alpha: 0.16),
+                          blurRadius: 18,
+                          offset: const Offset(0, 7),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: user.avatarUrl?.isNotEmpty == true
+                          ? CachedNetworkImage(
+                              imageUrl: user.avatarUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) =>
+                                  _profileInitial(initial),
+                            )
+                          : _profileInitial(initial),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+              child: Column(
+                children: [
+                  Text(
+                    user.fullName.isEmpty
+                        ? 'Người dùng StayHub'
+                        : user.fullName,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.textTheme.headlineMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (user.email?.isNotEmpty == true) ...[
+                    const SizedBox(height: 5),
+                    Text(
+                      user.email!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Obx(() {
+                    final isFriend = _socialController.isFriend(user.id);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isFriend
+                            ? AppColors.brandLight
+                            : AppColors.surfaceGrouped,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: isFriend
+                              ? AppColors.brand.withValues(alpha: 0.16)
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isFriend
+                                ? Icons.people_rounded
+                                : Icons.person_outline_rounded,
+                            size: 16,
+                            color: isFriend
+                                ? AppColors.brand
+                                : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isFriend ? 'Bạn bè' : 'Thành viên StayHub',
+                            style: TextStyle(
+                              color: isFriend
+                                  ? AppColors.brand
+                                  : AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileDecorationCircle(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+
+  Widget _profileInitial(String initial) {
+    return Container(
+      color: AppColors.brandLight,
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: AppTextStyles.textTheme.displaySmall?.copyWith(
+          color: AppColors.brand,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions(UserSearchModel user) {
+    return Obx(() {
+      final isFriend = _socialController.isFriend(user.id);
+      final hasIncoming = _socialController.hasIncomingRequest(user.id);
+      final sent = _socialController.sentRequestUserIds.contains(user.id);
+      final busy = _socialController.processingUserIds.contains(user.id);
+
+      Widget relationshipButton;
+      if (isFriend) {
+        relationshipButton = FilledButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.people_rounded),
+          label: const Text('Đã là bạn bè'),
+          style: FilledButton.styleFrom(
+            disabledBackgroundColor: AppColors.brandLight,
+            disabledForegroundColor: AppColors.brand,
+          ),
+        );
+      } else if (hasIncoming) {
+        final request = _socialController.pendingRequests
+            .firstWhere((item) => item.senderId == user.id);
+        relationshipButton = FilledButton.icon(
+          onPressed: busy
+              ? null
+              : () => _socialController.respondRequest(request.id, true),
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+          label: const Text('Chấp nhận'),
+          style: _profilePrimaryButtonStyle(),
+        );
+      } else {
+        relationshipButton = FilledButton.icon(
+          onPressed: busy || sent
+              ? null
+              : () => _socialController.sendFriendRequest(user.id),
+          icon: Icon(
+            sent ? Icons.schedule_rounded : Icons.person_add_rounded,
+          ),
+          label: Text(sent ? 'Đã gửi lời mời' : 'Kết bạn'),
+          style: _profilePrimaryButtonStyle(),
+        );
+      }
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final chatButton = OutlinedButton.icon(
+            onPressed: busy ? null : _openChat,
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            label: const Text('Nhắn tin'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.brand,
+              side: const BorderSide(color: AppColors.brand),
+              backgroundColor: AppColors.surfaceElevated,
+            ),
+          );
+          if (constraints.maxWidth < 360) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: 50, child: relationshipButton),
+                const SizedBox(height: 10),
+                SizedBox(height: 50, child: chatButton),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: SizedBox(height: 50, child: relationshipButton)),
+              const SizedBox(width: 12),
+              Expanded(child: SizedBox(height: 50, child: chatButton)),
+            ],
+          );
+        },
+      );
+    });
+  }
+
+  ButtonStyle _profilePrimaryButtonStyle() {
+    return FilledButton.styleFrom(
+      backgroundColor: AppColors.brand,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: AppColors.brand.withValues(alpha: 0.35),
+      disabledForegroundColor: Colors.white.withValues(alpha: 0.85),
+    );
+  }
+
+  Widget _buildProfileInformation(UserSearchModel user) {
+    final joinedAt = user.createdAt == null
+        ? 'Chưa cập nhật'
+        : DateFormat('MM/yyyy').format(user.createdAt!.toLocal());
+    return IosSurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.brandLight,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(
+                    Icons.badge_outlined,
+                    size: 19,
+                    color: AppColors.brand,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Text(
+                  'Thông tin cá nhân',
+                  style: AppTextStyles.textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          _profileInfoRow(
+            icon: Icons.person_outline_rounded,
+            label: 'Họ và tên',
+            value: user.fullName,
+          ),
+          _profileInfoRow(
+            icon: Icons.people_outline_rounded,
+            label: 'Giới tính',
+            value: user.gender,
+          ),
+          _profileInfoRow(
+            icon: Icons.cake_outlined,
+            label: 'Ngày sinh',
+            value: user.dateOfBirth,
+          ),
+          _profileInfoRow(
+            icon: Icons.calendar_month_outlined,
+            label: 'Tham gia từ',
+            value: joinedAt,
+            showDivider: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileInfoRow({
+    required IconData icon,
+    required String label,
+    String? value,
+    bool showDivider = true,
+  }) {
+    final displayValue =
+        value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa cập nhật';
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.brandLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 20, color: AppColors.brand),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  displayValue,
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider) const Divider(height: 1, indent: 68, endIndent: 18),
+      ],
     );
   }
 }

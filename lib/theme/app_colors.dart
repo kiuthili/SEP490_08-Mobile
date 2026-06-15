@@ -49,6 +49,13 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient homeHeroGradient = LinearGradient(
+    colors: [Color(0xFF05073C), Color(0xFF0048B0), Color(0xFF1485FF)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: [0, 0.58, 1],
+  );
+
   static const LinearGradient authHeroGradient = LinearGradient(
     colors: [
       Color(0xFF05073C),

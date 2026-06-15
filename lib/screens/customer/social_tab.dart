@@ -4,6 +4,7 @@ import '../../controllers/feature_controllers.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/ios_grouped.dart';
+import 'friend_management_panel.dart';
 
 class SocialTab extends StatefulWidget {
   const SocialTab({super.key});
@@ -70,173 +71,11 @@ class _SocialTabState extends State<SocialTab>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _FriendsPanel(
+          FriendManagementPanel(
             social: _social,
             searchController: _searchController,
           ),
           _MomentsPanel(social: _social),
-        ],
-      ),
-    );
-  }
-}
-
-class _FriendsPanel extends StatelessWidget {
-  final SocialController social;
-  final TextEditingController searchController;
-
-  const _FriendsPanel({
-    required this.social,
-    required this.searchController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        await social.fetchFriends();
-        await social.fetchPendingRequests();
-      },
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: 'Tìm người dùng theo email hoặc tên...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.person_search),
-                onPressed: () => social.searchUsers(searchController.text),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onSubmitted: social.searchUsers,
-          ),
-          const SizedBox(height: 16),
-          Obx(() {
-            if (social.searchResults.isNotEmpty) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Kết quả tìm kiếm',
-                      style: Theme.of(context).textTheme.titleSmall),
-                  ...social.searchResults.map(
-                    (u) => ListTile(
-                      leading: CircleAvatar(
-                        child: Text(u.fullName.isNotEmpty
-                            ? u.fullName[0].toUpperCase()
-                            : '?'),
-                      ),
-                      title: Text(u.fullName),
-                      subtitle: Text(u.email ?? ''),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.person_add),
-                        onPressed: () => social.sendFriendRequest(u.id),
-                      ),
-                      onTap: () => Get.toNamed(
-                        AppRoutes.userProfile,
-                        arguments: u.id,
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 32),
-                ],
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          Obx(() {
-            if (social.pendingRequests.isNotEmpty) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Lời mời kết bạn',
-                      style: Theme.of(context).textTheme.titleSmall),
-                  ...social.pendingRequests.map(
-                    (r) => ListTile(
-                      title: Text(r.senderName ?? 'Người dùng #${r.senderId}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
-                            onPressed: () => social.respondRequest(r.id, true),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed: () => social.respondRequest(r.id, false),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 32),
-                ],
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          Text('Danh sách bạn bè',
-              style: Theme.of(context).textTheme.titleSmall),
-          Obx(() {
-            if (social.friends.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('Chưa có bạn bè')),
-              );
-            }
-            return Column(
-              children: social.friends.map((f) {
-                return ListTile(
-                  leading: CircleAvatar(
-                    child: Text(f.fullName.isNotEmpty
-                        ? f.fullName[0].toUpperCase()
-                        : '?'),
-                  ),
-                  title: Text(f.fullName),
-                  subtitle: Text(f.email ?? ''),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.chat_bubble_outline),
-                    onPressed: () => Get.toNamed(
-                      AppRoutes.chatRoom,
-                      arguments: f.userId,
-                    ),
-                  ),
-                  onTap: () => Get.toNamed(
-                    AppRoutes.userProfile,
-                    arguments: f.userId,
-                  ),
-                  onLongPress: () => _confirmUnfriend(context, f),
-                );
-              }).toList(),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  void _confirmUnfriend(BuildContext context, dynamic f) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hủy kết bạn'),
-        content: Text('Hủy kết bạn với ${f.fullName}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Không'),
-          ),
-          FilledButton(
-            onPressed: () {
-              social.unfriend(f.friendshipId);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Hủy kết bạn'),
-          ),
         ],
       ),
     );
