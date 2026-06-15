@@ -19,6 +19,15 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/loading_widget.dart';
 import 'my_tickets_screen.dart';
 
+bool _isToday(DateTime? date) {
+  if (date == null) return false;
+  final localDate = date.toLocal();
+  final today = DateTime.now();
+  return localDate.year == today.year &&
+      localDate.month == today.month &&
+      localDate.day == today.day;
+}
+
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({super.key});
 
@@ -66,6 +75,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     OrderModel order, {
     bool force = false,
   }) async {
+    if (!_shouldLoadItineraries(order)) {
+      if (_loadedScheduleId != null ||
+          _itineraries.isNotEmpty ||
+          _tourismInformation.isNotEmpty ||
+          _expandedDays.isNotEmpty ||
+          _loadingItineraries ||
+          _itineraryError != null) {
+        setState(() {
+          _loadedScheduleId = null;
+          _itineraries = [];
+          _tourismInformation = {};
+          _expandedDays = {};
+          _loadingItineraries = false;
+          _itineraryError = null;
+        });
+      }
+      return;
+    }
+
     final scheduleId =
         order.scheduleId > 0 ? order.scheduleId : order.schedule?.id ?? 0;
     if (scheduleId <= 0) return;
@@ -90,10 +118,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       final tourismInformation = await _loadTourismInformation(itineraries);
       if (!mounted || _loadedScheduleId != scheduleId) return;
       final days = itineraries.map((item) => item.dayNumber).toSet();
+      final todayDay = itineraries
+          .where((item) => _isToday(item.itineraryDate))
+          .map((item) => item.dayNumber)
+          .firstOrNull;
       setState(() {
         _itineraries = itineraries;
         _tourismInformation = tourismInformation;
-        _expandedDays = days.length <= 2 ? days : {days.first};
+        _expandedDays = todayDay != null
+            ? {todayDay}
+            : days.length <= 2
+                ? days
+                : {days.first};
       });
     } catch (e) {
       if (!mounted || _loadedScheduleId != scheduleId) return;
@@ -103,6 +139,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         setState(() => _loadingItineraries = false);
       }
     }
+  }
+
+  bool _shouldLoadItineraries(OrderModel order) {
+    final status = order.status?.trim().toLowerCase();
+    return status != 'pending' && status != 'cancelled';
   }
 
   Future<Map<int, TourismInformationModel>> _loadTourismInformation(
@@ -209,32 +250,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             const SizedBox(height: 10),
             _TripTimeline(order: order),
-            const SizedBox(height: 12),
-            _ScheduleItineraryPanel(
-              itineraries: _itineraries,
-              tourismInformation: _tourismInformation,
-              expandedDays: _expandedDays,
-              loading: _loadingItineraries,
-              error: _itineraryError,
-              onRetry: () => _loadItineraries(order, force: true),
-              onToggleDay: (day) {
-                setState(() {
-                  if (_expandedDays.contains(day)) {
-                    _expandedDays.remove(day);
-                  } else {
-                    _expandedDays.add(day);
-                  }
-                });
-              },
-              onToggleAll: () {
-                final allDays =
-                    _itineraries.map((item) => item.dayNumber).toSet();
-                setState(() {
-                  _expandedDays =
-                      _expandedDays.containsAll(allDays) ? <int>{} : allDays;
-                });
-              },
-            ),
+            if (_shouldLoadItineraries(order)) ...[
+              const SizedBox(height: 12),
+              _ScheduleItineraryPanel(
+                itineraries: _itineraries,
+                tourismInformation: _tourismInformation,
+                expandedDays: _expandedDays,
+                loading: _loadingItineraries,
+                error: _itineraryError,
+                onRetry: () => _loadItineraries(order, force: true),
+                onToggleDay: (day) {
+                  setState(() {
+                    if (_expandedDays.contains(day)) {
+                      _expandedDays.remove(day);
+                    } else {
+                      _expandedDays.add(day);
+                    }
+                  });
+                },
+                onToggleAll: () {
+                  final allDays =
+                      _itineraries.map((item) => item.dayNumber).toSet();
+                  setState(() {
+                    _expandedDays =
+                        _expandedDays.containsAll(allDays) ? <int>{} : allDays;
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 20),
             const _SectionTitle(
               icon: Icons.receipt_long_outlined,
@@ -815,19 +858,27 @@ class _ItineraryDayCard extends StatelessWidget {
         .map((item) => item.itineraryDate)
         .whereType<DateTime>()
         .firstOrNull;
+    final isToday = _isToday(date);
 
     return Container(
       decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(
-                bottom: BorderSide(color: AppColors.separator),
-              ),
+        border: Border(
+          left: isToday
+              ? const BorderSide(color: AppColors.brand, width: 4)
+              : BorderSide.none,
+          bottom: isLast
+              ? BorderSide.none
+              : const BorderSide(color: AppColors.separator),
+        ),
       ),
       child: Column(
         children: [
           Material(
-            color: expanded ? AppColors.brandLight : Colors.transparent,
+            color: isToday
+                ? AppColors.brandLight
+                : expanded
+                    ? AppColors.brandLight.withValues(alpha: 0.6)
+                    : Colors.transparent,
             child: InkWell(
               onTap: onTap,
               child: Padding(
@@ -856,11 +907,42 @@ class _ItineraryDayCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Ngày $day',
-                            style: AppTextStyles.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Ngày $day',
+                                style: AppTextStyles.textTheme.titleSmall
+                                    ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: isToday
+                                      ? AppColors.brandDeep
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              if (isToday) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.brand,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                  child: const Text(
+                                    'HÔM NAY',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 2),
                           Text(

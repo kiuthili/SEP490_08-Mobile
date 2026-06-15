@@ -30,6 +30,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   var _loading = true;
   var _confirming = false;
   String? _paymentUrl;
+  String? _momoDeeplink;
   WebViewController? _webController;
   var _useExternalBrowser = false;
   var _returnHandled = false;
@@ -70,9 +71,8 @@ class _PaymentScreenState extends State<PaymentScreen>
       _wasBackgrounded = false;
       Future.delayed(
         const Duration(seconds: 2),
-        () => mounted
-            ? _paymentDeepLinks.completeOrder(orderId: _orderId)
-            : null,
+        () =>
+            mounted ? _paymentDeepLinks.completeOrder(orderId: _orderId) : null,
       );
     }
   }
@@ -89,17 +89,10 @@ class _PaymentScreenState extends State<PaymentScreen>
         provider: _provider,
       );
       _paymentUrl = payment.paymentUrl;
+      _momoDeeplink = payment.deeplink;
 
-      if (_provider == PaymentProvider.momo && payment.deeplink != null) {
-        final deeplink = Uri.parse(payment.deeplink!);
-        if (await canLaunchUrl(deeplink)) {
-          _useExternalBrowser = true;
-          _launchedMomoApp = await launchUrl(
-            deeplink,
-            mode: LaunchMode.externalApplication,
-          );
-          if (_launchedMomoApp) return;
-        }
+      if (_provider == PaymentProvider.momo && await _openMomoApp()) {
+        return;
       }
 
       if (_useInAppWebView) {
@@ -143,6 +136,37 @@ class _PaymentScreenState extends State<PaymentScreen>
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<bool> _openMomoApp() async {
+    final deeplink = _momoDeeplink;
+    if (deeplink == null || deeplink.isEmpty) return false;
+
+    final uri = Uri.parse(deeplink);
+    if (!await canLaunchUrl(uri)) return false;
+
+    _useExternalBrowser = true;
+    _wasBackgrounded = false;
+    _launchedMomoApp = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (mounted) setState(() {});
+    return _launchedMomoApp;
+  }
+
+  Future<void> _reopenPayment() async {
+    if (_provider == PaymentProvider.momo && await _openMomoApp()) {
+      return;
+    }
+
+    final paymentUrl = _paymentUrl;
+    if (paymentUrl == null || paymentUrl.isEmpty) return;
+
+    await launchUrl(
+      Uri.parse(paymentUrl),
+      mode: LaunchMode.externalApplication,
+    );
   }
 
   /// Bắt redirect sau VNPay/MoMo (gateway → FE) giống web `?payment=success`.
@@ -228,6 +252,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           ],
         ),
         body: Stack(
+          fit: StackFit.expand,
           children: [
             Column(
               children: [
@@ -241,6 +266,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const Icon(
                             Icons.open_in_browser_rounded,
@@ -257,15 +283,15 @@ class _PaymentScreenState extends State<PaymentScreen>
                           ),
                           if (_paymentUrl != null) ...[
                             const SizedBox(height: 20),
-                            SizedBox(
-                              width: 240,
-                              child: CustomButton(
-                                label: 'Mở lại cổng thanh toán',
-                                compact: true,
-                                outlined: true,
-                                onPressed: () => launchUrl(
-                                  Uri.parse(_paymentUrl!),
-                                  mode: LaunchMode.externalApplication,
+                            Align(
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: 240,
+                                child: CustomButton(
+                                  label: 'Mở lại cổng thanh toán',
+                                  compact: true,
+                                  outlined: true,
+                                  onPressed: _reopenPayment,
                                 ),
                               ),
                             ),

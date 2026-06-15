@@ -874,6 +874,15 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedSenderName = message.senderName?.trim().toLowerCase() ?? '';
+    final isSystemMessage = message.senderId == 0 ||
+        normalizedSenderName == 'unknown user' ||
+        normalizedSenderName == 'unknow user';
+
+    if (isSystemMessage) {
+      return _SystemMessageNotice(message: message);
+    }
+
     final bubble = Container(
       constraints: BoxConstraints(
         maxWidth: MediaQuery.sizeOf(context).width * 0.72,
@@ -954,6 +963,70 @@ class _MessageBubble extends StatelessWidget {
           ],
           bubble,
         ],
+      ),
+    );
+  }
+}
+
+class _SystemMessageNotice extends StatelessWidget {
+  const _SystemMessageNotice({required this.message});
+
+  final ChatMessageModel message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 6, 24, 14),
+      child: Center(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.78,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceGrouped,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 15,
+                    color: AppColors.textTertiary,
+                  ),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      message.content,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              if (message.sentAt != null) ...[
+                const SizedBox(height: 3),
+                Text(
+                  DateFormat('HH:mm').format(message.sentAt!.toLocal()),
+                  style: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

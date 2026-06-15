@@ -277,10 +277,16 @@ class _ExploreTabState extends State<ExploreTab> {
             padding: const EdgeInsets.only(right: 8),
             child: IconButton.filledTonal(
               onPressed: _openFilters,
+              style: IconButton.styleFrom(
+                foregroundColor: AppColors.brand,
+                backgroundColor: AppColors.brandLight,
+              ),
               tooltip: 'Bộ lọc',
               icon: Badge(
                 isLabelVisible: filterBadge > 0,
                 label: Text('$filterBadge'),
+                backgroundColor: AppColors.brand,
+                textColor: Colors.white,
                 child: const Icon(Icons.tune_rounded),
               ),
             ),

@@ -1312,6 +1312,25 @@ class _PaymentMethodCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SegmentedButton<PaymentProvider>(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                return states.contains(WidgetState.selected)
+                    ? AppColors.brand
+                    : AppColors.surfaceElevated;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                return states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.brand;
+              }),
+              side: WidgetStateProperty.resolveWith((states) {
+                return BorderSide(
+                  color: states.contains(WidgetState.selected)
+                      ? AppColors.brand
+                      : AppColors.brand.withValues(alpha: 0.24),
+                );
+              }),
+            ),
             segments: const [
               ButtonSegment(
                 value: PaymentProvider.vnpay,
