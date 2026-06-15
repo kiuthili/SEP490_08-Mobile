@@ -40,7 +40,11 @@ class AuthController extends GetxController {
       );
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập thành công');
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed(
+        response.user.requirePasswordChange
+            ? AppRoutes.changePassword
+            : AppRoutes.home,
+      );
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -68,7 +72,7 @@ class AuthController extends GetxController {
     }
     isLoading.value = true;
     try {
-      final response = await _authService.register(
+      await _authService.register(
         RegisterRequest(
           email: email.trim(),
           password: password,
@@ -79,9 +83,8 @@ class AuthController extends GetxController {
               '${dateOfBirth.value.year}-${dateOfBirth.value.month.toString().padLeft(2, '0')}-${dateOfBirth.value.day.toString().padLeft(2, '0')}',
         ),
       );
-      currentUser.value = response.user;
-      SnackbarHelper.success('Đăng ký thành công');
-      Get.offAllNamed(AppRoutes.home);
+      SnackbarHelper.success('Đăng ký thành công. Vui lòng đăng nhập.');
+      Get.offAllNamed(AppRoutes.login);
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -98,6 +101,34 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<UserModel> updateProfile({
+    required String fullName,
+    String? phoneNumber,
+    String? gender,
+    String? dateOfBirth,
+    String? avatarPath,
+  }) async {
+    final user = await _authService.updateProfile(
+      fullName: fullName,
+      phoneNumber: phoneNumber,
+      gender: gender,
+      dateOfBirth: dateOfBirth,
+      avatarPath: avatarPath,
+    );
+    currentUser.value = user;
+    return user;
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    currentUser.value = await _authService.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
   }
 
   Future<void> logout() async {
@@ -118,9 +149,15 @@ class AuthController extends GetxController {
       final response = await _authService.googleLogin();
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập Google thành công');
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed(
+        response.user.requirePasswordChange
+            ? AppRoutes.changePassword
+            : AppRoutes.home,
+      );
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+    } catch (_) {
+      SnackbarHelper.error('Không thể đăng nhập Google. Vui lòng thử lại.');
     } finally {
       isLoading.value = false;
     }

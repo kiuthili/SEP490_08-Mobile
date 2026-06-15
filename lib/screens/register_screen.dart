@@ -218,6 +218,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
             ),
+            const SizedBox(height: 12),
+            Obx(
+              () => OutlinedButton.icon(
+                onPressed: _auth.isLoading.value ? null : _auth.loginWithGoogle,
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text('Đăng ký với Google'),
+              ),
+            ),
           ],
         ),
       ),

@@ -98,10 +98,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _auth.loginWithGoogle,
-              icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: const Text('Đăng nhập với Google'),
+            Obx(
+              () => OutlinedButton.icon(
+                onPressed: _auth.isLoading.value ? null : _auth.loginWithGoogle,
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text('Đăng nhập với Google'),
+              ),
             ),
           ],
         ),

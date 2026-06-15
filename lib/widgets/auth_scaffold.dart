@@ -7,7 +7,7 @@ import '../theme/app_radius.dart';
 import '../theme/app_text_styles.dart';
 import 'stayhub_logo.dart';
 
-class AuthScaffold extends StatelessWidget {
+class AuthScaffold extends StatefulWidget {
   const AuthScaffold({
     super.key,
     required this.title,
@@ -18,6 +18,7 @@ class AuthScaffold extends StatelessWidget {
     this.footer,
     this.showBack = false,
     this.scrollable = true,
+    this.heroInitiallyExpanded = true,
   });
 
   final String title;
@@ -28,6 +29,24 @@ class AuthScaffold extends StatelessWidget {
   final Widget? footer;
   final bool showBack;
   final bool scrollable;
+  final bool heroInitiallyExpanded;
+
+  @override
+  State<AuthScaffold> createState() => _AuthScaffoldState();
+}
+
+class _AuthScaffoldState extends State<AuthScaffold> {
+  late bool _heroExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _heroExpanded = widget.heroInitiallyExpanded;
+  }
+
+  void _toggleHero() {
+    setState(() => _heroExpanded = !_heroExpanded);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +58,12 @@ class AuthScaffold extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(24, topInset + 20, 24, 36),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              topInset + 20,
+              24,
+              _heroExpanded ? 36 : 28,
+            ),
             decoration: const BoxDecoration(
               gradient: AppColors.authHeroGradient,
             ),
@@ -48,52 +72,76 @@ class AuthScaffold extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    if (showBack)
+                    if (widget.showBack)
                       _GlassIconButton(
                         icon: Icons.arrow_back_ios_new_rounded,
                         onTap: Get.back,
                       ),
-                    if (showBack) const SizedBox(width: 12),
+                    if (widget.showBack) const SizedBox(width: 12),
                     const StayHubLogo(theme: StayHubLogoTheme.light),
+                    const Spacer(),
+                    _GlassIconButton(
+                      icon: _heroExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      onTap: _toggleHero,
+                      tooltip: _heroExpanded
+                          ? 'Thu gọn phần giới thiệu'
+                          : 'Mở rộng phần giới thiệu',
+                    ),
                   ],
                 ),
-                const SizedBox(height: 28),
-                Text(
-                  heroTitle,
-                  style: AppTextStyles.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  heroSubtitle,
-                  style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.88),
-                  ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _heroExpanded
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 28),
+                            Text(
+                              widget.heroTitle,
+                              style: AppTextStyles.textTheme.headlineMedium
+                                  ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                height: 1.15,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              widget.heroSubtitle,
+                              style:
+                                  AppTextStyles.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.88),
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: scrollable
+            child: widget.scrollable
                 ? SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                     child: _FormCard(
-                      title: title,
-                      subtitle: subtitle,
-                      child: child,
-                      footer: footer,
+                      title: widget.title,
+                      subtitle: widget.subtitle,
+                      footer: widget.footer,
+                      child: widget.child,
                     ),
                   )
                 : Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                     child: _FormCard(
-                      title: title,
-                      subtitle: subtitle,
-                      child: child,
-                      footer: footer,
+                      title: widget.title,
+                      subtitle: widget.subtitle,
+                      footer: widget.footer,
+                      child: widget.child,
                     ),
                   ),
           ),
@@ -104,14 +152,19 @@ class AuthScaffold extends StatelessWidget {
 }
 
 class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({required this.icon, required this.onTap});
+  const _GlassIconButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return ClipOval(
+    final button = ClipOval(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Material(
@@ -126,6 +179,9 @@ class _GlassIconButton extends StatelessWidget {
         ),
       ),
     );
+
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip!, child: button);
   }
 }
 

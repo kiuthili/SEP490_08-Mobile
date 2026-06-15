@@ -23,8 +23,13 @@ class ApiConstants {
   static String get chatHubUrl => '$baseUrl/hubs/chat';
   static String get trackingHubUrl => '$baseUrl/hubs/tracking';
 
-  /// Google OAuth Web Client ID (dùng cho cả Android/iOS)
-  static const googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+  /// Must match AuthAPI's Google:ClientId because the backend validates the
+  /// audience of the ID token issued to the mobile app.
+  static const googleClientId = String.fromEnvironment(
+    'GOOGLE_CLIENT_ID',
+    defaultValue:
+        '1007115094738-i4re3khhtf8hlvnv1a5u57680il4p6ba.apps.googleusercontent.com',
+  );
 
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
