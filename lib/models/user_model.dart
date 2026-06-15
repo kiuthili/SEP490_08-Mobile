@@ -10,6 +10,7 @@ class UserModel {
   final String? gender;
   final String? dateOfBirth;
   final DateTime? lastOnline;
+  final bool requirePasswordChange;
   final List<String> roles;
 
   UserModel({
@@ -22,6 +23,7 @@ class UserModel {
     this.gender,
     this.dateOfBirth,
     this.lastOnline,
+    this.requirePasswordChange = false,
     this.roles = const [],
   });
 
@@ -42,12 +44,13 @@ class UserModel {
     }
     return UserModel(
       id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
-      email: JsonUtils.readString(JsonUtils.pick(json, ['email', 'Email'])) ?? '',
-      fullName:
-          JsonUtils.readString(JsonUtils.pick(json, ['fullName', 'FullName'])) ??
-              '',
-      avatarUrl:
-          JsonUtils.readString(JsonUtils.pick(json, ['avatarUrl', 'AvatarUrl'])),
+      email:
+          JsonUtils.readString(JsonUtils.pick(json, ['email', 'Email'])) ?? '',
+      fullName: JsonUtils.readString(
+              JsonUtils.pick(json, ['fullName', 'FullName'])) ??
+          '',
+      avatarUrl: JsonUtils.readString(
+          JsonUtils.pick(json, ['avatarUrl', 'AvatarUrl'])),
       provider:
           JsonUtils.readString(JsonUtils.pick(json, ['provider', 'Provider'])),
       phoneNumber: JsonUtils.readString(
@@ -60,20 +63,38 @@ class UserModel {
       lastOnline: JsonUtils.readDateTime(
         JsonUtils.pick(json, ['lastOnline', 'LastOnline']),
       ),
+      requirePasswordChange: JsonUtils.pick(
+            json,
+            ['requirePasswordChange', 'RequirePasswordChange'],
+          ) ==
+          true,
       roles: roles,
     );
   }
 
-  UserModel copyWith({List<String>? roles}) => UserModel(
+  UserModel copyWith({
+    String? fullName,
+    String? avatarUrl,
+    String? provider,
+    String? phoneNumber,
+    String? gender,
+    String? dateOfBirth,
+    DateTime? lastOnline,
+    bool? requirePasswordChange,
+    List<String>? roles,
+  }) =>
+      UserModel(
         id: id,
         email: email,
-        fullName: fullName,
-        avatarUrl: avatarUrl,
-        provider: provider,
-        phoneNumber: phoneNumber,
-        gender: gender,
-        dateOfBirth: dateOfBirth,
-        lastOnline: lastOnline,
+        fullName: fullName ?? this.fullName,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
+        provider: provider ?? this.provider,
+        phoneNumber: phoneNumber ?? this.phoneNumber,
+        gender: gender ?? this.gender,
+        dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+        lastOnline: lastOnline ?? this.lastOnline,
+        requirePasswordChange:
+            requirePasswordChange ?? this.requirePasswordChange,
         roles: roles ?? this.roles,
       );
 
@@ -87,6 +108,7 @@ class UserModel {
         'gender': gender,
         'dateOfBirth': dateOfBirth,
         'lastOnline': lastOnline?.toIso8601String(),
+        'requirePasswordChange': requirePasswordChange,
         'roles': roles,
       };
 }

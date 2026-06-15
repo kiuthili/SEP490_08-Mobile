@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:google_sign_in/google_sign_in.dart';
 import '../constants/api_constants.dart';
@@ -22,13 +23,18 @@ class AuthService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<LoginResponse> register(RegisterRequest payload) async {
+  Future<UserModel> register(RegisterRequest payload) async {
     return request(() async {
       final response = await api.dio.post(
         '${ApiConstants.auth}/register',
         data: payload.toJson(),
       );
-      return _handleAuthResponse(response.data as Map<String, dynamic>);
+      final body = response.data;
+      if (body is! Map<String, dynamic> ||
+          body['data'] is! Map<String, dynamic>) {
+        throw StateError('Phản hồi đăng ký không hợp lệ');
+      }
+      return UserModel.fromJson(body['data'] as Map<String, dynamic>);
     });
   }
 
@@ -36,39 +42,46 @@ class AuthService extends GetxService with BaseServiceMixin {
     return request(() async {
       final response = await api.dio.get('${ApiConstants.auth}/profile');
       final map = response.data as Map<String, dynamic>;
-      final user = _withRoles(
-        UserModel.fromJson(map['data'] as Map<String, dynamic>),
+      final profile = UserModel.fromJson(
+        map['data'] as Map<String, dynamic>,
       );
+      final user = _withRoles(profile);
       await _storage.updateUser(user);
       return user;
     });
   }
 
   Future<LoginResponse> googleLogin() async {
-    final googleSignIn = GoogleSignIn(
-      serverClientId: ApiConstants.googleClientId.isNotEmpty
-          ? ApiConstants.googleClientId
-          : null,
-      scopes: ['email', 'profile'],
-    );
-
-    final account = await googleSignIn.signIn();
-    if (account == null) {
-      throw ApiError(message: 'Đăng nhập Google bị hủy');
-    }
-    final auth = await account.authentication;
-    final idToken = auth.idToken;
-    if (idToken == null) {
-      throw ApiError(message: 'Không lấy được Google ID token');
-    }
-
-    return request(() async {
-      final response = await api.dio.post(
-        '${ApiConstants.auth}/google-login',
-        data: {'idToken': idToken},
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: ApiConstants.googleClientId,
+        scopes: const ['email', 'profile'],
       );
-      return _handleAuthResponse(response.data as Map<String, dynamic>);
-    });
+
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        throw ApiError(message: 'Đăng nhập Google đã bị hủy');
+      }
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw ApiError(message: 'Không lấy được Google ID token');
+      }
+
+      return request(() async {
+        final response = await api.dio.post(
+          '${ApiConstants.auth}/google-login',
+          data: {'idToken': idToken},
+        );
+        return _handleAuthResponse(response.data as Map<String, dynamic>);
+      });
+    } on PlatformException catch (e) {
+      throw ApiError(
+        message: e.code == 'sign_in_canceled'
+            ? 'Đăng nhập Google đã bị hủy'
+            : 'Không thể đăng nhập Google (${e.code})',
+      );
+    }
   }
 
   Future<UserModel> updateProfile({
@@ -122,28 +135,52 @@ class AuthService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<void> changePassword({
+  Future<UserModel> changePassword({
     required String oldPassword,
     required String newPassword,
   }) async {
-    await request(() async {
-      await api.dio.post(
+    return request(() async {
+      final response = await api.dio.post(
         '${ApiConstants.auth}/change-password',
         data: {
           'oldPassword': oldPassword,
           'newPassword': newPassword,
         },
       );
+      final body = response.data;
+      if (body is! Map<String, dynamic>) {
+        throw StateError('Phản hồi đổi mật khẩu không hợp lệ');
+      }
+      final loginResponse = LoginResponse.fromJson(
+        body['data'] as Map<String, dynamic>,
+      );
+      final user = _withRoles(loginResponse.user, loginResponse.token);
+      await _storage.saveSession(
+        token: loginResponse.token,
+        refreshToken: loginResponse.refreshToken,
+        user: user,
+      );
+      return user;
     });
   }
 
-  Future<void> forgotPassword(String email) async {
-    await request(() async {
-      await api.dio.post(
-        '${ApiConstants.auth}/forgot-password',
-        data: {'email': email},
-      );
-    });
+  Future<ForgotPasswordResult> forgotPassword(String email) async {
+    try {
+      await request(() async {
+        await api.dio.post(
+          '${ApiConstants.auth}/forgot-password',
+          data: {'email': email.trim()},
+        );
+      });
+      return const ForgotPasswordResult();
+    } on ApiError catch (e) {
+      if (e.statusCode == 429) {
+        return ForgotPasswordResult(
+          retryAfterSeconds: e.retryAfterSeconds ?? 60,
+        );
+      }
+      rethrow;
+    }
   }
 
   Future<void> resetPassword({
@@ -217,8 +254,13 @@ class AuthService extends GetxService with BaseServiceMixin {
 
   UserModel _withRoles(UserModel user, [String? token]) {
     final accessToken = token ?? _storage.accessToken;
-    if (accessToken == null) return user;
-    final roles = JwtUtils.extractRoles(accessToken);
+    final tokenRoles =
+        accessToken == null ? <String>[] : JwtUtils.extractRoles(accessToken);
+    final roles = tokenRoles.isNotEmpty
+        ? tokenRoles
+        : user.roles.isNotEmpty
+            ? user.roles
+            : _storage.user?.roles ?? const <String>[];
     return user.copyWith(roles: roles);
   }
 }

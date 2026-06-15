@@ -52,7 +52,8 @@ class IosGroupedSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (header != null) IosSectionHeader(header!, padding: EdgeInsets.zero),
+          if (header != null)
+            IosSectionHeader(header!, padding: EdgeInsets.zero),
           if (header != null) const SizedBox(height: 8),
           ClipRRect(
             borderRadius: AppRadius.card,
@@ -154,8 +155,7 @@ class IosPickRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg =
-        selected ? AppColors.brandLight : AppColors.surfaceElevated;
+    final bg = selected ? AppColors.brandLight : AppColors.surfaceElevated;
     final shape = RoundedRectangleBorder(
       borderRadius: AppRadius.card,
       side: const BorderSide(color: AppColors.border),
@@ -303,7 +303,7 @@ class IosMenuTile extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
-    required this.onTap,
+    this.onTap,
     this.trailing,
     this.iconColor,
   });
@@ -311,7 +311,7 @@ class IosMenuTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Widget? trailing;
   final Color? iconColor;
 
@@ -331,7 +331,10 @@ class IosMenuTile extends StatelessWidget {
       ),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle!) : null,
-      trailing: trailing ?? const Icon(Icons.chevron_right_rounded, size: 20),
+      trailing: trailing ??
+          (onTap != null
+              ? const Icon(Icons.chevron_right_rounded, size: 20)
+              : null),
     );
   }
 }

@@ -44,7 +44,9 @@ class _SplashScreenState extends State<SplashScreen>
     final storage = Get.find<StorageService>();
     final user = storage.user;
     if (storage.isLoggedIn && user?.isCustomerOnly == true) {
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed(
+        user!.requirePasswordChange ? AppRoutes.changePassword : AppRoutes.home,
+      );
     } else {
       if (storage.isLoggedIn) {
         await storage.clearSession();

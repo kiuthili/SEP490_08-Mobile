@@ -21,13 +21,22 @@ class ApiResponse<T> {
 class ApiError {
   final String message;
   final int? statusCode;
+  final int? retryAfterSeconds;
 
-  ApiError({required this.message, this.statusCode});
+  ApiError({
+    required this.message,
+    this.statusCode,
+    this.retryAfterSeconds,
+  });
 
   factory ApiError.fromJson(Map<String, dynamic>? json, {int? statusCode}) {
+    final rawRetryAfter = json?['retryAfterSeconds'];
     return ApiError(
       message: json?['message'] as String? ?? 'Đã xảy ra lỗi',
       statusCode: statusCode,
+      retryAfterSeconds: rawRetryAfter is int
+          ? rawRetryAfter
+          : int.tryParse(rawRetryAfter?.toString() ?? ''),
     );
   }
 }

@@ -79,3 +79,9 @@ class RefreshTokenRequest {
 
   Map<String, dynamic> toJson() => {'refreshToken': refreshToken};
 }
+
+class ForgotPasswordResult {
+  final int? retryAfterSeconds;
+
+  const ForgotPasswordResult({this.retryAfterSeconds});
+}

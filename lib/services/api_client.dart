@@ -268,7 +268,17 @@ class ApiClient {
     }
 
     if (data is Map<String, dynamic>) {
-      return ApiError.fromJson(data, statusCode: status);
+      final error = ApiError.fromJson(data, statusCode: status);
+      if (error.retryAfterSeconds != null) return error;
+
+      final retryAfter = int.tryParse(
+        e.response?.headers.value('retry-after') ?? '',
+      );
+      return ApiError(
+        message: error.message,
+        statusCode: error.statusCode,
+        retryAfterSeconds: retryAfter,
+      );
     }
     return ApiError(
       message: e.message ?? 'Không thể kết nối máy chủ',
