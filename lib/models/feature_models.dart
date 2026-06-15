@@ -1,8 +1,6 @@
 import '../utils/json_utils.dart';
 import '../utils/text_encoding.dart';
 
-
-
 class VoucherModel {
   final int id;
   final int voucherId;
@@ -215,6 +213,8 @@ class FriendModel {
   final String fullName;
   final String? email;
   final String? avatarUrl;
+  final String? status;
+  final DateTime? createdAt;
 
   FriendModel({
     required this.friendshipId,
@@ -222,6 +222,8 @@ class FriendModel {
     required this.fullName,
     this.email,
     this.avatarUrl,
+    this.status,
+    this.createdAt,
   });
 
   factory FriendModel.fromJson(Map<String, dynamic> json) => FriendModel(
@@ -239,6 +241,8 @@ class FriendModel {
         avatarUrl: JsonUtils.readString(
           JsonUtils.pick(json, ['avatarUrl', 'friendAvatarUrl']),
         ),
+        status: JsonUtils.readString(json['status']),
+        createdAt: JsonUtils.readDateTime(json['createdAt']),
       );
 }
 
@@ -246,25 +250,33 @@ class FriendRequestModel {
   final int id;
   final int senderId;
   final String? senderName;
+  final String? senderAvatarUrl;
   final String? status;
+  final DateTime? createdAt;
 
   FriendRequestModel({
     required this.id,
     required this.senderId,
     this.senderName,
+    this.senderAvatarUrl,
     this.status,
+    this.createdAt,
   });
 
   factory FriendRequestModel.fromJson(Map<String, dynamic> json) =>
       FriendRequestModel(
         id: JsonUtils.readInt(json['id']),
         senderId: JsonUtils.readInt(
-          JsonUtils.pick(json, ['senderId', 'fromUserId']),
+          JsonUtils.pick(json, ['senderId', 'fromUserId', 'friendId']),
         ),
         senderName: JsonUtils.readString(
           JsonUtils.pick(json, ['senderName', 'fullName']),
         ),
+        senderAvatarUrl: JsonUtils.readString(
+          JsonUtils.pick(json, ['senderAvatarUrl', 'avatarUrl']),
+        ),
         status: JsonUtils.readString(json['status']),
+        createdAt: JsonUtils.readDateTime(json['createdAt']),
       );
 }
 
@@ -273,12 +285,22 @@ class UserSearchModel {
   final String fullName;
   final String? email;
   final String? avatarUrl;
+  final String? gender;
+  final String? dateOfBirth;
+  final String? phoneNumber;
+  final String? status;
+  final DateTime? createdAt;
 
   UserSearchModel({
     required this.id,
     required this.fullName,
     this.email,
     this.avatarUrl,
+    this.gender,
+    this.dateOfBirth,
+    this.phoneNumber,
+    this.status,
+    this.createdAt,
   });
 
   factory UserSearchModel.fromJson(Map<String, dynamic> json) =>
@@ -290,6 +312,11 @@ class UserSearchModel {
             '',
         email: JsonUtils.readString(json['email']),
         avatarUrl: JsonUtils.readString(json['avatarUrl']),
+        gender: JsonUtils.readString(json['gender']),
+        dateOfBirth: JsonUtils.readString(json['dateOfBirth']),
+        phoneNumber: JsonUtils.readString(json['phoneNumber']),
+        status: JsonUtils.readString(json['status']),
+        createdAt: JsonUtils.readDateTime(json['createdAt']),
       );
 }
 

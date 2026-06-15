@@ -252,12 +252,7 @@ class _HomeTabState extends State<HomeTab> {
       margin: EdgeInsets.fromLTRB(16, topInset + 10, 16, 4),
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF05073C), Color(0xFF0048B0), Color(0xFF1485FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: [0, 0.58, 1],
-        ),
+        gradient: AppColors.homeHeroGradient,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(

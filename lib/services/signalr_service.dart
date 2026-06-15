@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
@@ -10,11 +11,18 @@ class SignalRService extends GetxService {
   final StorageService _storage = Get.find<StorageService>();
 
   HubConnection? _chatConnection;
+  HubConnection? _friendshipConnection;
   HubConnection? _trackingConnection;
   HubConnection? _publicTrackingConnection;
   String? _chatToken;
+  String? _friendshipToken;
   void Function(ChatMessageModel msg)? _messageHandler;
+  void Function()? _friendRequestHandler;
+  void Function(int responderId, String status)? _friendResponseHandler;
+  void Function(int userId)? _friendshipDeletedHandler;
+  void Function()? _friendshipReconnectedHandler;
   Future<HubConnection>? _chatConnecting;
+  Future<HubConnection>? _friendshipConnecting;
 
   String? get _token => _storage.accessToken;
 
@@ -152,6 +160,128 @@ class SignalRService extends GetxService {
     if (!keepHandler) _messageHandler = null;
   }
 
+  Future<void> connectFriendship({
+    required void Function() onFriendRequest,
+    required void Function(int responderId, String status) onRequestResponded,
+    required void Function(int userId) onFriendshipDeleted,
+    required void Function() onReconnected,
+  }) async {
+    _friendRequestHandler = onFriendRequest;
+    _friendResponseHandler = onRequestResponded;
+    _friendshipDeletedHandler = onFriendshipDeleted;
+    _friendshipReconnectedHandler = onReconnected;
+    await _connectFriendship();
+  }
+
+  Future<HubConnection> _connectFriendship() async {
+    final token = _token;
+    final current = _friendshipConnection;
+    if (current?.state == HubConnectionState.Connected &&
+        _friendshipToken == token) {
+      _bindFriendshipHandlers();
+      return current!;
+    }
+
+    final pending = _friendshipConnecting;
+    if (pending != null) return pending;
+    if (token == null || token.isEmpty) {
+      throw StateError('Bạn cần đăng nhập để nhận cập nhật bạn bè');
+    }
+
+    final connecting = _establishFriendshipConnection(token);
+    _friendshipConnecting = connecting;
+    try {
+      return await connecting;
+    } finally {
+      if (identical(_friendshipConnecting, connecting)) {
+        _friendshipConnecting = null;
+      }
+    }
+  }
+
+  Future<HubConnection> _establishFriendshipConnection(String token) async {
+    final oldConnection = _friendshipConnection;
+    _friendshipConnection = null;
+    if (oldConnection != null) {
+      try {
+        await oldConnection.stop();
+      } catch (_) {}
+    }
+
+    _friendshipToken = token;
+    final connection = HubConnectionBuilder()
+        .withUrl(
+          ApiConstants.friendshipHubUrl,
+          options: _connectionOptions(
+            accessTokenFactory: () async => _friendshipToken ?? '',
+          ),
+        )
+        .withAutomaticReconnect()
+        .build();
+    _friendshipConnection = connection;
+    _bindFriendshipHandlers();
+    connection.onreconnected(
+      ({connectionId}) {
+        _friendshipReconnectedHandler?.call();
+      },
+    );
+    await connection.start();
+    await _waitUntilConnected(connection);
+    return connection;
+  }
+
+  void _bindFriendshipHandlers() {
+    final connection = _friendshipConnection;
+    if (connection == null) return;
+
+    connection.off('ReceiveFriendRequest');
+    connection.on('ReceiveFriendRequest', (_) {
+      _friendRequestHandler?.call();
+    });
+
+    connection.off('FriendRequestResponded');
+    connection.on('FriendRequestResponded', (args) {
+      if (args == null || args.length < 2) return;
+      final responderId = _readInt(args[0]);
+      final status = args[1]?.toString() ?? '';
+      if (responderId != null) {
+        _friendResponseHandler?.call(responderId, status);
+      }
+    });
+
+    connection.off('FriendshipDeleted');
+    connection.on('FriendshipDeleted', (args) {
+      if (args == null || args.isEmpty) return;
+      final userId = _readInt(args[0]);
+      if (userId != null) _friendshipDeletedHandler?.call(userId);
+    });
+  }
+
+  int? _readInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  Future<void> disconnectFriendship({bool keepHandlers = false}) async {
+    final pending = _friendshipConnecting;
+    _friendshipConnecting = null;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {}
+    }
+    await _friendshipConnection?.stop();
+    _friendshipConnection = null;
+    _friendshipToken = null;
+    if (!keepHandlers) {
+      _friendRequestHandler = null;
+      _friendResponseHandler = null;
+      _friendshipDeletedHandler = null;
+      _friendshipReconnectedHandler = null;
+    }
+  }
+
   Future<HubConnection> connectTracking({
     required void Function(LiveLocationModel loc) onLocationUpdate,
   }) async {
@@ -236,6 +366,7 @@ class SignalRService extends GetxService {
   @override
   void onClose() {
     disconnectChat();
+    disconnectFriendship();
     disconnectTracking();
     disconnectPublicTracking();
     super.onClose();

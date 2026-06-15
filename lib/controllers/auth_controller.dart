@@ -134,6 +134,7 @@ class AuthController extends GetxController {
   Future<void> logout() async {
     if (Get.isRegistered<SignalRService>()) {
       await Get.find<SignalRService>().disconnectChat();
+      await Get.find<SignalRService>().disconnectFriendship();
     }
     if (Get.isRegistered<SocialController>()) {
       Get.find<SocialController>().clearSocialState();

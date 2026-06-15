@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import '../models/ai_models.dart';
 import '../models/api_response.dart';
@@ -8,6 +10,7 @@ import '../services/feature_services.dart';
 import '../services/catalog_service.dart';
 import '../services/location_helper.dart';
 import '../services/order_service.dart';
+import '../services/signalr_service.dart';
 import '../services/social_service.dart';
 import '../services/storage_service.dart';
 import '../services/tour_service.dart';
@@ -123,8 +126,6 @@ class OrderController extends GetxController {
     }
   }
 }
-
-
 
 class WishlistController extends GetxController {
   final WishlistService _service = Get.find<WishlistService>();
@@ -389,6 +390,7 @@ class AiController extends GetxController {
 
 class SocialController extends GetxController {
   final SocialService _service = Get.find<SocialService>();
+  final SignalRService _signalR = Get.find<SignalRService>();
   final StorageService _storage = Get.find<StorageService>();
 
   final friends = <FriendModel>[].obs;
@@ -398,13 +400,63 @@ class SocialController extends GetxController {
   final chatRooms = <ChatRoomModel>[].obs;
   final groupChatRooms = <ChatRoomModel>[].obs;
   final isLoading = false.obs;
+  final isFriendsLoading = false.obs;
+  final isRequestsLoading = false.obs;
+  final isSearchingUsers = false.obs;
   final isChatLoading = false.obs;
+  final processingUserIds = <int>{}.obs;
+  final processingRequestIds = <int>{}.obs;
+  final processingFriendshipIds = <int>{}.obs;
+  final sentRequestUserIds = <int>{}.obs;
 
   List<ChatRoomModel> get tourGroupChats =>
       chatRooms.where((r) => r.isGroup && r.scheduleId != null).toList();
 
   List<ChatRoomModel> get directChats =>
       chatRooms.where((r) => !r.isGroup).toList();
+
+  @override
+  void onInit() {
+    super.onInit();
+    unawaited(_connectFriendshipRealtime());
+  }
+
+  Future<void> _connectFriendshipRealtime() async {
+    try {
+      await _signalR.connectFriendship(
+        onFriendRequest: () {
+          unawaited(fetchPendingRequests());
+          SnackbarHelper.success('Bạn có lời mời kết bạn mới');
+        },
+        onRequestResponded: (responderId, status) {
+          sentRequestUserIds.remove(responderId);
+          if (status.toLowerCase() == 'accepted') {
+            unawaited(fetchFriends());
+            SnackbarHelper.success('Lời mời kết bạn đã được chấp nhận');
+          } else if (status.toLowerCase() == 'declined') {
+            SnackbarHelper.info('Lời mời kết bạn đã bị từ chối');
+          }
+        },
+        onFriendshipDeleted: (userId) {
+          friends.removeWhere((friend) => friend.userId == userId);
+          unawaited(fetchFriends());
+          SnackbarHelper.info('Danh sách bạn bè vừa được cập nhật');
+        },
+        onReconnected: () {
+          unawaited(fetchFriends());
+          unawaited(fetchPendingRequests());
+        },
+      );
+    } catch (_) {
+      // REST flows remain available when the realtime connection is offline.
+    }
+  }
+
+  @override
+  void onClose() {
+    unawaited(_signalR.disconnectFriendship());
+    super.onClose();
+  }
 
   void clearSocialState() {
     friends.clear();
@@ -414,67 +466,122 @@ class SocialController extends GetxController {
     chatRooms.clear();
     groupChatRooms.clear();
     isLoading.value = false;
+    isFriendsLoading.value = false;
+    isRequestsLoading.value = false;
+    isSearchingUsers.value = false;
     isChatLoading.value = false;
+    processingUserIds.clear();
+    processingRequestIds.clear();
+    processingFriendshipIds.clear();
+    sentRequestUserIds.clear();
   }
 
   Future<void> searchUsers(String query) async {
-    if (query.trim().isEmpty) return;
-    isLoading.value = true;
+    final normalized = query.trim();
+    if (normalized.isEmpty) {
+      searchResults.clear();
+      return;
+    }
+    isSearchingUsers.value = true;
     try {
-      final result = await _service.searchUsers(query: query);
-      searchResults.assignAll(result.data);
+      final result = await _service.searchUsers(query: normalized);
+      final currentUserId = _storage.user?.id;
+      searchResults.assignAll(
+        result.data.where((user) => user.id != currentUserId),
+      );
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
-      isLoading.value = false;
+      isSearchingUsers.value = false;
     }
   }
 
   Future<void> fetchFriends() async {
-    isLoading.value = true;
+    isFriendsLoading.value = true;
     try {
-      final result = await _service.getFriends();
-      friends.assignAll(result.data);
+      friends.assignAll(await _service.getFriends());
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
-      isLoading.value = false;
+      isFriendsLoading.value = false;
     }
   }
 
   Future<void> fetchPendingRequests() async {
+    isRequestsLoading.value = true;
     try {
       pendingRequests.assignAll(await _service.getPendingRequests());
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+    } finally {
+      isRequestsLoading.value = false;
     }
   }
 
-  Future<void> sendFriendRequest(int receiverId) async {
+  bool isFriend(int userId) => friends.any((friend) => friend.userId == userId);
+
+  bool hasIncomingRequest(int userId) =>
+      pendingRequests.any((request) => request.senderId == userId);
+
+  Future<bool> sendFriendRequest(int receiverId) async {
+    if (processingUserIds.contains(receiverId)) return false;
+    processingUserIds.add(receiverId);
     try {
       await _service.sendFriendRequest(receiverId);
+      sentRequestUserIds.add(receiverId);
       SnackbarHelper.success('Đã gửi lời mời kết bạn');
+      return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      return false;
+    } finally {
+      processingUserIds.remove(receiverId);
     }
   }
 
-  Future<void> respondRequest(int requestId, bool accept) async {
+  Future<bool> respondRequest(int requestId, bool accept) async {
+    if (processingRequestIds.contains(requestId)) return false;
+    processingRequestIds.add(requestId);
     try {
       await _service.respondFriendRequest(requestId: requestId, accept: accept);
       pendingRequests.removeWhere((r) => r.id == requestId);
       if (accept) await fetchFriends();
+      return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      return false;
+    } finally {
+      processingRequestIds.remove(requestId);
     }
   }
 
-  Future<void> unfriend(int friendshipId) async {
+  Future<bool> unfriend(int friendshipId) async {
+    if (processingFriendshipIds.contains(friendshipId)) return false;
+    processingFriendshipIds.add(friendshipId);
     try {
       await _service.unfriend(friendshipId);
       friends.removeWhere((f) => f.friendshipId == friendshipId);
+      return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      return false;
+    } finally {
+      processingFriendshipIds.remove(friendshipId);
+    }
+  }
+
+  Future<ChatRoomModel?> createDirectChat(int friendId) async {
+    if (processingUserIds.contains(friendId)) return null;
+    processingUserIds.add(friendId);
+    try {
+      final room = await _service.createDirectChat(friendId);
+      await fetchChatRooms();
+      return room;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return null;
+    } finally {
+      processingUserIds.remove(friendId);
     }
   }
 
