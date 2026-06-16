@@ -14,6 +14,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
+import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/loading_widget.dart';
@@ -26,6 +27,21 @@ bool _isToday(DateTime? date) {
   return localDate.year == today.year &&
       localDate.month == today.month &&
       localDate.day == today.day;
+}
+
+int? _daysUntilDeparture(DateTime? date) {
+  if (date == null) return null;
+  final diff = date.toLocal().difference(DateTime.now());
+  return (diff.inMilliseconds / Duration.millisecondsPerDay).ceil();
+}
+
+int? _cancellationFeePercent(int? daysUntilDeparture) {
+  if (daysUntilDeparture == null || daysUntilDeparture <= 1) return null;
+  if (daysUntilDeparture <= 2) return 10;
+  if (daysUntilDeparture <= 5) return 15;
+  if (daysUntilDeparture <= 10) return 10;
+  if (daysUntilDeparture <= 15) return 5;
+  return 0;
 }
 
 class OrderDetailScreen extends StatefulWidget {
@@ -302,7 +318,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 16),
               _PostPaymentActions(
                 completed: order.status == 'Completed',
-                onCancellation: () => _openCancellationRequest(order.id),
+                showCancellation: _canRequestCancellation(order),
+                onCancellation: () => _openCancellationRequest(order),
                 onReview: () => _showReviewDialog(order),
               ),
             ],
@@ -317,10 +334,85 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Future<void> _openCancellationRequest(int orderId) async {
+  bool _canRequestCancellation(OrderModel order) {
+    final status = order.status?.trim().toLowerCase();
+    return status == 'paid';
+  }
+
+  Future<void> _openCancellationRequest(OrderModel order) async {
+    if (!_canRequestCancellation(order)) {
+      SnackbarHelper.error('Chỉ đơn đã thanh toán mới có thể yêu cầu hủy tour');
+      return;
+    }
+
+    final daysUntilDeparture =
+        _daysUntilDeparture(order.schedule?.departureDate);
+    final feePercent = _cancellationFeePercent(daysUntilDeparture);
+    if (feePercent == null || daysUntilDeparture == null) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Không thể yêu cầu hủy'),
+          content: const Text(
+            'Yêu cầu hủy không được hỗ trợ trong vòng 1 ngày trước ngày khởi hành hoặc khi thiếu thông tin ngày khởi hành.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final feeBase =
+        order.totalAmount > 0 ? order.totalAmount : order.finalAmount;
+    final cancellationFee = (feeBase * feePercent / 100).round();
+    final estimatedRefund =
+        (order.finalAmount - cancellationFee).clamp(0, 1 << 31);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xác nhận chính sách hủy'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Còn $daysUntilDeparture ngày trước ngày khởi hành.'),
+            const SizedBox(height: 10),
+            Text(
+              'Phí hủy: $feePercent% '
+              '(${CurrencyFormatter.format(cancellationFee)})',
+            ),
+            const SizedBox(height: 6),
+            Text('Dự kiến hoàn: ${CurrencyFormatter.format(estimatedRefund)}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Để sau'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Tiếp tục'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final orderId = order.id;
     final ok = await Get.toNamed<bool>(
       AppRoutes.requestCancellation,
-      arguments: orderId,
+      arguments: {
+        'orderId': orderId,
+        'status': order.status,
+        'departureDate': order.schedule?.departureDate.toIso8601String(),
+      },
     );
     if (ok == true && mounted) {
       await _controller.fetchOrderDetail(orderId);
@@ -1894,11 +1986,13 @@ class _PendingOrderNotice extends StatelessWidget {
 class _PostPaymentActions extends StatelessWidget {
   const _PostPaymentActions({
     required this.completed,
+    required this.showCancellation,
     required this.onCancellation,
     required this.onReview,
   });
 
   final bool completed;
+  final bool showCancellation;
   final VoidCallback onCancellation;
   final VoidCallback onReview;
 
@@ -1930,12 +2024,14 @@ class _PostPaymentActions extends StatelessWidget {
             label: 'Viết đánh giá',
             onPressed: onReview,
           ),
-          const SizedBox(height: 10),
-          CustomButton(
-            label: 'Yêu cầu hủy tour',
-            outlined: true,
-            onPressed: onCancellation,
-          ),
+          if (showCancellation) ...[
+            const SizedBox(height: 10),
+            CustomButton(
+              label: 'Yêu cầu hủy tour',
+              outlined: true,
+              onPressed: onCancellation,
+            ),
+          ],
         ],
       ),
     );
