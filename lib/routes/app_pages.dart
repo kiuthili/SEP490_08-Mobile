@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
+import 'package:stayhub_mobile/controllers/review_controller.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/tour_controller.dart';
 import '../screens/auth/profile_auth_screens.dart';

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:stayhub_mobile/firebase_options.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/push_notification_service.dart';
+import 'package:stayhub_mobile/services/review_service.dart';
 import 'app.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';

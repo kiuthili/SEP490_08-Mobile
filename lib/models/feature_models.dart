@@ -87,39 +87,6 @@ class VoucherModel {
           voucherStatus!.toLowerCase() == 'active');
 }
 
-class ReviewModel {
-  final int id;
-  final int tourId;
-  final int customerId;
-  final String? customerName;
-  final int rating;
-  final String? comment;
-  final DateTime? createdAt;
-
-  ReviewModel({
-    required this.id,
-    required this.tourId,
-    required this.customerId,
-    this.customerName,
-    required this.rating,
-    this.comment,
-    this.createdAt,
-  });
-
-  factory ReviewModel.fromJson(Map<String, dynamic> json) => ReviewModel(
-        id: JsonUtils.readInt(json['id']),
-        tourId: JsonUtils.readInt(json['tourId']),
-        customerId: JsonUtils.readInt(
-          JsonUtils.pick(json, ['customerId', 'userId']),
-        ),
-        customerName: JsonUtils.readString(
-          JsonUtils.pick(json, ['customerName', 'userName', 'fullName']),
-        ),
-        rating: JsonUtils.readInt(json['rating'], fallback: 5),
-        comment: JsonUtils.readString(json['comment']),
-        createdAt: JsonUtils.readDateTime(json['createdAt']),
-      );
-}
 
 /// API: ReadWishlistItemDTO — tourId, tourName, tourImageUrl (không có nested tour).
 class WishlistItemModel {

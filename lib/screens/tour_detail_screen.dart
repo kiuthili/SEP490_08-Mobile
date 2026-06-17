@@ -1,6 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:stayhub_mobile/controllers/review_controller.dart';
+import 'package:stayhub_mobile/models/review_model.dart';
+import 'package:stayhub_mobile/models/reviewreply_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/feature_models.dart';
 import '../controllers/feature_controllers.dart';
@@ -1601,56 +1604,175 @@ class _ReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceGrouped,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Review body ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Avatar(
+                  name: review.customerName,
+                  avatarUrl: review.customerAvatar,
+                  radius: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        review.customerName ?? 'Guest',
+                        style: AppTextStyles.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: List.generate(
+                          5,
+                              (i) => Icon(
+                            i < review.rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            size: 15,
+                            color: const Color(0xFFFFB800),
+                          ),
+                        ),
+                      ),
+                      if (review.comment?.trim().isNotEmpty ?? false) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          review.comment!,
+                          style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                      if (review.createdAt != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          DateFormatter.display(review.createdAt!),
+                          style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Replies ──────────────────────────────────────────
+          if (review.replies.isNotEmpty) ...[
+            Container(
+              margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              decoration: BoxDecoration(
+                color: AppColors.brandLight,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(
+                  color: AppColors.brand.withValues(alpha: 0.15),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.forum_rounded,
+                          size: 14,
+                          color: AppColors.brand,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Phản hồi từ ban tổ chức',
+                          style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                            color: AppColors.brand,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 12, endIndent: 12),
+
+                  // Reply items
+                  ...review.replies.map(
+                        (reply) => _ReplyItem(reply: reply),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+
+class _ReplyItem extends StatelessWidget {
+  const _ReplyItem({required this.reply});
+
+  final ReviewReplyModel reply;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.brandLight,
-            child: Text(
-              (review.customerName?.trim().isNotEmpty ?? false)
-                  ? review.customerName!.trim()[0].toUpperCase()
-                  : 'K',
-              style: const TextStyle(
-                color: AppColors.brand,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          _Avatar(
+            name: reply.userName,
+            avatarUrl: reply.userAvatar,
+            radius: 15,
+            backgroundColor: AppColors.brand,
+            textColor: Colors.white,
+            fallbackIcon: Icons.support_agent_rounded,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  review.customerName ?? 'Khách',
-                  style: AppTextStyles.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 4),
                 Row(
-                  children: List.generate(
-                    5,
-                    (index) => Icon(
-                      index < review.rating
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      size: 15,
-                      color: const Color(0xFFFFB800),
+                  children: [
+                    Expanded(
+                      child: Text(
+                        reply.userName ?? 'Staff',
+                        style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (reply.createdAt != null)
+                      Text(
+                        DateFormatter.display(reply.createdAt!),
+                        style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
                 ),
-                if (review.comment != null &&
-                    review.comment!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                if (reply.content?.trim().isNotEmpty ?? false) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    review.comment!,
+                    reply.content!,
                     style: AppTextStyles.textTheme.bodySmall?.copyWith(
                       color: AppColors.textPrimary,
+                      height: 1.5,
                     ),
                   ),
                 ],
@@ -1658,6 +1780,62 @@ class _ReviewCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Dùng chung cho cả review author lẫn reply author.
+class _Avatar extends StatelessWidget {
+  const _Avatar({
+    required this.name,
+    this.avatarUrl,
+    this.radius = 20,
+    this.backgroundColor,
+    this.textColor,
+    this.fallbackIcon,
+  });
+
+  final String? name;
+  final String? avatarUrl;
+  final double radius;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final IconData? fallbackIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = backgroundColor ?? AppColors.brandLight;
+    final fg = textColor ?? AppColors.brand;
+
+    if (avatarUrl != null && avatarUrl!.trim().isNotEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: NetworkImage(avatarUrl!.trim()),
+        backgroundColor: bg,
+      );
+    }
+
+    final initial = name?.trim().isNotEmpty == true
+        ? name!.trim()[0].toUpperCase()
+        : null;
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: bg,
+      child: initial != null
+          ? Text(
+        initial,
+        style: TextStyle(
+          color: fg,
+          fontWeight: FontWeight.w700,
+          fontSize: radius * 0.8,
+        ),
+      )
+          : Icon(
+        fallbackIcon ?? Icons.person_rounded,
+        color: fg,
+        size: radius,
       ),
     );
   }

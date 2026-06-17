@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/feature_controllers.dart';
