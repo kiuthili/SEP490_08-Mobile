@@ -2,10 +2,13 @@ import 'package:get/get.dart';
 import 'package:stayhub_mobile/models/api_response.dart';
 import 'package:stayhub_mobile/models/notification_model.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
+import 'package:stayhub_mobile/services/signalr_service.dart';
 import 'package:stayhub_mobile/utils/snackbar_helper.dart';
 
 class NotificationController extends GetxController {
   final _service = Get.find<NotificationService>();
+  final _signalRService = Get.find<SignalRService>();
+
   final notifications = <NotificationModel>[].obs;
   final isLoading = false.obs;
 
@@ -15,6 +18,13 @@ class NotificationController extends GetxController {
   void onInit() {
     super.onInit();
     fetchNotifications();
+    _connectRealtime();
+  }
+
+  @override
+  void onClose() {
+    _signalRService.disconnectNotification();
+    super.onClose();
   }
 
   Future<void> fetchNotifications() async {
@@ -25,6 +35,36 @@ class NotificationController extends GetxController {
       SnackbarHelper.error(e.message);
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Kết nối NotificationHub để nhận thông báo realtime khi app đang mở.
+  Future<void> _connectRealtime() async {
+    try {
+      await _signalRService.connectNotification(
+        onNotification: _handleIncomingNotification,
+        onReconnected: () {
+          // Sau khi reconnect, fetch lại để đảm bảo không miss thông báo
+          // nào trong lúc mất kết nối.
+          fetchNotifications();
+        },
+      );
+    } catch (e) {
+      // Không chặn UI nếu realtime fail — user vẫn xem được qua REST API.
+    }
+  }
+
+  void _handleIncomingNotification(Map<String, dynamic> data) {
+    try {
+      final newNoti = NotificationModel.fromJson(data);
+
+      // Tránh duplicate nếu đã có (ví dụ do fetch lại sau reconnect)
+      if (notifications.any((n) => n.id == newNoti.id)) return;
+
+      notifications.insert(0, newNoti);
+    } catch (_) {
+      // Nếu parse lỗi, fallback fetch lại toàn bộ list
+      fetchNotifications();
     }
   }
 

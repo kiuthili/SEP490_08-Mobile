@@ -16,13 +16,14 @@ class ApiConstants {
       return 'https://pgfglbkq-7010.asse.devtunnels.ms';
     }
 
-    return 'https://pgfglbkq-7010.asse.devtunnels.ms';
+    return 'https://localhost:7010';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
   static String get chatHubUrl => '$baseUrl/hubs/chat';
   static String get friendshipHubUrl => '$baseUrl/hubs/friendship';
   static String get trackingHubUrl => '$baseUrl/hubs/tracking';
+  static String get notificationHubUrl => '$baseUrl/hubs/notifications';
 
   /// Must match AuthAPI's Google:ClientId because the backend validates the
   /// audience of the ID token issued to the mobile app.
