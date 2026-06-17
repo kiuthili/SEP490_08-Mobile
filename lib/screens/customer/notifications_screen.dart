@@ -54,6 +54,7 @@ class NotificationsScreen extends GetView<NotificationController> {
 
                       final n = controller.notifications[index - 1];
                       return _NotificationCard(
+                        key: ValueKey(n.id),
                         notification: n,
                         onRead: () => controller.markRead(n.id),
                         onDelete: () => controller.deleteNotification(n.id),
@@ -103,7 +104,33 @@ class NotificationsScreen extends GetView<NotificationController> {
                   ),
                 ),
               ),
-              const SizedBox(width: 48),
+              // Badge số lượng chưa đọc — thay cho SizedBox(width: 48) cố định trước đây
+              SizedBox(
+                width: 48,
+                child: Obx(() {
+                  final count = controller.unreadCount;
+                  if (count == 0) return const SizedBox.shrink();
+
+                  return Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        count > 99 ? '99+' : '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
             ],
           ),
         ],
@@ -114,6 +141,7 @@ class NotificationsScreen extends GetView<NotificationController> {
 
 class _NotificationCard extends StatelessWidget {
   const _NotificationCard({
+    super.key,
     required this.notification,
     required this.onRead,
     required this.onDelete,
