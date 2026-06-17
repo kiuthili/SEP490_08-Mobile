@@ -28,9 +28,13 @@ Future<void> main() async {
   HttpOverrides.global = _StayHubHttpOverrides();
   GoogleFonts.config.allowRuntimeFetching = true;
   await GetStorage.init();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed/skipped: $e');
+  }
 
   // ✅ Chỉ khởi tạo push notification trên Android
   if (Platform.isAndroid) {
@@ -65,25 +69,6 @@ class _StayHubHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (_, host, __) => _isLocalDevHost(host);
-  }
-
-  bool _isLocalDevHost(String host) {
-    final normalized = host.toLowerCase();
-    if (normalized == 'localhost' ||
-        normalized == '::1' ||
-        normalized == '10.0.2.2' ||
-        normalized == '127.0.0.1') {
-      return true;
-    }
-    if (normalized.startsWith('127.') ||
-        normalized.startsWith('10.') ||
-        normalized.startsWith('192.168.')) {
-      return true;
-    }
-    final parts = normalized.split('.');
-    if (parts.length != 4 || parts.first != '172') return false;
-    final second = int.tryParse(parts[1]);
-    return second != null && second >= 16 && second <= 31;
+      ..badCertificateCallback = (cert, host, port) => true;
   }
 }

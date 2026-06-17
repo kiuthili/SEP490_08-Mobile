@@ -47,22 +47,22 @@ class ApiClient {
             currentError = redirectError;
           }
 
-          if (currentError.response?.statusCode == 401 &&
-              !_isRefreshing &&
-              _storage.refreshToken != null) {
-            try {
-              _isRefreshing = true;
-              final refreshed = await _tryRefreshToken();
-              _isRefreshing = false;
-              if (refreshed) {
-                final opts = currentError.requestOptions;
-                opts.headers['Authorization'] =
-                    'Bearer ${_storage.accessToken}';
-                final clone = await dio.fetch(opts);
-                return handler.resolve(clone);
+          if (currentError.response?.statusCode == 401) {
+            if (!_isRefreshing && _storage.refreshToken != null) {
+              try {
+                _isRefreshing = true;
+                final refreshed = await _tryRefreshToken();
+                _isRefreshing = false;
+                if (refreshed) {
+                  final opts = currentError.requestOptions;
+                  opts.headers['Authorization'] =
+                      'Bearer ${_storage.accessToken}';
+                  final clone = await dio.fetch(opts);
+                  return handler.resolve(clone);
+                }
+              } catch (_) {
+                _isRefreshing = false;
               }
-            } catch (_) {
-              _isRefreshing = false;
             }
             await _storage.clearSession();
             Get.offAllNamed(AppRoutes.login);

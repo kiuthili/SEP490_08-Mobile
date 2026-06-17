@@ -308,6 +308,89 @@ class AssignedScheduleModel {
   }
 }
 
+class ScoreDimensionExplanationModel {
+  final String dimensionKey;
+  final String label;
+  final double score;
+  final double weight;
+  final String explanation;
+
+  ScoreDimensionExplanationModel({
+    required this.dimensionKey,
+    required this.label,
+    required this.score,
+    required this.weight,
+    required this.explanation,
+  });
+
+  factory ScoreDimensionExplanationModel.fromJson(Map<String, dynamic> json) {
+    return ScoreDimensionExplanationModel(
+      dimensionKey: JsonUtils.readString(JsonUtils.pick(json, ['dimensionKey', 'DimensionKey'])) ?? '',
+      label: JsonUtils.readString(JsonUtils.pick(json, ['label', 'Label'])) ?? '',
+      score: JsonUtils.readDouble(JsonUtils.pick(json, ['score', 'Score'])) ?? 0.0,
+      weight: JsonUtils.readDouble(JsonUtils.pick(json, ['weight', 'Weight'])) ?? 0.0,
+      explanation: JsonUtils.readString(JsonUtils.pick(json, ['explanation', 'Explanation'])) ?? '',
+    );
+  }
+}
+
+class ScoreBreakdownModel {
+  final double fairnessScore;
+  final double minPersonaScore;
+  final double meanPersonaScore;
+  final double envyGap;
+  final double dissatisfactionVariance;
+  final Map<String, double> personaScores;
+  final Map<String, double> dimensionScores;
+  final List<ScoreDimensionExplanationModel> dimensionExplanations;
+  final String aggregationFormula;
+  final String? overallExplanation;
+
+  ScoreBreakdownModel({
+    required this.fairnessScore,
+    required this.minPersonaScore,
+    required this.meanPersonaScore,
+    required this.envyGap,
+    required this.dissatisfactionVariance,
+    this.personaScores = const {},
+    this.dimensionScores = const {},
+    this.dimensionExplanations = const [],
+    required this.aggregationFormula,
+    this.overallExplanation,
+  });
+
+  factory ScoreBreakdownModel.fromJson(Map<String, dynamic> json) {
+    final rawPersona = JsonUtils.pick(json, ['personaScores', 'PersonaScores']);
+    final rawDimension = JsonUtils.pick(json, ['dimensionScores', 'DimensionScores']);
+    final rawExplanations = JsonUtils.readMapList(
+      JsonUtils.pick(json, ['dimensionExplanations', 'DimensionExplanations']),
+    );
+
+    return ScoreBreakdownModel(
+      fairnessScore: JsonUtils.readDouble(JsonUtils.pick(json, ['fairnessScore', 'FairnessScore'])) ?? 0.0,
+      minPersonaScore: JsonUtils.readDouble(JsonUtils.pick(json, ['minPersonaScore', 'MinPersonaScore'])) ?? 0.0,
+      meanPersonaScore: JsonUtils.readDouble(JsonUtils.pick(json, ['meanPersonaScore', 'MeanPersonaScore'])) ?? 0.0,
+      envyGap: JsonUtils.readDouble(JsonUtils.pick(json, ['envyGap', 'EnvyGap'])) ?? 0.0,
+      dissatisfactionVariance: JsonUtils.readDouble(JsonUtils.pick(json, ['dissatisfactionVariance', 'DissatisfactionVariance'])) ?? 0.0,
+      personaScores: rawPersona is Map
+          ? rawPersona.map(
+              (k, v) => MapEntry(k.toString(), JsonUtils.readDouble(v) ?? 0.0),
+            )
+          : const {},
+      dimensionScores: rawDimension is Map
+          ? rawDimension.map(
+              (k, v) => MapEntry(k.toString(), JsonUtils.readDouble(v) ?? 0.0),
+            )
+          : const {},
+      dimensionExplanations: rawExplanations
+          .map(ScoreDimensionExplanationModel.fromJson)
+          .toList(),
+      aggregationFormula: JsonUtils.readString(JsonUtils.pick(json, ['aggregationFormula', 'AggregationFormula'])) ?? '',
+      overallExplanation: JsonUtils.readString(JsonUtils.pick(json, ['overallExplanation', 'OverallExplanation'])),
+    );
+  }
+}
+
 class TourRecommendationModel {
   final int tourId;
   final String name;
@@ -317,6 +400,13 @@ class TourRecommendationModel {
   final double? averageStar;
   final double? score;
   final String? reason;
+  final List<String> matchReasons;
+  final ScoreBreakdownModel? scoreBreakdown;
+  final int? durationDays;
+  final int? minPrice;
+  final String? nextDeparture;
+  final String? scheduleNote;
+  final bool? matchesPreferredDates;
 
   TourRecommendationModel({
     required this.tourId,
@@ -327,9 +417,25 @@ class TourRecommendationModel {
     this.averageStar,
     this.score,
     this.reason,
+    this.matchReasons = const [],
+    this.scoreBreakdown,
+    this.durationDays,
+    this.minPrice,
+    this.nextDeparture,
+    this.scheduleNote,
+    this.matchesPreferredDates,
   });
 
   factory TourRecommendationModel.fromJson(Map<String, dynamic> json) {
+    final rawReasons = JsonUtils.pick(json, ['matchReasons', 'MatchReasons']);
+    final rawBreakdown = JsonUtils.pick(json, ['scoreBreakdown', 'ScoreBreakdown']);
+    final rawReasonsList = <String>[];
+    if (rawReasons is List) {
+      for (final e in rawReasons) {
+        if (e != null) rawReasonsList.add(e.toString());
+      }
+    }
+
     return TourRecommendationModel(
       tourId: json['tourId'] as int? ?? json['id'] as int? ?? 0,
       name: json['name'] as String? ?? json['tourName'] as String? ?? '',
@@ -339,6 +445,15 @@ class TourRecommendationModel {
       averageStar: (json['averageStar'] as num?)?.toDouble(),
       score: (json['score'] as num?)?.toDouble(),
       reason: json['reason'] as String? ?? json['explanation'] as String?,
+      matchReasons: rawReasonsList,
+      scoreBreakdown: rawBreakdown is Map<String, dynamic>
+          ? ScoreBreakdownModel.fromJson(rawBreakdown)
+          : null,
+      durationDays: JsonUtils.readInt(JsonUtils.pick(json, ['durationDays', 'DurationDays'])),
+      minPrice: JsonUtils.readInt(JsonUtils.pick(json, ['minPrice', 'MinPrice'])),
+      nextDeparture: JsonUtils.readString(JsonUtils.pick(json, ['nextDeparture', 'NextDeparture'])),
+      scheduleNote: JsonUtils.readString(JsonUtils.pick(json, ['scheduleNote', 'ScheduleNote'])),
+      matchesPreferredDates: JsonUtils.readBool(JsonUtils.pick(json, ['matchesPreferredDates', 'MatchesPreferredDates'])),
     );
   }
 }

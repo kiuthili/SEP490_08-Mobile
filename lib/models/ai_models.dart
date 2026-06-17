@@ -119,9 +119,57 @@ class AiChatMessageModel {
   });
 }
 
+class TourPreferenceQuestionnaireModel {
+  final String companionType;
+  final String preferredStartDate;
+  final String? preferredEndDate;
+  final int? maxBudgetPerPerson;
+  final bool hasElderly;
+  final bool hasChildren;
+  final int? elderlyCount;
+  final int? childrenCount;
+  final List<String> travelInterests;
+  final String nationalityType;
+  final String? preferredCity;
+  final String? preferredCountry;
+
+  TourPreferenceQuestionnaireModel({
+    required this.companionType,
+    required this.preferredStartDate,
+    this.preferredEndDate,
+    this.maxBudgetPerPerson,
+    required this.hasElderly,
+    required this.hasChildren,
+    this.elderlyCount,
+    this.childrenCount,
+    this.travelInterests = const [],
+    required this.nationalityType,
+    this.preferredCity,
+    this.preferredCountry,
+  });
+
+  factory TourPreferenceQuestionnaireModel.fromJson(Map<String, dynamic> json) {
+    return TourPreferenceQuestionnaireModel(
+      companionType: JsonUtils.readString(JsonUtils.pick(json, ['companionType', 'CompanionType'])) ?? 'solo',
+      preferredStartDate: JsonUtils.readString(JsonUtils.pick(json, ['preferredStartDate', 'PreferredStartDate'])) ?? '',
+      preferredEndDate: JsonUtils.readString(JsonUtils.pick(json, ['preferredEndDate', 'PreferredEndDate'])),
+      maxBudgetPerPerson: JsonUtils.readInt(JsonUtils.pick(json, ['maxBudgetPerPerson', 'MaxBudgetPerPerson'])),
+      hasElderly: JsonUtils.readBool(JsonUtils.pick(json, ['hasElderly', 'HasElderly'])),
+      hasChildren: JsonUtils.readBool(JsonUtils.pick(json, ['hasChildren', 'HasChildren'])),
+      elderlyCount: JsonUtils.readInt(JsonUtils.pick(json, ['elderlyCount', 'ElderlyCount'])),
+      childrenCount: JsonUtils.readInt(JsonUtils.pick(json, ['childrenCount', 'ChildrenCount'])),
+      travelInterests: _readStringList(JsonUtils.pick(json, ['travelInterests', 'TravelInterests'])),
+      nationalityType: JsonUtils.readString(JsonUtils.pick(json, ['nationalityType', 'NationalityType'])) ?? 'vietnamese',
+      preferredCity: JsonUtils.readString(JsonUtils.pick(json, ['preferredCity', 'PreferredCity'])),
+      preferredCountry: JsonUtils.readString(JsonUtils.pick(json, ['preferredCountry', 'PreferredCountry'])),
+    );
+  }
+}
+
 class PersonalizedRecommendationModel {
   final String sessionId;
   final String summary;
+  final TourPreferenceQuestionnaireModel? appliedProfile;
   final WeatherAdviceModel? weatherAdvice;
   final ScheduleAvailabilityModel? scheduleAvailability;
   final List<String> generalTips;
@@ -137,6 +185,7 @@ class PersonalizedRecommendationModel {
   PersonalizedRecommendationModel({
     required this.sessionId,
     required this.summary,
+    this.appliedProfile,
     this.weatherAdvice,
     this.scheduleAvailability,
     this.generalTips = const [],
@@ -151,6 +200,7 @@ class PersonalizedRecommendationModel {
   });
 
   factory PersonalizedRecommendationModel.fromJson(Map<String, dynamic> json) {
+    final profile = JsonUtils.pick(json, ['appliedProfile', 'AppliedProfile']);
     final weather = JsonUtils.pick(json, ['weatherAdvice', 'WeatherAdvice']);
     final schedule = JsonUtils.pick(json, [
       'scheduleAvailability',
@@ -179,6 +229,9 @@ class PersonalizedRecommendationModel {
             JsonUtils.pick(json, ['summary', 'Summary']),
           ) ??
           '',
+      appliedProfile: profile is Map<String, dynamic>
+          ? TourPreferenceQuestionnaireModel.fromJson(profile)
+          : null,
       weatherAdvice: weather is Map<String, dynamic>
           ? WeatherAdviceModel.fromJson(weather)
           : null,
