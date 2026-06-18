@@ -172,32 +172,7 @@ class OrderScheduleInfo {
       );
 }
 
-class ScheduleCustomerModel {
-  final int customerId;
-  final String? fullName;
-  final String? email;
-  final String? phoneNumber;
-  final int ticketCount;
 
-  ScheduleCustomerModel({
-    required this.customerId,
-    this.fullName,
-    this.email,
-    this.phoneNumber,
-    required this.ticketCount,
-  });
-
-  factory ScheduleCustomerModel.fromJson(Map<String, dynamic> json) {
-    return ScheduleCustomerModel(
-      customerId: json['customerId'] as int? ?? json['id'] as int? ?? 0,
-      fullName: json['fullName'] as String? ?? json['customerName'] as String?,
-      email: json['email'] as String?,
-      phoneNumber: json['phoneNumber'] as String?,
-      ticketCount:
-          json['ticketCount'] as int? ?? json['totalTickets'] as int? ?? 0,
-    );
-  }
-}
 
 class TicketModel {
   final int id;

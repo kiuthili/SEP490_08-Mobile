@@ -222,11 +222,11 @@ class AuthService extends GetxService with BaseServiceMixin {
     }
     final loginResponse = LoginResponse.fromJson(data);
     final user = _withRoles(loginResponse.user, loginResponse.token);
-    if (!user.isCustomerOnly) {
+    if (!user.isCustomer && !user.isStaff) {
       await _revokeRejectedSession(loginResponse.refreshToken);
       await _storage.clearSession();
       throw ApiError(
-        message: 'Ứng dụng di động chỉ dành cho tài khoản Customer',
+        message: 'Tài khoản không có quyền truy cập ứng dụng này',
         statusCode: 403,
       );
     }

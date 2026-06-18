@@ -84,6 +84,8 @@ class PaginationModel<T> {
     required this.pageSize,
   });
 
+  bool get hasMore => currentPage < totalPages;
+
   factory PaginationModel.fromJson(
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) itemFromJson,
