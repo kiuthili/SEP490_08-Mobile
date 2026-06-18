@@ -29,6 +29,8 @@ class UserModel {
 
   bool get isStaff => roles.any((r) => r.toLowerCase() == 'staff');
 
+  bool get isCustomer => roles.any((r) => r.toLowerCase() == 'customer');
+
   bool get isCustomerOnly {
     if (roles.isEmpty) return false;
     return roles.every((role) => role.toLowerCase() == 'customer');

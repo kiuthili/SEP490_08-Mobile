@@ -1,4 +1,7 @@
 import 'package:get/get.dart';
+import 'package:stayhub_mobile/models/check_in_result_model.dart';
+import 'package:stayhub_mobile/models/schedule_customer_model.dart';
+import 'package:stayhub_mobile/models/staff_ticket_model.dart';
 import '../constants/api_constants.dart';
 import '../constants/app_constants.dart';
 import '../models/feature_models.dart';
@@ -82,11 +85,16 @@ class OrderService extends GetxService with BaseServiceMixin {
   }
 
   Future<List<ScheduleCustomerModel>> getScheduleCustomers(
-    int scheduleId,
-  ) async {
+      int scheduleId, {
+        String? attendeeName,
+      }) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.orders}/schedule/$scheduleId/customers',
+        queryParameters: {
+          if (attendeeName != null && attendeeName.trim().isNotEmpty)
+            'attendeeName': attendeeName.trim(),
+        },
       );
       return parseList(response.data, ScheduleCustomerModel.fromJson);
     });
@@ -112,29 +120,37 @@ class OrderService extends GetxService with BaseServiceMixin {
     return order.tickets;
   }
 
-  Future<List<TicketModel>> getTicketsBySchedule(int scheduleId) async {
+  Future<List<StaffTicketModel>> getTicketsBySchedule(
+      int scheduleId, {
+        String? attendeeName,
+        String? checkInStatus,
+      }) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tickets}/schedule/$scheduleId',
+        queryParameters: {
+          if (attendeeName != null) 'attendeeName': attendeeName,
+          if (checkInStatus != null) 'checkInStatus': checkInStatus,
+        },
       );
-      return parseList(response.data, TicketModel.fromJson);
+      return (response.data as List)
+          .map((e) => StaffTicketModel.fromJson(e))
+          .toList();
     });
   }
 
-  Future<Map<String, dynamic>> checkIn({
-    required String qrCode,
-    required int scheduleId,
-  }) async {
+  Future<CheckInResultModel> checkIn({required String qrCode}) async {
     return request(() async {
       final response = await api.dio.put(
         '${ApiConstants.tickets}/check-in',
-        data: {'qrCode': qrCode, 'scheduleId': scheduleId},
+        data: {'qrCode': qrCode},
       );
       final body = response.data;
       if (body is Map<String, dynamic>) {
-        return body['data'] as Map<String, dynamic>? ?? body;
+        final data = body['data'] as Map<String, dynamic>? ?? body;
+        return CheckInResultModel.fromJson(data);
       }
-      return {};
+      throw StateError('Unexpected response format for check-in');
     });
   }
 }

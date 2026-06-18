@@ -60,4 +60,5 @@ class ApiConstants {
   static const chat = '/api/chat';
   static const locations = '/api/locations';
   static const aiTourAssistant = '/api/ai/tour-assistant';
+  static const tourScheduleStaffs = '/api/TourScheduleStaffs';
 }
