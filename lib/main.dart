@@ -9,6 +9,7 @@ import 'package:stayhub_mobile/firebase_options.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/push_notification_service.dart';
 import 'package:stayhub_mobile/services/review_service.dart';
+import 'package:stayhub_mobile/services/staff_service.dart';
 import 'app.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
@@ -58,6 +59,7 @@ Future<void> main() async {
   Get.put(SocialService(), permanent: true);
   Get.put(SignalRService(), permanent: true);
   Get.put(AuthController(), permanent: true);
+  Get.put(StaffScheduleService(), permanent: true);
 
   runApp(const StayHubApp());
   WidgetsBinding.instance.addPostFrameCallback((_) {

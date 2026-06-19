@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import 'package:stayhub_mobile/controllers/review_controller.dart';
+import 'package:stayhub_mobile/controllers/staff_controller.dart';
+import 'package:stayhub_mobile/screens/staff/staff_tickets_tab.dart';
+import 'package:stayhub_mobile/services/staff_service.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/shell_controller.dart';
 import '../controllers/tour_controller.dart';
@@ -60,6 +63,11 @@ class MainShellScreen extends GetView<ShellController> {
       label: 'Check-in',
     ),
     IosBottomNavItem(
+      icon: Icons.confirmation_number_outlined,
+      selectedIcon: Icons.confirmation_number_rounded,
+      label: 'Vé',
+    ),
+    IosBottomNavItem(
       icon: Icons.groups_outlined,
       selectedIcon: Icons.groups_rounded,
       label: 'Khách',
@@ -79,6 +87,7 @@ class MainShellScreen extends GetView<ShellController> {
           ? const [
               StaffSchedulesTab(),
               StaffCheckInTab(),
+              StaffTicketsTab(),
               StaffCustomersTab(),
               ProfileTab(),
             ]
