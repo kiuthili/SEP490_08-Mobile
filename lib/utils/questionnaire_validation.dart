@@ -143,8 +143,8 @@ Map<String, dynamic> buildRecommendPayload(
   }
   if (values['maxBudgetPerPerson'] != null &&
       values['maxBudgetPerPerson'].toString().isNotEmpty) {
-    payload['maxBudgetPerPerson'] =
-        int.tryParse(values['maxBudgetPerPerson'].toString());
+    final rawBudget = values['maxBudgetPerPerson'].toString().replaceAll('.', '').replaceAll(',', '');
+    payload['maxBudgetPerPerson'] = int.tryParse(rawBudget);
   }
   if (values['hasElderly'] == true && values['elderlyCount'] != null) {
     payload['elderlyCount'] =
