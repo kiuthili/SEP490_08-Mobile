@@ -4,8 +4,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+
 import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
+import '../../models/social_models.dart'; // Đã thêm
 import '../../models/tour_model.dart';
 import '../../routes/app_routes.dart';
 import '../../services/signalr_service.dart';
@@ -19,6 +21,7 @@ import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
+import '../../widgets/moment_card.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   const ChatRoomScreen({super.key});
@@ -90,10 +93,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           if (_scrollController.hasClients) {
             _scrollController.jumpTo(
               (_scrollController.position.maxScrollExtent - currentOffset)
-                  .clamp(
-                0,
-                _scrollController.position.maxScrollExtent,
-              ),
+                  .clamp(0, _scrollController.position.maxScrollExtent),
             );
           }
         });
@@ -287,67 +287,67 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       body: _loading
           ? const LoadingWidget(message: 'Đang kết nối cuộc trò chuyện...')
           : _error != null
-              ? _ChatError(message: _error!, onRetry: _initRoom)
-              : Column(
+          ? _ChatError(message: _error!, onRetry: _initRoom)
+          : Column(
+        children: [
+          _ConversationInfoBar(
+            title: _roomTitle,
+            avatarUrl: _avatarUrl,
+            isGroup: _isGroup,
+            scheduleId: _scheduleId,
+            schedule: _schedule,
+            loadingSchedule: _loadingSchedule,
+            scheduleError: _scheduleError,
+            onRetrySchedule: _loadSchedule,
+          ),
+          if (_loadingOlder)
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          Expanded(
+            child: _messages.isEmpty
+                ? _EmptyConversation(isGroup: _isGroup)
+                : ListView.builder(
+              controller: _scrollController,
+              keyboardDismissBehavior:
+              ScrollViewKeyboardDismissBehavior.onDrag,
+              padding:
+              const EdgeInsets.fromLTRB(14, 16, 14, 18),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final m = _messages[index];
+                final previous =
+                index > 0 ? _messages[index - 1] : null;
+                final showDate = previous == null ||
+                    !_sameDay(previous.sentAt, m.sentAt);
+                return Column(
                   children: [
-                    _ConversationInfoBar(
-                      title: _roomTitle,
-                      avatarUrl: _avatarUrl,
-                      isGroup: _isGroup,
-                      scheduleId: _scheduleId,
-                      schedule: _schedule,
-                      loadingSchedule: _loadingSchedule,
-                      scheduleError: _scheduleError,
-                      onRetrySchedule: _loadSchedule,
-                    ),
-                    if (_loadingOlder)
-                      const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      ),
-                    Expanded(
-                      child: _messages.isEmpty
-                          ? _EmptyConversation(isGroup: _isGroup)
-                          : ListView.builder(
-                              controller: _scrollController,
-                              keyboardDismissBehavior:
-                                  ScrollViewKeyboardDismissBehavior.onDrag,
-                              padding:
-                                  const EdgeInsets.fromLTRB(14, 16, 14, 18),
-                              itemCount: _messages.length,
-                              itemBuilder: (context, index) {
-                                final m = _messages[index];
-                                final previous =
-                                    index > 0 ? _messages[index - 1] : null;
-                                final showDate = previous == null ||
-                                    !_sameDay(previous.sentAt, m.sentAt);
-                                return Column(
-                                  children: [
-                                    if (showDate) _DateDivider(date: m.sentAt),
-                                    _MessageBubble(
-                                      message: m,
-                                      isMe: m.senderId == myId,
-                                      showSender: _isGroup,
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                    ),
-                    _MessageComposer(
-                      controller: _messageController,
-                      focusNode: _inputFocus,
-                      sending: _sending,
-                      onSend: _send,
+                    if (showDate) _DateDivider(date: m.sentAt),
+                    _MessageBubble(
+                      message: m,
+                      isMe: m.senderId == myId,
+                      showSender: _isGroup,
                     ),
                   ],
-                ),
+                );
+              },
+            ),
+          ),
+          _MessageComposer(
+            controller: _messageController,
+            focusNode: _inputFocus,
+            sending: _sending,
+            onSend: _send,
+          ),
+        ],
+      ),
     );
   }
 
@@ -414,10 +414,10 @@ class _ConversationInfoBar extends StatelessWidget {
             ),
             child: avatarUrl?.isNotEmpty == true
                 ? CachedNetworkImage(
-                    imageUrl: avatarUrl!,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => _fallback(),
-                  )
+              imageUrl: avatarUrl!,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => _fallback(),
+            )
                 : _fallback(),
           ),
           const SizedBox(width: 10),
@@ -428,9 +428,9 @@ class _ConversationInfoBar extends StatelessWidget {
                 Text(
                   isGroup ? 'Nhóm trò chuyện tour' : 'Tin nhắn riêng',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -493,11 +493,8 @@ class _GroupScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tour = schedule?.tour;
-    final title =
-        tour?.name.trim().isNotEmpty == true ? tour!.name : fallbackTitle;
-    final imageUrl = tour?.imageUrl?.trim().isNotEmpty == true
-        ? tour!.imageUrl
-        : fallbackAvatarUrl;
+    final title = tour?.name.trim().isNotEmpty == true ? tour!.name : fallbackTitle;
+    final imageUrl = tour?.imageUrl?.trim().isNotEmpty == true ? tour!.imageUrl : fallbackAvatarUrl;
     final canOpenTour = tour != null && tour.id > 0;
 
     return Container(
@@ -512,9 +509,7 @@ class _GroupScheduleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: canOpenTour
-              ? () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id)
-              : null,
+          onTap: canOpenTour ? () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id) : null,
           child: Ink(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -543,10 +538,7 @@ class _GroupScheduleCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.brand,
                               borderRadius: BorderRadius.circular(99),
@@ -554,34 +546,16 @@ class _GroupScheduleCard extends StatelessWidget {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.groups_2_rounded,
-                                  size: 12,
-                                  color: Colors.white,
-                                ),
+                                Icon(Icons.groups_2_rounded, size: 12, color: Colors.white),
                                 SizedBox(width: 4),
-                                Text(
-                                  'NHÓM TOUR',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
+                                Text('NHÓM TOUR', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
                               ],
                             ),
                           ),
                           const Spacer(),
                           Text(
                             '#$scheduleId',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: AppColors.brand,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.brand, fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -590,10 +564,7 @@ class _GroupScheduleCard extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppColors.navy,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.navy, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 6),
                       if (loading && schedule == null)
@@ -601,22 +572,15 @@ class _GroupScheduleCard extends StatelessWidget {
                       else if (hasError && schedule == null)
                         _ScheduleLoadError(onRetry: onRetry)
                       else if (schedule != null)
-                        _ScheduleMetadata(schedule: schedule!)
-                      else
-                        Text(
-                          'Không có thông tin lịch khởi hành',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
+                          _ScheduleMetadata(schedule: schedule!)
+                        else
+                          Text('Không có thông tin lịch khởi hành', style: Theme.of(context).textTheme.labelSmall),
                     ],
                   ),
                 ),
                 if (canOpenTour) ...[
                   const SizedBox(width: 7),
-                  const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppColors.brand,
-                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.brand),
                 ],
               ],
             ),
@@ -629,7 +593,6 @@ class _GroupScheduleCard extends StatelessWidget {
 
 class _ScheduleCover extends StatelessWidget {
   const _ScheduleCover({required this.imageUrl});
-
   final String? imageUrl;
 
   @override
@@ -650,48 +613,35 @@ class _ScheduleCover extends StatelessWidget {
         ],
       ),
       child: imageUrl?.isNotEmpty == true
-          ? CachedNetworkImage(
-              imageUrl: imageUrl!,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _fallback(),
-            )
+          ? CachedNetworkImage(imageUrl: imageUrl!, fit: BoxFit.cover, errorWidget: (_, __, ___) => _fallback())
           : _fallback(),
     );
   }
 
-  Widget _fallback() => const Icon(
-        Icons.luggage_rounded,
-        color: Colors.white,
-        size: 30,
-      );
+  Widget _fallback() => const Icon(Icons.luggage_rounded, color: Colors.white, size: 30);
 }
 
 class _ScheduleMetadata extends StatelessWidget {
   const _ScheduleMetadata({required this.schedule});
-
   final TourScheduleModel schedule;
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final location = schedule.tour?.locationLabel;
-    final days =
-        schedule.returnDate.difference(schedule.departureDate).inDays.abs() + 1;
+    final days = schedule.returnDate.difference(schedule.departureDate).inDays.abs() + 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ScheduleMetaLine(
           icon: Icons.calendar_month_rounded,
-          text:
-              '${dateFormat.format(schedule.departureDate.toLocal())} - ${dateFormat.format(schedule.returnDate.toLocal())}',
+          text: '${dateFormat.format(schedule.departureDate.toLocal())} - ${dateFormat.format(schedule.returnDate.toLocal())}',
         ),
         const SizedBox(height: 4),
         _ScheduleMetaLine(
           icon: Icons.location_on_rounded,
-          text: location?.trim().isNotEmpty == true
-              ? '$location • $days ngày'
-              : '$days ngày',
+          text: location?.trim().isNotEmpty == true ? '$location • $days ngày' : '$days ngày',
         ),
       ],
     );
@@ -700,7 +650,6 @@ class _ScheduleMetadata extends StatelessWidget {
 
 class _ScheduleMetaLine extends StatelessWidget {
   const _ScheduleMetaLine({required this.icon, required this.text});
-
   final IconData icon;
   final String text;
 
@@ -711,15 +660,7 @@ class _ScheduleMetaLine extends StatelessWidget {
         Icon(icon, size: 14, color: AppColors.accent),
         const SizedBox(width: 5),
         Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
         ),
       ],
     );
@@ -733,20 +674,9 @@ class _ScheduleLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Row(
       children: [
-        SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
         SizedBox(width: 8),
-        Text(
-          'Đang tải thông tin lịch...',
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text('Đang tải thông tin lịch...', style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -754,34 +684,19 @@ class _ScheduleLoading extends StatelessWidget {
 
 class _ScheduleLoadError extends StatelessWidget {
   const _ScheduleLoadError({required this.onRetry});
-
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            'Chưa tải được lịch khởi hành',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.error,
-                ),
-          ),
-        ),
+        Expanded(child: Text('Chưa tải được lịch khởi hành', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.error))),
         InkWell(
           onTap: onRetry,
           borderRadius: BorderRadius.circular(99),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            child: Text(
-              'Thử lại',
-              style: TextStyle(
-                color: AppColors.brand,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: Text('Thử lại', style: TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w700)),
           ),
         ),
       ],
@@ -791,7 +706,6 @@ class _ScheduleLoadError extends StatelessWidget {
 
 class _EmptyConversation extends StatelessWidget {
   const _EmptyConversation({required this.isGroup});
-
   final bool isGroup;
 
   @override
@@ -817,16 +731,10 @@ class _EmptyConversation extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              isGroup ? 'Chào cả đoàn nào!' : 'Bắt đầu cuộc trò chuyện',
-              style: AppTextStyles.textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
+            Text(isGroup ? 'Chào cả đoàn nào!' : 'Bắt đầu cuộc trò chuyện', style: AppTextStyles.textTheme.titleMedium, textAlign: TextAlign.center),
             const SizedBox(height: 7),
             Text(
-              isGroup
-                  ? 'Trao đổi lịch trình và kết nối với những người cùng chuyến đi.'
-                  : 'Gửi một lời chào để bắt đầu nhắn tin trên StayHub.',
+              isGroup ? 'Trao đổi lịch trình và kết nối với những người cùng chuyến đi.' : 'Gửi một lời chào để bắt đầu nhắn tin trên StayHub.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -839,23 +747,17 @@ class _EmptyConversation extends StatelessWidget {
 
 class _DateDivider extends StatelessWidget {
   const _DateDivider({required this.date});
-
   final DateTime? date;
 
   @override
   Widget build(BuildContext context) {
-    final label = date == null
-        ? 'Tin nhắn'
-        : DateFormat('dd/MM/yyyy').format(date!.toLocal());
+    final label = date == null ? 'Tin nhắn' : DateFormat('dd/MM/yyyy').format(date!.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           const Expanded(child: Divider()),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(label, style: Theme.of(context).textTheme.labelSmall),
-          ),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(label, style: Theme.of(context).textTheme.labelSmall)),
           const Expanded(child: Divider()),
         ],
       ),
@@ -886,9 +788,7 @@ class _MessageBubble extends StatelessWidget {
     }
 
     final bubble = Container(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-      ),
+      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
       padding: const EdgeInsets.fromLTRB(13, 10, 13, 8),
       decoration: BoxDecoration(
         gradient: isMe ? AppColors.brandGradient : null,
@@ -901,37 +801,17 @@ class _MessageBubble extends StatelessWidget {
         ),
         border: isMe ? null : Border.all(color: AppColors.border),
         boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: AppColors.navy.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMe &&
-              showSender &&
-              message.senderName?.isNotEmpty == true) ...[
-            Text(
-              message.senderName!,
-              style: const TextStyle(
-                color: AppColors.brand,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+          if (!isMe && showSender && message.senderName?.isNotEmpty == true) ...[
+            Text(message.senderName!, style: const TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w800)),
             const SizedBox(height: 3),
           ],
-          Text(
-            message.content,
-            style: TextStyle(
-              color: isMe ? Colors.white : AppColors.textPrimary,
-              fontSize: 15,
-              height: 1.35,
-            ),
-          ),
+          Text(message.content, style: TextStyle(color: isMe ? Colors.white : AppColors.textPrimary, fontSize: 15, height: 1.35)),
           if (message.sentAt != null) ...[
             const SizedBox(height: 4),
             Align(
@@ -939,9 +819,7 @@ class _MessageBubble extends StatelessWidget {
               child: Text(
                 DateFormat('HH:mm').format(message.sentAt!.toLocal()),
                 style: TextStyle(
-                  color: isMe
-                      ? Colors.white.withValues(alpha: 0.65)
-                      : AppColors.textTertiary,
+                  color: isMe ? Colors.white.withValues(alpha: 0.65) : AppColors.textTertiary,
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
@@ -955,8 +833,7 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe && showSender) ...[
@@ -972,7 +849,6 @@ class _MessageBubble extends StatelessWidget {
 
 class _SystemMessageNotice extends StatelessWidget {
   const _SystemMessageNotice({required this.message});
-
   final ChatMessageModel message;
 
   @override
@@ -981,9 +857,7 @@ class _SystemMessageNotice extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 6, 24, 14),
       child: Center(
         child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.78,
-          ),
+          constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             color: AppColors.surfaceGrouped,
@@ -996,35 +870,20 @@ class _SystemMessageNotice extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    size: 15,
-                    color: AppColors.textTertiary,
-                  ),
+                  const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.textTertiary),
                   const SizedBox(width: 7),
                   Flexible(
                     child: Text(
                       message.content,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            height: 1.35,
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600, height: 1.35),
                     ),
                   ),
                 ],
               ),
               if (message.sentAt != null) ...[
                 const SizedBox(height: 3),
-                Text(
-                  DateFormat('HH:mm').format(message.sentAt!.toLocal()),
-                  style: const TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text(DateFormat('HH:mm').format(message.sentAt!.toLocal()), style: const TextStyle(color: AppColors.textTertiary, fontSize: 9, fontWeight: FontWeight.w600)),
               ],
             ],
           ),
@@ -1036,7 +895,6 @@ class _SystemMessageNotice extends StatelessWidget {
 
 class _MessageAvatar extends StatelessWidget {
   const _MessageAvatar({required this.message});
-
   final ChatMessageModel message;
 
   @override
@@ -1047,26 +905,10 @@ class _MessageAvatar extends StatelessWidget {
       width: 28,
       height: 28,
       clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(
-        color: AppColors.brandLight,
-        shape: BoxShape.circle,
-      ),
+      decoration: const BoxDecoration(color: AppColors.brandLight, shape: BoxShape.circle),
       child: message.senderAvatar?.isNotEmpty == true
-          ? CachedNetworkImage(
-              imageUrl: message.senderAvatar!,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => Center(child: Text(initial)),
-            )
-          : Center(
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: AppColors.brand,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+          ? CachedNetworkImage(imageUrl: message.senderAvatar!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Center(child: Text(initial)))
+          : Center(child: Text(initial, style: const TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w800))),
     );
   }
 }
@@ -1104,10 +946,7 @@ class _MessageComposer extends StatelessWidget {
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(
-                hintText: 'Nhập tin nhắn...',
-                prefixIcon: Icon(Icons.chat_bubble_outline_rounded),
-              ),
+              decoration: const InputDecoration(hintText: 'Nhập tin nhắn...', prefixIcon: Icon(Icons.chat_bubble_outline_rounded)),
             ),
           ),
           const SizedBox(width: 8),
@@ -1121,25 +960,13 @@ class _MessageComposer extends StatelessWidget {
                 height: 50,
                 decoration: BoxDecoration(
                   gradient: sending ? null : AppColors.brandGradient,
-                  color:
-                      sending ? AppColors.brand.withValues(alpha: 0.35) : null,
+                  color: sending ? AppColors.brand.withValues(alpha: 0.35) : null,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Center(
                   child: sending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 21,
-                        ),
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded, color: Colors.white, size: 21),
                 ),
               ),
             ),
@@ -1195,128 +1022,351 @@ class _ChatError extends StatelessWidget {
   }
 }
 
-class MomentDetailScreen extends GetView<SocialController> {
+
+class MomentDetailScreen extends StatefulWidget {
   const MomentDetailScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final momentId = Get.arguments as int?;
-    final userId = Get.find<StorageService>().user?.id;
-    MomentModel? moment;
-    for (final m in controller.moments) {
-      if (m.id == momentId) {
-        moment = m;
-        break;
-      }
+  State<MomentDetailScreen> createState() => _MomentDetailScreenState();
+}
+
+class _MomentDetailScreenState extends State<MomentDetailScreen> {
+  final _socialController = Get.find<SocialController>();
+  final _storage = Get.find<StorageService>();
+  final _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
+
+  MomentModel? _moment;
+  List<SocialCommentModel> _comments = [];
+  bool _loading = true;
+  bool _sendingComment = false;
+  String? _error;
+  int? _editingCommentId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMoment();
+  }
+
+  int get _currentUserId => _socialController.currentUserId;
+
+  MomentModel? _findInFeed(int id) {
+    for (final m in _socialController.moments) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
+  /// Backend KHÔNG có GET /moments/{id} và GET comments => lấy moment + comments
+  /// trực tiếp từ feed (đã chứa comments inline), tránh gọi endpoint 404.
+  Future<void> _loadMoment() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final arg = Get.arguments;
+    MomentModel? moment = arg is MomentModel ? arg : null;
+    final int? momentId =
+    arg is MomentModel ? arg.id : (arg is int ? arg : null);
+
+    if (momentId == null) {
+      setState(() {
+        _error = 'ID moment không hợp lệ';
+        _loading = false;
+      });
+      return;
     }
 
+    try {
+      // Ưu tiên dữ liệu mới nhất trong feed; nếu chưa có thì nạp feed.
+      moment = _findInFeed(momentId) ?? moment;
+      if (moment == null || _findInFeed(momentId) == null) {
+        await _socialController.loadFeed(refresh: true);
+        moment = _findInFeed(momentId) ?? moment;
+      }
+
+      if (moment == null) {
+        setState(() => _error = 'Moment không tồn tại hoặc đã bị xóa');
+      } else {
+        setState(() {
+          _moment = moment;
+          _comments = List<SocialCommentModel>.from(moment!.comments);
+        });
+      }
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _editComment(SocialCommentModel c) {
+    setState(() {
+      _editingCommentId = c.id;
+      _commentController.text = c.comment;
+    });
+    _commentFocusNode.requestFocus();
+  }
+
+  String get _myName {
+    try {
+      final dynamic u = _storage.user; // truy cập động: không phụ thuộc field cụ thể
+      final dynamic n = u?.fullName;
+      if (n is String && n.trim().isNotEmpty) return n;
+    } catch (_) {}
+    return 'Bạn';
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty || _moment == null) return;
+
+    setState(() => _sendingComment = true);
+    try {
+      if (_editingCommentId != null) {
+        final editingId = _editingCommentId!;
+        if (editingId > 0) {
+          await _socialController.updateComment(editingId, text);
+        }
+        // Cập nhật ngay trên UI (không có GET comments để reload).
+        setState(() {
+          _comments = _comments
+              .map((c) => c.id == editingId
+              ? SocialCommentModel(
+            id: c.id,
+            momentId: c.momentId,
+            userId: c.userId,
+            userName: c.userName,
+            avatarUrl: c.avatarUrl,
+            comment: text,
+            timestamp: c.timestamp,
+          )
+              : c)
+              .toList();
+          _editingCommentId = null;
+        });
+      } else {
+        // commentMoment() tra ve bool (thanh cong/that bai). Tu dung comment tai cho
+        // tu thong tin user hien tai de hien thi ngay (id am = chua dong bo server).
+        final ok = await _socialController.commentMoment(_moment!.id, text);
+        if (ok) {
+          final added = SocialCommentModel(
+            id: -DateTime.now().millisecondsSinceEpoch,
+            momentId: _moment!.id,
+            userId: _currentUserId,
+            userName: _myName,
+            avatarUrl: _storage.user?.avatarUrl,
+            comment: text,
+            timestamp: DateTime.now(),
+          );
+          setState(() {
+            _comments = [..._comments, added];
+            _moment = _moment!.copyWith(comments: _comments);
+          });
+        }
+      }
+      _commentController.clear();
+      if (mounted) FocusScope.of(context).unfocus();
+    } finally {
+      if (mounted) setState(() => _sendingComment = false);
+    }
+  }
+
+  Future<void> _deleteComment(SocialCommentModel c) async {
+    // id<=0 là comment lạc quan chưa biết id server => chỉ xóa cục bộ.
+    if (c.id > 0) {
+      await _socialController.deleteComment(c.id);
+    }
+    if (mounted) {
+      setState(() => _comments.removeWhere((x) => x.id == c.id));
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _commentFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AppScreen(
       title: 'Chi tiết Moment',
-      actions: [
-        if (moment != null && moment.userId == userId)
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              await controller.deleteMoment(moment!.id);
-              Get.back();
-            },
-          ),
-      ],
-      body: moment == null
-          ? const Center(child: Text('Không tìm thấy moment'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: _loading
+          ? const LoadingWidget(message: 'Đang tải moment...')
+          : _error != null || _moment == null
+          ? Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error ?? 'Moment không tồn tại hoặc đã bị xóa'),
+            const SizedBox(height: 16),
+            FilledButton(
+                onPressed: _loadMoment,
+                child: const Text('Thử lại')),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadMoment,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
                 children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      child: Text(moment.userName?.isNotEmpty == true
-                          ? moment.userName![0].toUpperCase()
-                          : '?'),
-                    ),
-                    title: Text(moment.userName ?? ''),
-                    subtitle: moment.createdAt != null
-                        ? Text(moment.createdAt.toString())
-                        : null,
-                  ),
-                  if (moment.content != null) Text(moment.content!),
-                  if (moment.imageUrl != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Image.network(moment.imageUrl!, fit: BoxFit.cover),
-                    ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(moment.hasReacted
-                            ? Icons.favorite
-                            : Icons.favorite_border),
-                        onPressed: () => controller.reactMoment(moment!.id),
-                      ),
-                      Text('${moment.reactionCount}'),
-                    ],
+                  MomentCard(
+                    moment: _moment!,
+                    currentUserId: _currentUserId,
+                    onDelete: (id) async {
+                      await _socialController.deleteMoment(id);
+                      Get.back();
+                    },
+                    onLike: (isLike) async {
+                      // Bỏ qua nếu trạng thái không đổi (chống đếm sai).
+                      if (_moment!.isLikedByMe == isLike) return;
+
+                      // Cập nhật lạc quan NGAY trên màn chi tiết, kể cả khi
+                      // moment không nằm trong feed đã nạp (idx < 0 ở controller).
+                      final newCount = (_moment!.reactionCount + (isLike ? 1 : -1))
+                          .clamp(0, 1 << 30)
+                          .toInt();
+                      setState(() {
+                        _moment = _moment!.copyWith(
+                          isLikedByMe: isLike,
+                          reactionCount: newCount,
+                        );
+                      });
+
+                      await _socialController.reactMoment(_moment!.id, isLike);
+
+                      // Nếu moment có trong feed, đồng bộ lại cho khớp controller.
+                      final updated = _findInFeed(_moment!.id);
+                      if (updated != null && mounted) {
+                        setState(() => _moment = updated);
+                      }
+                    },
+                    isDetail: true,
                   ),
                   const Divider(),
-                  Text('Bình luận',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  ...moment.comments.map((c) {
-                    final isOwner = c.userId == userId;
-                    return ListTile(
-                      title: Text(c.userName ?? 'User'),
-                      subtitle: Text(c.content),
-                      trailing: isOwner
-                          ? PopupMenuButton<String>(
-                              onSelected: (v) async {
-                                if (v == 'edit') {
-                                  final ctrl = TextEditingController(
-                                    text: c.content,
-                                  );
-                                  final newText = await showDialog<String>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Sửa bình luận'),
-                                      content: TextField(controller: ctrl),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, ctrl.text),
-                                          child: const Text('Lưu'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (newText != null && newText.isNotEmpty) {
-                                    await controller.updateComment(
-                                      c.id,
-                                      newText,
-                                    );
-                                  }
-                                } else if (v == 'delete') {
-                                  await controller.deleteComment(c.id);
-                                }
-                              },
-                              itemBuilder: (_) => const [
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Text('Sửa'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text('Xóa'),
-                                ),
-                              ],
-                            )
+                  Text('Bình luận (${_comments.length})',
+                      style:
+                      Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  if (_comments.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'Chưa có bình luận. Hãy là người đầu tiên!',
+                        style: TextStyle(
+                            color: AppColors.textTertiary),
+                      ),
+                    ),
+                  ..._comments.map((c) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.brandLight,
+                      backgroundImage: (c.avatarUrl != null &&
+                          c.avatarUrl!.isNotEmpty)
+                          ? CachedNetworkImageProvider(
+                          c.avatarUrl!)
                           : null,
-                    );
-                  }),
+                      child: (c.avatarUrl == null ||
+                          c.avatarUrl!.isEmpty)
+                          ? const Icon(Icons.person,
+                          size: 20,
+                          color: AppColors.brand)
+                          : null,
+                    ),
+                    title: Text(c.userName ?? 'Người dùng',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
+                    subtitle: Text(c.comment),
+                    trailing: c.userId == _currentUserId
+                        ? PopupMenuButton<String>(
+                      onSelected: (val) async {
+                        if (val == 'edit') {
+                          _editComment(c);
+                        } else if (val == 'delete') {
+                          await _deleteComment(c);
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Chỉnh sửa')),
+                        PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Xóa',
+                                style: TextStyle(
+                                    color:
+                                    AppColors.error))),
+                      ],
+                    )
+                        : null,
+                  )),
                 ],
               ),
             ),
+            Container(
+              padding: EdgeInsets.fromLTRB(16, 8, 16,
+                  MediaQuery.paddingOf(context).bottom + 8),
+              decoration: const BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  border: Border(
+                      top: BorderSide(color: AppColors.separator))),
+              child: Row(
+                children: [
+                  if (_editingCommentId != null)
+                    IconButton(
+                        icon: const Icon(Icons.close,
+                            color: AppColors.error),
+                        onPressed: () {
+                          setState(() {
+                            _editingCommentId = null;
+                            _commentController.clear();
+                            FocusScope.of(context).unfocus();
+                          });
+                        }),
+                  Expanded(
+                    child: TextField(
+                        controller: _commentController,
+                        focusNode: _commentFocusNode,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _submitComment(),
+                        decoration: InputDecoration(
+                            hintText: _editingCommentId != null
+                                ? 'Chỉnh sửa bình luận...'
+                                : 'Thêm bình luận...',
+                            border: InputBorder.none)),
+                  ),
+                  _sendingComment
+                      ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2)))
+                      : IconButton(
+                      icon: const Icon(Icons.send,
+                          color: AppColors.brand),
+                      onPressed: _submitComment),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
+
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -1364,7 +1414,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       arguments: {
         'roomId': room.id,
         'title':
-            room.name?.trim().isNotEmpty == true ? room.name : user.fullName,
+        room.name?.trim().isNotEmpty == true ? room.name : user.fullName,
         'isGroup': false,
         'avatarUrl': room.avatarUrl ?? user.avatarUrl,
       },
@@ -1378,21 +1428,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       body: _loading
           ? const LoadingWidget()
           : _user == null
-              ? const Center(child: Text('Không tìm thấy'))
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                    children: [
-                      _buildProfileHeader(_user!),
-                      const SizedBox(height: 18),
-                      _buildActions(_user!),
-                      const SizedBox(height: 18),
-                      _buildProfileInformation(_user!),
-                    ],
-                  ),
-                ),
+          ? const Center(child: Text('Không tìm thấy'))
+          : RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          children: [
+            _buildProfileHeader(_user!),
+            const SizedBox(height: 18),
+            _buildActions(_user!),
+            const SizedBox(height: 18),
+            _buildProfileInformation(_user!),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1448,7 +1498,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.14),
                                 borderRadius:
-                                    BorderRadius.circular(AppRadius.pill),
+                                BorderRadius.circular(AppRadius.pill),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.14),
                                 ),
@@ -1496,11 +1546,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     child: ClipOval(
                       child: user.avatarUrl?.isNotEmpty == true
                           ? CachedNetworkImage(
-                              imageUrl: user.avatarUrl!,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) =>
-                                  _profileInitial(initial),
-                            )
+                        imageUrl: user.avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) =>
+                            _profileInitial(initial),
+                      )
                           : _profileInitial(initial),
                     ),
                   ),
@@ -1762,7 +1812,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     bool showDivider = true,
   }) {
     final displayValue =
-        value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa cập nhật';
+    value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa cập nhật';
     return Column(
       children: [
         Padding(
