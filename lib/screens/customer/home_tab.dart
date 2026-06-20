@@ -19,6 +19,7 @@ import '../../widgets/loading_widget.dart';
 import '../../widgets/scroll_to_top_button.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/tour_card.dart';
+import '../../utils/auth_gate.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -38,7 +39,7 @@ class _TripType {
 class _HomeTabState extends State<HomeTab> {
   final _controller = Get.find<TourController>();
   final _wishlistController = Get.find<WishlistController>();
-  final _notificationController = Get.put(NotificationController());
+  final _notificationController = Get.find<NotificationController>();
   final _scrollController = ScrollController();
   List<BannerModel> _banners = [];
   bool _showScrollToTop = false;
@@ -323,7 +324,13 @@ class _HomeTabState extends State<HomeTab> {
                       largeSize: 18,
                       child: _CircleIconButton(
                         icon: Icons.notifications_none_rounded,
-                        onTap: () => Get.toNamed(AppRoutes.notifications),
+                        onTap: () {
+                          if (AuthGate.requireLogin(
+                            route: AppRoutes.notifications,
+                          )) {
+                            Get.toNamed(AppRoutes.notifications);
+                          }
+                        },
                         foregroundColor: Colors.white,
                         backgroundColor: Colors.white.withValues(alpha: 0.12),
                       ),

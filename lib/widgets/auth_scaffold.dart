@@ -19,6 +19,7 @@ class AuthScaffold extends StatefulWidget {
     this.showBack = false,
     this.scrollable = true,
     this.heroInitiallyExpanded = true,
+    this.onLogoTap,
   });
 
   final String title;
@@ -30,6 +31,7 @@ class AuthScaffold extends StatefulWidget {
   final bool showBack;
   final bool scrollable;
   final bool heroInitiallyExpanded;
+  final VoidCallback? onLogoTap;
 
   @override
   State<AuthScaffold> createState() => _AuthScaffoldState();
@@ -78,7 +80,20 @@ class _AuthScaffoldState extends State<AuthScaffold> {
                         onTap: Get.back,
                       ),
                     if (widget.showBack) const SizedBox(width: 12),
-                    const StayHubLogo(theme: StayHubLogoTheme.light),
+                    if (widget.onLogoTap == null)
+                      const StayHubLogo(theme: StayHubLogoTheme.light)
+                    else
+                      Semantics(
+                        button: true,
+                        label: 'Trở về trang chủ',
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: widget.onLogoTap,
+                          child: const StayHubLogo(
+                            theme: StayHubLogoTheme.light,
+                          ),
+                        ),
+                      ),
                     const Spacer(),
                     _GlassIconButton(
                       icon: _heroExpanded

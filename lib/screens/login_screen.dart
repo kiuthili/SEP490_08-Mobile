@@ -20,6 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   late final AuthController _auth;
 
+  void _goHome() => Get.offAllNamed(AppRoutes.home);
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
+      onLogoTap: _goHome,
       heroTitle: 'Khám phá hành trình của bạn',
       heroSubtitle:
           'Đặt tour, kết nối bạn bè và chia sẻ khoảnh khắc — mọi thứ trong một ứng dụng.',
@@ -46,7 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const Text('Chưa có tài khoản? '),
           TextButton(
-            onPressed: () => Get.toNamed(AppRoutes.register),
+            onPressed: () => Get.toNamed(
+              AppRoutes.register,
+              arguments: Get.arguments,
+            ),
             child: const Text(
               'Đăng ký miễn phí',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -104,6 +110,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: const Icon(Icons.g_mobiledata, size: 28),
                 label: const Text('Đăng nhập với Google'),
               ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _goHome,
+              icon: const Icon(Icons.home_outlined),
+              label: const Text('Trở về trang chủ'),
             ),
           ],
         ),

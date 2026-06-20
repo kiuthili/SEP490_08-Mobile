@@ -407,13 +407,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (confirmed != true) return;
 
     final orderId = order.id;
-    final ok = await Get.toNamed<bool>(
-      AppRoutes.requestCancellation,
-      arguments: {
-        'orderId': orderId,
-        'status': order.status,
-        'departureDate': order.schedule?.departureDate.toIso8601String(),
-      },
+    final ok = await Get.toNamed(
+      AppRoutes.requestCancellationFor(orderId),
     );
     if (ok == true && mounted) {
       await _controller.fetchOrderDetail(orderId);
