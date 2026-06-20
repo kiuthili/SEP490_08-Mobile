@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/signalr_service.dart';
 import '../services/storage_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/auth_gate.dart';
 import 'feature_controllers.dart';
 
 class AuthController extends GetxController {
@@ -40,11 +41,14 @@ class AuthController extends GetxController {
       );
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập thành công');
-      Get.offAllNamed(
-        response.user.requirePasswordChange
-            ? AppRoutes.changePassword
-            : AppRoutes.home,
-      );
+      if (response.user.requirePasswordChange) {
+        Get.offAllNamed(AppRoutes.changePassword);
+      } else {
+        final destination = Get.arguments;
+        AuthGate.completeLogin(
+          destination is LoginDestination ? destination : null,
+        );
+      }
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -84,7 +88,7 @@ class AuthController extends GetxController {
         ),
       );
       SnackbarHelper.success('Đăng ký thành công. Vui lòng đăng nhập.');
-      Get.offAllNamed(AppRoutes.login);
+      Get.offAllNamed(AppRoutes.login, arguments: Get.arguments);
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -141,7 +145,7 @@ class AuthController extends GetxController {
     }
     await _authService.logout();
     currentUser.value = null;
-    Get.offAllNamed(AppRoutes.login);
+    Get.offAllNamed(AppRoutes.home);
   }
 
   Future<void> loginWithGoogle() async {
@@ -150,11 +154,14 @@ class AuthController extends GetxController {
       final response = await _authService.googleLogin();
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập Google thành công');
-      Get.offAllNamed(
-        response.user.requirePasswordChange
-            ? AppRoutes.changePassword
-            : AppRoutes.home,
-      );
+      if (response.user.requirePasswordChange) {
+        Get.offAllNamed(AppRoutes.changePassword);
+      } else {
+        final destination = Get.arguments;
+        AuthGate.completeLogin(
+          destination is LoginDestination ? destination : null,
+        );
+      }
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (_) {

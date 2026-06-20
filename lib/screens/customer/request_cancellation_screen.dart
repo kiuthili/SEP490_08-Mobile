@@ -81,7 +81,8 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
   @override
   void initState() {
     super.initState();
-    _orderId = _readOrderId(Get.arguments);
+    final routeOrderId = _readOrderId(Get.parameters['orderId']);
+    _orderId = routeOrderId > 0 ? routeOrderId : _readOrderId(Get.arguments);
     _loadBanks();
   }
 
@@ -166,7 +167,6 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
     if (mounted) setState(() => _submitting = false);
     if (ok) {
       final controller = Get.find<OrderController>();
-      await controller.fetchOrderDetail(_orderId);
       await controller.fetchOrders(refresh: true);
       if (mounted) Get.back(result: true);
     }
@@ -241,6 +241,7 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
                 controller: _reasonController,
                 label: 'Lý do hủy',
                 maxLines: 4,
+                keyboardType: TextInputType.multiline,
                 enabled: !_submitting,
                 textInputAction: TextInputAction.newline,
                 textCapitalization: TextCapitalization.sentences,

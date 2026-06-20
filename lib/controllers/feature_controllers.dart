@@ -6,6 +6,7 @@ import '../models/api_response.dart';
 import '../models/feature_models.dart';
 import '../models/order_model.dart';
 import '../models/tour_model.dart';
+import '../routes/app_routes.dart';
 import '../services/feature_services.dart';
 import '../services/catalog_service.dart';
 import '../services/location_helper.dart';
@@ -16,6 +17,7 @@ import '../services/storage_service.dart';
 import '../services/tour_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/ai_session.dart';
+import '../utils/auth_gate.dart';
 
 class OrderController extends GetxController {
   final OrderService _service = Get.find<OrderService>();
@@ -136,7 +138,7 @@ class WishlistController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchWishlist();
+    if (AuthGate.isLoggedIn) fetchWishlist();
   }
 
   bool containsTour(int tourId) => items.any((i) => i.tourId == tourId);
@@ -144,6 +146,10 @@ class WishlistController extends GetxController {
   bool isProcessing(int tourId) => processingTourIds.contains(tourId);
 
   Future<void> fetchWishlist() async {
+    if (!AuthGate.isLoggedIn) {
+      items.clear();
+      return;
+    }
     isLoading.value = true;
     try {
       items.assignAll(await _service.getWishlist());
@@ -161,6 +167,13 @@ class WishlistController extends GetxController {
     required bool isInWishlist,
     bool showMessage = true,
   }) async {
+    if (!AuthGate.requireLogin(
+      route: AppRoutes.tourDetail,
+      arguments: tourId,
+      message: 'Vui lòng đăng nhập để lưu tour yêu thích',
+    )) {
+      return false;
+    }
     if (processingTourIds.contains(tourId)) return false;
     processingTourIds.add(tourId);
     processingTourIds.refresh();
@@ -635,8 +648,6 @@ class SocialController extends GetxController {
     }
   }
 }
-
-
 
 class BookingPassengerInput {
   final int tourScheduleTicketId;

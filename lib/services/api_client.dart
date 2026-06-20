@@ -85,7 +85,24 @@ class ApiClient {
       '/api/auth/reset-password',
       '/api/auth/refresh-token',
     };
-    return !publicAuthPaths.contains(normalizedPath);
+    if (publicAuthPaths.contains(normalizedPath)) return false;
+
+    const publicPrefixes = {
+      '/api/tours/public',
+      '/api/tours/search',
+      '/api/categories',
+      '/api/banners',
+      '/api/tickettypes',
+      '/api/tourisminformation',
+      '/api/touritineraries',
+      '/api/tourscheduleitineraries',
+    };
+    if (publicPrefixes.any(normalizedPath.startsWith)) return false;
+
+    final isPublicTourReview =
+        normalizedPath.startsWith('/api/reviews/tour/') &&
+            !normalizedPath.endsWith('/mine');
+    return !isPublicTourReview;
   }
 
   Future<Response<dynamic>?> _tryFollowPreservedRedirect(
