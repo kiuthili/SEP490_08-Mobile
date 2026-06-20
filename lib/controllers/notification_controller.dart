@@ -4,6 +4,7 @@ import 'package:stayhub_mobile/models/notification_model.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/signalr_service.dart';
 import 'package:stayhub_mobile/utils/snackbar_helper.dart';
+import 'package:stayhub_mobile/utils/auth_gate.dart';
 
 class NotificationController extends GetxController {
   final _service = Get.find<NotificationService>();
@@ -17,6 +18,7 @@ class NotificationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (!AuthGate.isLoggedIn) return;
     fetchNotifications();
     _connectRealtime();
   }
@@ -28,6 +30,7 @@ class NotificationController extends GetxController {
   }
 
   Future<void> fetchNotifications() async {
+    if (!AuthGate.isLoggedIn) return;
     isLoading.value = true;
     try {
       notifications.assignAll(await _service.getNotifications());

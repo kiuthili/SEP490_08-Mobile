@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import '../services/storage_service.dart';
 import '../utils/jwt_utils.dart';
-import 'feature_controllers.dart';
+import '../utils/auth_gate.dart';
 
 class ShellController extends GetxController {
   ShellController({int? initialTab}) {
@@ -25,6 +25,10 @@ class ShellController extends GetxController {
   }
 
   void changeTab(int index) {
+    if (!AuthGate.isLoggedIn && index >= 2) {
+      AuthGate.requireLogin(shellTab: index);
+      return;
+    }
     selectedIndex.value = index;
     if (!isStaff || !Get.isRegistered<StaffController>()) return;
     // Chỉ tải dữ liệu lịch khi mở tab cần — không fetch khi bấm danh sách lịch.

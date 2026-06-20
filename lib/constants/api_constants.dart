@@ -9,11 +9,11 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      return 'https://pgfglbkq-7010.asse.devtunnels.ms';
+      return 'https://028xpj74-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
-      return 'https://pgfglbkq-7010.asse.devtunnels.ms';
+      return 'https://028xpj74-7010.asse.devtunnels.ms';
     }
 
     return 'https://localhost:7010';

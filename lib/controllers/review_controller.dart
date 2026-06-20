@@ -4,6 +4,8 @@ import '../models/review_model.dart';
 import '../services/review_service.dart';
 import '../services/storage_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../routes/app_routes.dart';
+import '../utils/auth_gate.dart';
 
 class ReviewController extends GetxController {
   final ReviewService _service = Get.find<ReviewService>();
@@ -27,7 +29,9 @@ class ReviewController extends GetxController {
     isLoading.value = true;
     try {
       reviews.assignAll(await _service.getReviewsByTour(tourId));
-      myReview.value = await _service.getMyReviewByTour(tourId);
+      final storage = Get.find<StorageService>();
+      myReview.value =
+          storage.isLoggedIn ? await _service.getMyReviewByTour(tourId) : null;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -41,6 +45,13 @@ class ReviewController extends GetxController {
     String? comment,
     int? existingReviewId,
   }) async {
+    if (!AuthGate.requireLogin(
+      route: AppRoutes.tourDetail,
+      arguments: tourId,
+      message: 'Vui lòng đăng nhập để đánh giá tour',
+    )) {
+      return false;
+    }
     final customerId = Get.find<StorageService>().user?.id;
     if (customerId == null) {
       SnackbarHelper.error('Vui lòng đăng nhập để đánh giá');

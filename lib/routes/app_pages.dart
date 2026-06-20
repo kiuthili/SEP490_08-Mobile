@@ -29,9 +29,12 @@ import '../screens/splash_screen.dart';
 import '../screens/staff/qr_scan_screen.dart';
 import '../screens/tour_detail_screen.dart';
 import 'app_routes.dart';
+import '../utils/auth_gate.dart';
 
 class AppPages {
   AppPages._();
+
+  static List<GetMiddleware> get _protected => [AuthMiddleware()];
 
   static final routes = [
     GetPage(name: AppRoutes.splash, page: () => const SplashScreen()),
@@ -60,6 +63,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.booking,
       page: () => const BookingScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<BookingController>()) {
           Get.lazyPut<BookingController>(() => BookingController());
@@ -69,6 +73,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.orderDetail,
       page: () => const OrderDetailScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<OrderController>()) {
           Get.lazyPut<OrderController>(() => OrderController());
@@ -81,6 +86,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.notifications,
       page: () => const NotificationsScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<NotificationController>()) {
           Get.lazyPut<NotificationController>(() => NotificationController());
@@ -90,6 +96,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.wishlist,
       page: () => const WishlistScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<WishlistController>()) {
           Get.lazyPut<WishlistController>(() => WishlistController());
@@ -99,16 +106,22 @@ class AppPages {
     GetPage(
       name: AppRoutes.vouchers,
       page: () => const VouchersScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<VoucherController>()) {
           Get.lazyPut<VoucherController>(() => VoucherController());
         }
       }),
     ),
-    GetPage(name: AppRoutes.editProfile, page: () => const EditProfileScreen()),
+    GetPage(
+      name: AppRoutes.editProfile,
+      page: () => const EditProfileScreen(),
+      middlewares: _protected,
+    ),
     GetPage(
       name: AppRoutes.changePassword,
       page: () => const ChangePasswordScreen(),
+      middlewares: _protected,
     ),
     GetPage(
       name: AppRoutes.forgotPassword,
@@ -118,10 +131,15 @@ class AppPages {
       name: AppRoutes.resetPassword,
       page: () => const ResetPasswordScreen(),
     ),
-    GetPage(name: AppRoutes.socialMap, page: () => const SocialMapScreen()),
+    GetPage(
+      name: AppRoutes.socialMap,
+      page: () => const SocialMapScreen(),
+      middlewares: _protected,
+    ),
     GetPage(
       name: AppRoutes.shareMoment,
       page: () => const ShareMomentScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<SocialController>()) {
           Get.lazyPut<SocialController>(() => SocialController());
@@ -131,10 +149,15 @@ class AppPages {
         }
       }),
     ),
-    GetPage(name: AppRoutes.qrScan, page: () => const QrScanScreen()),
+    GetPage(
+      name: AppRoutes.qrScan,
+      page: () => const QrScanScreen(),
+      middlewares: _protected,
+    ),
     GetPage(
       name: AppRoutes.chatInbox,
       page: () => const ChatInboxScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<SocialController>()) {
           Get.lazyPut<SocialController>(() => SocialController());
@@ -144,6 +167,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.chatRoom,
       page: () => const ChatRoomScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<SocialController>()) {
           Get.lazyPut<SocialController>(() => SocialController());
@@ -153,18 +177,32 @@ class AppPages {
     GetPage(
       name: AppRoutes.momentDetail,
       page: () => const MomentDetailScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<SocialController>()) {
           Get.lazyPut<SocialController>(() => SocialController());
         }
       }),
     ),
-    GetPage(name: AppRoutes.userProfile, page: () => const UserProfileScreen()),
-    GetPage(name: AppRoutes.payment, page: () => const PaymentScreen()),
-    GetPage(name: AppRoutes.myTickets, page: () => const MyTicketsScreen()),
+    GetPage(
+      name: AppRoutes.userProfile,
+      page: () => const UserProfileScreen(),
+      middlewares: _protected,
+    ),
+    GetPage(
+      name: AppRoutes.payment,
+      page: () => const PaymentScreen(),
+      middlewares: _protected,
+    ),
+    GetPage(
+      name: AppRoutes.myTickets,
+      page: () => const MyTicketsScreen(),
+      middlewares: _protected,
+    ),
     GetPage(
       name: AppRoutes.myReviews,
       page: () => const MyReviewsScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<ReviewController>()) {
           Get.lazyPut<ReviewController>(() => ReviewController());
@@ -174,6 +212,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.requestCancellation,
       page: () => const RequestCancellationScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<OrderController>()) {
           Get.lazyPut<OrderController>(() => OrderController());
@@ -183,6 +222,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.aiQuestionnaire,
       page: () => const AiQuestionnaireScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<AiController>()) {
           Get.lazyPut<AiController>(() => AiController());
@@ -192,6 +232,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.aiRecommendations,
       page: () => const AiRecommendationsScreen(),
+      middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<AiController>()) {
           Get.lazyPut<AiController>(() => AiController());
@@ -208,6 +249,7 @@ class AppPages {
       name: AppRoutes.profile,
       page: () => const MainShellScreen(),
       binding: MainShellBinding(initialTab: 4),
+      middlewares: _protected,
     ),
   ];
 }

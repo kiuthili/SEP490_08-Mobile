@@ -26,7 +26,9 @@ class AppRoutes {
   static const String payment = '/payment';
   static const String myTickets = '/my-tickets';
   static const String myReviews = '/my-reviews';
-  static const String requestCancellation = '/request-cancellation';
+  static const String requestCancellation = '/request-cancellation/:orderId';
+  static String requestCancellationFor(int orderId) =>
+      '/request-cancellation/$orderId';
   static const String aiRecommendations = '/ai-recommendations';
   static const String aiQuestionnaire = '/ai-assistant';
   static const String terms = '/terms';
