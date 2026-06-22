@@ -47,8 +47,9 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
   late final AiController _ai;
   var _step = 0;
   final _values = <String, dynamic>{
-    'hasElderly': false,
-    'hasChildren': false,
+    'adultCount': 1,
+    'childrenCount': 0,
+    'elderlyCount': 0,
     'top': 8,
   };
   final _errors = <String, String>{};
@@ -132,10 +133,10 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
   bool _validateCurrent() {
     final steps = _steps;
     final fieldErrors = _isLastStep
-        ? validateExtraCounts(_values)
+        ? validateTopCount(_values)
         : validateQuestionnaireStep(steps[_step], _values);
     if (!_isLastStep) {
-      fieldErrors.addAll(validateExtraCounts(_values));
+      fieldErrors.addAll(validateTopCount(_values));
     }
     setState(() => _errors
       ..clear()
@@ -149,7 +150,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
       final questions = _ai.questionnaire.value?.questions ?? [];
       final allErrors = {
         ...validateQuestionnaireStep(questions, _values),
-        ...validateExtraCounts(_values),
+        ...validateTopCount(_values),
       };
       if (allErrors.isNotEmpty) {
         setState(() => _errors
@@ -288,21 +289,56 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
     Widget input;
     switch (field.inputType) {
       case 'single_select':
-        input = DropdownButtonFormField<String>(
-          initialValue: _values[field.fieldKey] as String?,
-          decoration: InputDecoration(
-            labelText: field.label,
-            errorText: err,
-          ),
-          items: field.options
-              .map(
-                (o) => DropdownMenuItem(value: o.value, child: Text(o.label)),
-              )
-              .toList(),
-          onChanged: (v) => setState(() {
-            _values[field.fieldKey] = v;
-            _errors.remove(field.fieldKey);
-          }),
+        final selectedValue = _values[field.fieldKey] as String?;
+        input = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                text: field.label,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+                children: [
+                  if (field.required)
+                    const TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+            if (field.hint != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(field.hint!, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: field.options.map((o) {
+                final on = selectedValue == o.value;
+                return ChoiceChip(
+                  label: Text(o.label),
+                  selected: on,
+                  selectedColor: AppColors.brandLight,
+                  labelStyle: TextStyle(
+                    color: on ? AppColors.brand : AppColors.textSecondary,
+                    fontWeight: on ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  side: BorderSide(color: on ? AppColors.brand : AppColors.border),
+                  backgroundColor: AppColors.surfaceGrouped,
+                  onSelected: (v) => setState(() {
+                    if (v) {
+                      _values[field.fieldKey] = o.value;
+                      _errors.remove(field.fieldKey);
+                    }
+                  }),
+                );
+              }).toList(),
+            ),
+            if (err != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(err, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+          ],
         );
       case 'multi_select':
         final selected =
@@ -310,19 +346,38 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
         input = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(field.label,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            RichText(
+              text: TextSpan(
+                text: field.label,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+                children: [
+                  if (field.required)
+                    const TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
             if (field.hint != null)
-              Text(field.hint!, style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(field.hint!, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              ),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 8,
-              runSpacing: 4,
+              runSpacing: 8,
               children: field.options.map((o) {
                 final on = selected.contains(o.value);
                 return FilterChip(
                   label: Text(o.label),
                   selected: on,
+                  selectedColor: AppColors.brandLight,
+                  checkmarkColor: AppColors.brand,
+                  labelStyle: TextStyle(
+                    color: on ? AppColors.brand : AppColors.textSecondary,
+                    fontWeight: on ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  side: BorderSide(color: on ? AppColors.brand : AppColors.border),
+                  backgroundColor: AppColors.surfaceGrouped,
                   onSelected: (v) => setState(() {
                     final list = List<String>.from(selected);
                     if (v) {
@@ -338,8 +393,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             ),
             if (err != null)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(err, style: const TextStyle(color: Colors.red)),
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(err, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
           ],
         );
@@ -355,13 +410,142 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
           ),
         );
       case 'number':
-        input = CustomTextField(
-          controller: _controllerFor(field.fieldKey),
-          label: field.label,
-          keyboardType: TextInputType.number,
-          onChanged: (v) => _values[field.fieldKey] = v,
-          validator: (_) => err,
-        );
+        if (['adultCount', 'childrenCount', 'elderlyCount'].contains(field.fieldKey)) {
+          final count = int.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
+          input = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceGrouped,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    field.label,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      color: count > (field.fieldKey == 'adultCount' ? 1 : 0) ? AppColors.brand : AppColors.textSecondary,
+                      onPressed: count > (field.fieldKey == 'adultCount' ? 1 : 0)
+                          ? () => setState(() {
+                                _values[field.fieldKey] = count - 1;
+                                _errors.remove(field.fieldKey);
+                              })
+                          : null,
+                    ),
+                    SizedBox(
+                      width: 24,
+                      child: Text(
+                        '$count',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      color: count < 20 ? AppColors.brand : AppColors.textSecondary,
+                      onPressed: count < 20
+                          ? () => setState(() {
+                                _values[field.fieldKey] = count + 1;
+                                _errors.remove(field.fieldKey);
+                              })
+                          : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        } else if (field.fieldKey == 'maxBudgetPerPerson') {
+          final numericValue = double.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
+          final displayValue = numericValue > 0 ? NumberFormat('#,###').format(numericValue) : 'Không giới hạn';
+          input = Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceGrouped,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      field.label,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textSecondary),
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          displayValue,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.brand),
+                        ),
+                        if (numericValue > 0)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Text(
+                              'VND',
+                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: const SliderThemeData(
+                    activeTrackColor: AppColors.brand,
+                    inactiveTrackColor: AppColors.border,
+                    thumbColor: AppColors.brand,
+                    trackHeight: 6,
+                    overlayShape: SliderComponentShape.noOverlay,
+                  ),
+                  child: Slider(
+                    min: 0,
+                    max: 20000000,
+                    divisions: 40,
+                    value: numericValue.clamp(0, 20000000).toDouble(),
+                    onChanged: (val) {
+                      setState(() {
+                        _values[field.fieldKey] = val == 0 ? '' : val.toInt().toString();
+                        _errors.remove(field.fieldKey);
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Không giới hạn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+                    Text('20,000,000+ VND', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+                  ],
+                ),
+                if (err != null) ...[
+                  const SizedBox(height: 8),
+                  Text(err, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                ]
+              ],
+            ),
+          );
+        } else {
+          input = CustomTextField(
+            controller: _controllerFor(field.fieldKey),
+            label: field.label,
+            keyboardType: TextInputType.number,
+            onChanged: (v) => _values[field.fieldKey] = v,
+            validator: (_) => err,
+          );
+        }
       case 'boolean':
         input = SwitchListTile(
           title: Text(field.label),
@@ -388,41 +572,15 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
   List<Widget> _buildExtraStep() {
     return [
       Text(
-        'Thông tin bổ sung',
+        'Bước cuối cùng',
         style: AppTextStyles.textTheme.titleMedium,
       ),
       const SizedBox(height: 8),
       Text(
-        'Số người cao tuổi/trẻ em và số tour gợi ý (tuỳ chọn).',
+        'Số lượng gợi ý bạn muốn nhận (tối đa 30).',
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: 16),
-      SwitchListTile(
-        title: const Text('Có người cao tuổi'),
-        value: _values['hasElderly'] == true,
-        onChanged: (v) => setState(() => _values['hasElderly'] = v),
-      ),
-      if (_values['hasElderly'] == true)
-        CustomTextField(
-          controller: _controllerFor('elderlyCount'),
-          label: 'Số người cao tuổi',
-          keyboardType: TextInputType.number,
-          onChanged: (v) => _values['elderlyCount'] = v,
-          validator: (_) => _errors['elderlyCount'],
-        ),
-      SwitchListTile(
-        title: const Text('Có trẻ em'),
-        value: _values['hasChildren'] == true,
-        onChanged: (v) => setState(() => _values['hasChildren'] = v),
-      ),
-      if (_values['hasChildren'] == true)
-        CustomTextField(
-          controller: _controllerFor('childrenCount'),
-          label: 'Số trẻ em',
-          keyboardType: TextInputType.number,
-          onChanged: (v) => _values['childrenCount'] = v,
-          validator: (_) => _errors['childrenCount'],
-        ),
       CustomTextField(
         controller: _controllerFor('top'),
         label: 'Số tour gợi ý (1–30)',
