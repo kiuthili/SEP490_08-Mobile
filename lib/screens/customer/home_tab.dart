@@ -40,6 +40,7 @@ class _HomeTabState extends State<HomeTab> {
   final _controller = Get.find<TourController>();
   final _wishlistController = Get.find<WishlistController>();
   final _notificationController = Get.find<NotificationController>();
+  final _socialController = Get.find<SocialController>();
   final _scrollController = ScrollController();
   List<BannerModel> _banners = [];
   bool _showScrollToTop = false;
@@ -305,12 +306,26 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                   ),
                   if (user != null) ...[
-                    _CircleIconButton(
-                      icon: Icons.forum_outlined,
-                      onTap: () => Get.toNamed(AppRoutes.chatInbox),
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.white.withValues(alpha: 0.12),
-                    ),
+                    Obx(() {
+                      final unreadChatCount = _socialController.unreadChatCount;
+                      return Badge(
+                        label: Text(
+                          unreadChatCount > 99
+                              ? '99+'
+                              : unreadChatCount.toString(),
+                        ),
+                        isLabelVisible: unreadChatCount > 0,
+                        backgroundColor: AppColors.error,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        largeSize: 18,
+                        child: _CircleIconButton(
+                          icon: Icons.forum_outlined,
+                          onTap: () => Get.toNamed(AppRoutes.chatInbox),
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                        ),
+                      );
+                    }),
                     const SizedBox(width: 10),
                   ],
                   // Trong _buildHeader của HomeTab

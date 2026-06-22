@@ -15,10 +15,13 @@ class SignalRService extends GetxService {
   HubConnection? _trackingConnection;
   HubConnection? _publicTrackingConnection;
   HubConnection? _notificationConnection;
+  HubConnection? _globalChatConnection;
   String? _chatToken;
   String? _friendshipToken;
   String? _notificationToken;
+  String? _globalChatToken;
   void Function(ChatMessageModel msg)? _messageHandler;
+  void Function(ChatMessageModel msg)? _globalChatHandler;
   void Function()? _friendRequestHandler;
   void Function(int responderId, String status)? _friendResponseHandler;
   void Function(int userId)? _friendshipDeletedHandler;
@@ -28,6 +31,9 @@ class SignalRService extends GetxService {
   Future<HubConnection>? _chatConnecting;
   Future<HubConnection>? _friendshipConnecting;
   Future<HubConnection>? _notificationConnecting;
+  Future<HubConnection>? _globalChatConnecting;
+
+  int? activeChatRoomId;
 
   String? get _token => _storage.accessToken;
 
@@ -396,6 +402,112 @@ class SignalRService extends GetxService {
   }
 
   // ===========================================================================
+  // GLOBAL CHAT (nhận tin nhắn khi không ở trong phòng chat)
+  // ===========================================================================
+
+  Future<void> connectGlobalChat({
+    required void Function(ChatMessageModel msg) onGlobalMessage,
+    void Function()? onReconnected,
+  }) async {
+    _globalChatHandler = onGlobalMessage;
+    await _connectGlobalChat(onReconnected: onReconnected);
+  }
+
+  Future<HubConnection> _connectGlobalChat({void Function()? onReconnected}) async {
+    final token = _token;
+    final current = _globalChatConnection;
+    if (current?.state == HubConnectionState.Connected &&
+        _globalChatToken == token) {
+      _bindGlobalChatHandlers();
+      return current!;
+    }
+
+    final pending = _globalChatConnecting;
+    if (pending != null) return pending;
+    if (token == null || token.isEmpty) {
+      throw StateError('Bạn cần đăng nhập để nhận tin nhắn');
+    }
+
+    final connecting = _establishGlobalChatConnection(token, onReconnected);
+    _globalChatConnecting = connecting;
+    try {
+      return await connecting;
+    } finally {
+      if (identical(_globalChatConnecting, connecting)) {
+        _globalChatConnecting = null;
+      }
+    }
+  }
+
+  Future<HubConnection> _establishGlobalChatConnection(
+    String token,
+    void Function()? onReconnected,
+  ) async {
+    final oldConnection = _globalChatConnection;
+    _globalChatConnection = null;
+    if (oldConnection != null) {
+      try {
+        await oldConnection.stop();
+      } catch (_) {}
+    }
+
+    _globalChatToken = token;
+    final connection = HubConnectionBuilder()
+        .withUrl(
+      ApiConstants.globalChatHubUrl,
+      options: _connectionOptions(
+        accessTokenFactory: () async => _globalChatToken ?? '',
+      ),
+    )
+        .withAutomaticReconnect()
+        .build();
+    _globalChatConnection = connection;
+    _bindGlobalChatHandlers();
+    connection.onreconnected(({connectionId}) {
+      onReconnected?.call();
+    });
+    await connection.start();
+    await _waitUntilConnected(connection);
+    return connection;
+  }
+
+  void _bindGlobalChatHandlers() {
+    final connection = _globalChatConnection;
+    final handler = _globalChatHandler;
+    if (connection == null || handler == null) return;
+
+    connection.off('ReceiveGlobalNotification');
+    connection.on('ReceiveGlobalNotification', (args) {
+      if (args == null || args.isEmpty) return;
+      final raw = args[0];
+      if (raw is Map<String, dynamic>) {
+        handler(ChatMessageModel.fromJson(raw));
+      } else if (raw is Map) {
+        handler(ChatMessageModel.fromJson(Map<String, dynamic>.from(raw)));
+      }
+    });
+  }
+
+  Future<void> disconnectGlobalChat({bool keepHandler = false}) async {
+    final pending = _globalChatConnecting;
+    _globalChatConnecting = null;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {}
+    }
+    await _globalChatConnection?.stop();
+    _globalChatConnection = null;
+    _globalChatToken = null;
+    activeChatRoomId = null;
+    if (!keepHandler) _globalChatHandler = null;
+  }
+
+  void setActiveChatRoom(int? roomId) {
+    activeChatRoomId = roomId;
+  }
+
+  // ===========================================================================
   // TRACKING (giữ nguyên, không đổi)
   // ===========================================================================
 
@@ -491,6 +603,7 @@ class SignalRService extends GetxService {
     disconnectChat();
     disconnectFriendship();
     disconnectNotification();
+    disconnectGlobalChat();
     disconnectTracking();
     disconnectPublicTracking();
     super.onClose();

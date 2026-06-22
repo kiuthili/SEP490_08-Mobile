@@ -19,6 +19,7 @@ import '../widgets/ai_floating_assistant.dart';
 import '../widgets/ios_bottom_nav.dart';
 import '../widgets/page_scaffold.dart';
 import '../utils/auth_gate.dart';
+import '../utils/auth_gate.dart';
 
 class MainShellScreen extends GetView<ShellController> {
   const MainShellScreen({super.key});
@@ -184,5 +185,9 @@ class MainShellBinding extends Bindings {
     Get.lazyPut<SocialController>(() => SocialController());
     Get.lazyPut<StaffController>(() => StaffController());
     Get.lazyPut<BookingController>(() => BookingController());
+
+    if (AuthGate.isLoggedIn) {
+      Get.find<SocialController>();
+    }
   }
 }
