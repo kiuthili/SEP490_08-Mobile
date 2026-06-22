@@ -23,6 +23,7 @@ import '../../widgets/scroll_to_top_button.dart';
 import '../../widgets/tour_card.dart';
 import '../../widgets/ai_floating_assistant.dart';
 import '../../utils/snackbar_helper.dart';
+import '../../utils/auth_gate.dart';
 
 class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
@@ -98,7 +99,7 @@ class _ExploreTabState extends State<ExploreTab> {
         _shell.exploreSearchTerm.value = null;
       }
       _runSearch(refresh: true);
-      _aiController.fetchRecommendations();
+      if (AuthGate.isLoggedIn) _aiController.fetchRecommendations();
     });
   }
 
@@ -548,51 +549,53 @@ class _ExploreTabState extends State<ExploreTab> {
                         child: Center(child: CircularProgressIndicator()),
                       ),
                   ],
-                  const SizedBox(height: 18),
-                  _buildAiHeader(),
-                  const SizedBox(height: 10),
-                  Obx(() {
-                    if (_aiController.isLoading.value &&
-                        _aiController.recommendations.isEmpty) {
-                      return const LoadingWidget();
-                    }
-                    if (_aiController.recommendations.isEmpty) {
-                      return TextButton(
-                        onPressed: () => showAiAssistantPanel(context),
-                        child: const Text('Bắt đầu khảo sát AI →'),
-                      );
-                    }
-                    return Column(
-                      children:
-                          _aiController.recommendations.take(4).map((rec) {
-                        return IosSurfaceCard(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: EdgeInsets.zero,
-                          child: ListTile(
-                            onTap: () => Get.toNamed(
-                              AppRoutes.tourDetail,
-                              arguments: rec.tourId,
-                            ),
-                            leading: rec.imageUrl != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      rec.imageUrl!,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          const Icon(Icons.tour_rounded),
-                                    ),
-                                  )
-                                : const Icon(Icons.tour_rounded),
-                            title: Text(rec.name),
-                            subtitle: Text(rec.reason ?? rec.city ?? ''),
-                          ),
+                  if (AuthGate.isLoggedIn) ...[
+                    const SizedBox(height: 18),
+                    _buildAiHeader(),
+                    const SizedBox(height: 10),
+                    Obx(() {
+                      if (_aiController.isLoading.value &&
+                          _aiController.recommendations.isEmpty) {
+                        return const LoadingWidget();
+                      }
+                      if (_aiController.recommendations.isEmpty) {
+                        return TextButton(
+                          onPressed: () => showAiAssistantPanel(context),
+                          child: const Text('Bắt đầu khảo sát AI →'),
                         );
-                      }).toList(),
-                    );
-                  }),
+                      }
+                      return Column(
+                        children:
+                            _aiController.recommendations.take(4).map((rec) {
+                          return IosSurfaceCard(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.zero,
+                            child: ListTile(
+                              onTap: () => Get.toNamed(
+                                AppRoutes.tourDetail,
+                                arguments: rec.tourId,
+                              ),
+                              leading: rec.imageUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        rec.imageUrl!,
+                                        width: 48,
+                                        height: 48,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Icon(Icons.tour_rounded),
+                                      ),
+                                    )
+                                  : const Icon(Icons.tour_rounded),
+                              title: Text(rec.name),
+                              subtitle: Text(rec.reason ?? rec.city ?? ''),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }),
+                  ],
                 ],
               ),
             ),

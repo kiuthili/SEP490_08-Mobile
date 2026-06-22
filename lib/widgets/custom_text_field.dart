@@ -58,6 +58,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isMultiline = !widget.obscureText && widget.maxLines > 1;
     Widget? suffix = widget.suffixIcon;
     if (widget.obscureText) {
       suffix = IconButton(
@@ -95,14 +96,29 @@ class _CustomTextFieldState extends State<CustomTextField> {
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onSubmitted,
           autovalidateMode: AutovalidateMode.onUserInteraction,
+          textAlignVertical:
+              isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
           style: AppTextStyles.textTheme.bodyLarge,
           cursorColor: AppColors.brand,
           decoration: InputDecoration(
             hintText: widget.hint ?? widget.label,
             counterText: '',
             prefixIcon: widget.prefixIcon != null
-                ? Icon(widget.prefixIcon, size: 20)
+                ? Align(
+                    alignment: isMultiline
+                        ? Alignment.topCenter
+                        : Alignment.center,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: isMultiline ? 16 : 0),
+                      child: Icon(widget.prefixIcon, size: 20),
+                    ),
+                  )
                 : null,
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 48,
+              maxWidth: 48,
+              minHeight: 48,
+            ),
             prefixIconColor: AppColors.textSecondary,
             suffixIcon: suffix,
             filled: true,

@@ -4,7 +4,6 @@ import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import 'package:stayhub_mobile/screens/staff/staff_tickets_tab.dart';
-import 'package:stayhub_mobile/services/staff_service.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/shell_controller.dart';
 import '../controllers/tour_controller.dart';
@@ -19,6 +18,7 @@ import '../screens/staff/staff_schedules_tab.dart';
 import '../widgets/ai_floating_assistant.dart';
 import '../widgets/ios_bottom_nav.dart';
 import '../widgets/page_scaffold.dart';
+import '../utils/auth_gate.dart';
 
 class MainShellScreen extends GetView<ShellController> {
   const MainShellScreen({super.key});
@@ -48,6 +48,34 @@ class MainShellScreen extends GetView<ShellController> {
       icon: Icons.person_outline_rounded,
       selectedIcon: Icons.person_rounded,
       label: 'Hồ sơ',
+    ),
+  ];
+
+  static const _guestNav = [
+    IosBottomNavItem(
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home_rounded,
+      label: 'Trang chủ',
+    ),
+    IosBottomNavItem(
+      icon: Icons.travel_explore_outlined,
+      selectedIcon: Icons.travel_explore_rounded,
+      label: 'Khám phá',
+    ),
+    IosBottomNavItem(
+      icon: Icons.people_outline_rounded,
+      selectedIcon: Icons.people_rounded,
+      label: 'Xã hội',
+    ),
+    IosBottomNavItem(
+      icon: Icons.receipt_long_outlined,
+      selectedIcon: Icons.receipt_long_rounded,
+      label: 'Đặt tour',
+    ),
+    IosBottomNavItem(
+      icon: Icons.login_rounded,
+      selectedIcon: Icons.login_rounded,
+      label: 'Đăng nhập',
     ),
   ];
 
@@ -83,6 +111,7 @@ class MainShellScreen extends GetView<ShellController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final isStaff = controller.isStaff;
+      final isLoggedIn = AuthGate.isLoggedIn;
       final pages = isStaff
           ? const [
               StaffSchedulesTab(),
@@ -91,14 +120,26 @@ class MainShellScreen extends GetView<ShellController> {
               StaffCustomersTab(),
               ProfileTab(),
             ]
-          : const [
-              HomeTab(),
-              ExploreTab(),
-              SocialTab(),
-              OrdersTab(),
-              ProfileTab(),
-            ];
-      final navItems = isStaff ? _staffNav : _customerNav;
+          : isLoggedIn
+              ? const [
+                  HomeTab(),
+                  ExploreTab(),
+                  SocialTab(),
+                  OrdersTab(),
+                  ProfileTab(),
+                ]
+              : const [
+                  HomeTab(),
+                  ExploreTab(),
+                  SizedBox.shrink(),
+                  SizedBox.shrink(),
+                  SizedBox.shrink(),
+                ];
+      final navItems = isStaff
+          ? _staffNav
+          : isLoggedIn
+              ? _customerNav
+              : _guestNav;
       final maxIndex = pages.length - 1;
       final index = controller.selectedIndex.value.clamp(0, maxIndex);
 
@@ -108,7 +149,8 @@ class MainShellScreen extends GetView<ShellController> {
           index: index.clamp(0, pages.length - 1),
           children: pages,
         ),
-        floatingActionButton: isStaff ? null : const AiFloatingAssistant(),
+        floatingActionButton:
+            isStaff || !isLoggedIn ? null : const AiFloatingAssistant(),
         bottomNavigationBar: IosBottomNav(
           items: navItems,
           selectedIndex: index,
@@ -126,8 +168,11 @@ class MainShellBinding extends Bindings {
 
   @override
   void dependencies() {
+    final arguments = Get.arguments;
+    final argumentTab =
+        arguments is Map ? (arguments['initialTab'] as num?)?.toInt() : null;
     Get.lazyPut<ShellController>(
-      () => ShellController(initialTab: initialTab),
+      () => ShellController(initialTab: initialTab ?? argumentTab),
     );
     Get.lazyPut<TourController>(() => TourController());
     Get.lazyPut<OrderController>(() => OrderController());

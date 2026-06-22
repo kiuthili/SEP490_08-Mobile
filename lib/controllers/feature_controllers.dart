@@ -5,7 +5,9 @@ import '../models/ai_models.dart';
 import '../models/api_response.dart';
 import '../models/feature_models.dart';
 import '../models/order_model.dart';
+import '../models/social_models.dart'; // Đã thêm import
 import '../models/tour_model.dart';
+import '../routes/app_routes.dart';
 import '../services/feature_services.dart';
 import '../services/catalog_service.dart';
 import '../services/location_helper.dart';
@@ -16,6 +18,7 @@ import '../services/storage_service.dart';
 import '../services/tour_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/ai_session.dart';
+import '../utils/auth_gate.dart';
 
 class OrderController extends GetxController {
   final OrderService _service = Get.find<OrderService>();
@@ -136,7 +139,7 @@ class WishlistController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchWishlist();
+    if (AuthGate.isLoggedIn) fetchWishlist();
   }
 
   bool containsTour(int tourId) => items.any((i) => i.tourId == tourId);
@@ -144,6 +147,10 @@ class WishlistController extends GetxController {
   bool isProcessing(int tourId) => processingTourIds.contains(tourId);
 
   Future<void> fetchWishlist() async {
+    if (!AuthGate.isLoggedIn) {
+      items.clear();
+      return;
+    }
     isLoading.value = true;
     try {
       items.assignAll(await _service.getWishlist());
@@ -324,9 +331,14 @@ class SocialController extends GetxController {
   final friends = <FriendModel>[].obs;
   final pendingRequests = <FriendRequestModel>[].obs;
   final searchResults = <UserSearchModel>[].obs;
+
   final moments = <MomentModel>[].obs;
+  final isMomentsLoading = false.obs;
+  final isMomentsLoadingMore = false.obs;
+  int _momentsSkip = 0;
+  bool _momentsHasMore = true;
+
   final chatRooms = <ChatRoomModel>[].obs;
-  final groupChatRooms = <ChatRoomModel>[].obs;
   final isLoading = false.obs;
   final isFriendsLoading = false.obs;
   final isRequestsLoading = false.obs;
@@ -336,10 +348,12 @@ class SocialController extends GetxController {
   final processingRequestIds = <int>{}.obs;
   final processingFriendshipIds = <int>{}.obs;
   final sentRequestUserIds = <int>{}.obs;
+  final isSharingMoment = false.obs;
+
+  int get currentUserId => _storage.user?.id ?? 0;
 
   List<ChatRoomModel> get tourGroupChats =>
       chatRooms.where((r) => r.isGroup && r.scheduleId != null).toList();
-
   List<ChatRoomModel> get directChats =>
       chatRooms.where((r) => !r.isGroup).toList();
 
@@ -361,23 +375,18 @@ class SocialController extends GetxController {
           if (status.toLowerCase() == 'accepted') {
             unawaited(fetchFriends());
             SnackbarHelper.success('Lời mời kết bạn đã được chấp nhận');
-          } else if (status.toLowerCase() == 'declined') {
-            SnackbarHelper.info('Lời mời kết bạn đã bị từ chối');
           }
         },
         onFriendshipDeleted: (userId) {
           friends.removeWhere((friend) => friend.userId == userId);
           unawaited(fetchFriends());
-          SnackbarHelper.info('Danh sách bạn bè vừa được cập nhật');
         },
         onReconnected: () {
           unawaited(fetchFriends());
           unawaited(fetchPendingRequests());
         },
       );
-    } catch (_) {
-      // REST flows remain available when the realtime connection is offline.
-    }
+    } catch (_) {}
   }
 
   @override
@@ -392,16 +401,6 @@ class SocialController extends GetxController {
     searchResults.clear();
     moments.clear();
     chatRooms.clear();
-    groupChatRooms.clear();
-    isLoading.value = false;
-    isFriendsLoading.value = false;
-    isRequestsLoading.value = false;
-    isSearchingUsers.value = false;
-    isChatLoading.value = false;
-    processingUserIds.clear();
-    processingRequestIds.clear();
-    processingFriendshipIds.clear();
-    sentRequestUserIds.clear();
   }
 
   Future<void> searchUsers(String query) async {
@@ -413,10 +412,8 @@ class SocialController extends GetxController {
     isSearchingUsers.value = true;
     try {
       final result = await _service.searchUsers(query: normalized);
-      final currentUserId = _storage.user?.id;
-      searchResults.assignAll(
-        result.data.where((user) => user.id != currentUserId),
-      );
+      searchResults
+          .assignAll(result.data.where((user) => user.id != currentUserId));
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -428,8 +425,7 @@ class SocialController extends GetxController {
     isFriendsLoading.value = true;
     try {
       friends.assignAll(await _service.getFriends());
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
     } finally {
       isFriendsLoading.value = false;
     }
@@ -439,15 +435,13 @@ class SocialController extends GetxController {
     isRequestsLoading.value = true;
     try {
       pendingRequests.assignAll(await _service.getPendingRequests());
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
     } finally {
       isRequestsLoading.value = false;
     }
   }
 
   bool isFriend(int userId) => friends.any((friend) => friend.userId == userId);
-
   bool hasIncomingRequest(int userId) =>
       pendingRequests.any((request) => request.senderId == userId);
 
@@ -459,8 +453,7 @@ class SocialController extends GetxController {
       sentRequestUserIds.add(receiverId);
       SnackbarHelper.success('Đã gửi lời mời kết bạn');
       return true;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
       return false;
     } finally {
       processingUserIds.remove(receiverId);
@@ -475,8 +468,7 @@ class SocialController extends GetxController {
       pendingRequests.removeWhere((r) => r.id == requestId);
       if (accept) await fetchFriends();
       return true;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
       return false;
     } finally {
       processingRequestIds.remove(requestId);
@@ -490,8 +482,7 @@ class SocialController extends GetxController {
       await _service.unfriend(friendshipId);
       friends.removeWhere((f) => f.friendshipId == friendshipId);
       return true;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
       return false;
     } finally {
       processingFriendshipIds.remove(friendshipId);
@@ -499,110 +490,12 @@ class SocialController extends GetxController {
   }
 
   Future<ChatRoomModel?> createDirectChat(int friendId) async {
-    if (processingUserIds.contains(friendId)) return null;
-    processingUserIds.add(friendId);
     try {
       final room = await _service.createDirectChat(friendId);
       await fetchChatRooms();
       return room;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
       return null;
-    } finally {
-      processingUserIds.remove(friendId);
-    }
-  }
-
-  Future<void> fetchMoments({int? scheduleId}) async {
-    isLoading.value = true;
-    try {
-      moments.assignAll(await _service.getMoments(scheduleId: scheduleId));
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<bool> shareMoment({
-    required int scheduleId,
-    required String imagePath,
-    String? caption,
-  }) async {
-    final userId = _storage.user?.id;
-    if (userId == null) return false;
-    try {
-      final pos = await LocationHelper.getCurrentPosition();
-      await _service.createMoment(
-        userId: userId,
-        scheduleId: scheduleId,
-        imagePath: imagePath,
-        lat: pos?.latitude ?? 0,
-        lng: pos?.longitude ?? 0,
-        caption: caption,
-      );
-      await fetchMoments(scheduleId: scheduleId);
-      SnackbarHelper.success('Đã chia sẻ moment');
-      return true;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-      return false;
-    }
-  }
-
-  Future<void> reactMoment(int momentId) async {
-    final userId = _storage.user?.id;
-    if (userId == null) return;
-    try {
-      await _service.toggleReaction(momentId, userId);
-      await fetchMoments();
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    }
-  }
-
-  Future<void> commentMoment(int momentId, String content) async {
-    final userId = _storage.user?.id;
-    if (userId == null) return;
-    try {
-      await _service.addComment(momentId, content, userId);
-      await fetchMoments();
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    }
-  }
-
-  Future<void> updateComment(int commentId, String content) async {
-    final userId = _storage.user?.id;
-    if (userId == null) return;
-    try {
-      await _service.updateComment(commentId, content, userId);
-      await fetchMoments();
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    }
-  }
-
-  Future<void> deleteComment(int commentId) async {
-    final userId = _storage.user?.id;
-    if (userId == null) return;
-    try {
-      await _service.deleteComment(commentId, userId);
-      await fetchMoments();
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    }
-  }
-
-  Future<void> deleteMoment(int momentId) async {
-    final userId = _storage.user?.id;
-    if (userId == null) return;
-    try {
-      await _service.deleteMoment(momentId, userId);
-      moments.removeWhere((m) => m.id == momentId);
-      SnackbarHelper.success('Đã xóa moment');
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
     }
   }
 
@@ -610,8 +503,7 @@ class SocialController extends GetxController {
     isChatLoading.value = true;
     try {
       chatRooms.assignAll(await _service.getChatRooms());
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+    } catch (_) {
     } finally {
       isChatLoading.value = false;
     }
@@ -620,23 +512,164 @@ class SocialController extends GetxController {
   Future<void> shareLocationPing(int scheduleId) async {
     try {
       final pos = await LocationHelper.getCurrentPosition();
-      if (pos == null) {
-        SnackbarHelper.error('Không lấy được vị trí GPS');
-        return;
+      if (pos != null) {
+        await _service.pingLocation(
+            lat: pos.latitude, lng: pos.longitude, scheduleId: scheduleId);
       }
-      await _service.pingLocation(
-        lat: pos.latitude,
-        lng: pos.longitude,
-        scheduleId: scheduleId,
+    } catch (_) {}
+  }
+
+  // ============== MOMENTS & COMMENTS ==============
+  Future<void> loadFeed({int? scheduleId, bool refresh = false}) async {
+    if (refresh) {
+      _momentsSkip = 0;
+      _momentsHasMore = true;
+    }
+    if (!_momentsHasMore) return;
+
+    if (refresh)
+      isMomentsLoading.value = true;
+    else
+      isMomentsLoadingMore.value = true;
+
+    try {
+      final data = await _service.getMoments(
+          scheduleId: scheduleId, skip: _momentsSkip, top: 10);
+      if (refresh)
+        moments.assignAll(data);
+      else
+        moments.addAll(data);
+
+      _momentsSkip += 10;
+      if (data.length < 10) _momentsHasMore = false;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+    } finally {
+      isMomentsLoading.value = false;
+      isMomentsLoadingMore.value = false;
+    }
+  }
+
+  Future<void> loadMoreFeed() async {
+    await loadFeed();
+  }
+
+  Future<bool> shareMoment(String imagePath, int? scheduleId, double lat,
+      double lng, String? caption, String privacy) async {
+    isSharingMoment.value = true;
+    try {
+      await _service.createMoment(
+          userId: currentUserId,
+          scheduleId: scheduleId,
+          imagePath: imagePath,
+          lat: lat,
+          lng: lng,
+          caption: caption,
+          privacy: privacy);
+      await loadFeed(scheduleId: scheduleId, refresh: true);
+      SnackbarHelper.success('Đã chia sẻ moment');
+      Get.back();
+      return true;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return false;
+    } finally {
+      isSharingMoment.value = false;
+    }
+  }
+
+  Future<MomentModel> getMomentById(int id) async =>
+      await _service.getMomentById(id);
+
+  /// Like/Unlike moment với CẬP NHẬT LẠC QUAN: đổi UI ngay rồi mới gọi API,
+  /// nếu lỗi thì revert lại trạng thái cũ. Giúp nút tim phản hồi tức thì ở feed.
+  Future<void> reactMoment(int momentId, bool isLike) async {
+    // CHẨN ĐOÁN: userId này PHẢI trùng với user trong JWT thì BE mới tính
+    // isLikedByMe đúng khi load lại feed (endpoint reactions lấy userId từ body).
+    if (currentUserId == 0) {
+      SnackbarHelper.error(
+          'Chưa xác định được tài khoản (userId=0). Hãy đăng nhập lại.');
+      return;
+    }
+
+    final idx = moments.indexWhere((m) => m.id == momentId);
+    MomentModel? previous;
+    if (idx >= 0) {
+      previous = moments[idx];
+      final newCount = (previous.reactionCount + (isLike ? 1 : -1))
+          .clamp(0, 1 << 30)
+          .toInt();
+      moments[idx] = previous.copyWith(
+        isLikedByMe: isLike,
+        reactionCount: newCount,
       );
-      SnackbarHelper.success('Đã chia sẻ vị trí');
+      moments.refresh();
+    }
+    try {
+      await _service.toggleReaction(momentId, currentUserId, isLike);
+      // Lưu ý: backend KHÔNG có GET /moments/{id} nên không re-fetch lẻ ở đây.
+      // Trạng thái thật sẽ đồng bộ khi feed được refresh (pull-to-refresh).
+    } on ApiError catch (e) {
+      if (idx >= 0 && previous != null) {
+        moments[idx] = previous;
+        moments.refresh();
+      }
+      SnackbarHelper.error(e.message);
+    } catch (e) {
+      if (idx >= 0 && previous != null) {
+        moments[idx] = previous;
+        moments.refresh();
+      }
+      SnackbarHelper.error('Không gửi được cảm xúc: $e');
+    }
+  }
+
+  Future<bool> commentMoment(int momentId, String content) async {
+    if (currentUserId == 0) {
+      SnackbarHelper.error(
+          'Chưa xác định được tài khoản (userId=0). Hãy đăng nhập lại.');
+      return false;
+    }
+    try {
+      await _service.addComment(momentId, content, currentUserId);
+      return true;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return false;
+    } catch (e) {
+      SnackbarHelper.error('Không gửi được bình luận: $e');
+      return false;
+    }
+  }
+
+  Future<void> updateComment(int commentId, String content) async {
+    try {
+      await _service.updateComment(commentId, content, currentUserId);
+      SnackbarHelper.success('Đã cập nhật bình luận');
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+    }
+  }
+
+  Future<void> deleteComment(int commentId) async {
+    try {
+      await _service.deleteComment(commentId, currentUserId);
+      SnackbarHelper.success('Đã xóa bình luận');
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+    }
+  }
+
+  Future<void> deleteMoment(int momentId) async {
+    try {
+      await _service.deleteMoment(momentId, currentUserId);
+      moments.removeWhere((m) => m.id == momentId);
+      SnackbarHelper.success('Đã xóa moment');
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     }
   }
 }
-
-
 
 class BookingPassengerInput {
   final int tourScheduleTicketId;

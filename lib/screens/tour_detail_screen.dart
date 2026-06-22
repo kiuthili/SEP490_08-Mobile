@@ -5,7 +5,6 @@ import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:stayhub_mobile/models/review_model.dart';
 import 'package:stayhub_mobile/models/reviewreply_model.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/feature_models.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/tour_controller.dart';
 import '../routes/app_routes.dart';
@@ -23,6 +22,7 @@ import '../widgets/app_screen.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/loading_widget.dart';
+import '../utils/auth_gate.dart';
 
 class TourDetailScreen extends StatefulWidget {
   const TourDetailScreen({super.key});
@@ -176,13 +176,18 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       SnackbarHelper.error('Vui lòng chọn lịch khởi hành');
       return;
     }
-    Get.toNamed(
-      AppRoutes.booking,
-      arguments: BookingRouteArgs.fromTourSchedule(
-        tour: tour,
-        schedule: schedule,
-      ),
+    final arguments = BookingRouteArgs.fromTourSchedule(
+      tour: tour,
+      schedule: schedule,
     );
+    if (!AuthGate.requireLogin(
+      route: AppRoutes.booking,
+      arguments: arguments,
+      message: 'Vui lòng đăng nhập trước khi đặt tour',
+    )) {
+      return;
+    }
+    Get.toNamed(AppRoutes.booking, arguments: arguments);
   }
 
   Widget? _buildCheckoutBar() {
@@ -1635,7 +1640,7 @@ class _ReviewCard extends StatelessWidget {
                       Row(
                         children: List.generate(
                           5,
-                              (i) => Icon(
+                          (i) => Icon(
                             i < review.rating
                                 ? Icons.star_rounded
                                 : Icons.star_border_rounded,
@@ -1708,7 +1713,7 @@ class _ReviewCard extends StatelessWidget {
 
                   // Reply items
                   ...review.replies.map(
-                        (reply) => _ReplyItem(reply: reply),
+                    (reply) => _ReplyItem(reply: reply),
                   ),
                 ],
               ),
@@ -1719,7 +1724,6 @@ class _ReviewCard extends StatelessWidget {
     );
   }
 }
-
 
 class _ReplyItem extends StatelessWidget {
   const _ReplyItem({required this.reply});
@@ -1816,27 +1820,26 @@ class _Avatar extends StatelessWidget {
       );
     }
 
-    final initial = name?.trim().isNotEmpty == true
-        ? name!.trim()[0].toUpperCase()
-        : null;
+    final initial =
+        name?.trim().isNotEmpty == true ? name!.trim()[0].toUpperCase() : null;
 
     return CircleAvatar(
       radius: radius,
       backgroundColor: bg,
       child: initial != null
           ? Text(
-        initial,
-        style: TextStyle(
-          color: fg,
-          fontWeight: FontWeight.w700,
-          fontSize: radius * 0.8,
-        ),
-      )
+              initial,
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w700,
+                fontSize: radius * 0.8,
+              ),
+            )
           : Icon(
-        fallbackIcon ?? Icons.person_rounded,
-        color: fg,
-        size: radius,
-      ),
+              fallbackIcon ?? Icons.person_rounded,
+              color: fg,
+              size: radius,
+            ),
     );
   }
 }

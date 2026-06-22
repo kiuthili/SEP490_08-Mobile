@@ -11,6 +11,7 @@ import 'package:stayhub_mobile/services/push_notification_service.dart';
 import 'package:stayhub_mobile/services/review_service.dart';
 import 'package:stayhub_mobile/services/staff_service.dart';
 import 'app.dart';
+import 'controllers/feature_controllers.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/feature_services.dart';
@@ -48,8 +49,7 @@ Future<void> main() async {
   Get.put(TourService(), permanent: true);
   Get.put(OrderService(), permanent: true);
   Get.put(PaymentService(), permanent: true);
-  final paymentDeepLinks =
-      Get.put(PaymentDeepLinkService(), permanent: true);
+  final paymentDeepLinks = Get.put(PaymentDeepLinkService(), permanent: true);
   Get.put(CatalogService(), permanent: true);
   Get.put(NotificationService(), permanent: true);
   Get.put(VoucherService(), permanent: true);
@@ -60,7 +60,8 @@ Future<void> main() async {
   Get.put(SignalRService(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(StaffScheduleService(), permanent: true);
-
+  Get.lazyPut<SocialService>(() => SocialService());
+  Get.lazyPut<SocialController>(() => SocialController());
   runApp(const StayHubApp());
   WidgetsBinding.instance.addPostFrameCallback((_) {
     paymentDeepLinks.start();

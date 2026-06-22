@@ -287,21 +287,21 @@ class UserSearchModel {
       );
 }
 
-class MomentCommentModel {
+class LegacyMomentCommentModel {
   final int id;
   final int userId;
   final String? userName;
   final String content;
 
-  MomentCommentModel({
+  LegacyMomentCommentModel({
     required this.id,
     required this.userId,
     this.userName,
     required this.content,
   });
 
-  factory MomentCommentModel.fromJson(Map<String, dynamic> json) =>
-      MomentCommentModel(
+  factory LegacyMomentCommentModel.fromJson(Map<String, dynamic> json) =>
+      LegacyMomentCommentModel(
         id: JsonUtils.readInt(json['id']),
         userId: JsonUtils.readInt(json['userId']),
         userName: JsonUtils.readString(
@@ -311,7 +311,7 @@ class MomentCommentModel {
       );
 }
 
-class MomentModel {
+class LegacyMomentModel {
   final int id;
   final int userId;
   final String? userName;
@@ -321,9 +321,9 @@ class MomentModel {
   final bool hasReacted;
   final int reactionCount;
   final int commentCount;
-  final List<MomentCommentModel> comments;
+  final List<LegacyMomentCommentModel> comments;
 
-  MomentModel({
+  LegacyMomentModel({
     required this.id,
     required this.userId,
     this.userName,
@@ -336,11 +336,11 @@ class MomentModel {
     this.comments = const [],
   });
 
-  factory MomentModel.fromJson(Map<String, dynamic> json) {
+  factory LegacyMomentModel.fromJson(Map<String, dynamic> json) {
     final rawComments = JsonUtils.readMapList(
       JsonUtils.pick(json, ['comments', 'Comments']),
     );
-    return MomentModel(
+    return LegacyMomentModel(
       id: JsonUtils.readInt(json['id']),
       userId: JsonUtils.readInt(json['userId']),
       userName: JsonUtils.readString(
@@ -362,7 +362,7 @@ class MomentModel {
       commentCount: JsonUtils.readInt(
         JsonUtils.pick(json, ['commentCount', 'commentsCount']),
       ),
-      comments: rawComments.map(MomentCommentModel.fromJson).toList(),
+      comments: rawComments.map(LegacyMomentCommentModel.fromJson).toList(),
     );
   }
 }
@@ -561,3 +561,21 @@ class EligibleScheduleModel {
             '',
       );
 }
+class SocialReactionModel {
+  final int userId;
+  final String? userName;
+  final String type;
+
+  SocialReactionModel({
+    required this.userId,
+    this.userName,
+    required this.type,
+  });
+
+  factory SocialReactionModel.fromJson(Map<String, dynamic> json) => SocialReactionModel(
+    userId: JsonUtils.readInt(json['userId']),
+    userName: JsonUtils.readString(json['userName']),
+    type: JsonUtils.readString(json['type']) ?? '',
+  );
+}
+

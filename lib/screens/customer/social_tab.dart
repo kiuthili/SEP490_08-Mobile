@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../routes/app_routes.dart';
+import '../../theme/app_colors.dart';
 import '../../theme/shell_layout.dart';
-import '../../widgets/ios_grouped.dart';
+import '../../widgets/moment_card.dart';
 import 'friend_management_panel.dart';
 
 class SocialTab extends StatefulWidget {
@@ -13,8 +14,7 @@ class SocialTab extends StatefulWidget {
   State<SocialTab> createState() => _SocialTabState();
 }
 
-class _SocialTabState extends State<SocialTab>
-    with SingleTickerProviderStateMixin {
+class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
@@ -25,7 +25,6 @@ class _SocialTabState extends State<SocialTab>
     _tabController = TabController(length: 2, vsync: this);
     _social.fetchFriends();
     _social.fetchPendingRequests();
-    _social.fetchMoments();
     _social.fetchChatRooms();
     Get.find<OrderController>().fetchEligibleSchedules();
   }
@@ -44,6 +43,11 @@ class _SocialTabState extends State<SocialTab>
       appBar: AppBar(
         title: const Text('Xã hội'),
         actions: [
+          IconButton(
+            tooltip: 'Bản đồ Social',
+            onPressed: () => Get.toNamed(AppRoutes.socialMap),
+            icon: const Icon(Icons.map_outlined),
+          ),
           IconButton(
             tooltip: 'Tin nhắn',
             onPressed: () => Get.toNamed(AppRoutes.chatInbox),
@@ -82,107 +86,116 @@ class _SocialTabState extends State<SocialTab>
   }
 }
 
-class _MomentsPanel extends StatelessWidget {
+class _MomentsPanel extends StatefulWidget {
   final SocialController social;
 
   const _MomentsPanel({required this.social});
 
   @override
+  State<_MomentsPanel> createState() => _MomentsPanelState();
+}
+
+class _MomentsPanelState extends State<_MomentsPanel> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.social.loadFeed(refresh: true);
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        widget.social.loadMoreFeed();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: social.fetchMoments,
+      onRefresh: () => widget.social.loadFeed(refresh: true),
       child: Obx(() {
-        if (social.isLoading.value && social.moments.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+        if (widget.social.isMomentsLoading.value && widget.social.moments.isEmpty) {
+          return ListView.builder(
+            padding: const EdgeInsets.all(16).copyWith(bottom: ShellLayout.bottomInset(context)),
+            itemCount: 3,
+            itemBuilder: (_, __) => const _SkeletonPlaceholder(),
+          );
         }
-        if (social.moments.isEmpty) {
+
+        if (widget.social.moments.isEmpty) {
           return ListView(
             children: const [
               SizedBox(height: 120),
-              Center(child: Text('Chưa có moment')),
+              Center(child: Text('Chưa có moment nào. Hãy chia sẻ chuyến đi của bạn!')),
             ],
           );
         }
+
         return ListView.builder(
-          padding: const EdgeInsets.all(16).copyWith(
-            bottom: ShellLayout.bottomInset(context),
-          ),
-          itemCount: social.moments.length,
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16).copyWith(bottom: ShellLayout.bottomInset(context)),
+          itemCount: widget.social.moments.length + (widget.social.isMomentsLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
-            final m = social.moments[index];
-            return IosSurfaceCard(
-              margin: const EdgeInsets.only(bottom: 12),
-              onTap: () => Get.toNamed(
-                AppRoutes.momentDetail,
-                arguments: m.id,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      child: Text(m.userName?.isNotEmpty == true
-                          ? m.userName![0].toUpperCase()
-                          : '?'),
-                    ),
-                    title: Text(m.userName ?? 'Người dùng'),
-                  ),
-                  if (m.content != null) Text(m.content!),
-                  if (m.imageUrl != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Image.network(m.imageUrl!, fit: BoxFit.cover),
-                    ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          m.hasReacted ? Icons.favorite : Icons.favorite_border,
-                        ),
-                        onPressed: () => social.reactMoment(m.id),
-                      ),
-                      Text('${m.reactionCount}'),
-                      IconButton(
-                        icon: const Icon(Icons.comment_outlined),
-                        onPressed: () => _showCommentDialog(context, m.id),
-                      ),
-                      Text('${m.commentCount}'),
-                    ],
-                  ),
-                ],
-              ),
+            if (index == widget.social.moments.length) {
+              return const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: CircularProgressIndicator()));
+            }
+            final m = widget.social.moments[index];
+            return MomentCard(
+              moment: m,
+              currentUserId: widget.social.currentUserId,
+              onDelete: widget.social.deleteMoment,
+              onLike: (isLike) => widget.social.reactMoment(m.id, isLike),
+              onComment: () => Get.toNamed(AppRoutes.momentDetail, arguments: m),
             );
           },
         );
       }),
     );
   }
+}
 
-  void _showCommentDialog(BuildContext context, int momentId) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Bình luận'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Nhập bình luận...'),
-          maxLines: 3,
+class _SkeletonPlaceholder extends StatefulWidget {
+  const _SkeletonPlaceholder();
+
+  @override
+  State<_SkeletonPlaceholder> createState() => _SkeletonPlaceholderState();
+}
+
+class _SkeletonPlaceholderState extends State<_SkeletonPlaceholder> {
+  bool _visible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _toggle();
+  }
+
+  void _toggle() async {
+    if (!mounted) return;
+    setState(() => _visible = !_visible);
+    await Future.delayed(const Duration(milliseconds: 800));
+    _toggle();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _visible ? 1.0 : 0.4,
+      duration: const Duration(milliseconds: 800),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        height: 250,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.separator),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () {
-              social.commentMoment(momentId, controller.text);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Gửi'),
-          ),
-        ],
       ),
     );
   }

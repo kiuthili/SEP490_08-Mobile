@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (storage.isLoggedIn) {
         await storage.clearSession();
       }
-      Get.offAllNamed(AppRoutes.login);
+      Get.offAllNamed(AppRoutes.home);
     }
   }
 
