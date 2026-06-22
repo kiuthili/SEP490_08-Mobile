@@ -135,6 +135,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       if (_roomId != null) {
+        _signalR.setActiveChatRoom(_roomId);
+        await _socialController.markChatRoomAsRead(_roomId!);
         _historySkip = 0;
         _canLoadOlder = true;
         final history = await _socialService.getChatMessages(
@@ -155,6 +157,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           }
           if (_messages.any((message) => message.id == msg.id)) return;
           setState(() => _messages.add(msg));
+          unawaited(_socialController.markChatRoomAsRead(_roomId!));
           _socialController.fetchChatRooms();
           _scrollToBottom();
         });
@@ -240,7 +243,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
-    if (_roomId != null) _signalR.leaveChatRoom(_roomId!);
+    final roomId = _roomId;
+    _signalR.setActiveChatRoom(null);
+    if (roomId != null) {
+      unawaited(_signalR.leaveChatRoom(roomId));
+      unawaited(_socialController.markChatRoomAsRead(roomId));
+    }
     _messageController.dispose();
     _scrollController.dispose();
     _inputFocus.dispose();

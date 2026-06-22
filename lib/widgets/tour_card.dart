@@ -82,16 +82,6 @@ class TourCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: _ImageBadge(
-                        icon: Icons.bolt_rounded,
-                        label: tour.nextDeparture != null
-                            ? 'Sắp khởi hành'
-                            : 'Đang mở bán',
-                      ),
-                    ),
                     if (tour.averageStar != null)
                       Positioned(
                         top: 12,

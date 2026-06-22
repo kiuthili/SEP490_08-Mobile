@@ -377,6 +377,7 @@ class ChatRoomModel {
   final DateTime? lastMessageAt;
   final bool isPinned;
   final bool isMuted;
+  final int unreadCount;
 
   ChatRoomModel({
     required this.id,
@@ -388,7 +389,24 @@ class ChatRoomModel {
     this.lastMessageAt,
     this.isPinned = false,
     this.isMuted = false,
+    this.unreadCount = 0,
   });
+
+  ChatRoomModel copyWith({
+    int? unreadCount,
+  }) =>
+      ChatRoomModel(
+        id: id,
+        name: name,
+        isGroup: isGroup,
+        scheduleId: scheduleId,
+        avatarUrl: avatarUrl,
+        lastMessage: lastMessage,
+        lastMessageAt: lastMessageAt,
+        isPinned: isPinned,
+        isMuted: isMuted,
+        unreadCount: unreadCount ?? this.unreadCount,
+      );
 
   factory ChatRoomModel.fromJson(Map<String, dynamic> json) => ChatRoomModel(
         id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
@@ -429,6 +447,9 @@ class ChatRoomModel {
         ),
         isMuted: JsonUtils.readBool(
           JsonUtils.pick(json, ['isMuted', 'IsMuted']),
+        ),
+        unreadCount: JsonUtils.readInt(
+          JsonUtils.pick(json, ['unreadCount', 'UnreadCount']),
         ),
       );
 }
