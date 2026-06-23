@@ -1159,7 +1159,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
         // commentMoment() tra ve bool (thanh cong/that bai). Tu dung comment tai cho
         // tu thong tin user hien tai de hien thi ngay (id am = chua dong bo server).
         final ok = await _socialController.commentMoment(_moment!.id, text);
-        if (ok) {
+        if (ok != null) {
           final added = SocialCommentModel(
             id: -DateTime.now().millisecondsSinceEpoch,
             momentId: _moment!.id,
