@@ -16,6 +16,14 @@ class LoginDestination {
 class AuthGate {
   AuthGate._();
 
+  /// Đã đăng nhập (bất kỳ role nào — customer, staff, manager...)
+  static bool get isAuthenticated {
+    if (!Get.isRegistered<StorageService>()) return false;
+    final storage = Get.find<StorageService>();
+    return storage.isLoggedIn;
+  }
+
+  /// Chỉ true với tài khoản customer — dùng để ẩn/hiện UI dành riêng cho customer
   static bool get isLoggedIn {
     if (!Get.isRegistered<StorageService>()) return false;
     final storage = Get.find<StorageService>();
@@ -28,7 +36,7 @@ class AuthGate {
     int? shellTab,
     String message = 'Vui lòng đăng nhập để sử dụng chức năng này',
   }) {
-    if (isLoggedIn) return true;
+    if (isAuthenticated) return true;
     SnackbarHelper.info(message);
     Get.toNamed(
       AppRoutes.login,
@@ -58,7 +66,7 @@ class AuthGate {
 class AuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
-    if (AuthGate.isLoggedIn) return null;
+    if (AuthGate.isAuthenticated) return null;
     return RouteSettings(
       name: AppRoutes.login,
       arguments: LoginDestination(
