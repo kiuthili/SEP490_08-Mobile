@@ -502,7 +502,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 ),
                 const SizedBox(height: 8),
                 SliderTheme(
-                  data: const SliderThemeData(
+                  data: SliderThemeData(
                     activeTrackColor: AppColors.brand,
                     inactiveTrackColor: AppColors.border,
                     thumbColor: AppColors.brand,

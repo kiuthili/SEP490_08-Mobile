@@ -25,13 +25,12 @@ class ShellController extends GetxController {
   }
 
   void changeTab(int index) {
-    if (!AuthGate.isLoggedIn && index >= 2) {
+    if (!AuthGate.isAuthenticated && index >= 2) {
       AuthGate.requireLogin(shellTab: index);
       return;
     }
     selectedIndex.value = index;
     if (!isStaff || !Get.isRegistered<StaffController>()) return;
-    // Chỉ tải dữ liệu lịch khi mở tab cần — không fetch khi bấm danh sách lịch.
     if (index == 1 || index == 2) {
       Get.find<StaffController>().loadSelectedScheduleData();
     }
