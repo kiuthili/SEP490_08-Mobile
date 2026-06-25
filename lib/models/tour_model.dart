@@ -1,4 +1,5 @@
 import '../utils/json_utils.dart';
+import 'ai_models.dart';
 
 class TourModel {
   final int id;
@@ -407,6 +408,7 @@ class TourRecommendationModel {
   final String? nextDeparture;
   final String? scheduleNote;
   final bool? matchesPreferredDates;
+  final WeatherAdviceModel? destinationWeather;
 
   TourRecommendationModel({
     required this.tourId,
@@ -424,11 +426,13 @@ class TourRecommendationModel {
     this.nextDeparture,
     this.scheduleNote,
     this.matchesPreferredDates,
+    this.destinationWeather,
   });
 
   factory TourRecommendationModel.fromJson(Map<String, dynamic> json) {
     final rawReasons = JsonUtils.pick(json, ['matchReasons', 'MatchReasons']);
     final rawBreakdown = JsonUtils.pick(json, ['scoreBreakdown', 'ScoreBreakdown']);
+    final rawWeather = JsonUtils.pick(json, ['destinationWeather', 'DestinationWeather']);
     final rawReasonsList = <String>[];
     if (rawReasons is List) {
       for (final e in rawReasons) {
@@ -454,6 +458,9 @@ class TourRecommendationModel {
       nextDeparture: JsonUtils.readString(JsonUtils.pick(json, ['nextDeparture', 'NextDeparture'])),
       scheduleNote: JsonUtils.readString(JsonUtils.pick(json, ['scheduleNote', 'ScheduleNote'])),
       matchesPreferredDates: JsonUtils.readBool(JsonUtils.pick(json, ['matchesPreferredDates', 'MatchesPreferredDates'])),
+      destinationWeather: rawWeather is Map<String, dynamic>
+          ? WeatherAdviceModel.fromJson(rawWeather)
+          : null,
     );
   }
 }

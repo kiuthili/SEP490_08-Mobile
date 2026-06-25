@@ -522,11 +522,6 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
           
           const SizedBox(height: 4),
 
-          if (detail.weatherAdvice != null) ...[
-            _WeatherAdviceContent(weather: detail.weatherAdvice!),
-            const SizedBox(height: 16),
-          ],
-          
           _TipsTabsContent(detail: detail),
           const SizedBox(height: 24),
           
@@ -830,6 +825,11 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                               ),
                             ),
                             const SizedBox(height: 20),
+                          ],
+                          
+                          // Weather Advice
+                          if (rec.destinationWeather != null) ...[
+                            _WeatherAdviceContent(weather: rec.destinationWeather!),
                           ],
                           
                           // Score Breakdown
@@ -1139,6 +1139,26 @@ class _RecommendationCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
+                    
+                    // Compact Weather Indicator
+                    if (rec.destinationWeather != null) ...[
+                      Row(
+                        children: [
+                          const Text('⛅ ', style: TextStyle(fontSize: 10)),
+                          Text(
+                            '${rec.destinationWeather!.avgMaxTempC?.round() ?? '--'}°C',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.lightBlue,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if ((rec.destinationWeather!.totalRainMm ?? 0) > 20)
+                            const Text(' ☔', style: TextStyle(fontSize: 10)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                    ],
                     
                     // Price & Duration Info
                     Row(
