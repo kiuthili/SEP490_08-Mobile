@@ -135,6 +135,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       if (_roomId != null) {
+        _signalR.setActiveChatRoom(_roomId);
+        await _socialController.markChatRoomAsRead(_roomId!);
         _historySkip = 0;
         _canLoadOlder = true;
         final history = await _socialService.getChatMessages(
@@ -155,6 +157,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           }
           if (_messages.any((message) => message.id == msg.id)) return;
           setState(() => _messages.add(msg));
+          unawaited(_socialController.markChatRoomAsRead(_roomId!));
           _socialController.fetchChatRooms();
           _scrollToBottom();
         });
@@ -240,7 +243,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
-    if (_roomId != null) _signalR.leaveChatRoom(_roomId!);
+    final roomId = _roomId;
+    _signalR.setActiveChatRoom(null);
+    if (roomId != null) {
+      unawaited(_signalR.leaveChatRoom(roomId));
+      unawaited(_socialController.markChatRoomAsRead(roomId));
+    }
     _messageController.dispose();
     _scrollController.dispose();
     _inputFocus.dispose();
@@ -1151,7 +1159,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
         // commentMoment() tra ve bool (thanh cong/that bai). Tu dung comment tai cho
         // tu thong tin user hien tai de hien thi ngay (id am = chua dong bo server).
         final ok = await _socialController.commentMoment(_moment!.id, text);
-        if (ok) {
+        if (ok != null) {
           final added = SocialCommentModel(
             id: -DateTime.now().millisecondsSinceEpoch,
             momentId: _moment!.id,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import '../models/api_response.dart';
 import '../models/auth_models.dart';
@@ -6,6 +8,7 @@ import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../services/signalr_service.dart';
 import '../services/storage_service.dart';
+import '../services/push_notification_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/auth_gate.dart';
 import 'feature_controllers.dart';
@@ -41,6 +44,7 @@ class AuthController extends GetxController {
       );
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập thành công');
+      await _syncPushTokenAfterLogin();
       if (response.user.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);
       } else {
@@ -139,6 +143,7 @@ class AuthController extends GetxController {
     if (Get.isRegistered<SignalRService>()) {
       await Get.find<SignalRService>().disconnectChat();
       await Get.find<SignalRService>().disconnectFriendship();
+      await Get.find<SignalRService>().disconnectGlobalChat();
     }
     if (Get.isRegistered<SocialController>()) {
       Get.find<SocialController>().clearSocialState();
@@ -148,12 +153,23 @@ class AuthController extends GetxController {
     Get.offAllNamed(AppRoutes.home);
   }
 
+  Future<void> _syncPushTokenAfterLogin() async {
+    if (Get.isRegistered<PushNotificationService>()) {
+      await Get.find<PushNotificationService>().syncTokenToBackend();
+    }
+    if (Get.isRegistered<SocialController>()) {
+      final social = Get.find<SocialController>();
+      unawaited(social.fetchChatRooms());
+    }
+  }
+
   Future<void> loginWithGoogle() async {
     isLoading.value = true;
     try {
       final response = await _authService.googleLogin();
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập Google thành công');
+      await _syncPushTokenAfterLogin();
       if (response.user.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);
       } else {

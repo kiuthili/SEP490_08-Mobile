@@ -90,7 +90,16 @@ class SocialService extends GetxService with BaseServiceMixin {
         if (caption != null && caption.isNotEmpty) 'Caption': caption,
         'Image': await MultipartFile.fromFile(imagePath),
       });
-      await api.dio.post(ApiConstants.moments, data: formData);
+      // FIX upload "treo mai": dat timeout ro rang cho gui + nhan (90s) de
+      // request luon ket thuc (thanh cong hoac nem loi), khong cho vo han.
+      await api.dio.post(
+        ApiConstants.moments,
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(seconds: 90),
+          receiveTimeout: const Duration(seconds: 90),
+        ),
+      );
     });
   }
 
@@ -180,6 +189,12 @@ class SocialService extends GetxService with BaseServiceMixin {
 
   Future<void> leaveChatRoom(int roomId) async {
     await request(() async { await api.dio.delete('${ApiConstants.chat}/rooms/$roomId/leave'); });
+  }
+
+  Future<void> markChatRoomAsRead(int roomId) async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.chat}/rooms/$roomId/read');
+    });
   }
 
   // ================= LOCATION & TRACKING =================
@@ -320,8 +335,9 @@ class SocialService extends GetxService with BaseServiceMixin {
   /// GET /api/moments/my-footprints  (token-based, KHÔNG truyền userId)
   Future<List<FootprintDto>> getMyFootprints() async {
     return request(() async {
+      // FIX: footprint phai lay tu LocationLogs (di chuyen), KHONG phai tu anh (moments).
       final response =
-      await api.dio.get('${ApiConstants.moments}/my-footprints');
+      await api.dio.get('${ApiConstants.locations}/footprints');
       return parseList(response.data, FootprintDto.fromJson);
     });
   }
