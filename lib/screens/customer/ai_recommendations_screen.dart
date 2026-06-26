@@ -21,6 +21,11 @@ class AiRecommendationsScreen extends StatelessWidget {
       title: 'Gợi ý AI',
       actions: [
         IconButton(
+          tooltip: 'Khảo sát A/B (User Study)',
+          icon: const Icon(Icons.rate_review_outlined),
+          onPressed: () => Get.toNamed(AppRoutes.userStudy),
+        ),
+        IconButton(
           tooltip: 'Làm lại khảo sát',
           icon: const Icon(Icons.psychology_outlined),
           onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),

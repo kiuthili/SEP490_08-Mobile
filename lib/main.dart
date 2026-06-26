@@ -23,6 +23,7 @@ import 'services/signalr_service.dart';
 import 'services/social_service.dart';
 import 'services/storage_service.dart';
 import 'services/tour_service.dart';
+import 'services/user_study_service.dart';
 import 'controllers/auth_controller.dart';
 
 Future<void> main() async {
@@ -56,6 +57,7 @@ Future<void> main() async {
   Get.put(ReviewService(), permanent: true);
   Get.put(WishlistService(), permanent: true);
   Get.put(AiService(), permanent: true);
+  Get.put(UserStudyService(), permanent: true);
   Get.put(SocialService(), permanent: true);
   Get.put(SignalRService(), permanent: true);
   Get.put(AuthController(), permanent: true);

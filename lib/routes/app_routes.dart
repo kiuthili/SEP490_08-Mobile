@@ -34,4 +34,5 @@ class AppRoutes {
   static const String terms = '/terms';
   static const String privacy = '/privacy';
   static const String publicTrack = '/track/:token';
+  static const String userStudy = '/user-study';
 }

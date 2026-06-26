@@ -62,4 +62,5 @@ class ApiConstants {
   static const locations = '/api/locations';
   static const aiTourAssistant = '/api/ai/tour-assistant';
   static const tourScheduleStaffs = '/api/TourScheduleStaffs';
+  static const aiEvaluation = '/api/ai/evaluation';
 }

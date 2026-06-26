@@ -91,8 +91,26 @@ Map<String, dynamic> buildRecommendPayload(
           ? [interests.toString()]
           : <String>[];
 
+  final adultCount = int.tryParse(values['adultCount']?.toString() ?? '1') ?? 1;
+  final elderlyCount = int.tryParse(values['elderlyCount']?.toString() ?? '0') ?? 0;
+  final childrenCount = int.tryParse(values['childrenCount']?.toString() ?? '0') ?? 0;
+  final total = adultCount + elderlyCount + childrenCount;
+
+  String inferredCompanionType = 'group';
+  if (total == 1) {
+    inferredCompanionType = 'solo';
+  } else if (childrenCount > 0) {
+    inferredCompanionType = 'family';
+  } else if (total == 2) {
+    inferredCompanionType = 'couple';
+  } else if (total <= 4) {
+    inferredCompanionType = 'family';
+  } else {
+    inferredCompanionType = 'group';
+  }
+
   final payload = <String, dynamic>{
-    'companionType': values['companionType'] ?? 'solo',
+    'companionType': inferredCompanionType,
     'preferredStartDate': values['preferredStartDate'],
     'travelInterests': travelInterests,
     'nationalityType': values['nationalityType'] ?? 'vietnamese',
