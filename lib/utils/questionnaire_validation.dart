@@ -79,19 +79,6 @@ Map<String, String> validateQuestionnaireStep(
   return errors;
 }
 
-Map<String, String> validateTopCount(Map<String, dynamic> values) {
-  final errors = <String, String>{};
-
-  final top = values['top'];
-  if (top != null && top.toString().isNotEmpty) {
-    final n = num.tryParse(top.toString());
-    if (n == null || n < 1 || n > 30) {
-      errors['top'] = 'Số kết quả từ 1 đến 30';
-    }
-  }
-
-  return errors;
-}
 
 Map<String, dynamic> buildRecommendPayload(
   Map<String, dynamic> values,
@@ -105,16 +92,12 @@ Map<String, dynamic> buildRecommendPayload(
           : <String>[];
 
   final payload = <String, dynamic>{
-    'companionType': values['companionType'],
+    'companionType': values['companionType'] ?? 'solo',
     'preferredStartDate': values['preferredStartDate'],
     'travelInterests': travelInterests,
-    'nationalityType': values['nationalityType'],
+    'nationalityType': values['nationalityType'] ?? 'vietnamese',
     'sessionId': sessionId,
-    'top': () {
-      final t = values['top'];
-      if (t == null || t.toString().isEmpty) return 8;
-      return int.tryParse(t.toString()) ?? 8;
-    }(),
+    'top': 10,
   };
 
   if (values['preferredEndDate'] != null &&

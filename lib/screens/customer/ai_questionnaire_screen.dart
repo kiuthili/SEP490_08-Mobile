@@ -50,7 +50,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
     'adultCount': 1,
     'childrenCount': 0,
     'elderlyCount': 0,
-    'top': 8,
+    'top': 10,
   };
   final _errors = <String, String>{};
   final _textControllers = <String, TextEditingController>{};
@@ -100,7 +100,6 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             : i + _stepsPerPage,
       ));
     }
-    chunks.add([]); // extra step
     return chunks;
   }
 
@@ -132,12 +131,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
 
   bool _validateCurrent() {
     final steps = _steps;
-    final fieldErrors = _isLastStep
-        ? validateTopCount(_values)
-        : validateQuestionnaireStep(steps[_step], _values);
-    if (!_isLastStep) {
-      fieldErrors.addAll(validateTopCount(_values));
-    }
+    final fieldErrors = validateQuestionnaireStep(steps[_step], _values);
     setState(() => _errors
       ..clear()
       ..addAll(fieldErrors));
@@ -150,7 +144,6 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
       final questions = _ai.questionnaire.value?.questions ?? [];
       final allErrors = {
         ...validateQuestionnaireStep(questions, _values),
-        ...validateTopCount(_values),
       };
       if (allErrors.isNotEmpty) {
         setState(() => _errors
@@ -243,8 +236,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              children:
-                  _isLastStep ? _buildExtraStep() : _buildFields(steps[_step]),
+              children: _buildFields(steps[_step]),
             ),
           ),
           Padding(
@@ -502,7 +494,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 ),
                 const SizedBox(height: 8),
                 SliderTheme(
-                  data: const SliderThemeData(
+                  data: SliderThemeData(
                     activeTrackColor: AppColors.brand,
                     inactiveTrackColor: AppColors.border,
                     thumbColor: AppColors.brand,
@@ -567,27 +559,5 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
       padding: const EdgeInsets.only(bottom: 16),
       child: input,
     );
-  }
-
-  List<Widget> _buildExtraStep() {
-    return [
-      Text(
-        'Bước cuối cùng',
-        style: AppTextStyles.textTheme.titleMedium,
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Số lượng gợi ý bạn muốn nhận (tối đa 30).',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-      const SizedBox(height: 16),
-      CustomTextField(
-        controller: _controllerFor('top'),
-        label: 'Số tour gợi ý (1–30)',
-        keyboardType: TextInputType.number,
-        onChanged: (v) => _values['top'] = v,
-        validator: (_) => _errors['top'],
-      ),
-    ];
   }
 }

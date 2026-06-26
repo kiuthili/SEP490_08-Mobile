@@ -265,17 +265,10 @@ class AiController extends GetxController {
   }
 
   Future<void> fetchRecommendations() async {
-    isLoading.value = true;
-    try {
-      final result = await _service.getRecommendations();
-      recommendationDetail.value = result;
-      recommendations.assignAll(result.recommendedTours);
-      summary.value = result.summary.isEmpty ? null : result.summary;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    } finally {
-      isLoading.value = false;
-    }
+    // The backend does not persist AI recommendations, they are only returned via submitQuestionnaire (POST).
+    // Therefore, we cannot fetch them generically without a profile. 
+    // We just return the cached ones or do nothing to prevent 404 errors.
+    return;
   }
 
   Future<void> sendChatMessage(String message) async {
