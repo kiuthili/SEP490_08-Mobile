@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:stayhub_mobile/controllers/feature_controllers.dart';
+import '../../controllers/social_controller.dart';
 import '../../controllers/staff_controller.dart';
 import '../../controllers/shell_controller.dart';
+import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/app_radius.dart';
@@ -18,9 +21,29 @@ class StaffSchedulesTab extends GetView<StaffController> {
 
   @override
   Widget build(BuildContext context) {
+    final socialController = Get.find<SocialController>();
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Lịch trình được giao')),
+      appBar: AppBar(
+        title: const Text('Lịch trình được giao'),
+        actions: [
+          Obx(() {
+            final unreadChatCount = socialController.unreadChatCount;
+            return Badge(
+              label: Text(
+                unreadChatCount > 99 ? '99+' : unreadChatCount.toString(),
+              ),
+              isLabelVisible: unreadChatCount > 0,
+              child: IconButton(
+                tooltip: 'Hộp thư',
+                icon: const Icon(Icons.forum_outlined),
+                onPressed: () => Get.toNamed(AppRoutes.chatInbox),
+              ),
+            );
+          }),
+          const SizedBox(width: 16),
+        ],
+      ),
       body: Column(
         children: [
           _FilterBar(controller: controller),
