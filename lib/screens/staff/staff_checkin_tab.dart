@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:stayhub_mobile/controllers/staff_controller.dart';
-import 'package:stayhub_mobile/models/check_in_result_model.dart';
+import 'package:stayhub_mobile/models/staff_ticket_model.dart';
+import '../../models/check_in_result_model.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/snackbar_helper.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import 'package:flutter/services.dart';
+import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import '../../widgets/ios_grouped.dart';
 
 class StaffCheckInTab extends StatefulWidget {
@@ -178,6 +181,7 @@ class _StaffCheckInTabState extends State<StaffCheckInTab> {
             ),
             const SizedBox(height: 24),
 
+            const SizedBox(height: 16),
             // Danh sách vé của lịch trình
             Row(
               children: [
@@ -219,37 +223,28 @@ class _StaffCheckInTabState extends State<StaffCheckInTab> {
                   itemBuilder: (context, index) {
                     final t = _staff.tickets[index];
                     return ListTile(
+                      contentPadding: const EdgeInsets.only(left: 16, right: 4),
                       leading: Icon(
                         t.isCheckedIn
                             ? Icons.check_circle_rounded
                             : Icons.confirmation_number_outlined,
                         color: t.isCheckedIn ? AppColors.brand : Colors.grey,
                       ),
-                      title: Text(t.attendeeName),
+                      title: Text(
+                        t.attendeeName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       subtitle: Text(
                         '${t.idCard} • ${t.checkInStatus ?? 'Chưa check-in'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      // Hiển thị QR nếu có
-                      trailing: t.qrCode != null && t.qrCode!.isNotEmpty
+                      trailing: (t.qrCode != null && t.qrCode!.isNotEmpty)
                           ? IconButton(
+                        tooltip: 'Hiển thị QR',
                         icon: const Icon(Icons.qr_code_rounded),
-                        onPressed: () => showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text(t.attendeeName),
-                            content: QrImageView(
-                              data: t.qrCode!,
-                              size: 200,
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(ctx).pop(),
-                                child: const Text('Đóng'),
-                              ),
-                            ],
-                          ),
-                        ),
+                        onPressed: () => _showQrDialog(context, t),
                       )
                           : null,
                     );
@@ -262,6 +257,45 @@ class _StaffCheckInTabState extends State<StaffCheckInTab> {
       ),
     );
   }
+}
+void _showQrDialog(BuildContext context, StaffTicketModel t) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(t.attendeeName),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          QrImageView(
+            data: t.qrCode!,
+            size: 200,
+          ),
+          const SizedBox(height: 16),
+          SelectableText(
+            t.qrCode!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Đóng'),
+        ),
+        FilledButton.icon(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: t.qrCode!));
+            Navigator.of(ctx).pop();
+            SnackbarHelper.success('Đã sao chép mã QR');
+          },
+          icon: const Icon(Icons.copy_rounded, size: 16),
+          label: const Text('Sao chép'),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Result row ────────────────────────────────────────────────────────────────

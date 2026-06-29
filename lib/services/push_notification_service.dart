@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:flutter/scheduler.dart' as scheduler;
 import 'package:stayhub_mobile/constants/api_constants.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import 'package:stayhub_mobile/routes/app_routes.dart';
@@ -166,10 +168,11 @@ class PushNotificationService extends GetxService {
   }
 
   void _openChatRoom(int roomId) {
-    Get.toNamed(
-      AppRoutes.chatRoom,
-      arguments: {'roomId': roomId},
-    );
+    // Đảm bảo việc điều hướng chỉ xảy ra sau khi frame đầu tiên đã được build,
+    // tránh lỗi "setState during build" khi mở app từ notification.
+    scheduler.SchedulerBinding.instance.addPostFrameCallback((_) {
+      Get.toNamed(AppRoutes.chatRoom, arguments: {'roomId': roomId});
+    });
   }
 
   Future<void> _sendTokenToBackend(String token) async {

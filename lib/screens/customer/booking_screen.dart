@@ -607,11 +607,8 @@ class _BookingScreenState extends State<BookingScreen> {
                                 controller: p.idCardController,
                                 label: 'CMND/CCCD',
                                 prefixIcon: Icons.badge_outlined,
-                                keyboardType: TextInputType.number,
-                                maxLength: 12,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
+                                keyboardType: TextInputType.text,
+                                maxLength: 20,
                                 validator: Validators.idCard,
                               ),
                               const SizedBox(height: 14),
