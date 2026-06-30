@@ -154,6 +154,15 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     if (s.tickets.isEmpty) return null;
     final prices = s.tickets
         .where((t) => t.isActive != false && t.availableQuantity > 0)
+        .map((t) => t.effectivePrice);
+    if (prices.isEmpty) return null;
+    return prices.reduce((a, b) => a < b ? a : b);
+  }
+
+  int? _scheduleOriginalMinPrice(TourScheduleModel s) {
+    if (s.tickets.isEmpty) return null;
+    final prices = s.tickets
+        .where((t) => t.isActive != false && t.availableQuantity > 0)
         .map((t) => t.price);
     if (prices.isEmpty) return null;
     return prices.reduce((a, b) => a < b ? a : b);
@@ -445,8 +454,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       for (final t in s.tickets) {
         if (t.isActive != false &&
             t.availableQuantity > 0 &&
-            (minPrice == null || t.price < minPrice)) {
-          minPrice = t.price;
+            (minPrice == null || t.effectivePrice < minPrice)) {
+          minPrice = t.effectivePrice;
         }
       }
     }
@@ -613,6 +622,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     final available = _scheduleAvailable(schedule);
     final selected = _selectedSchedule?.id == schedule.id;
     final minPrice = _scheduleMinPrice(schedule);
+    final originalMinPrice = _scheduleOriginalMinPrice(schedule);
     final seats = _scheduleAvailableSeats(schedule);
 
     return AnimatedContainer(
@@ -682,12 +692,29 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text('Từ', style: AppTextStyles.textTheme.labelSmall),
-                      Text(
-                        CurrencyFormatter.format(minPrice),
-                        style: AppTextStyles.textTheme.titleSmall?.copyWith(
-                          color: AppColors.brand,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          if (originalMinPrice != null && minPrice < originalMinPrice)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: Text(
+                                CurrencyFormatter.format(originalMinPrice),
+                                style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          Text(
+                            CurrencyFormatter.format(minPrice),
+                            style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                              color: AppColors.brand,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   )
