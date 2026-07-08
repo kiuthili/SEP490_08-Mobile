@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/feature_models.dart';
 import '../models/social_models.dart';
 import '../theme/app_colors.dart';
 
@@ -11,6 +10,7 @@ class MomentCard extends StatelessWidget {
   final Function(int) onDelete;
   final Function(bool) onLike;
   final VoidCallback? onComment;
+  final Function(int)? onReport;
   final bool isDetail;
 
   const MomentCard({
@@ -20,6 +20,7 @@ class MomentCard extends StatelessWidget {
     required this.onDelete,
     required this.onLike,
     this.onComment,
+    this.onReport,
     this.isDetail = false,
   });
 
@@ -71,32 +72,44 @@ class MomentCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (moment.createdAt != null)
-                        Text(
-                          DateFormat('dd/MM/yyyy HH:mm').format(moment.createdAt!.toLocal()),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
+                      Text(
+                        DateFormat('dd/MM/yyyy HH:mm').format(moment.createdAt.toLocal()),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textTertiary,
                         ),
+                      ),
                     ],
                   ),
                 ),
-                if (moment.userId == currentUserId)
+                if (moment.userId == currentUserId || onReport != null)
                   PopupMenuButton<String>(
                     onSelected: (val) {
                       if (val == 'delete') onDelete(moment.id);
+                      if (val == 'report') onReport?.call(moment.id);
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-                            SizedBox(width: 8),
-                            Text('Xóa bài', style: TextStyle(color: AppColors.error)),
-                          ],
+                    itemBuilder: (_) => [
+                      if (moment.userId == currentUserId)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                              SizedBox(width: 8),
+                              Text('Xóa bài', style: TextStyle(color: AppColors.error)),
+                            ],
+                          ),
                         ),
-                      ),
+                      if (moment.userId != currentUserId && onReport != null)
+                        const PopupMenuItem(
+                          value: 'report',
+                          child: Row(
+                            children: [
+                              Icon(Icons.flag_outlined, color: AppColors.textPrimary, size: 20),
+                              SizedBox(width: 8),
+                              Text('Báo cáo vi phạm'),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
               ],
@@ -113,11 +126,11 @@ class MomentCard extends StatelessWidget {
               ),
             ),
 
-          if (moment.imageUrl?.isNotEmpty == true)
+          if (moment.imageUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: CachedNetworkImage(
-                imageUrl: moment.imageUrl!,
+                imageUrl: moment.imageUrl,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(

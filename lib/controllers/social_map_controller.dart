@@ -30,6 +30,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart'; // EdgeInsets, WidgetsBinding
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -93,8 +94,11 @@ class SocialMapController extends GetxController {
   Timer? _pingTimer;
   Timer? _friendsTimer;
   Timer? _footprintsTimer;
-  // Ping vị trí của tôi: 12s/lần để bạn bè thấy mình di chuyển gần realtime.
-  static const _pingInterval = Duration(seconds: 12);
+  StreamSubscription<Position>? _positionStreamSubscription;
+  Position? _latestPosition;
+  Position? _lastPingedPosition;
+  // Ping vị trí của tôi: 5s/lần để tracking liên tục thời gian thực.
+  static const _pingInterval = Duration(seconds: 5);
   // Poll vị trí bạn bè: 10s/lần (đồng bộ tốc độ với bản web).
   static const _friendsRefreshInterval = Duration(seconds: 10);
   // Tự refresh footprints từ server khi lớp "Cào map" đang bật.
@@ -152,6 +156,7 @@ class SocialMapController extends GetxController {
     _friendsTimer?.cancel();
     _footprintsTimer?.cancel();
     _heatmapDebounce?.cancel();
+    _positionStreamSubscription?.cancel();
     unawaited(_signalR.disconnectTracking());
     if (!heatmapResetController.isClosed) heatmapResetController.close();
     try {
@@ -183,8 +188,10 @@ class SocialMapController extends GetxController {
         _fitToLiveLocations();
       }
       _startFriendsPolling();
-      // Tự bật ghi log di chuyển realtime (cào map liên tục) + chia sẻ vị trí.
-      unawaited(_startAutoTracking());
+      // Khôi phục trạng thái chia sẻ vị trí theo cài đặt đã lưu của người dùng
+      if (_storage.shareMyLocation) {
+        unawaited(_startAutoTracking());
+      }
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (e) {
@@ -294,11 +301,15 @@ class SocialMapController extends GetxController {
   Future<void> toggleShareMyLocation() async {
     if (isSharingLocation.value) {
       _stopSharing();
+      await _storage.setShareMyLocation(false);
       SnackbarHelper.success('Đã tắt chia sẻ & ghi vị trí');
       return;
     }
     final ok = await _startAutoTracking(notify: true);
-    if (ok) SnackbarHelper.success('Đang chia sẻ & ghi lại lộ trình của bạn');
+    if (ok) {
+      await _storage.setShareMyLocation(true);
+      SnackbarHelper.success('Đang chia sẻ & ghi lại lộ trình của bạn');
+    }
   }
 
   /// Bắt đầu ghi log di chuyển realtime (cào map liên tục). Trả về true nếu
@@ -311,41 +322,61 @@ class SocialMapController extends GetxController {
       return false;
     }
     isSharingLocation.value = true;
-    await _pingCurrent();
+
+    // Lấy vị trí ban đầu lập tức từ cache để map mượt
+    try {
+      final initialPos = await Geolocator.getLastKnownPosition();
+      if (initialPos != null) {
+        _latestPosition = initialPos;
+        final here = LatLng(initialPos.latitude, initialPos.longitude);
+        _appendTrail(here);
+        _updateMyLiveMarker(here);
+        unawaited(_pingLatestToServer());
+      }
+    } catch (_) {}
+
+    // Lắng nghe stream thay đổi vị trí chủ động, độ chính xác cao và liên tục
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0, // 0 mét để tracking liên tục không bỏ sót
+      ),
+    ).listen((Position pos) {
+      _latestPosition = pos;
+      final here = LatLng(pos.latitude, pos.longitude);
+      _appendTrail(here);
+      _updateMyLiveMarker(here);
+    }, onError: (_) {});
+
+    // Gửi vị trí lên server định kỳ 12s/lần nhưng chỉ gửi khi có toạ độ mới
     _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(_pingInterval, (_) => _pingCurrent());
+    _pingTimer = Timer.periodic(_pingInterval, (_) => _pingLatestToServer());
+
     return true;
   }
 
   void _stopSharing() {
     _pingTimer?.cancel();
     _pingTimer = null;
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = null;
     isSharingLocation.value = false;
   }
 
-  /// Lấy vị trí hiện tại -> (1) ping lên server (LocationLogs) để bạn bè thấy,
-  /// (2) cộng dồn vào vệt di chuyển realtime ở client để "cào map" lớn dần.
-  Future<void> _pingCurrent() async {
-    try {
-      final pos = await LocationHelper.getCurrentPosition();
-      if (pos == null) return;
-      final here = LatLng(pos.latitude, pos.longitude);
+  /// Gửi vị trí lên server định kỳ 5s/lần để tracking liên tục thời gian thực
+  Future<void> _pingLatestToServer() async {
+    final pos = _latestPosition;
+    if (pos == null) return;
 
-      // (1) Gửi server (scheduleId có thể null nếu chưa chọn tour).
+    try {
       await _service.pingLocation(
         lat: pos.latitude,
         lng: pos.longitude,
         scheduleId: selectedScheduleId.value,
       );
-
-      // (2) Cập nhật vệt di chuyển realtime ở client.
-      _appendTrail(here);
-
-      // (3) Cập nhật marker "tôi" trong liveLocations để hiển thị di chuyển.
-      _updateMyLiveMarker(here);
-    } catch (_) {
-      // im lặng để tránh spam snackbar theo chu kỳ
-    }
+      _lastPingedPosition = pos;
+    } catch (_) {}
   }
 
   /// Thêm điểm vào vệt nếu đã đi đủ xa; tự giới hạn số điểm để nhẹ bộ nhớ.

@@ -739,6 +739,43 @@ class SocialController extends GetxController {
       SnackbarHelper.error(e.message);
     }
   }
+
+  Future<bool> reportContent({
+    required String contentType,
+    required int targetId,
+    required String reason,
+    String? details,
+  }) async {
+    try {
+      await _service.reportContent(
+        contentType: contentType,
+        targetId: targetId,
+        reason: reason,
+        details: details,
+      );
+      if (contentType == 'Moment') {
+        moments.removeWhere((m) => m.id == targetId);
+      } else if (contentType == 'Comment') {
+        for (int i = 0; i < moments.length; i++) {
+          if (moments[i].comments.any((c) => c.id == targetId)) {
+            final previous = moments[i];
+            final updatedComments = previous.comments.where((c) => c.id != targetId).toList();
+            moments[i] = previous.copyWith(comments: updatedComments);
+            moments.refresh();
+            break;
+          }
+        }
+      }
+      SnackbarHelper.success('Đã gửi báo cáo vi phạm thành công');
+      return true;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return false;
+    } catch (e) {
+      SnackbarHelper.error('Không gửi được báo cáo: $e');
+      return false;
+    }
+  }
 }
 
 

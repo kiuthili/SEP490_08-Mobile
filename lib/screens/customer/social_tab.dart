@@ -152,10 +152,93 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               onDelete: widget.social.deleteMoment,
               onLike: (isLike) => widget.social.reactMoment(m.id, isLike),
               onComment: () => Get.toNamed(AppRoutes.momentDetail, arguments: m),
+              onReport: (id) => _showReportDialog(context, 'Moment', id, widget.social),
             );
           },
         );
       }),
+    );
+  }
+
+  void _showReportDialog(BuildContext context, String contentType, int targetId, SocialController social) {
+    String selectedReason = 'Spam';
+    final detailsController = TextEditingController();
+    var isSending = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Báo cáo ${contentType == 'Moment' ? 'khoảnh khắc' : 'bình luận'}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      decoration: const InputDecoration(labelText: 'Lý do báo cáo'),
+                      items: const [
+                        DropdownMenuItem(value: 'Spam', child: Text('Spam (Rác / Quảng cáo)')),
+                        DropdownMenuItem(value: 'Hate Speech', child: Text('Ngôn từ kích động thù hận')),
+                        DropdownMenuItem(value: 'Harassment', child: Text('Quấy rối / Đe dọa')),
+                        DropdownMenuItem(value: 'Violence', child: Text('Bạo lực / Máu me')),
+                        DropdownMenuItem(value: 'Other', child: Text('Lý do khác')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => selectedReason = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Chi tiết (Không bắt buộc)',
+                        hintText: 'Nhập thêm chi tiết vi phạm...',
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                FilledButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          setDialogState(() => isSending = true);
+                          final ok = await social.reportContent(
+                            contentType: contentType,
+                            targetId: targetId,
+                            reason: selectedReason,
+                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                          );
+                          setDialogState(() => isSending = false);
+                          if (ok) {
+                            Navigator.pop(context);
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Gửi báo cáo'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
