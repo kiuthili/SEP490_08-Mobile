@@ -352,4 +352,20 @@ class SocialService extends GetxService with BaseServiceMixin {
       return parseList(response.data, HeatPointModel.fromJson);
     });
   }
+
+  Future<void> reportContent({
+    required String contentType,
+    required int targetId,
+    required String reason,
+    String? details,
+  }) async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.moderation}/report', data: {
+        'contentType': contentType,
+        'targetId': targetId,
+        'reason': reason,
+        if (details != null) 'details': details,
+      });
+    });
+  }
 }

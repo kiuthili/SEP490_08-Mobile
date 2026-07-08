@@ -688,6 +688,30 @@ class SocialController extends GetxController {
       SnackbarHelper.error(e.message);
     }
   }
+
+  Future<bool> reportContent({
+    required String contentType,
+    required int targetId,
+    required String reason,
+    String? details,
+  }) async {
+    try {
+      await _service.reportContent(
+        contentType: contentType,
+        targetId: targetId,
+        reason: reason,
+        details: details,
+      );
+      SnackbarHelper.success('Đã gửi báo cáo vi phạm thành công');
+      return true;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return false;
+    } catch (e) {
+      SnackbarHelper.error('Không gửi được báo cáo: $e');
+      return false;
+    }
+  }
 }
 
 

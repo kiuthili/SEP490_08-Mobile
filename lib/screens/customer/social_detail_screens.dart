@@ -1250,6 +1250,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                         setState(() => _moment = updated);
                       }
                     },
+                    onReport: (id) => _showReportDialog(context, 'Moment', id, _socialController),
                     isDetail: true,
                   ),
                   const Divider(),
@@ -1287,28 +1288,40 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                             fontWeight: FontWeight.bold,
                             fontSize: 13)),
                     subtitle: Text(c.comment),
-                    trailing: c.userId == _currentUserId
-                        ? PopupMenuButton<String>(
+                    trailing: PopupMenuButton<String>(
                       onSelected: (val) async {
                         if (val == 'edit') {
                           _editComment(c);
                         } else if (val == 'delete') {
                           await _deleteComment(c);
+                        } else if (val == 'report') {
+                          _showReportDialog(context, 'Comment', c.id, _socialController);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Chỉnh sửa')),
-                        PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Xóa',
-                                style: TextStyle(
-                                    color:
-                                    AppColors.error))),
+                      itemBuilder: (_) => [
+                        if (c.userId == _currentUserId) ...const [
+                          PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Chỉnh sửa')),
+                          PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Xóa',
+                                  style: TextStyle(
+                                      color:
+                                      AppColors.error))),
+                        ],
+                        if (c.userId != _currentUserId)
+                          const PopupMenuItem(
+                              value: 'report',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.flag_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Báo cáo vi phạm'),
+                                ],
+                              )),
                       ],
-                    )
-                        : null,
+                    ),
                   )),
                 ],
               ),
@@ -1363,6 +1376,88 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context, String contentType, int targetId, SocialController social) {
+    String selectedReason = 'Spam';
+    final detailsController = TextEditingController();
+    var isSending = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Báo cáo ${contentType == 'Moment' ? 'khoảnh khắc' : 'bình luận'}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      decoration: const InputDecoration(labelText: 'Lý do báo cáo'),
+                      items: const [
+                        DropdownMenuItem(value: 'Spam', child: Text('Spam (Rác / Quảng cáo)')),
+                        DropdownMenuItem(value: 'Hate Speech', child: Text('Ngôn từ kích động thù hận')),
+                        DropdownMenuItem(value: 'Harassment', child: Text('Quấy rối / Đe dọa')),
+                        DropdownMenuItem(value: 'Violence', child: Text('Bạo lực / Máu me')),
+                        DropdownMenuItem(value: 'Other', child: Text('Lý do khác')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => selectedReason = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Chi tiết (Không bắt buộc)',
+                        hintText: 'Nhập thêm chi tiết vi phạm...',
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Get.back(),
+                  child: const Text('Hủy'),
+                ),
+                FilledButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          setDialogState(() => isSending = true);
+                          final ok = await social.reportContent(
+                            contentType: contentType,
+                            targetId: targetId,
+                            reason: selectedReason,
+                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                          );
+                          setDialogState(() => isSending = false);
+                          if (ok) {
+                            Get.back();
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Gửi báo cáo'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

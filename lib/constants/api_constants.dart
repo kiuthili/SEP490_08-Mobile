@@ -59,6 +59,7 @@ class ApiConstants {
   static const moments = '/api/moments';
   static const chat = '/api/chat';
   static const locations = '/api/locations';
+  static const moderation = '/api/moderation';
   static const aiTourAssistant = '/api/ai/tour-assistant';
   static const tourScheduleStaffs = '/api/TourScheduleStaffs';
 }
