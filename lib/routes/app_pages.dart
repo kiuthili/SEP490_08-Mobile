@@ -28,6 +28,8 @@ import '../screens/register_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/staff/qr_scan_screen.dart';
 import '../screens/tour_detail_screen.dart';
+import '../controllers/user_study_controller.dart';
+import '../screens/customer/user_study_screen.dart';
 import 'app_routes.dart';
 import '../utils/auth_gate.dart';
 
@@ -244,6 +246,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.publicTrack,
       page: () => const PublicTrackingScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.userStudy,
+      page: () => const UserStudyScreen(),
+      middlewares: _protected,
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<UserStudyController>()) {
+          Get.lazyPut<UserStudyController>(() => UserStudyController());
+        }
+      }),
     ),
     GetPage(
       name: AppRoutes.profile,

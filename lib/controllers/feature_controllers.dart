@@ -14,6 +14,7 @@ import '../services/order_service.dart';
 import '../services/signalr_service.dart';
 import '../services/social_service.dart';
 import '../services/storage_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/tour_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/ai_session.dart';
@@ -264,17 +265,10 @@ class AiController extends GetxController {
   }
 
   Future<void> fetchRecommendations() async {
-    isLoading.value = true;
-    try {
-      final result = await _service.getRecommendations();
-      recommendationDetail.value = result;
-      recommendations.assignAll(result.recommendedTours);
-      summary.value = result.summary.isEmpty ? null : result.summary;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    } finally {
-      isLoading.value = false;
-    }
+    // The backend does not persist AI recommendations, they are only returned via submitQuestionnaire (POST).
+    // Therefore, we cannot fetch them generically without a profile. 
+    // We just return the cached ones or do nothing to prevent 404 errors.
+    return;
   }
 
   Future<void> sendChatMessage(String message) async {
@@ -349,10 +343,52 @@ class SocialController extends GetxController {
   List<ChatRoomModel> get tourGroupChats => chatRooms.where((r) => r.isGroup && r.scheduleId != null).toList();
   List<ChatRoomModel> get directChats => chatRooms.where((r) => !r.isGroup).toList();
 
+  int get unreadChatCount =>
+      chatRooms.fold<int>(0, (sum, room) => sum + room.unreadCount);
+
   @override
   void onInit() {
     super.onInit();
+    unawaited(fetchChatRooms());
     unawaited(_connectFriendshipRealtime());
+    unawaited(_connectGlobalChatRealtime());
+  }
+
+  Future<void> _connectGlobalChatRealtime() async {
+    try {
+      await _signalR.connectGlobalChat(
+        onGlobalMessage: _handleGlobalChatMessage,
+        onReconnected: () => unawaited(fetchChatRooms()),
+      );
+    } catch (_) {}
+  }
+
+  void _handleGlobalChatMessage(ChatMessageModel message) {
+    if (message.senderId == currentUserId) return;
+
+    if (_signalR.activeChatRoomId == message.chatRoomId) {
+      unawaited(markChatRoomAsRead(message.chatRoomId));
+      return;
+    }
+
+    unawaited(fetchChatRooms());
+
+    final title = (message.senderName?.trim().isNotEmpty ?? false)
+        ? message.senderName!.trim()
+        : 'Tin nhắn mới';
+    final body = message.content.trim().isNotEmpty
+        ? message.content.trim()
+        : 'Bạn có tin nhắn mới';
+
+    if (Get.isRegistered<PushNotificationService>()) {
+      unawaited(
+        Get.find<PushNotificationService>().showChatNotification(
+          chatRoomId: message.chatRoomId,
+          title: title,
+          body: body,
+        ),
+      );
+    }
   }
 
   Future<void> _connectFriendshipRealtime() async {
@@ -384,6 +420,7 @@ class SocialController extends GetxController {
   @override
   void onClose() {
     unawaited(_signalR.disconnectFriendship());
+    unawaited(_signalR.disconnectGlobalChat());
     super.onClose();
   }
 
@@ -468,6 +505,20 @@ class SocialController extends GetxController {
   Future<void> fetchChatRooms() async {
     isChatLoading.value = true;
     try { chatRooms.assignAll(await _service.getChatRooms()); } catch (_) {} finally { isChatLoading.value = false; }
+  }
+
+  Future<void> markChatRoomAsRead(int roomId) async {
+    final idx = chatRooms.indexWhere((room) => room.id == roomId);
+    if (idx >= 0 && chatRooms[idx].unreadCount > 0) {
+      chatRooms[idx] = chatRooms[idx].copyWith(unreadCount: 0);
+      chatRooms.refresh();
+    }
+
+    try {
+      await _service.markChatRoomAsRead(roomId);
+    } catch (_) {
+      await fetchChatRooms();
+    }
   }
 
   Future<void> shareLocationPing(int scheduleId) async {

@@ -191,6 +191,12 @@ class SocialService extends GetxService with BaseServiceMixin {
     await request(() async { await api.dio.delete('${ApiConstants.chat}/rooms/$roomId/leave'); });
   }
 
+  Future<void> markChatRoomAsRead(int roomId) async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.chat}/rooms/$roomId/read');
+    });
+  }
+
   // ================= LOCATION & TRACKING =================
   Future<void> pingLocation({required double lat, required double lng, int? scheduleId}) async {
     await request(() async {

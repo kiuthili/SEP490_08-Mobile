@@ -411,6 +411,11 @@ class _ProfileTabState extends State<ProfileTab> {
                     onTap: () =>
                         showAiAssistantPanel(context, AiPanelTab.assistant),
                   ),
+                  IosMenuTile(
+                    icon: Icons.rate_review_outlined,
+                    title: 'Khảo sát A/B (User Study)',
+                    onTap: () => Get.toNamed(AppRoutes.userStudy),
+                  ),
                 ],
               ),
               IosGroupedSection(

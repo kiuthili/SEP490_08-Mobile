@@ -79,12 +79,12 @@ class Validators {
     return null;
   }
 
-  /// CMND (9 số) hoặc CCCD (12 số).
+  /// CMND/CCCD/Passport, tối đa 20 ký tự.
   static String? idCard(String? value) {
     final v = value?.trim() ?? '';
-    if (v.isEmpty) return 'Vui lòng nhập CMND/CCCD';
-    if (!RegExp(r'^\d{9}$|^\d{12}$').hasMatch(v)) {
-      return 'CMND/CCCD phải gồm 9 hoặc 12 số';
+    if (v.isEmpty) return 'Vui lòng nhập CMND/CCCD/Passport';
+    if (v.length > 20) {
+      return 'Số giấy tờ không được vượt quá 20 ký tự';
     }
     return null;
   }

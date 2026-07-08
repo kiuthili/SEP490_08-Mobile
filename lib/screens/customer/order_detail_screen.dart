@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,6 +20,7 @@ import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:flutter/services.dart';
 import 'my_tickets_screen.dart';
 
 bool _isToday(DateTime? date) {
@@ -484,6 +486,45 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
     ).whenComplete(commentController.dispose);
   }
+}
+void _showQrDialog(BuildContext context, TicketModel ticket) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(ticket.attendeeName),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          QrImageView(
+            data: ticket.qrCode!,
+            size: 200,
+          ),
+          const SizedBox(height: 16),
+          SelectableText(
+            ticket.qrCode!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Đóng'),
+        ),
+        FilledButton.icon(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: ticket.qrCode!));
+            Navigator.of(ctx).pop();
+            SnackbarHelper.success('Đã sao chép mã QR');
+          },
+          icon: const Icon(Icons.copy_rounded, size: 16),
+          label: const Text('Sao chép'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _OrderHero extends StatelessWidget {

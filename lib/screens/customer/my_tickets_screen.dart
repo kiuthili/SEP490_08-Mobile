@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../models/order_model.dart';
@@ -7,6 +8,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_screen.dart';
+import '../../utils/snackbar_helper.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
@@ -251,6 +253,25 @@ class OrderTicketsPanel extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceGrouped,
+                            borderRadius: AppRadius.input,
+                            border: Border.all(color: AppColors.separator),
+                          ),
+                          child: SelectableText(
+                            t.qrCode!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -264,6 +285,20 @@ class OrderTicketsPanel extends StatelessWidget {
                               'Đưa mã này cho nhân viên khi check-in',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: t.qrCode!));
+                                SnackbarHelper.success('Đã sao chép mã QR');
+                              },
+                              icon: const Icon(Icons.copy_all_rounded, size: 16),
+                              label: const Text('Sao chép mã'),
+                            )
                           ],
                         ),
                       ],

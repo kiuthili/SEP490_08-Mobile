@@ -34,6 +34,7 @@ String? validateQuestionnaireField(
       }
       final n = num.tryParse(raw.toString());
       if (n == null || n < 0) return 'Giá trị phải là số không âm';
+      if (field.fieldKey == 'adultCount' && n < 1) return 'Phải có ít nhất 1 người lớn';
       return null;
     case 'boolean':
       if (field.required && raw is! bool) {
@@ -65,32 +66,7 @@ Map<String, String> validateQuestionnaireStep(
     final msg = validateQuestionnaireField(field, values);
     if (msg != null) errors[field.fieldKey] = msg;
   }
-  return errors;
-}
-
-Map<String, String> validateExtraCounts(Map<String, dynamic> values) {
-  final errors = <String, String>{};
-
-  if (values['hasElderly'] == true) {
-    final count = values['elderlyCount'];
-    final n = count == null ? null : num.tryParse(count.toString());
-    if (n == null || n < 1) {
-      errors['elderlyCount'] = 'Nhập số người cao tuổi (≥ 1)';
-    } else if (n > 20) {
-      errors['elderlyCount'] = 'Tối đa 20 người';
-    }
-  }
-
-  if (values['hasChildren'] == true) {
-    final count = values['childrenCount'];
-    final n = count == null ? null : num.tryParse(count.toString());
-    if (n == null || n < 1) {
-      errors['childrenCount'] = 'Nhập số trẻ em (≥ 1)';
-    } else if (n > 20) {
-      errors['childrenCount'] = 'Tối đa 20 người';
-    }
-  }
-
+  
   final start = values['preferredStartDate']?.toString();
   final end = values['preferredEndDate']?.toString();
   if (start != null &&
@@ -100,16 +76,9 @@ Map<String, String> validateExtraCounts(Map<String, dynamic> values) {
     errors['preferredEndDate'] = 'Ngày kết thúc phải sau ngày bắt đầu';
   }
 
-  final top = values['top'];
-  if (top != null && top.toString().isNotEmpty) {
-    final n = num.tryParse(top.toString());
-    if (n == null || n < 1 || n > 30) {
-      errors['top'] = 'Số kết quả từ 1 đến 30';
-    }
-  }
-
   return errors;
 }
+
 
 Map<String, dynamic> buildRecommendPayload(
   Map<String, dynamic> values,
@@ -122,19 +91,31 @@ Map<String, dynamic> buildRecommendPayload(
           ? [interests.toString()]
           : <String>[];
 
+  final adultCount = int.tryParse(values['adultCount']?.toString() ?? '1') ?? 1;
+  final elderlyCount = int.tryParse(values['elderlyCount']?.toString() ?? '0') ?? 0;
+  final childrenCount = int.tryParse(values['childrenCount']?.toString() ?? '0') ?? 0;
+  final total = adultCount + elderlyCount + childrenCount;
+
+  String inferredCompanionType = 'group';
+  if (total == 1) {
+    inferredCompanionType = 'solo';
+  } else if (childrenCount > 0) {
+    inferredCompanionType = 'family';
+  } else if (total == 2) {
+    inferredCompanionType = 'couple';
+  } else if (total <= 4) {
+    inferredCompanionType = 'family';
+  } else {
+    inferredCompanionType = 'group';
+  }
+
   final payload = <String, dynamic>{
-    'companionType': values['companionType'],
+    'companionType': inferredCompanionType,
     'preferredStartDate': values['preferredStartDate'],
-    'hasElderly': values['hasElderly'] == true,
-    'hasChildren': values['hasChildren'] == true,
     'travelInterests': travelInterests,
-    'nationalityType': values['nationalityType'],
+    'nationalityType': values['nationalityType'] ?? 'vietnamese',
     'sessionId': sessionId,
-    'top': () {
-      final t = values['top'];
-      if (t == null || t.toString().isEmpty) return 8;
-      return int.tryParse(t.toString()) ?? 8;
-    }(),
+    'top': 10,
   };
 
   if (values['preferredEndDate'] != null &&
@@ -146,13 +127,18 @@ Map<String, dynamic> buildRecommendPayload(
     final rawBudget = values['maxBudgetPerPerson'].toString().replaceAll('.', '').replaceAll(',', '');
     payload['maxBudgetPerPerson'] = int.tryParse(rawBudget);
   }
-  if (values['hasElderly'] == true && values['elderlyCount'] != null) {
-    payload['elderlyCount'] =
-        int.tryParse(values['elderlyCount'].toString());
+  if (values['travelPace'] != null &&
+      values['travelPace'].toString().isNotEmpty) {
+    payload['travelPace'] = values['travelPace'];
   }
-  if (values['hasChildren'] == true && values['childrenCount'] != null) {
-    payload['childrenCount'] =
-        int.tryParse(values['childrenCount'].toString());
+  if (values['adultCount'] != null) {
+    payload['adultCount'] = int.tryParse(values['adultCount'].toString());
+  }
+  if (values['elderlyCount'] != null) {
+    payload['elderlyCount'] = int.tryParse(values['elderlyCount'].toString());
+  }
+  if (values['childrenCount'] != null) {
+    payload['childrenCount'] = int.tryParse(values['childrenCount'].toString());
   }
   if (values['preferredCity'] != null &&
       values['preferredCity'].toString().trim().isNotEmpty) {
@@ -169,3 +155,4 @@ Map<String, dynamic> buildRecommendPayload(
 
 bool isAiModelsNotReadyMessage(String message) =>
     message.toLowerCase().contains('ai models are not ready');
+

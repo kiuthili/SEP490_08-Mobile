@@ -61,6 +61,9 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
   }
 
   Future<void> _openRoom(ChatRoomModel room) async {
+    if (room.unreadCount > 0) {
+      await _social.markChatRoomAsRead(room.id);
+    }
     await Get.toNamed(
       AppRoutes.chatRoom,
       arguments: {
@@ -192,6 +195,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
                 child: _InboxHeader(
                   directCount: _social.directChats.length,
                   groupCount: _social.tourGroupChats.length,
+                  unreadCount: _social.unreadChatCount,
                 ),
               ),
               SliverToBoxAdapter(
@@ -292,10 +296,12 @@ class _InboxHeader extends StatelessWidget {
   const _InboxHeader({
     required this.directCount,
     required this.groupCount,
+    required this.unreadCount,
   });
 
   final int directCount;
   final int groupCount;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +353,9 @@ class _InboxHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '$directCount chat riêng • $groupCount nhóm tour',
+                  unreadCount > 0
+                      ? '$directCount chat riêng • $groupCount nhóm tour • $unreadCount chưa đọc'
+                      : '$directCount chat riêng • $groupCount nhóm tour',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
                     fontSize: 12,
@@ -424,6 +432,15 @@ class _ConversationCard extends StatelessWidget {
         : room.isGroup
             ? 'Nhóm tour #${room.scheduleId ?? room.id}'
             : 'Cuộc trò chuyện #${room.id}';
+    final hasUnread = room.unreadCount > 0;
+    final previewStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: hasUnread ? AppColors.textPrimary : null,
+          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+        );
+    final titleStyle = AppTextStyles.textTheme.titleSmall?.copyWith(
+      fontWeight: hasUnread || room.isPinned ? FontWeight.w800 : FontWeight.w700,
+      color: hasUnread ? AppColors.textPrimary : null,
+    );
     return Material(
       color: AppColors.surfaceElevated,
       borderRadius: AppRadius.card,
@@ -456,17 +473,19 @@ class _ConversationCard extends StatelessWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.textTheme.titleSmall?.copyWith(
-                              fontWeight: room.isPinned
-                                  ? FontWeight.w800
-                                  : FontWeight.w700,
-                            ),
+                            style: titleStyle,
                           ),
                         ),
                         if (room.lastMessageAt != null)
                           Text(
                             _messageTime(room.lastMessageAt!),
-                            style: Theme.of(context).textTheme.labelSmall,
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: hasUnread
+                                      ? AppColors.brand
+                                      : AppColors.textTertiary,
+                                  fontWeight:
+                                      hasUnread ? FontWeight.w700 : FontWeight.w400,
+                                ),
                           ),
                       ],
                     ),
@@ -490,7 +509,7 @@ class _ConversationCard extends StatelessWidget {
                                     : 'Bắt đầu cuộc trò chuyện',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: previewStyle,
                           ),
                         ),
                         if (room.isPinned)
@@ -517,10 +536,13 @@ class _ConversationCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary,
-              ),
+              if (hasUnread)
+                _UnreadBadge(count: room.unreadCount, compact: false)
+              else
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textTertiary,
+                ),
             ],
           ),
         ),
@@ -537,6 +559,42 @@ class _ConversationCard extends StatelessWidget {
       return DateFormat('HH:mm').format(local);
     }
     return DateFormat('dd/MM').format(local);
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({
+    required this.count,
+    this.compact = true,
+  });
+
+  final int count;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : count.toString();
+    final minWidth = compact ? 18.0 : 22.0;
+    final height = compact ? 18.0 : 24.0;
+    return Container(
+      constraints: BoxConstraints(minWidth: minWidth, minHeight: height),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 7),
+      decoration: BoxDecoration(
+        color: AppColors.error,
+        borderRadius: BorderRadius.circular(height / 2),
+        border: Border.all(color: Colors.white, width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: compact ? 10 : 12,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+    );
   }
 }
 
