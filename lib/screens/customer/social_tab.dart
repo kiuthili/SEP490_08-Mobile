@@ -207,7 +207,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSending ? null : () => Get.back(),
+                  onPressed: isSending ? null : () => Navigator.pop(context),
                   child: const Text('Hủy'),
                 ),
                 FilledButton(
@@ -223,7 +223,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           );
                           setDialogState(() => isSending = false);
                           if (ok) {
-                            Get.back();
+                            Navigator.pop(context);
                           }
                         },
                   child: isSending

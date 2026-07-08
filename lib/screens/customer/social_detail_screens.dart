@@ -1434,7 +1434,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: isSending ? null : () => Get.back(),
+                  onPressed: isSending ? null : () => Navigator.pop(context),
                   child: const Text('Hủy'),
                 ),
                 FilledButton(
@@ -1450,7 +1450,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                           );
                           setDialogState(() => isSending = false);
                           if (ok) {
-                            Get.back();
+                            Navigator.pop(context);
                           }
                         },
                   child: isSending
