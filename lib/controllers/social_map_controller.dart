@@ -27,7 +27,10 @@
 //   - Heatmap: backend CÓ thể chưa có -> dựng client-side (xem loadHeatmap).
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart'; // EdgeInsets, WidgetsBinding
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -115,6 +118,13 @@ class SocialMapController extends GetxController {
 
   // ======================= 2) MOMENTS ON MAP =======================
   final mapMoments = <MomentModel>[].obs;
+  final showTimeline = false.obs;
+
+  List<MomentModel> get timelineMoments {
+    final list = List<MomentModel>.from(mapMoments);
+    list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return list;
+  }
 
   // ======================= 3) TOUR ROUTE (POLYLINE) =======================
   final routeDays = <RouteDayModel>[].obs;
@@ -192,6 +202,8 @@ class SocialMapController extends GetxController {
       if (_storage.shareMyLocation) {
         unawaited(_startAutoTracking());
       }
+      // Tự động di chuyển camera về vị trí bản thân khi mở bản đồ
+      unawaited(recenter());
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (e) {
@@ -558,9 +570,18 @@ class SocialMapController extends GetxController {
   // ======================= CAMERA HELPERS =======================
   /// Về vị trí của tôi (nếu đang chia sẻ/lấy được GPS), nếu không thì fit live.
   Future<void> recenter() async {
+    // 1. Ưu tiên sử dụng vị trí cập nhật gần nhất có sẵn (phản hồi tức thì)
+    final cached = _latestPosition;
+    if (cached != null) {
+      _safeMove(LatLng(cached.latitude, cached.longitude), 15);
+      return;
+    }
+
+    // 2. Thử lấy GPS phần cứng mới nếu chưa có cache
     try {
       final pos = await LocationHelper.getCurrentPosition();
       if (pos != null) {
+        _latestPosition = pos;
         _safeMove(LatLng(pos.latitude, pos.longitude), 15);
         return;
       }
@@ -599,6 +620,58 @@ class SocialMapController extends GetxController {
     try {
       mapController.move(center, zoom);
     } catch (_) {}
+  }
+
+  /// Tải dữ liệu dòng thời gian hành trình (timeline) về thiết bị dưới dạng tệp JSON
+  Future<void> downloadTimeline() async {
+    if (mapMoments.isEmpty) {
+      SnackbarHelper.error('Không có dữ liệu hành trình để tải về');
+      return;
+    }
+
+    try {
+      // 1. Tạo cấu trúc dữ liệu JSON dòng thời gian hành trình
+      final momentsData = timelineMoments.map((m) => {
+        'id': m.id,
+        'user': m.fullName ?? 'Người dùng',
+        'caption': m.caption ?? '',
+        'imageUrl': m.imageUrl,
+        'lat': m.lat,
+        'lng': m.lng,
+        'time': m.createdAt.toIso8601String(),
+      }).toList();
+
+      final jsonString = JsonEncoder.withIndent('  ').convert(momentsData);
+
+      // 2. Thử lưu vào thư mục Download công cộng của thiết bị Android
+      File? savedFile;
+      try {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final file = File('${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+          await file.writeAsString(jsonString);
+          savedFile = file;
+        }
+      } catch (_) {
+        // Bỏ qua lỗi truy cập trực tiếp thư mục Download
+      }
+
+      // 3. Nếu là iOS hoặc thư mục Download công cộng bị giới hạn quyền, lưu vào thư mục tạm của ứng dụng
+      if (savedFile == null) {
+        final tempDir = Directory.systemTemp;
+        final file = File('${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+        await file.writeAsString(jsonString);
+        savedFile = file;
+      }
+
+      // 4. Đồng thời sao chép vào Clipboard làm fallback an toàn
+      await Clipboard.setData(ClipboardData(text: jsonString));
+
+      // 5. Hiển thị thông báo thành công
+      SnackbarHelper.success('Đã tải dòng thời gian về máy tại: ${savedFile.path}\n(Dữ liệu cũng đã được sao chép vào Clipboard!)');
+    } catch (e) {
+      SnackbarHelper.error('Lỗi khi xuất tệp dòng thời gian: $e');
+    }
   }
 
   void _fitCamera(List<LatLng> points) {

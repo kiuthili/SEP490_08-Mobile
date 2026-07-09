@@ -13,7 +13,7 @@ import '../../theme/app_radius.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
 
-enum _FriendView { friends, requests, search }
+enum _FriendView { friends, requests, sent, search }
 
 class FriendManagementPanel extends StatefulWidget {
   const FriendManagementPanel({
@@ -37,6 +37,13 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
   SocialController get social => widget.social;
 
   @override
+  void initState() {
+    super.initState();
+    // Tự động tải danh sách bạn bè và lời mời kết bạn khi mở giao diện
+    unawaited(_refresh());
+  }
+
+  @override
   void dispose() {
     _searchDebounce?.cancel();
     super.dispose();
@@ -46,6 +53,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     await Future.wait([
       social.fetchFriends(),
       social.fetchPendingRequests(),
+      social.fetchSentRequests(),
     ]);
     if (_view == _FriendView.search && _submittedQuery.isNotEmpty) {
       await social.searchUsers(_submittedQuery);
@@ -186,53 +194,65 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       child: Obx(
-        () => SegmentedButton<_FriendView>(
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith(
-              (states) => states.contains(WidgetState.selected)
-                  ? AppColors.brand
-                  : AppColors.surfaceElevated,
-            ),
-            foregroundColor: WidgetStateProperty.resolveWith(
-              (states) => states.contains(WidgetState.selected)
-                  ? Colors.white
-                  : AppColors.brand,
-            ),
-            iconColor: WidgetStateProperty.resolveWith(
-              (states) => states.contains(WidgetState.selected)
-                  ? Colors.white
-                  : AppColors.brand,
-            ),
-            side: WidgetStateProperty.all(
-              const BorderSide(color: AppColors.brand),
-            ),
-          ),
-          segments: [
-            const ButtonSegment(
-              value: _FriendView.friends,
-              icon: Icon(Icons.people_outline_rounded),
-              label: Text('Bạn bè'),
-            ),
-            ButtonSegment(
-              value: _FriendView.requests,
-              icon: const Icon(Icons.person_add_alt_1_rounded),
-              label: Text(
-                social.pendingRequests.isEmpty
-                    ? 'Lời mời'
-                    : 'Lời mời (${social.pendingRequests.length})',
+        () => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SegmentedButton<_FriendView>(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? AppColors.brand
+                    : AppColors.surfaceElevated,
+              ),
+              foregroundColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.brand,
+              ),
+              iconColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.brand,
+              ),
+              side: WidgetStateProperty.all(
+                const BorderSide(color: AppColors.brand),
               ),
             ),
-            const ButtonSegment(
-              value: _FriendView.search,
-              icon: Icon(Icons.search_rounded),
-              label: Text('Tìm kiếm'),
-            ),
-          ],
-          selected: {_view},
-          showSelectedIcon: false,
-          onSelectionChanged: (selection) {
-            setState(() => _view = selection.first);
-          },
+            segments: [
+              const ButtonSegment(
+                value: _FriendView.friends,
+                icon: Icon(Icons.people_outline_rounded),
+                label: Text('Bạn bè'),
+              ),
+              ButtonSegment(
+                value: _FriendView.requests,
+                icon: const Icon(Icons.person_add_alt_1_rounded),
+                label: Text(
+                  social.pendingRequests.isEmpty
+                      ? 'Lời mời nhận'
+                      : 'Lời mời nhận (${social.pendingRequests.length})',
+                ),
+              ),
+              ButtonSegment(
+                value: _FriendView.sent,
+                icon: const Icon(Icons.outbox_rounded),
+                label: Text(
+                  social.sentRequests.isEmpty
+                      ? 'Đã gửi'
+                      : 'Đã gửi (${social.sentRequests.length})',
+                ),
+              ),
+              const ButtonSegment(
+                value: _FriendView.search,
+                icon: Icon(Icons.search_rounded),
+                label: Text('Tìm kiếm'),
+              ),
+            ],
+            selected: {_view},
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) {
+              setState(() => _view = selection.first);
+            },
+          ),
         ),
       ),
     );
@@ -304,6 +324,26 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         }
         return _listSliver(
           social.pendingRequests.map(_requestCard).toList(),
+        );
+      case _FriendView.sent:
+        if (social.isRequestsLoading.value && social.sentRequests.isEmpty) {
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: LoadingWidget(message: 'Đang tải yêu cầu đã gửi...'),
+          );
+        }
+        if (social.sentRequests.isEmpty) {
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyStateWidget(
+              title: 'Chưa gửi yêu cầu nào',
+              subtitle: 'Các lời mời kết bạn đã gửi đi sẽ xuất hiện tại đây.',
+              icon: Icons.outbox_rounded,
+            ),
+          );
+        }
+        return _listSliver(
+          social.sentRequests.map(_sentCard).toList(),
         );
       case _FriendView.search:
         if (social.isSearchingUsers.value) {
@@ -428,6 +468,56 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           onPressed:
               busy ? null : () => social.respondRequest(request.id, false),
           icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+      busy: busy,
+    );
+  }
+
+  Widget _sentCard(FriendRequestModel request) {
+    final busy = social.processingFriendshipIds.contains(request.id) ||
+        social.processingUserIds.contains(request.senderId);
+    final date = request.createdAt == null
+        ? 'Đã gửi lời mời'
+        : 'Gửi ngày ${DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())}';
+    return _PersonCard(
+      name: request.senderName ?? 'Người dùng #${request.senderId}',
+      subtitle: date,
+      avatarUrl: request.senderAvatarUrl,
+      onTap: () =>
+          Get.toNamed(AppRoutes.userProfile, arguments: request.senderId),
+      actions: [
+        IconButton.outlined(
+          tooltip: 'Thu hồi yêu cầu',
+          style: IconButton.styleFrom(
+            foregroundColor: AppColors.error,
+            side: const BorderSide(color: AppColors.error),
+          ),
+          onPressed: busy ? null : () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Thu hồi yêu cầu'),
+                content: Text('Bạn có chắc muốn thu hồi yêu cầu kết bạn gửi đến ${request.senderName}?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Không'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                    child: const Text('Thu hồi'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              await social.unfriend(request.id);
+              await social.fetchSentRequests();
+            }
+          },
+          icon: const Icon(Icons.person_remove_outlined),
         ),
       ],
       busy: busy,

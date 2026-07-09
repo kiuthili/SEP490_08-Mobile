@@ -89,33 +89,45 @@ class SocialMapScreen extends StatelessWidget {
             ),
 
             // ---- Nút điều khiển bản đồ (phải, trên panel layer) ----
-            Positioned(
+            Obx(() => Positioned(
               right: 12,
-              bottom: 150,
+              bottom: c.showTimeline.value ? 370 : 150,
               child: _MapControls(c: c),
-            ),
+            )),
 
             // ---- Overlay phải: bảng bật/tắt các lớp ----
-            Positioned(
+            Obx(() => Positioned(
               right: 12,
-              bottom: 24,
+              bottom: c.showTimeline.value ? 260 : 24,
               child: _LayerTogglePanel(c: c),
-            ),
+            )),
 
             // ---- Overlay trái: chú thích Heatmap ----
-            Positioned(
+            Obx(() => Positioned(
               left: 12,
-              bottom: 24,
+              bottom: c.showTimeline.value ? 260 : 24,
               child: _HeatmapLegend(c: c),
-            ),
+            )),
 
             // ---- Nút Chụp & đăng Moment (giữa dưới) ----
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 28,
-              child: Center(child: _CaptureMomentButton(c: c)),
-            ),
+            Obx(() => c.showTimeline.value
+                ? const SizedBox.shrink()
+                : Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 28,
+                    child: Center(child: _CaptureMomentButton(c: c)),
+                  )),
+
+            // ---- Overlay dưới cùng: Dòng thời gian hành trình ----
+            Obx(() => c.showTimeline.value
+                ? Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: _TimelinePanel(c: c),
+                  )
+                : const SizedBox.shrink()),
 
             // ---- Thanh tiến trình mảnh khi đang tải nền ----
             Obx(
@@ -777,6 +789,13 @@ class _MapControls extends StatelessWidget {
             onTap: c.recenter,
           ),
           const _CtrlDivider(),
+          Obx(() => _CtrlBtn(
+            icon: Icons.history_rounded,
+            tooltip: 'Dòng thời gian hành trình',
+            color: c.showTimeline.value ? _kBrand : null,
+            onTap: () => c.showTimeline.toggle(),
+          )),
+          const _CtrlDivider(),
           _CtrlBtn(
             icon: Icons.add_rounded,
             tooltip: 'Phóng to',
@@ -806,10 +825,12 @@ class _CtrlBtn extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.color,
   });
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -823,7 +844,7 @@ class _CtrlBtn extends StatelessWidget {
         },
         child: Padding(
           padding: const EdgeInsets.all(9),
-          child: Icon(icon, size: 22, color: _kBrandDark),
+          child: Icon(icon, size: 22, color: color ?? _kBrandDark),
         ),
       ),
     );
@@ -1140,6 +1161,210 @@ class _Glass extends StatelessWidget {
             ],
           ),
           child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Panel Dòng thời gian hành trình (Timeline Panel) vuốt hiển thị danh sách các bài viết/ảnh
+class _TimelinePanel extends StatelessWidget {
+  const _TimelinePanel({required this.c});
+  final SocialMapController c;
+
+  @override
+  Widget build(BuildContext context) {
+    final moments = c.timelineMoments;
+
+    return Container(
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 15,
+            offset: const Offset(0, -4),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          // Tiêu đề và nút Tải xuống
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.history_rounded, color: _kBrand, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Dòng thời gian hành trình (${moments.length})',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Tải xuống dòng thời gian',
+                      icon: const Icon(Icons.download_rounded, color: _kBrand, size: 22),
+                      onPressed: c.downloadTimeline,
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 22),
+                      onPressed: () => c.showTimeline.value = false,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Colors.black12),
+
+          // Danh sách Moment cuộn ngang
+          Expanded(
+            child: moments.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Chưa có bài viết/khoảnh khắc nào trong hành trình này.',
+                      style: TextStyle(color: Colors.black45, fontSize: 13),
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    itemCount: moments.length,
+                    itemBuilder: (context, index) {
+                      final m = moments[index];
+                      final timeStr = '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}';
+                      final dateStr = '${m.createdAt.day}/${m.createdAt.month}';
+
+                      return Row(
+                        children: [
+                          GesturefulMomentCard(c: c, m: m, timeStr: timeStr, dateStr: dateStr),
+                          if (index < moments.length - 1)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              child: Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.black26,
+                                size: 24,
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Thẻ hiển thị khoảnh khắc trong Timeline và tự di chuyển camera khi chạm vào
+class GesturefulMomentCard extends StatelessWidget {
+  const GesturefulMomentCard({
+    super.key,
+    required this.c,
+    required this.m,
+    required this.timeStr,
+    required this.dateStr,
+  });
+
+  final SocialMapController c;
+  final MomentModel m;
+  final String timeStr;
+  final String dateStr;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        if (m.lat != null && m.lng != null) {
+          c.mapController.move(LatLng(m.lat!, m.lng!), 15);
+        }
+      },
+      child: Container(
+        width: 170,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black12),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CachedNetworkImage(
+                  imageUrl: m.imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image_rounded, size: 20, color: Colors.black38),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              m.caption ?? 'Không có caption',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$timeStr - $dateStr',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.black54,
+                  ),
+                ),
+                Text(
+                  m.fullName ?? 'User',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: _kBrand,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

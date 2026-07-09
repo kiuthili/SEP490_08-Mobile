@@ -40,6 +40,13 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<List<FriendRequestModel>> getSentRequests() async {
+    return request(() async {
+      final response = await api.dio.get('${ApiConstants.friends}/sent');
+      return parseList(response.data, FriendRequestModel.fromJson);
+    });
+  }
+
   Future<void> respondFriendRequest({required int requestId, required bool accept}) async {
     await request(() async { await api.dio.put('${ApiConstants.friends}/respond', data: {'requestId': requestId, 'status': accept ? 'Accepted' : 'Declined'}); });
   }
