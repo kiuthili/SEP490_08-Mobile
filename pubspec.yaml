@@ -33,6 +33,7 @@ dependencies:
   app_links: 6.2.0
   camera: ^0.12.0+1
   flutter_map_heatmap: ^0.0.8  # MỚI - lớp Heatmap
+  image: ^4.8.0
 
 
 dev_dependencies:

@@ -12,6 +12,7 @@ class MomentCard extends StatelessWidget {
   final VoidCallback? onComment;
   final Function(int)? onReport;
   final bool isDetail;
+  final VoidCallback? onShare;
 
   const MomentCard({
     super.key,
@@ -21,6 +22,7 @@ class MomentCard extends StatelessWidget {
     required this.onLike,
     this.onComment,
     this.onReport,
+    this.onShare,
     this.isDetail = false,
   });
 
@@ -173,6 +175,17 @@ class MomentCard extends StatelessWidget {
                   icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
                   label: const Text('Bình luận'),
                 ),
+                if (onShare != null) ...[
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: onShare,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 20),
+                    label: const Text('Chia sẻ'),
+                  ),
+                ],
               ],
             ),
           ),
