@@ -594,7 +594,7 @@ class SocialController extends GetxController {
       // POST da xong (moment da luu) -> dong man + bao thanh cong NGAY,
       // KHONG cho loadFeed (tranh quay loading mai du da dang thanh cong).
       isSharingMoment.value = false;
-      SnackbarHelper.success('Đã chia sẻ moment');
+      SnackbarHelper.success('Moment shared successfully');
       // Lam tuoi feed o nen, khong chan UI.
       unawaited(loadFeed(scheduleId: scheduleId, refresh: true));
       return true;
@@ -602,7 +602,7 @@ class SocialController extends GetxController {
       SnackbarHelper.error(e.message);
       return false;
     } catch (e) {
-      SnackbarHelper.error('Không thể kết nối đến máy chủ: $e');
+      SnackbarHelper.error('Cannot connect to server: $e');
       return false;
     } finally {
       // Phong truong hop loi: dam bao co reset (no-op neu da false).
@@ -618,7 +618,7 @@ class SocialController extends GetxController {
     // CHẨN ĐOÁN: userId này PHẢI trùng với user trong JWT thì BE mới tính
     // isLikedByMe đúng khi load lại feed (endpoint reactions lấy userId từ body).
     if (currentUserId == 0) {
-      SnackbarHelper.error('Chưa xác định được tài khoản (userId=0). Hãy đăng nhập lại.');
+      SnackbarHelper.error('Account not verified (userId=0). Please log in again.');
       return;
     }
 
@@ -654,13 +654,13 @@ class SocialController extends GetxController {
         moments[idx] = previous;
         moments.refresh();
       }
-      SnackbarHelper.error('Không gửi được cảm xúc: $e');
+      SnackbarHelper.error('Failed to send reaction: $e');
     }
   }
 
   Future<SocialCommentModel?> commentMoment(int momentId, String content) async {
     if (currentUserId == 0) {
-      SnackbarHelper.error('Chưa xác định được tài khoản (userId=0). Hãy đăng nhập lại.');
+      SnackbarHelper.error('Account not verified (userId=0). Please log in again.');
       return null;
     }
     try {
@@ -673,7 +673,7 @@ class SocialController extends GetxController {
           userId: newComment.userId,
           userName: (newComment.userName != null && newComment.userName!.isNotEmpty)
               ? newComment.userName
-              : (_storage.user?.fullName ?? 'Bạn'),
+              : (_storage.user?.fullName ?? 'You'),
           avatarUrl: (newComment.avatarUrl != null && newComment.avatarUrl!.isNotEmpty)
               ? newComment.avatarUrl
               : _storage.user?.avatarUrl,
@@ -696,7 +696,7 @@ class SocialController extends GetxController {
       SnackbarHelper.error(e.message);
       return null;
     } catch (e) {
-      SnackbarHelper.error('Không gửi được bình luận: $e');
+      SnackbarHelper.error('Failed to post comment: $e');
       return null;
     }
   }
@@ -745,7 +745,7 @@ class SocialController extends GetxController {
           break;
         }
       }
-      SnackbarHelper.success('Đã xóa bình luận');
+      SnackbarHelper.success('Comment deleted');
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     }
@@ -755,7 +755,7 @@ class SocialController extends GetxController {
     try {
       await _service.deleteMoment(momentId, currentUserId);
       moments.removeWhere((m) => m.id == momentId);
-      SnackbarHelper.success('Đã xóa moment');
+      SnackbarHelper.success('Moment deleted');
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     }
@@ -787,13 +787,13 @@ class SocialController extends GetxController {
           }
         }
       }
-      SnackbarHelper.success('Đã gửi báo cáo vi phạm thành công');
+      SnackbarHelper.success('Violation report submitted successfully');
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
     } catch (e) {
-      SnackbarHelper.error('Không gửi được báo cáo: $e');
+      SnackbarHelper.error('Failed to submit report: $e');
       return false;
     }
   }

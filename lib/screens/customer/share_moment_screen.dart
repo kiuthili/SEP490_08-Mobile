@@ -201,7 +201,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
       if (mounted) setState(() => _capturedImage = file);
     } catch (_) {
-      SnackbarHelper.error('Không thể chụp ảnh');
+      SnackbarHelper.error('Cannot capture photo');
     }
   }
 
@@ -210,21 +210,21 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   Future<void> _submitMoment() async {
     if (_capturedImage == null) return;
     
-    // Kiểm tra file ảnh hợp lệ để tránh gửi tệp rỗng lên máy chủ gây lỗi treo
+    // Check if the image file is valid to avoid sending an empty file
     if (!await _capturedImage!.exists() || await _capturedImage!.length() == 0) {
-      SnackbarHelper.error('Ảnh chụp bị lỗi hoặc rỗng. Vui lòng chụp lại.');
+      SnackbarHelper.error('Captured image is invalid or empty. Please recapture.');
       return;
     }
 
     setState(() => _isUploading = true);
 
     try {
-      // Đảm bảo có GPS (thử lại nếu lần đầu thất bại).
+      // Ensure GPS coordinates are loaded (retry once if failed).
       if (_lat == null || _lng == null) {
         await _fetchLocation();
         if (_lat == null || _lng == null) {
           SnackbarHelper.error(
-            'Không lấy được vị trí — moment sẽ không hiện trên bản đồ',
+            'Could not get GPS location - moment will not display on map',
           );
         }
       }
@@ -250,7 +250,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         setState(() => _isUploading = false);
       }
     } catch (e) {
-      SnackbarHelper.error('Không thể chia sẻ moment lúc này: $e');
+      SnackbarHelper.error('Cannot share moment at this time: $e');
       if (mounted) {
         setState(() => _isUploading = false);
       }
@@ -325,7 +325,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                         const Icon(Icons.broken_image_rounded, color: Colors.redAccent, size: 48),
                         const SizedBox(height: 12),
                         const Text(
-                          'Ảnh chụp không hợp lệ hoặc bị lỗi giải nén.',
+                          'Captured image is invalid or decompression failed.',
                           style: TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                         const SizedBox(height: 8),
@@ -352,7 +352,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     final cam = _cameraController;
     if (cam == null || !cam.value.isInitialized) {
       return const Center(
-        child: Text('Không mở được camera',
+        child: Text('Cannot open camera',
             style: TextStyle(color: Colors.white70)),
       );
     }
@@ -444,7 +444,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         maxLength: _kMaxCaption,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(
-          hintText: 'Thêm chú thích...',
+          hintText: 'Add a caption...',
           hintStyle: const TextStyle(color: Colors.grey),
           filled: true,
           fillColor: Colors.grey.shade900,
@@ -496,7 +496,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
             child: OutlinedButton.icon(
               onPressed: _isUploading ? null : _retake,
               icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-              label: const Text('Chụp lại',
+              label: const Text('Recapture',
                   style: TextStyle(color: Colors.white)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -527,7 +527,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                   color: Colors.white,
                 ),
               )
-                  : const Text('Đăng',
+                  : const Text('Post',
                   style: TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.white)),
             ),
@@ -579,7 +579,7 @@ class _ScheduleDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (schedules.isEmpty) {
-      return const Text('Moment cá nhân', style: TextStyle(fontSize: 15));
+      return const Text('Personal Moment', style: TextStyle(fontSize: 15));
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -634,17 +634,17 @@ class _GeoStatusBadge extends StatelessWidget {
     late final IconData icon;
     switch (status) {
       case _GeoStatus.locating:
-        text = 'Đang lấy GPS...';
+        text = 'Acquiring GPS...';
         color = Colors.amber;
         icon = Icons.gps_not_fixed;
         break;
       case _GeoStatus.ready:
-        text = 'Đã có vị trí';
+        text = 'GPS Ready';
         color = Colors.greenAccent;
         icon = Icons.gps_fixed;
         break;
       case _GeoStatus.failed:
-        text = 'Không có GPS — chạm để thử lại';
+        text = 'No GPS — tap to retry';
         color = Colors.redAccent;
         icon = Icons.gps_off;
         break;
