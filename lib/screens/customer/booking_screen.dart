@@ -510,7 +510,8 @@ class _BookingScreenState extends State<BookingScreen> {
                   final qty = _booking.ticketQty(t.id);
                   return _TicketQuantityCard(
                     label: _booking.ticketTypeName(t.ticketTypeId),
-                    price: t.price,
+                    price: t.effectivePrice,
+                    originalPrice: t.price,
                     available: t.availableQuantity,
                     quantity: qty,
                     onDecrease:
@@ -867,6 +868,7 @@ class _TicketQuantityCard extends StatelessWidget {
   const _TicketQuantityCard({
     required this.label,
     required this.price,
+    required this.originalPrice,
     required this.available,
     required this.quantity,
     this.onDecrease,
@@ -875,6 +877,7 @@ class _TicketQuantityCard extends StatelessWidget {
 
   final String label;
   final int price;
+  final int originalPrice;
   final int available;
   final int quantity;
   final VoidCallback? onDecrease;
@@ -908,12 +911,26 @@ class _TicketQuantityCard extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  CurrencyFormatter.format(price),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.brand,
-                        fontWeight: FontWeight.w700,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  children: [
+                    if (price < originalPrice)
+                      Text(
+                        CurrencyFormatter.format(originalPrice),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                              color: AppColors.textSecondary,
+                            ),
                       ),
+                    Text(
+                      CurrencyFormatter.format(price),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.brand,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
                 ),
                 Text(
                   'Còn $available vé',
