@@ -510,16 +510,20 @@ String? _readChatText(dynamic value) {
 class LiveLocationModel {
   final int userId;
   final String? fullName;
+  final String? avatarUrl;
   final double latitude;
   final double longitude;
   final DateTime? updatedAt;
+  final String role;
 
   LiveLocationModel({
     required this.userId,
     this.fullName,
+    this.avatarUrl,
     required this.latitude,
     required this.longitude,
     this.updatedAt,
+    this.role = 'Customer',
   });
 
   factory LiveLocationModel.fromJson(Map<String, dynamic> json) =>
@@ -529,6 +533,9 @@ class LiveLocationModel {
         ),
         fullName: JsonUtils.readString(
           JsonUtils.pick(json, ['fullName', 'userName']),
+        ),
+        avatarUrl: JsonUtils.readString(
+          JsonUtils.pick(json, ['avatarUrl', 'AvatarUrl']),
         ),
         latitude: JsonUtils.readDouble(
               JsonUtils.pick(json, ['latitude', 'lat', 'Lat']),
@@ -541,6 +548,10 @@ class LiveLocationModel {
         updatedAt: JsonUtils.readDateTime(
           JsonUtils.pick(json, ['updatedAt', 'lastSeen']),
         ),
+        role: JsonUtils.readString(
+              JsonUtils.pick(json, ['role', 'Role']),
+            ) ??
+            'Customer',
       );
 }
 

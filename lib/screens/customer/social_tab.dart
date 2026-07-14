@@ -45,15 +45,15 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Xã hội'),
+        title: const Text('Social'),
         actions: [
           IconButton(
-            tooltip: 'Bản đồ Social',
+            tooltip: 'Social Map',
             onPressed: () => Get.toNamed(AppRoutes.socialMap),
             icon: const Icon(Icons.map_outlined),
           ),
           IconButton(
-            tooltip: 'Tin nhắn',
+            tooltip: 'Messages',
             onPressed: () => Get.toNamed(AppRoutes.chatInbox),
             icon: const Icon(Icons.forum_outlined),
           ),
@@ -63,7 +63,7 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
           controller: _tabController,
           isScrollable: true,
           tabs: const [
-            Tab(text: 'Bạn bè'),
+            Tab(text: 'Friends'),
             Tab(text: 'Moments'),
           ],
         ),
@@ -116,7 +116,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
   void _shareMoment(MomentModel moment) {
     final rooms = widget.social.chatRooms;
     if (rooms.isEmpty) {
-      SnackbarHelper.error('Không tìm thấy cuộc hội thoại nào để chia sẻ.');
+      SnackbarHelper.error('No conversation found to share.');
       return;
     }
 
@@ -135,7 +135,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Gửi đến',
+                  'Send to',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 IconButton(
@@ -151,7 +151,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
-                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Cuộc trò chuyện';
+                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Conversation';
                   
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -169,7 +169,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
-                      room.isGroup ? 'Nhóm du lịch' : 'Trò chuyện cá nhân',
+                      room.isGroup ? 'Tour Group' : 'Direct Chat',
                       style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
                     ),
                     trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
@@ -182,7 +182,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                       })}]';
                       
                       await widget.social.sendChatMessage(room.id, shareText);
-                      SnackbarHelper.success('Đã chia sẻ moment thành công');
+                      SnackbarHelper.success('Moment shared successfully');
                     },
                   );
                 },
@@ -218,7 +218,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
           return ListView(
             children: const [
               SizedBox(height: 120),
-              Center(child: Text('Chưa có moment nào. Hãy chia sẻ chuyến đi của bạn!')),
+              Center(child: Text('No moments yet. Share your journey!')),
             ],
           );
         }
@@ -258,20 +258,20 @@ class _MomentsPanelState extends State<_MomentsPanel> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Báo cáo ${contentType == 'Moment' ? 'khoảnh khắc' : 'bình luận'}'),
+              title: Text('Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(labelText: 'Lý do báo cáo'),
+                      decoration: const InputDecoration(labelText: 'Reason for reporting'),
                       items: const [
-                        DropdownMenuItem(value: 'Spam', child: Text('Spam (Rác / Quảng cáo)')),
-                        DropdownMenuItem(value: 'Hate Speech', child: Text('Ngôn từ kích động thù hận')),
-                        DropdownMenuItem(value: 'Harassment', child: Text('Quấy rối / Đe dọa')),
-                        DropdownMenuItem(value: 'Violence', child: Text('Bạo lực / Máu me')),
-                        DropdownMenuItem(value: 'Other', child: Text('Lý do khác')),
+                        DropdownMenuItem(value: 'Spam', child: Text('Spam / Advertisement')),
+                        DropdownMenuItem(value: 'Hate Speech', child: Text('Hate Speech')),
+                        DropdownMenuItem(value: 'Harassment', child: Text('Harassment / Threats')),
+                        DropdownMenuItem(value: 'Violence', child: Text('Violence / Gore')),
+                        DropdownMenuItem(value: 'Other', child: Text('Other reason')),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -283,8 +283,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                     TextField(
                       controller: detailsController,
                       decoration: const InputDecoration(
-                        labelText: 'Chi tiết (Không bắt buộc)',
-                        hintText: 'Nhập thêm chi tiết vi phạm...',
+                        labelText: 'Details (Optional)',
+                        hintText: 'Enter violation details...',
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
@@ -295,7 +295,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               actions: [
                 TextButton(
                   onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: const Text('Hủy'),
+                  child: const Text('Cancel'),
                 ),
                 FilledButton(
                   onPressed: isSending
@@ -319,7 +319,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Gửi báo cáo'),
+                      : const Text('Submit Report'),
                 ),
               ],
             );

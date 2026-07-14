@@ -45,18 +45,18 @@ class SocialMapScreen extends StatelessWidget {
     final c = Get.put(SocialMapController());
 
     return AppScreen(
-      title: 'Bản đồ Social',
+      title: 'Social Map',
       actions: [
         IconButton(
-          tooltip: 'Chia sẻ link vị trí của tôi',
+          tooltip: 'Share my location link',
           icon: const Icon(Icons.share_location_rounded),
           onPressed: () => _showShareLinkDialog(c),
         ),
         Obx(
               () => IconButton(
             tooltip: c.isSharingLocation.value
-                ? 'Đang chia sẻ vị trí — chạm để tắt'
-                : 'Chia sẻ vị trí của tôi',
+                ? 'Sharing location - tap to stop'
+                : 'Share my location',
             icon: Icon(
               c.isSharingLocation.value
                   ? Icons.location_on_rounded
@@ -69,7 +69,7 @@ class SocialMapScreen extends StatelessWidget {
       ],
       body: Obx(() {
         if (c.isLoading.value && c.liveLocations.isEmpty) {
-          return const LoadingWidget(message: 'Đang tải bản đồ...');
+          return const LoadingWidget(message: 'Loading map...');
         }
         return Stack(
           children: [
@@ -166,7 +166,7 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
         children: const [
           Icon(Icons.share_location_rounded, color: _kBrand),
           SizedBox(width: 8),
-          Expanded(child: Text('Chia sẻ vị trí của tôi')),
+          Expanded(child: Text('Share my location')),
         ],
       ),
       content: Column(
@@ -174,8 +174,7 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Gửi đường dẫn này cho bạn bè / người thân để họ theo dõi trực tiếp '
-                'vị trí của bạn trên bản đồ:',
+            'Send this link to your friends or family to let them track your live location on the map:',
           ),
           const SizedBox(height: 16),
           Container(
@@ -196,11 +195,11 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
         ],
       ),
       actions: [
-        TextButton(onPressed: Get.back, child: const Text('Đóng')),
+        TextButton(onPressed: Get.back, child: const Text('Close')),
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: _kBrand),
           icon: const Icon(Icons.copy_rounded, size: 16),
-          label: const Text('Sao chép'),
+          label: const Text('Copy'),
           onPressed: () {
             Clipboard.setData(ClipboardData(text: url));
             Get.back();
@@ -227,6 +226,9 @@ class _MapView extends StatelessWidget {
         initialCenter: SocialMapController.defaultCenter,
         initialZoom: SocialMapController.defaultZoom,
         onMapReady: c.onMapReady,
+        onPositionChanged: (camera, hasGesture) {
+          c.updateZoom(camera.zoom);
+        },
         interactionOptions: const InteractionOptions(
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
@@ -367,7 +369,7 @@ class _MapView extends StatelessWidget {
           }
           return MarkerLayer(
             markers: [
-              for (final loc in c.liveLocations)
+              for (final loc in c.visualLiveLocations)
                 Marker(
                   point: LatLng(loc.latitude, loc.longitude),
                   width: 130,
@@ -512,12 +514,42 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
     return '#${widget.location.userId}';
   }
 
+  bool get _isStaff {
+    try {
+      return widget.location.role.toLowerCase() == 'staff';
+    } catch (_) {}
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final avatar = _avatar;
+    final isStaff = _isStaff;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (isStaff)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+            margin: const EdgeInsets.only(bottom: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF059669), // Emerald 600
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF34D399), width: 1), // Emerald 400
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 2),
+              ],
+            ),
+            child: const Text(
+              'STAFF',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
         SizedBox(
           width: 50,
           height: 50,
@@ -534,7 +566,8 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                     height: 24 + 26 * t,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _kBrand.withValues(alpha: (1 - t) * 0.35),
+                      color: (isStaff ? const Color(0xFF10B981) : _kBrand)
+                          .withValues(alpha: (1 - t) * 0.35),
                     ),
                   );
                 },
@@ -545,8 +578,11 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _kBrand,
-                  border: Border.all(color: Colors.white, width: 2.5),
+                  color: isStaff ? const Color(0xFF10B981) : _kBrand,
+                  border: Border.all(
+                    color: isStaff ? const Color(0xFF10B981) : Colors.white,
+                    width: 2.5,
+                  ),
                   boxShadow: const [
                     BoxShadow(color: Colors.black38, blurRadius: 4),
                   ],
@@ -753,7 +789,7 @@ class _DaySelectorBar extends StatelessWidget {
                   ],
                 ),
                 child: Text(
-                  'Ngày ${d.dayNumber}',
+                  'Day ${d.dayNumber}',
                   style: TextStyle(
                     color: selected ? Colors.white : Colors.black87,
                     fontWeight: FontWeight.w700,
@@ -785,26 +821,26 @@ class _MapControls extends StatelessWidget {
         children: [
           _CtrlBtn(
             icon: Icons.my_location_rounded,
-            tooltip: 'Về vị trí của tôi',
+            tooltip: 'Recenter',
             onTap: c.recenter,
           ),
           const _CtrlDivider(),
           Obx(() => _CtrlBtn(
             icon: Icons.history_rounded,
-            tooltip: 'Dòng thời gian hành trình',
+            tooltip: 'Journey Timeline',
             color: c.showTimeline.value ? _kBrand : null,
             onTap: () => c.showTimeline.toggle(),
           )),
           const _CtrlDivider(),
           _CtrlBtn(
             icon: Icons.add_rounded,
-            tooltip: 'Phóng to',
+            tooltip: 'Zoom In',
             onTap: c.zoomIn,
           ),
           const _CtrlDivider(),
           _CtrlBtn(
             icon: Icons.remove_rounded,
-            tooltip: 'Thu nhỏ',
+            tooltip: 'Zoom Out',
             onTap: c.zoomOut,
           ),
         ],
@@ -867,7 +903,7 @@ class _LayerTogglePanel extends StatelessWidget {
         children: [
           Obx(() => _LayerButton(
             icon: Icons.people_alt_rounded,
-            label: 'Bạn bè',
+            label: 'Friends',
             active: c.showLiveLocations.value,
             onTap: c.showLiveLocations.toggle,
           )),
@@ -881,13 +917,13 @@ class _LayerTogglePanel extends StatelessWidget {
           )),
           Obx(() => _LayerButton(
             icon: Icons.route_rounded,
-            label: 'Lộ trình',
+            label: 'Route',
             active: c.showRoute.value,
             onTap: c.showRoute.toggle,
           )),
           Obx(() => _LayerButton(
             icon: Icons.terrain_rounded,
-            label: 'Cào map',
+            label: 'Footprints',
             active: c.showFootprints.value,
             loading: c.isFootprintsLoading.value,
             onTap: c.toggleFootprints,
@@ -985,7 +1021,7 @@ class _HeatmapLegend extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Mật độ',
+            const Text('Density',
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Container(
@@ -1002,8 +1038,8 @@ class _HeatmapLegend extends StatelessWidget {
             const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Ít', style: TextStyle(fontSize: 9)),
-                Text('Đông', style: TextStyle(fontSize: 9)),
+                Text('Low', style: TextStyle(fontSize: 9)),
+                Text('High', style: TextStyle(fontSize: 9)),
               ],
             ),
           ],
@@ -1051,7 +1087,7 @@ class _CaptureMomentButton extends StatelessWidget {
               Icon(Icons.add_a_photo_rounded, color: Colors.white, size: 20),
               SizedBox(width: 8),
               Text(
-                'Chụp & đăng',
+                'Capture & Post',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -1205,7 +1241,7 @@ class _TimelinePanel extends StatelessWidget {
                     const Icon(Icons.history_rounded, color: _kBrand, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Dòng thời gian hành trình (${moments.length})',
+                      'Journey Timeline (${moments.length})',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -1217,7 +1253,7 @@ class _TimelinePanel extends StatelessWidget {
                 Row(
                   children: [
                     IconButton(
-                      tooltip: 'Tải xuống dòng thời gian',
+                      tooltip: 'Download Timeline',
                       icon: const Icon(Icons.download_rounded, color: _kBrand, size: 22),
                       onPressed: c.downloadTimeline,
                     ),
@@ -1238,7 +1274,7 @@ class _TimelinePanel extends StatelessWidget {
             child: moments.isEmpty
                 ? const Center(
                     child: Text(
-                      'Chưa có bài viết/khoảnh khắc nào trong hành trình này.',
+                      'No moments yet in this journey.',
                       style: TextStyle(color: Colors.black45, fontSize: 13),
                     ),
                   )
@@ -1334,7 +1370,7 @@ class GesturefulMomentCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              m.caption ?? 'Không có caption',
+              m.caption ?? 'No caption',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(

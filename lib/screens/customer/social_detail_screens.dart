@@ -1298,7 +1298,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
 
     if (momentId == null) {
       setState(() {
-        _error = 'ID moment không hợp lệ';
+        _error = 'Invalid moment ID';
         _loading = false;
       });
       return;
@@ -1312,7 +1312,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
       }
 
       if (moment == null) {
-        setState(() => _error = 'Moment không tồn tại hoặc đã bị xóa');
+        setState(() => _error = 'Moment does not exist or has been deleted');
       } else {
         setState(() {
           _moment = moment;
@@ -1340,7 +1340,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
       final dynamic n = u?.fullName;
       if (n is String && n.trim().isNotEmpty) return n;
     } catch (_) {}
-    return 'Bạn';
+    return 'You';
   }
 
   Future<void> _submitComment() async {
@@ -1411,7 +1411,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
   void _shareMoment(MomentModel moment) {
     final rooms = _socialController.chatRooms;
     if (rooms.isEmpty) {
-      SnackbarHelper.error('Không tìm thấy cuộc hội thoại nào để chia sẻ.');
+      SnackbarHelper.error('No conversation found to share.');
       return;
     }
 
@@ -1430,7 +1430,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Gửi đến',
+                  'Send to',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 IconButton(
@@ -1446,7 +1446,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
-                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Cuộc trò chuyện';
+                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Conversation';
                   
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -1464,7 +1464,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
-                      room.isGroup ? 'Nhóm du lịch' : 'Trò chuyện cá nhân',
+                      room.isGroup ? 'Tour Group' : 'Direct Chat',
                       style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
                     ),
                     trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
@@ -1477,7 +1477,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       })}]';
                       
                       await _socialController.sendChatMessage(room.id, shareText);
-                      SnackbarHelper.success('Đã chia sẻ moment thành công');
+                      SnackbarHelper.success('Moment shared successfully');
                     },
                   );
                 },
@@ -1500,19 +1500,19 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Chi tiết Moment',
+      title: 'Moment Details',
       body: _loading
-          ? const LoadingWidget(message: 'Đang tải moment...')
+          ? const LoadingWidget(message: 'Loading moment...')
           : _error != null || _moment == null
           ? Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error ?? 'Moment không tồn tại hoặc đã bị xóa'),
+            Text(_error ?? 'Moment does not exist or has been deleted'),
             const SizedBox(height: 16),
             FilledButton(
                 onPressed: _loadMoment,
-                child: const Text('Thử lại')),
+                child: const Text('Retry')),
           ],
         ),
       )
@@ -1561,7 +1561,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                     isDetail: true,
                   ),
                   const Divider(),
-                  Text('Bình luận (${_comments.length})',
+                  Text('Comments (${_comments.length})',
                       style:
                       Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
@@ -1569,7 +1569,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
                       child: Text(
-                        'Chưa có bình luận. Hãy là người đầu tiên!',
+                        'No comments yet. Be the first to comment!',
                         style: TextStyle(
                             color: AppColors.textTertiary),
                       ),
@@ -1590,7 +1590,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                           color: AppColors.brand)
                           : null,
                     ),
-                    title: Text(c.userName ?? 'Người dùng',
+                    title: Text(c.userName ?? 'User',
                         style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13)),
@@ -1609,10 +1609,10 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                         if (c.userId == _currentUserId) ...const [
                           PopupMenuItem(
                               value: 'edit',
-                              child: Text('Chỉnh sửa')),
+                              child: Text('Edit')),
                           PopupMenuItem(
                               value: 'delete',
-                              child: Text('Xóa',
+                              child: Text('Delete',
                                   style: TextStyle(
                                       color:
                                       AppColors.error))),
@@ -1624,7 +1624,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                                 children: [
                                   Icon(Icons.flag_outlined, size: 20),
                                   SizedBox(width: 8),
-                                  Text('Báo cáo vi phạm'),
+                                  Text('Report Violation'),
                                 ],
                               )),
                       ],
@@ -1661,8 +1661,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                         onSubmitted: (_) => _submitComment(),
                         decoration: InputDecoration(
                             hintText: _editingCommentId != null
-                                ? 'Chỉnh sửa bình luận...'
-                                : 'Thêm bình luận...',
+                                ? 'Edit comment...'
+                                : 'Add a comment...',
                             border: InputBorder.none)),
                   ),
                   _sendingComment
@@ -1697,20 +1697,20 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Báo cáo ${contentType == 'Moment' ? 'khoảnh khắc' : 'bình luận'}'),
+              title: Text('Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(labelText: 'Lý do báo cáo'),
+                      decoration: const InputDecoration(labelText: 'Reason for reporting'),
                       items: const [
-                        DropdownMenuItem(value: 'Spam', child: Text('Spam (Rác / Quảng cáo)')),
-                        DropdownMenuItem(value: 'Hate Speech', child: Text('Ngôn từ kích động thù hận')),
-                        DropdownMenuItem(value: 'Harassment', child: Text('Quấy rối / Đe dọa')),
-                        DropdownMenuItem(value: 'Violence', child: Text('Bạo lực / Máu me')),
-                        DropdownMenuItem(value: 'Other', child: Text('Lý do khác')),
+                        DropdownMenuItem(value: 'Spam', child: Text('Spam / Advertisement')),
+                        DropdownMenuItem(value: 'Hate Speech', child: Text('Hate Speech')),
+                        DropdownMenuItem(value: 'Harassment', child: Text('Harassment / Threats')),
+                        DropdownMenuItem(value: 'Violence', child: Text('Violence / Gore')),
+                        DropdownMenuItem(value: 'Other', child: Text('Other reason')),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -1722,8 +1722,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                     TextField(
                       controller: detailsController,
                       decoration: const InputDecoration(
-                        labelText: 'Chi tiết (Không bắt buộc)',
-                        hintText: 'Nhập thêm chi tiết vi phạm...',
+                        labelText: 'Details (Optional)',
+                        hintText: 'Enter violation details...',
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
@@ -1734,7 +1734,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
               actions: [
                 TextButton(
                   onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: const Text('Hủy'),
+                  child: const Text('Cancel'),
                 ),
                 FilledButton(
                   onPressed: isSending
@@ -1758,7 +1758,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Gửi báo cáo'),
+                      : const Text('Submit Report'),
                 ),
               ],
             );

@@ -7,8 +7,10 @@ import '../constants/app_constants.dart';
 import '../models/feature_models.dart';
 import '../models/order_model.dart';
 import 'base_service.dart';
+import 'storage_service.dart';
 
 class OrderService extends GetxService with BaseServiceMixin {
+  final StorageService _storage = Get.find<StorageService>();
   Future<OrderModel> createOrder({
     required int scheduleId,
     required int finalAmount,
@@ -102,9 +104,58 @@ class OrderService extends GetxService with BaseServiceMixin {
 
   Future<List<EligibleScheduleModel>> getEligibleSchedules() async {
     return request(() async {
-      final response =
-          await api.dio.get('${ApiConstants.orders}/me/eligible-schedules');
-      return parseList(response.data, EligibleScheduleModel.fromJson);
+      final user = _storage.user;
+      if (user == null) return <EligibleScheduleModel>[];
+
+      String url = '${ApiConstants.orders}/me/eligible-schedules';
+      if (user.roles.any((r) => r.toLowerCase() == 'manager')) {
+        url = '${ApiConstants.tourSchedules}/my?page=1&pageSize=100';
+      } else if (user.roles.any((r) => r.toLowerCase() == 'staff')) {
+        url = '${ApiConstants.tourScheduleStaffs}/assigned?page=1&pageSize=100';
+      }
+
+      final response = await api.dio.get(url);
+      final rawData = response.data;
+      
+      // Parse list from paginated or flat data
+      List<dynamic> list = [];
+      if (rawData is List) {
+        list = rawData;
+      } else if (rawData is Map) {
+        final dataField = rawData['data'] ?? rawData['Data'] ?? rawData['items'] ?? rawData['Items'];
+        if (dataField is List) {
+          list = dataField;
+        } else if (dataField is Map) {
+          final subData = dataField['data'] ?? dataField['Data'] ?? dataField['items'] ?? dataField['Items'];
+          if (subData is List) {
+            list = subData;
+          }
+        } else {
+          list = [rawData];
+        }
+      }
+
+      final resultList = list
+          .whereType<Map<String, dynamic>>()
+          .map((e) => EligibleScheduleModel.fromJson(e))
+          .toList();
+
+      // Format tour names with departure dates for Manager and Staff:
+      if (user.roles.any((r) => r.toLowerCase() == 'manager' || r.toLowerCase() == 'staff')) {
+        for (var i = 0; i < resultList.length; i++) {
+          final item = resultList[i];
+          final dateStr = '${item.departureDate.day.toString().padLeft(2, '0')}/${item.departureDate.month.toString().padLeft(2, '0')}/${item.departureDate.year}';
+          resultList[i] = EligibleScheduleModel(
+            scheduleId: item.scheduleId,
+            tourName: '${item.tourName} - $dateStr',
+            departureDate: item.departureDate,
+            returnDate: item.returnDate,
+            statusContext: item.statusContext,
+          );
+        }
+      }
+
+      return resultList;
     });
   }
 

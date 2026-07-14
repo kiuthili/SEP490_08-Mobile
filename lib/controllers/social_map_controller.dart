@@ -29,6 +29,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart'; // EdgeInsets, WidgetsBinding
@@ -92,6 +93,93 @@ class SocialMapController extends GetxController {
 
   // ======================= 1) LIVE LOCATION =======================
   final liveLocations = <LiveLocationModel>[].obs;
+  final currentZoom = defaultZoom.obs;
+
+  void updateZoom(double zoom) {
+    currentZoom.value = zoom;
+  }
+
+  bool _isLocationVisible(LiveLocationModel loc) {
+    if (loc.userId == currentUserId) return true; // Always see myself
+
+    final currentUser = _storage.user;
+    if (currentUser == null) return false;
+
+    // Admin has no map viewing rights
+    if (currentUser.roles.any((r) => r.toLowerCase() == 'admin')) {
+      return false;
+    }
+
+    final locRoleLower = loc.role.toLowerCase();
+
+    // 1. Manager (Creator): Only sees Staff.
+    if (currentUser.roles.any((r) => r.toLowerCase() == 'manager')) {
+      return locRoleLower == 'staff';
+    }
+
+    // 2. Staff (Assigned): Sees Customer and other Staff.
+    if (currentUser.roles.any((r) => r.toLowerCase() == 'staff')) {
+      return locRoleLower == 'customer' || locRoleLower == 'staff';
+    }
+
+    // 3. Customer (Buyer): Sees Staff, other Customers, and friends.
+    if (currentUser.roles.any((r) => r.toLowerCase() == 'customer')) {
+      return locRoleLower == 'staff' || locRoleLower == 'customer';
+    }
+
+    return false;
+  }
+
+  List<LiveLocationModel> get visualLiveLocations {
+    final zoom = currentZoom.value;
+    // Offset increases visually as zoom decreases
+    final double threshold = 0.0003 * math.pow(2, 15 - zoom);
+    final double radius = 0.0004 * math.pow(2, 15 - zoom);
+
+    final placed = <LatLng>[];
+    final result = <LiveLocationModel>[];
+
+    for (final loc in liveLocations) {
+      if (loc.userId == currentUserId) {
+        continue;
+      }
+
+      final fLat = loc.latitude;
+      final fLng = loc.longitude;
+      if (fLat == 0 && fLng == 0) continue;
+
+      final overlaps = placed.where((p) =>
+        (p.latitude - fLat).abs() < threshold &&
+        (p.longitude - fLng).abs() < threshold
+      ).toList();
+
+      if (overlaps.isNotEmpty) {
+        final count = overlaps.length;
+        final angle = (count * 137.5) * (math.pi / 180.0);
+        final pushRadius = radius + ((count ~/ 4) * radius * 0.3);
+
+        final offsetLat = fLat + pushRadius * math.cos(angle);
+        final offsetLng = fLng + pushRadius * math.sin(angle);
+
+        placed.add(LatLng(offsetLat, offsetLng));
+        result.add(LiveLocationModel(
+          userId: loc.userId,
+          fullName: loc.fullName,
+          avatarUrl: loc.avatarUrl,
+          latitude: offsetLat,
+          longitude: offsetLng,
+          updatedAt: loc.updatedAt,
+          role: loc.role,
+        ));
+      } else {
+        placed.add(LatLng(fLat, fLng));
+        result.add(loc);
+      }
+    }
+
+    return result;
+  }
+
   /// Bật/tắt chia sẻ + ghi log di chuyển realtime của BẢN THÂN.
   final isSharingLocation = false.obs;
   Timer? _pingTimer;
@@ -207,7 +295,7 @@ class SocialMapController extends GetxController {
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (e) {
-      SnackbarHelper.error('Không tải được dữ liệu bản đồ: $e');
+      SnackbarHelper.error('Failed to load map data: $e');
     } finally {
       isLoading.value = false;
     }
@@ -231,7 +319,7 @@ class SocialMapController extends GetxController {
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (e) {
-      SnackbarHelper.error('Lỗi tạo link theo dõi: $e');
+      SnackbarHelper.error('Error generating tracking link: $e');
     }
     return null;
   }
@@ -265,7 +353,7 @@ class SocialMapController extends GetxController {
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (e) {
-      SnackbarHelper.error('Lỗi tải lịch trình: $e');
+      SnackbarHelper.error('Error loading schedule: $e');
     } finally {
       isLoading.value = false;
     }
@@ -287,7 +375,9 @@ class SocialMapController extends GetxController {
   void _mergeLiveLocations(List<LiveLocationModel> incoming) {
     final map = {for (final l in liveLocations) l.userId: l};
     for (final l in incoming) {
-      map[l.userId] = l;
+      if (_isLocationVisible(l)) {
+        map[l.userId] = l;
+      }
     }
     liveLocations.assignAll(map.values);
   }
@@ -299,6 +389,7 @@ class SocialMapController extends GetxController {
   }
 
   void _onRealtimeLocation(LiveLocationModel loc) {
+    if (!_isLocationVisible(loc)) return;
     final idx = liveLocations.indexWhere((l) => l.userId == loc.userId);
     if (idx >= 0) {
       liveLocations[idx] = loc;
@@ -314,13 +405,13 @@ class SocialMapController extends GetxController {
     if (isSharingLocation.value) {
       _stopSharing();
       await _storage.setShareMyLocation(false);
-      SnackbarHelper.success('Đã tắt chia sẻ & ghi vị trí');
+      SnackbarHelper.success('Location sharing and tracking turned off');
       return;
     }
     final ok = await _startAutoTracking(notify: true);
     if (ok) {
       await _storage.setShareMyLocation(true);
-      SnackbarHelper.success('Đang chia sẻ & ghi lại lộ trình của bạn');
+      SnackbarHelper.success('Sharing and tracking your journey live');
     }
   }
 
@@ -330,7 +421,7 @@ class SocialMapController extends GetxController {
     if (isSharingLocation.value) return true;
     final granted = await LocationHelper.ensurePermission();
     if (!granted) {
-      if (notify) SnackbarHelper.error('Cần quyền vị trí để theo dõi & chia sẻ');
+      if (notify) SnackbarHelper.error('Location permission is required for tracking and sharing');
       return false;
     }
     isSharingLocation.value = true;
@@ -445,7 +536,7 @@ class SocialMapController extends GetxController {
           p.dayNumber,
               () => RouteDayModel(
             dayNumber: p.dayNumber,
-            title: 'Ngày ${p.dayNumber}',
+            title: 'Day ${p.dayNumber}',
           ),
         );
       }
@@ -497,12 +588,12 @@ class SocialMapController extends GetxController {
       final data = await _service.getMyFootprints();
       footprints.assignAll(data);
       if (data.isEmpty && !silent && liveTrail.isEmpty) {
-        SnackbarHelper.success('Chưa có dấu chân nào — hãy di chuyển để cào map');
+        SnackbarHelper.success('No footprints recorded yet — start moving to map your path');
       }
     } on ApiError catch (e) {
       if (!silent) SnackbarHelper.error(e.message);
     } catch (e) {
-      if (!silent) SnackbarHelper.error('Lỗi tải dấu chân: $e');
+      if (!silent) SnackbarHelper.error('Error loading footprints: $e');
     } finally {
       if (!silent) isFootprintsLoading.value = false;
     }
@@ -625,7 +716,7 @@ class SocialMapController extends GetxController {
   /// Tải dữ liệu dòng thời gian hành trình (timeline) về thiết bị dưới dạng tệp JSON
   Future<void> downloadTimeline() async {
     if (mapMoments.isEmpty) {
-      SnackbarHelper.error('Không có dữ liệu hành trình để tải về');
+      SnackbarHelper.error('No timeline data available to download');
       return;
     }
 
@@ -633,7 +724,7 @@ class SocialMapController extends GetxController {
       // 1. Tạo cấu trúc dữ liệu JSON dòng thời gian hành trình
       final momentsData = timelineMoments.map((m) => {
         'id': m.id,
-        'user': m.fullName ?? 'Người dùng',
+        'user': m.fullName ?? 'User',
         'caption': m.caption ?? '',
         'imageUrl': m.imageUrl,
         'lat': m.lat,
@@ -668,9 +759,9 @@ class SocialMapController extends GetxController {
       await Clipboard.setData(ClipboardData(text: jsonString));
 
       // 5. Hiển thị thông báo thành công
-      SnackbarHelper.success('Đã tải dòng thời gian về máy tại: ${savedFile.path}\n(Dữ liệu cũng đã được sao chép vào Clipboard!)');
+      SnackbarHelper.success('Timeline downloaded to: ${savedFile.path}\n(Data has also been copied to Clipboard!)');
     } catch (e) {
-      SnackbarHelper.error('Lỗi khi xuất tệp dòng thời gian: $e');
+      SnackbarHelper.error('Error exporting timeline: $e');
     }
   }
 
