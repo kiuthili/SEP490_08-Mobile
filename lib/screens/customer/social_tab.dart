@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
+import '../../models/social_models.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/moment_card.dart';
+import '../../utils/snackbar_helper.dart';
 import 'friend_management_panel.dart';
 
 class SocialTab extends StatefulWidget {
@@ -109,6 +113,88 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     });
   }
 
+  void _shareMoment(MomentModel moment) {
+    final rooms = widget.social.chatRooms;
+    if (rooms.isEmpty) {
+      SnackbarHelper.error('Không tìm thấy cuộc hội thoại nào để chia sẻ.');
+      return;
+    }
+
+    Get.bottomSheet(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Gửi đến',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: rooms.length,
+                itemBuilder: (context, index) {
+                  final room = rooms[index];
+                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Cuộc trò chuyện';
+                  
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.brandLight,
+                      backgroundImage: (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
+                          ? CachedNetworkImageProvider(room.avatarUrl!)
+                          : null,
+                      child: (room.avatarUrl == null || room.avatarUrl!.isEmpty)
+                          ? const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.brand)
+                          : null,
+                    ),
+                    title: Text(
+                      roomName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      room.isGroup ? 'Nhóm du lịch' : 'Trò chuyện cá nhân',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                    ),
+                    trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
+                    onTap: () async {
+                      Get.back(); // Đóng bottom sheet
+                      final shareText = '[MomentShare:${jsonEncode({
+                        'id': moment.id,
+                        'imageUrl': moment.imageUrl,
+                        'caption': moment.caption ?? '',
+                      })}]';
+                      
+                      await widget.social.sendChatMessage(room.id, shareText);
+                      SnackbarHelper.success('Đã chia sẻ moment thành công');
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -152,10 +238,94 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               onDelete: widget.social.deleteMoment,
               onLike: (isLike) => widget.social.reactMoment(m.id, isLike),
               onComment: () => Get.toNamed(AppRoutes.momentDetail, arguments: m),
+              onReport: (id) => _showReportDialog(context, 'Moment', id, widget.social),
+              onShare: () => _shareMoment(m),
             );
           },
         );
       }),
+    );
+  }
+
+  void _showReportDialog(BuildContext context, String contentType, int targetId, SocialController social) {
+    String selectedReason = 'Spam';
+    final detailsController = TextEditingController();
+    var isSending = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Báo cáo ${contentType == 'Moment' ? 'khoảnh khắc' : 'bình luận'}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      decoration: const InputDecoration(labelText: 'Lý do báo cáo'),
+                      items: const [
+                        DropdownMenuItem(value: 'Spam', child: Text('Spam (Rác / Quảng cáo)')),
+                        DropdownMenuItem(value: 'Hate Speech', child: Text('Ngôn từ kích động thù hận')),
+                        DropdownMenuItem(value: 'Harassment', child: Text('Quấy rối / Đe dọa')),
+                        DropdownMenuItem(value: 'Violence', child: Text('Bạo lực / Máu me')),
+                        DropdownMenuItem(value: 'Other', child: Text('Lý do khác')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => selectedReason = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Chi tiết (Không bắt buộc)',
+                        hintText: 'Nhập thêm chi tiết vi phạm...',
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                FilledButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          setDialogState(() => isSending = true);
+                          final ok = await social.reportContent(
+                            contentType: contentType,
+                            targetId: targetId,
+                            reason: selectedReason,
+                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                          );
+                          setDialogState(() => isSending = false);
+                          if (ok) {
+                            Navigator.pop(context);
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Gửi báo cáo'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

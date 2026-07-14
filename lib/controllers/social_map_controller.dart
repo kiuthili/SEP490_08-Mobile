@@ -27,9 +27,13 @@
 //   - Heatmap: backend CÓ thể chưa có -> dựng client-side (xem loadHeatmap).
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart'; // EdgeInsets, WidgetsBinding
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -93,8 +97,11 @@ class SocialMapController extends GetxController {
   Timer? _pingTimer;
   Timer? _friendsTimer;
   Timer? _footprintsTimer;
-  // Ping vị trí của tôi: 12s/lần để bạn bè thấy mình di chuyển gần realtime.
-  static const _pingInterval = Duration(seconds: 12);
+  StreamSubscription<Position>? _positionStreamSubscription;
+  Position? _latestPosition;
+  Position? _lastPingedPosition;
+  // Ping vị trí của tôi: 5s/lần để tracking liên tục thời gian thực.
+  static const _pingInterval = Duration(seconds: 5);
   // Poll vị trí bạn bè: 10s/lần (đồng bộ tốc độ với bản web).
   static const _friendsRefreshInterval = Duration(seconds: 10);
   // Tự refresh footprints từ server khi lớp "Cào map" đang bật.
@@ -111,6 +118,13 @@ class SocialMapController extends GetxController {
 
   // ======================= 2) MOMENTS ON MAP =======================
   final mapMoments = <MomentModel>[].obs;
+  final showTimeline = false.obs;
+
+  List<MomentModel> get timelineMoments {
+    final list = List<MomentModel>.from(mapMoments);
+    list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return list;
+  }
 
   // ======================= 3) TOUR ROUTE (POLYLINE) =======================
   final routeDays = <RouteDayModel>[].obs;
@@ -152,6 +166,7 @@ class SocialMapController extends GetxController {
     _friendsTimer?.cancel();
     _footprintsTimer?.cancel();
     _heatmapDebounce?.cancel();
+    _positionStreamSubscription?.cancel();
     unawaited(_signalR.disconnectTracking());
     if (!heatmapResetController.isClosed) heatmapResetController.close();
     try {
@@ -183,8 +198,12 @@ class SocialMapController extends GetxController {
         _fitToLiveLocations();
       }
       _startFriendsPolling();
-      // Tự bật ghi log di chuyển realtime (cào map liên tục) + chia sẻ vị trí.
-      unawaited(_startAutoTracking());
+      // Khôi phục trạng thái chia sẻ vị trí theo cài đặt đã lưu của người dùng
+      if (_storage.shareMyLocation) {
+        unawaited(_startAutoTracking());
+      }
+      // Tự động di chuyển camera về vị trí bản thân khi mở bản đồ
+      unawaited(recenter());
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (e) {
@@ -294,11 +313,15 @@ class SocialMapController extends GetxController {
   Future<void> toggleShareMyLocation() async {
     if (isSharingLocation.value) {
       _stopSharing();
+      await _storage.setShareMyLocation(false);
       SnackbarHelper.success('Đã tắt chia sẻ & ghi vị trí');
       return;
     }
     final ok = await _startAutoTracking(notify: true);
-    if (ok) SnackbarHelper.success('Đang chia sẻ & ghi lại lộ trình của bạn');
+    if (ok) {
+      await _storage.setShareMyLocation(true);
+      SnackbarHelper.success('Đang chia sẻ & ghi lại lộ trình của bạn');
+    }
   }
 
   /// Bắt đầu ghi log di chuyển realtime (cào map liên tục). Trả về true nếu
@@ -311,41 +334,61 @@ class SocialMapController extends GetxController {
       return false;
     }
     isSharingLocation.value = true;
-    await _pingCurrent();
+
+    // Lấy vị trí ban đầu lập tức từ cache để map mượt
+    try {
+      final initialPos = await Geolocator.getLastKnownPosition();
+      if (initialPos != null) {
+        _latestPosition = initialPos;
+        final here = LatLng(initialPos.latitude, initialPos.longitude);
+        _appendTrail(here);
+        _updateMyLiveMarker(here);
+        unawaited(_pingLatestToServer());
+      }
+    } catch (_) {}
+
+    // Lắng nghe stream thay đổi vị trí chủ động, độ chính xác cao và liên tục
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0, // 0 mét để tracking liên tục không bỏ sót
+      ),
+    ).listen((Position pos) {
+      _latestPosition = pos;
+      final here = LatLng(pos.latitude, pos.longitude);
+      _appendTrail(here);
+      _updateMyLiveMarker(here);
+    }, onError: (_) {});
+
+    // Gửi vị trí lên server định kỳ 12s/lần nhưng chỉ gửi khi có toạ độ mới
     _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(_pingInterval, (_) => _pingCurrent());
+    _pingTimer = Timer.periodic(_pingInterval, (_) => _pingLatestToServer());
+
     return true;
   }
 
   void _stopSharing() {
     _pingTimer?.cancel();
     _pingTimer = null;
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = null;
     isSharingLocation.value = false;
   }
 
-  /// Lấy vị trí hiện tại -> (1) ping lên server (LocationLogs) để bạn bè thấy,
-  /// (2) cộng dồn vào vệt di chuyển realtime ở client để "cào map" lớn dần.
-  Future<void> _pingCurrent() async {
-    try {
-      final pos = await LocationHelper.getCurrentPosition();
-      if (pos == null) return;
-      final here = LatLng(pos.latitude, pos.longitude);
+  /// Gửi vị trí lên server định kỳ 5s/lần để tracking liên tục thời gian thực
+  Future<void> _pingLatestToServer() async {
+    final pos = _latestPosition;
+    if (pos == null) return;
 
-      // (1) Gửi server (scheduleId có thể null nếu chưa chọn tour).
+    try {
       await _service.pingLocation(
         lat: pos.latitude,
         lng: pos.longitude,
         scheduleId: selectedScheduleId.value,
       );
-
-      // (2) Cập nhật vệt di chuyển realtime ở client.
-      _appendTrail(here);
-
-      // (3) Cập nhật marker "tôi" trong liveLocations để hiển thị di chuyển.
-      _updateMyLiveMarker(here);
-    } catch (_) {
-      // im lặng để tránh spam snackbar theo chu kỳ
-    }
+      _lastPingedPosition = pos;
+    } catch (_) {}
   }
 
   /// Thêm điểm vào vệt nếu đã đi đủ xa; tự giới hạn số điểm để nhẹ bộ nhớ.
@@ -527,9 +570,18 @@ class SocialMapController extends GetxController {
   // ======================= CAMERA HELPERS =======================
   /// Về vị trí của tôi (nếu đang chia sẻ/lấy được GPS), nếu không thì fit live.
   Future<void> recenter() async {
+    // 1. Ưu tiên sử dụng vị trí cập nhật gần nhất có sẵn (phản hồi tức thì)
+    final cached = _latestPosition;
+    if (cached != null) {
+      _safeMove(LatLng(cached.latitude, cached.longitude), 15);
+      return;
+    }
+
+    // 2. Thử lấy GPS phần cứng mới nếu chưa có cache
     try {
       final pos = await LocationHelper.getCurrentPosition();
       if (pos != null) {
+        _latestPosition = pos;
         _safeMove(LatLng(pos.latitude, pos.longitude), 15);
         return;
       }
@@ -568,6 +620,58 @@ class SocialMapController extends GetxController {
     try {
       mapController.move(center, zoom);
     } catch (_) {}
+  }
+
+  /// Tải dữ liệu dòng thời gian hành trình (timeline) về thiết bị dưới dạng tệp JSON
+  Future<void> downloadTimeline() async {
+    if (mapMoments.isEmpty) {
+      SnackbarHelper.error('Không có dữ liệu hành trình để tải về');
+      return;
+    }
+
+    try {
+      // 1. Tạo cấu trúc dữ liệu JSON dòng thời gian hành trình
+      final momentsData = timelineMoments.map((m) => {
+        'id': m.id,
+        'user': m.fullName ?? 'Người dùng',
+        'caption': m.caption ?? '',
+        'imageUrl': m.imageUrl,
+        'lat': m.lat,
+        'lng': m.lng,
+        'time': m.createdAt.toIso8601String(),
+      }).toList();
+
+      final jsonString = JsonEncoder.withIndent('  ').convert(momentsData);
+
+      // 2. Thử lưu vào thư mục Download công cộng của thiết bị Android
+      File? savedFile;
+      try {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          final file = File('${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+          await file.writeAsString(jsonString);
+          savedFile = file;
+        }
+      } catch (_) {
+        // Bỏ qua lỗi truy cập trực tiếp thư mục Download
+      }
+
+      // 3. Nếu là iOS hoặc thư mục Download công cộng bị giới hạn quyền, lưu vào thư mục tạm của ứng dụng
+      if (savedFile == null) {
+        final tempDir = Directory.systemTemp;
+        final file = File('${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+        await file.writeAsString(jsonString);
+        savedFile = file;
+      }
+
+      // 4. Đồng thời sao chép vào Clipboard làm fallback an toàn
+      await Clipboard.setData(ClipboardData(text: jsonString));
+
+      // 5. Hiển thị thông báo thành công
+      SnackbarHelper.success('Đã tải dòng thời gian về máy tại: ${savedFile.path}\n(Dữ liệu cũng đã được sao chép vào Clipboard!)');
+    } catch (e) {
+      SnackbarHelper.error('Lỗi khi xuất tệp dòng thời gian: $e');
+    }
   }
 
   void _fitCamera(List<LatLng> points) {

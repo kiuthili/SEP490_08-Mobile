@@ -318,6 +318,7 @@ class SocialController extends GetxController {
 
   final friends = <FriendModel>[].obs;
   final pendingRequests = <FriendRequestModel>[].obs;
+  final sentRequests = <FriendRequestModel>[].obs;
   final searchResults = <UserSearchModel>[].obs;
 
   final moments = <MomentModel>[].obs;
@@ -350,6 +351,9 @@ class SocialController extends GetxController {
   void onInit() {
     super.onInit();
     unawaited(fetchChatRooms());
+    unawaited(fetchFriends());
+    unawaited(fetchPendingRequests());
+    unawaited(fetchSentRequests());
     unawaited(_connectFriendshipRealtime());
     unawaited(_connectGlobalChatRealtime());
   }
@@ -427,6 +431,7 @@ class SocialController extends GetxController {
   void clearSocialState() {
     friends.clear();
     pendingRequests.clear();
+    sentRequests.clear();
     searchResults.clear();
     moments.clear();
     chatRooms.clear();
@@ -457,6 +462,14 @@ class SocialController extends GetxController {
   Future<void> fetchPendingRequests() async {
     isRequestsLoading.value = true;
     try { pendingRequests.assignAll(await _service.getPendingRequests()); } catch (_) {} finally { isRequestsLoading.value = false; }
+  }
+
+  Future<void> fetchSentRequests() async {
+    try {
+      final list = await _service.getSentRequests();
+      sentRequests.assignAll(list);
+      sentRequestUserIds.assignAll(list.map((r) => r.senderId));
+    } catch (_) {}
   }
 
   bool isFriend(int userId) => friends.any((friend) => friend.userId == userId);
@@ -521,6 +534,12 @@ class SocialController extends GetxController {
     }
   }
 
+  Future<void> sendChatMessage(int roomId, String content) async {
+    try {
+      await _signalR.sendChatMessage(roomId, content);
+    } catch (_) {}
+  }
+
   Future<void> shareLocationPing(int scheduleId) async {
     try {
       final pos = await LocationHelper.getCurrentPosition();
@@ -576,12 +595,14 @@ class SocialController extends GetxController {
       // KHONG cho loadFeed (tranh quay loading mai du da dang thanh cong).
       isSharingMoment.value = false;
       SnackbarHelper.success('Đã chia sẻ moment');
-      Get.back();
       // Lam tuoi feed o nen, khong chan UI.
       unawaited(loadFeed(scheduleId: scheduleId, refresh: true));
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+      return false;
+    } catch (e) {
+      SnackbarHelper.error('Không thể kết nối đến máy chủ: $e');
       return false;
     } finally {
       // Phong truong hop loi: dam bao co reset (no-op neu da false).
@@ -737,6 +758,43 @@ class SocialController extends GetxController {
       SnackbarHelper.success('Đã xóa moment');
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
+    }
+  }
+
+  Future<bool> reportContent({
+    required String contentType,
+    required int targetId,
+    required String reason,
+    String? details,
+  }) async {
+    try {
+      await _service.reportContent(
+        contentType: contentType,
+        targetId: targetId,
+        reason: reason,
+        details: details,
+      );
+      if (contentType == 'Moment') {
+        moments.removeWhere((m) => m.id == targetId);
+      } else if (contentType == 'Comment') {
+        for (int i = 0; i < moments.length; i++) {
+          if (moments[i].comments.any((c) => c.id == targetId)) {
+            final previous = moments[i];
+            final updatedComments = previous.comments.where((c) => c.id != targetId).toList();
+            moments[i] = previous.copyWith(comments: updatedComments);
+            moments.refresh();
+            break;
+          }
+        }
+      }
+      SnackbarHelper.success('Đã gửi báo cáo vi phạm thành công');
+      return true;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return false;
+    } catch (e) {
+      SnackbarHelper.error('Không gửi được báo cáo: $e');
+      return false;
     }
   }
 }

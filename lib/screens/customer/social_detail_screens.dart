@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../constants/api_constants.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
 import '../../models/social_models.dart'; // Đã thêm
@@ -205,6 +207,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  Future<void> _shareLocation() async {
+    final roomId = _roomId;
+    if (roomId == null) return;
+
+    setState(() => _sending = true);
+    try {
+      final token = await _socialService.generateTrackingToken();
+      if (token.isNotEmpty) {
+        // URL động: dùng ApiConstants.baseUrl để tương thích với tunnel đang chạy.
+        // Khi deploy production thì chỉ cần thay baseUrl trong api_constants.dart.
+        final trackingUrl = '${ApiConstants.baseUrl}/track/$token';
+        final shareText = '📍 Vị trí hiện tại của tôi: [LocationShare:${jsonEncode({'token': token, 'url': trackingUrl})}]';
+        await _socialController.sendChatMessage(roomId, shareText);
+        SnackbarHelper.success('Đã chia sẻ vị trí thành công');
+      } else {
+        SnackbarHelper.error('Không thể chia sẻ vị trí lúc này.');
+      }
+    } catch (_) {
+      SnackbarHelper.error('Lỗi khi chia sẻ vị trí.');
+    } finally {
+      setState(() => _sending = false);
+    }
+  }
+
   void _scrollToBottom({bool jump = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -353,6 +379,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             focusNode: _inputFocus,
             sending: _sending,
             onSend: _send,
+            onShareLocation: _shareLocation,
           ),
         ],
       ),
@@ -784,6 +811,185 @@ class _MessageBubble extends StatelessWidget {
   final bool isMe;
   final bool showSender;
 
+  Widget _buildContent(BuildContext context) {
+    final content = message.content;
+    
+    // 1) Moment Share
+    if (content.contains('[MomentShare:')) {
+      try {
+        final match = RegExp(r'\[MomentShare:({.*?})\]').firstMatch(content);
+        if (match != null) {
+          final data = jsonDecode(match.group(1)!);
+          final int id = data['id'];
+          final String imageUrl = data['imageUrl'];
+          final String? caption = data['caption'];
+          
+          return GestureDetector(
+            onTap: () {
+              Get.toNamed(AppRoutes.momentDetail, arguments: id);
+            },
+            child: Container(
+              margin: const EdgeInsets.only(top: 4, bottom: 4),
+              decoration: BoxDecoration(
+                color: isMe ? Colors.blue.shade900.withOpacity(0.4) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isMe ? Colors.blue.shade800 : Colors.grey.shade300),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    color: isMe ? Colors.blue.shade900.withOpacity(0.6) : Colors.grey.shade200,
+                    child: Row(
+                      children: [
+                        Icon(Icons.camera_alt, size: 14, color: isMe ? Colors.yellow.shade200 : AppColors.brand),
+                        const SizedBox(width: 6),
+                        Text(
+                          'KHOẢNH KHẮC',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: isMe ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AspectRatio(
+                    aspectRatio: 4 / 5,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade100,
+                        child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                  if (caption != null && caption.trim().isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        caption,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isMe ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    // 2) Location Share
+    if (content.contains('[LocationShare:')) {
+      try {
+        final match = RegExp(r'\[LocationShare:({.*?})\]').firstMatch(content);
+        if (match != null) {
+          final data = jsonDecode(match.group(1)!);
+          final String token = data['token'] as String? ?? '';
+          // url được lưu trong payload hoặc xây lại từ ApiConstants.baseUrl động
+          final String trackingUrl = (data['url'] as String?)?.isNotEmpty == true
+              ? data['url'] as String
+              : '${ApiConstants.baseUrl}/track/$token';
+          
+          return GestureDetector(
+            onTap: () {
+              // Mở URL theo dõi động (ngóc/tunnel/production)
+              Get.toNamed('/track/$token');
+            },
+            child: Container(
+              margin: const EdgeInsets.only(top: 4, bottom: 4),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isMe ? Colors.blue.shade900.withOpacity(0.4) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isMe ? Colors.blue.shade800 : Colors.grey.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'VỊ TRÍ TRỰC TIẾP',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: isMe ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Bấm để theo dõi lộ trình di chuyển trực tuyến của tôi.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isMe ? Colors.white70 : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.brand,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'Xem vị trí',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    return Text(
+      content,
+      style: TextStyle(
+        color: isMe ? Colors.white : AppColors.textPrimary,
+        fontSize: 15,
+        height: 1.35,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final normalizedSenderName = message.senderName?.trim().toLowerCase() ?? '';
@@ -819,7 +1025,7 @@ class _MessageBubble extends StatelessWidget {
             Text(message.senderName!, style: const TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w800)),
             const SizedBox(height: 3),
           ],
-          Text(message.content, style: TextStyle(color: isMe ? Colors.white : AppColors.textPrimary, fontSize: 15, height: 1.35)),
+          _buildContent(context),
           if (message.sentAt != null) ...[
             const SizedBox(height: 4),
             Align(
@@ -927,12 +1133,14 @@ class _MessageComposer extends StatelessWidget {
     required this.focusNode,
     required this.sending,
     required this.onSend,
+    this.onShareLocation,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool sending;
   final VoidCallback onSend;
+  final VoidCallback? onShareLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -954,7 +1162,16 @@ class _MessageComposer extends StatelessWidget {
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(hintText: 'Nhập tin nhắn...', prefixIcon: Icon(Icons.chat_bubble_outline_rounded)),
+              decoration: InputDecoration(
+                hintText: 'Nhập tin nhắn...',
+                prefixIcon: const Icon(Icons.chat_bubble_outline_rounded),
+                suffixIcon: onShareLocation != null
+                    ? IconButton(
+                        icon: const Icon(Icons.location_on_rounded, color: AppColors.brand),
+                        onPressed: onShareLocation,
+                      )
+                    : null,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -1088,11 +1305,10 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     }
 
     try {
-      // Ưu tiên dữ liệu mới nhất trong feed; nếu chưa có thì nạp feed.
+      // Ưu tiên lấy từ feed; nếu chưa có thì gọi API lấy trực tiếp theo ID.
       moment = _findInFeed(momentId) ?? moment;
-      if (moment == null || _findInFeed(momentId) == null) {
-        await _socialController.loadFeed(refresh: true);
-        moment = _findInFeed(momentId) ?? moment;
+      if (moment == null) {
+        moment = await _socialController.getMomentById(momentId);
       }
 
       if (moment == null) {
@@ -1192,6 +1408,88 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     }
   }
 
+  void _shareMoment(MomentModel moment) {
+    final rooms = _socialController.chatRooms;
+    if (rooms.isEmpty) {
+      SnackbarHelper.error('Không tìm thấy cuộc hội thoại nào để chia sẻ.');
+      return;
+    }
+
+    Get.bottomSheet(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Gửi đến',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: rooms.length,
+                itemBuilder: (context, index) {
+                  final room = rooms[index];
+                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Cuộc trò chuyện';
+                  
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.brandLight,
+                      backgroundImage: (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
+                          ? CachedNetworkImageProvider(room.avatarUrl!)
+                          : null,
+                      child: (room.avatarUrl == null || room.avatarUrl!.isEmpty)
+                          ? const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.brand)
+                          : null,
+                    ),
+                    title: Text(
+                      roomName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      room.isGroup ? 'Nhóm du lịch' : 'Trò chuyện cá nhân',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                    ),
+                    trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
+                    onTap: () async {
+                      Get.back(); // Đóng bottom sheet
+                      final shareText = '[MomentShare:${jsonEncode({
+                        'id': moment.id,
+                        'imageUrl': moment.imageUrl,
+                        'caption': moment.caption ?? '',
+                      })}]';
+                      
+                      await _socialController.sendChatMessage(room.id, shareText);
+                      SnackbarHelper.success('Đã chia sẻ moment thành công');
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
@@ -1234,6 +1532,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       await _socialController.deleteMoment(id);
                       Get.back();
                     },
+                    onShare: () => _shareMoment(_moment!),
                     onLike: (isLike) async {
                       // Bỏ qua nếu trạng thái không đổi (chống đếm sai).
                       if (_moment!.isLikedByMe == isLike) return;
@@ -1258,6 +1557,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                         setState(() => _moment = updated);
                       }
                     },
+                    onReport: (id) => _showReportDialog(context, 'Moment', id, _socialController),
                     isDetail: true,
                   ),
                   const Divider(),
@@ -1295,28 +1595,40 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                             fontWeight: FontWeight.bold,
                             fontSize: 13)),
                     subtitle: Text(c.comment),
-                    trailing: c.userId == _currentUserId
-                        ? PopupMenuButton<String>(
+                    trailing: PopupMenuButton<String>(
                       onSelected: (val) async {
                         if (val == 'edit') {
                           _editComment(c);
                         } else if (val == 'delete') {
                           await _deleteComment(c);
+                        } else if (val == 'report') {
+                          _showReportDialog(context, 'Comment', c.id, _socialController);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Chỉnh sửa')),
-                        PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Xóa',
-                                style: TextStyle(
-                                    color:
-                                    AppColors.error))),
+                      itemBuilder: (_) => [
+                        if (c.userId == _currentUserId) ...const [
+                          PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Chỉnh sửa')),
+                          PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Xóa',
+                                  style: TextStyle(
+                                      color:
+                                      AppColors.error))),
+                        ],
+                        if (c.userId != _currentUserId)
+                          const PopupMenuItem(
+                              value: 'report',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.flag_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Báo cáo vi phạm'),
+                                ],
+                              )),
                       ],
-                    )
-                        : null,
+                    ),
                   )),
                 ],
               ),
@@ -1371,6 +1683,88 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context, String contentType, int targetId, SocialController social) {
+    String selectedReason = 'Spam';
+    final detailsController = TextEditingController();
+    var isSending = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Báo cáo ${contentType == 'Moment' ? 'khoảnh khắc' : 'bình luận'}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      decoration: const InputDecoration(labelText: 'Lý do báo cáo'),
+                      items: const [
+                        DropdownMenuItem(value: 'Spam', child: Text('Spam (Rác / Quảng cáo)')),
+                        DropdownMenuItem(value: 'Hate Speech', child: Text('Ngôn từ kích động thù hận')),
+                        DropdownMenuItem(value: 'Harassment', child: Text('Quấy rối / Đe dọa')),
+                        DropdownMenuItem(value: 'Violence', child: Text('Bạo lực / Máu me')),
+                        DropdownMenuItem(value: 'Other', child: Text('Lý do khác')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => selectedReason = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Chi tiết (Không bắt buộc)',
+                        hintText: 'Nhập thêm chi tiết vi phạm...',
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                FilledButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          setDialogState(() => isSending = true);
+                          final ok = await social.reportContent(
+                            contentType: contentType,
+                            targetId: targetId,
+                            reason: selectedReason,
+                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                          );
+                          setDialogState(() => isSending = false);
+                          if (ok) {
+                            Navigator.pop(context);
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Gửi báo cáo'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

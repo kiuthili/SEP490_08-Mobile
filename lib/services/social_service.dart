@@ -40,6 +40,13 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<List<FriendRequestModel>> getSentRequests() async {
+    return request(() async {
+      final response = await api.dio.get('${ApiConstants.friends}/sent');
+      return parseList(response.data, FriendRequestModel.fromJson);
+    });
+  }
+
   Future<void> respondFriendRequest({required int requestId, required bool accept}) async {
     await request(() async { await api.dio.put('${ApiConstants.friends}/respond', data: {'requestId': requestId, 'status': accept ? 'Accepted' : 'Declined'}); });
   }
@@ -356,6 +363,22 @@ class SocialService extends GetxService with BaseServiceMixin {
         },
       );
       return parseList(response.data, HeatPointModel.fromJson);
+    });
+  }
+
+  Future<void> reportContent({
+    required String contentType,
+    required int targetId,
+    required String reason,
+    String? details,
+  }) async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.moderation}/report', data: {
+        'contentType': contentType,
+        'targetId': targetId,
+        'reason': reason,
+        if (details != null) 'details': details,
+      });
     });
   }
 }

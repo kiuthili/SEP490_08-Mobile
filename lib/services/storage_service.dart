@@ -45,4 +45,9 @@ class StorageService {
     await _box.remove(StorageKeys.userJson);
     await _box.write(StorageKeys.isLoggedIn, false);
   }
+
+  bool get shareMyLocation => _box.read<bool>('share_my_location') ?? false;
+  Future<void> setShareMyLocation(bool value) async {
+    await _box.write('share_my_location', value);
+  }
 }

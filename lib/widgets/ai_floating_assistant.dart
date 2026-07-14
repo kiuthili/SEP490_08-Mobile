@@ -196,9 +196,13 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: const [
-                _AiGuideTab(),
-                _AiAssistantChatTab(),
+              children: [
+                const _AiGuideTab(),
+                _AiAssistantChatTab(
+                  onSwitchToGuide: () {
+                    _tabController.animateTo(0);
+                  },
+                ),
               ],
             ),
           ),
@@ -279,7 +283,9 @@ class _AiGuideTabState extends State<_AiGuideTab>
 }
 
 class _AiAssistantChatTab extends StatefulWidget {
-  const _AiAssistantChatTab();
+  const _AiAssistantChatTab({this.onSwitchToGuide});
+
+  final VoidCallback? onSwitchToGuide;
 
   @override
   State<_AiAssistantChatTab> createState() => _AiAssistantChatTabState();
@@ -335,13 +341,59 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Obx(() {
+          final messages = _ai.chatMessages;
+          if (messages.isNotEmpty && widget.onSwitchToGuide != null) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Color(0x0F0052CC), // brand with opacity
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.lightbulb_outline,
+                    color: AppColors.brand,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Text(
+                      'Bạn có thể chuyển sang điền Form bất cứ lúc nào để có đề xuất ngay.',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: widget.onSwitchToGuide,
+                    child: const Text(
+                      'Mở Form →',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.brand,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }),
         Expanded(
           child: Obx(() {
             final messages = _ai.chatMessages;
             if (messages.isEmpty) {
               return ListView(
                 controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 children: [
                   const Icon(
                     Icons.chat_bubble_outline,
@@ -362,7 +414,84 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
                           color: AppColors.textSecondary,
                         ),
                   ),
-                  const SizedBox(height: 16),
+                  if (widget.onSwitchToGuide != null) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.brand.withOpacity(0.06),
+                            Colors.indigo.withOpacity(0.06),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.brand.withOpacity(0.25),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.brandLight,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.bolt,
+                                  color: AppColors.brand,
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Nhận đề xuất nhanh',
+                                style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Điền Form khảo sát ngắn (100% miễn phí, không tốn tài nguyên chat, trả kết quả tức thì).',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: widget.onSwitchToGuide,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.brand,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              child: const Text(
+                                'Chuyển sang điền Form khảo sát',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,

@@ -9,7 +9,8 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+      // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+      return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
@@ -60,6 +61,7 @@ class ApiConstants {
   static const moments = '/api/moments';
   static const chat = '/api/chat';
   static const locations = '/api/locations';
+  static const moderation = '/api/moderation';
   static const aiTourAssistant = '/api/ai/tour-assistant';
   static const tourScheduleStaffs = '/api/TourScheduleStaffs';
   static const aiEvaluation = '/api/ai/evaluation';

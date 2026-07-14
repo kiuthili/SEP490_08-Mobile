@@ -23,6 +23,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/feature_controllers.dart';
 import '../../services/location_helper.dart';
+import '../../utils/image_helper.dart';
 import '../../utils/snackbar_helper.dart';
 
 const int _kMaxCaption = 500;
@@ -186,7 +187,19 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     try {
       HapticFeedback.mediumImpact();
       final xFile = await cam.takePicture();
-      if (mounted) setState(() => _capturedImage = File(xFile.path));
+      
+      // Chờ tệp được ghi xong hoàn toàn (kiểm tra kích thước > 0 bytes)
+      final file = File(xFile.path);
+      int attempts = 0;
+      while (attempts < 10) {
+        if (await file.exists() && await file.length() > 0) {
+          break;
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
+
+      if (mounted) setState(() => _capturedImage = file);
     } catch (_) {
       SnackbarHelper.error('Không thể chụp ảnh');
     }
@@ -196,31 +209,51 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   Future<void> _submitMoment() async {
     if (_capturedImage == null) return;
-    setState(() => _isUploading = true);
-
-    // Đảm bảo có GPS (thử lại nếu lần đầu thất bại).
-    if (_lat == null || _lng == null) {
-      await _fetchLocation();
-      if (_lat == null || _lng == null) {
-        SnackbarHelper.error(
-          'Không lấy được vị trí — moment sẽ không hiện trên bản đồ',
-        );
-      }
+    
+    // Kiểm tra file ảnh hợp lệ để tránh gửi tệp rỗng lên máy chủ gây lỗi treo
+    if (!await _capturedImage!.exists() || await _capturedImage!.length() == 0) {
+      SnackbarHelper.error('Ảnh chụp bị lỗi hoặc rỗng. Vui lòng chụp lại.');
+      return;
     }
 
-    // ⚠️ shareMoment() trong SocialController đã tự gọi Get.back() khi thành
-    // công, nên KHÔNG pop lần nữa ở đây (tránh đóng nhầm cả màn bản đồ).
-    final success = await _socialController.shareMoment(
-      _capturedImage!.path,
-      _selectedScheduleId,
-      _lat ?? 0.0,
-      _lng ?? 0.0,
-      _captionController.text,
-      _privacy,
-    );
+    setState(() => _isUploading = true);
 
-    if (!success && mounted) {
-      setState(() => _isUploading = false);
+    try {
+      // Đảm bảo có GPS (thử lại nếu lần đầu thất bại).
+      if (_lat == null || _lng == null) {
+        await _fetchLocation();
+        if (_lat == null || _lng == null) {
+          SnackbarHelper.error(
+            'Không lấy được vị trí — moment sẽ không hiện trên bản đồ',
+          );
+        }
+      }
+
+      // Nén ảnh trước khi gửi để giảm dung lượng file xuống ~200KB, tăng tốc độ gửi lên gấp 50 lần qua devtunnel
+      final compressedFile = await ImageHelper.compressImage(_capturedImage!);
+
+      final success = await _socialController.shareMoment(
+        compressedFile.path,
+        _selectedScheduleId,
+        _lat ?? 0.0,
+        _lng ?? 0.0,
+        _captionController.text,
+        _privacy,
+      );
+
+      if (success) {
+        // Chờ hết frame hiện tại rồi mới pop để tránh xung đột với SnackBar overlay
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Get.back();
+        });
+      } else if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    } catch (e) {
+      SnackbarHelper.error('Không thể chia sẻ moment lúc này: $e');
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -277,6 +310,36 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
             _capturedImage!,
             fit: BoxFit.cover,
             width: double.infinity,
+            cacheWidth: 600, // Tối ưu kích thước giải nén tránh lỗi OOM / Could not decompress image trên tablet
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback: Thử tải không dùng cacheWidth nếu bị lỗi giải nén
+              return Image.file(
+                _capturedImage!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (context, error2, stackTrace2) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.broken_image_rounded, color: Colors.redAccent, size: 48),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Ảnh chụp không hợp lệ hoặc bị lỗi giải nén.',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          error2.toString(),
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       );
