@@ -12,6 +12,8 @@ import '../services/push_notification_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/auth_gate.dart';
 import 'feature_controllers.dart';
+import 'shell_controller.dart';
+import 'notification_controller.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -141,16 +143,43 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     if (Get.isRegistered<SignalRService>()) {
-      await Get.find<SignalRService>().disconnectChat();
-      await Get.find<SignalRService>().disconnectFriendship();
-      await Get.find<SignalRService>().disconnectGlobalChat();
+      await Get.find<SignalRService>().disconnectAll();
     }
     if (Get.isRegistered<SocialController>()) {
       Get.find<SocialController>().clearSocialState();
     }
+    if (Get.isRegistered<NotificationController>()) {
+      Get.find<NotificationController>().notifications.clear();
+    }
+    if (Get.isRegistered<WishlistController>()) {
+      Get.find<WishlistController>().items.clear();
+    }
     await _authService.logout();
     currentUser.value = null;
     Get.offAllNamed(AppRoutes.home);
+  }
+
+  Future<void> handleSessionExpiredCleanly() async {
+    if (Get.isRegistered<SignalRService>()) {
+      await Get.find<SignalRService>().disconnectAll();
+    }
+    if (Get.isRegistered<SocialController>()) {
+      Get.find<SocialController>().clearSocialState();
+    }
+    if (Get.isRegistered<NotificationController>()) {
+      Get.find<NotificationController>().notifications.clear();
+    }
+    if (Get.isRegistered<WishlistController>()) {
+      Get.find<WishlistController>().items.clear();
+    }
+    await _storage.clearSession();
+    currentUser.value = null;
+    if (Get.isRegistered<ShellController>()) {
+      final shell = Get.find<ShellController>();
+      if (shell.selectedIndex.value >= 2 || shell.isStaff) {
+        shell.selectedIndex.value = 0;
+      }
+    }
   }
 
   Future<void> _syncPushTokenAfterLogin() async {
