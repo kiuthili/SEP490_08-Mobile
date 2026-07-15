@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../models/api_response.dart';
 import '../theme/app_colors.dart';
 
 class SnackbarHelper {
@@ -10,7 +11,16 @@ class SnackbarHelper {
   }
 
   static void error(String message) {
+    if (message == ApiError.silent401Message ||
+        message.toLowerCase() == 'unauthorized') {
+      return;
+    }
     _show(message, AppColors.error);
+  }
+
+  static void apiError(ApiError error) {
+    if (error.isSilent || error.statusCode == 401) return;
+    _show(error.message, AppColors.error);
   }
 
   static void info(String message) {

@@ -598,14 +598,18 @@ class SignalRService extends GetxService {
     _publicTrackingConnection = null;
   }
 
+  Future<void> disconnectAll() async {
+    await disconnectChat();
+    await disconnectFriendship();
+    await disconnectNotification();
+    await disconnectGlobalChat();
+    await disconnectTracking();
+    await disconnectPublicTracking();
+  }
+
   @override
   void onClose() {
-    disconnectChat();
-    disconnectFriendship();
-    disconnectNotification();
-    disconnectGlobalChat();
-    disconnectTracking();
-    disconnectPublicTracking();
+    disconnectAll();
     super.onClose();
   }
 
