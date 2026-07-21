@@ -11,6 +11,7 @@ class VoucherModel {
   final int? discountValue;
   final String? discountType;
   final int? maxDiscountAmount;
+  final int? minOrderAmount;
   final String? status;
   final String? voucherStatus;
   final int quantity;
@@ -29,6 +30,7 @@ class VoucherModel {
     this.discountValue,
     this.discountType,
     this.maxDiscountAmount,
+    this.minOrderAmount,
     this.status,
     this.voucherStatus,
     required this.quantity,
@@ -64,6 +66,11 @@ class VoucherModel {
         discountType: JsonUtils.readString(json['discountType']),
         maxDiscountAmount: () {
           final v = JsonUtils.pick(json, ['maxDiscountAmount']);
+          if (v == null) return null;
+          return JsonUtils.readInt(v);
+        }(),
+        minOrderAmount: () {
+          final v = JsonUtils.pick(json, ['minOrderAmount', 'MinOrderAmount']);
           if (v == null) return null;
           return JsonUtils.readInt(v);
         }(),
