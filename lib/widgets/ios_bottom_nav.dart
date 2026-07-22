@@ -9,11 +9,13 @@ class IosBottomNavItem {
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+  final bool isProminent;
 
   const IosBottomNavItem({
     required this.icon,
     required this.selectedIcon,
     required this.label,
+    this.isProminent = false,
   });
 }
 
@@ -53,45 +55,69 @@ class IosBottomNav extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 4,
+                    if (item.isProminent)
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.brandGradient,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.brand.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          selected ? item.selectedIcon : item.icon,
+                          size: 24,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 4,
+                        ),
+                        decoration: selected
+                            ? BoxDecoration(
+                                color: AppColors.brandLight
+                                    .withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                              )
+                            : null,
+                        child: Icon(
+                          selected ? item.selectedIcon : item.icon,
+                          size: 22,
+                          color: selected
+                              ? AppColors.brand
+                              : AppColors.textSecondary,
+                        ),
                       ),
-                      decoration: selected
-                          ? BoxDecoration(
-                              color: AppColors.brandLight
-                                  .withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.pill,
-                              ),
-                            )
-                          : null,
-                      child: Icon(
-                        selected ? item.selectedIcon : item.icon,
-                        size: 22,
-                        color: selected
-                            ? AppColors.brand
-                            : AppColors.textSecondary,
+                    if (!item.isProminent) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: selected
+                              ? AppColors.brand
+                              : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: selected
-                            ? AppColors.brand
-                            : AppColors.textSecondary,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),

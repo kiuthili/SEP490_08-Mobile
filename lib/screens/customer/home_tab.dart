@@ -88,10 +88,10 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _scrollToTop() => _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 550),
-        curve: Curves.easeOutCubic,
-      );
+    0,
+    duration: const Duration(milliseconds: 550),
+    curve: Curves.easeOutCubic,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -123,44 +123,44 @@ class _HomeTabState extends State<HomeTab> {
                 // ── Tour Hot section ──
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
-                        title: 'Tour nổi bật',
-                        onViewAll: _openExplore,
-                        isLoading: _home.isLoadingHot.value,
-                        tours: _home.hotTours,
-                        badgeLabel: 'Nổi bật',
-                        badgeColor: AppColors.accent,
-                        onTap: _openTour,
-                        wishlistController: _wishlistController,
-                      )),
+                    title: 'Tour nổi bật',
+                    onViewAll: _openExplore,
+                    isLoading: _home.isLoadingHot.value,
+                    tours: _home.hotTours,
+                    badgeLabel: 'Nổi bật',
+                    badgeColor: AppColors.accent,
+                    onTap: _openTour,
+                    wishlistController: _wishlistController,
+                  )),
                 ),
 
                 // ── Tour Sale section ──
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
-                        title: 'Ưu đãi giờ chót',
-                        onViewAll: _openExplore,
-                        isLoading: _home.isLoadingSale.value,
-                        tours: _home.saleTours,
-                        badgeLabel: 'Giờ chót',
-                        badgeColor: const Color(0xFFE53935),
-                        showSalePrice: true,
-                        onTap: _openTour,
-                        wishlistController: _wishlistController,
-                      )),
+                    title: 'Ưu đãi giờ chót',
+                    onViewAll: _openExplore,
+                    isLoading: _home.isLoadingSale.value,
+                    tours: _home.saleTours,
+                    badgeLabel: 'Giờ chót',
+                    badgeColor: const Color(0xFFE53935),
+                    showSalePrice: true,
+                    onTap: _openTour,
+                    wishlistController: _wishlistController,
+                  )),
                 ),
 
                 // ── Tour Upcoming section ──
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
-                        title: 'Sắp khởi hành',
-                        onViewAll: _openExplore,
-                        isLoading: _home.isLoadingUpcoming.value,
-                        tours: _home.upcomingTours,
-                        badgeLabel: 'Sắp đi',
-                        badgeColor: const Color(0xFF43A047),
-                        onTap: _openTour,
-                        wishlistController: _wishlistController,
-                      )),
+                    title: 'Sắp khởi hành',
+                    onViewAll: _openExplore,
+                    isLoading: _home.isLoadingUpcoming.value,
+                    tours: _home.upcomingTours,
+                    badgeLabel: 'Sắp đi',
+                    badgeColor: const Color(0xFF43A047),
+                    onTap: _openTour,
+                    wishlistController: _wishlistController,
+                  )),
                 ),
 
                 // ── Region section ──
@@ -507,11 +507,11 @@ class _TourCard extends StatelessWidget {
                     width: double.infinity,
                     child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: tour.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) =>
-                                const ColoredBox(color: AppColors.brandLight),
-                          )
+                      imageUrl: tour.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) =>
+                      const ColoredBox(color: AppColors.brandLight),
+                    )
                         : const ColoredBox(color: AppColors.brandLight),
                   ),
                 ),
@@ -716,12 +716,12 @@ class _RegionSection extends StatelessWidget {
                       ),
                       boxShadow: isSelected
                           ? [
-                              BoxShadow(
-                                color: AppColors.brand.withValues(alpha: 0.25),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
+                        BoxShadow(
+                          color: AppColors.brand.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        )
+                      ]
                           : [],
                     ),
                     child: Text(
@@ -797,7 +797,7 @@ class _RegionCard extends StatelessWidget {
                 imageUrl: tour.imageUrl!,
                 fit: BoxFit.cover,
                 errorWidget: (_, __, ___) =>
-                    const ColoredBox(color: AppColors.brandLight),
+                const ColoredBox(color: AppColors.brandLight),
               )
             else
               const ColoredBox(color: AppColors.brandLight),
@@ -884,7 +884,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
                           imageUrl: b.imageUrl!,
                           fit: BoxFit.cover,
                           errorWidget: (_, __, ___) =>
-                              const ColoredBox(color: AppColors.brandLight),
+                          const ColoredBox(color: AppColors.brandLight),
                         )
                       else
                         const ColoredBox(color: AppColors.brandLight),
@@ -926,7 +926,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             widget.banners.length,
-            (i) => AnimatedContainer(
+                (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.symmetric(horizontal: 3),
               width: i == _current ? 18 : 6,
@@ -987,14 +987,14 @@ class _LanguageBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ...languages.map((lang) => ListTile(
-                  leading: Text(lang.$2, style: const TextStyle(fontSize: 26)),
-                  title: Text(lang.$3,
-                      style: const TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: selected == lang.$1
-                      ? const Icon(Icons.check_circle_rounded, color: AppColors.brand)
-                      : null,
-                  onTap: () => onSelect(lang.$1),
-                )),
+              leading: Text(lang.$2, style: const TextStyle(fontSize: 26)),
+              title: Text(lang.$3,
+                  style: const TextStyle(fontWeight: FontWeight.w500)),
+              trailing: selected == lang.$1
+                  ? const Icon(Icons.check_circle_rounded, color: AppColors.brand)
+                  : null,
+              onTap: () => onSelect(lang.$1),
+            )),
             const SizedBox(height: 8),
           ],
         ),

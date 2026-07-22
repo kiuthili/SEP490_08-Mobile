@@ -37,6 +37,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   late final WishlistController _wishlistController;
   final _workers = <Worker>[];
   int? _tourId;
+  String? _heroTag;
   List<TourItineraryModel> _itineraries = [];
   Map<int, TourismInformationModel> _tourismInformation = {};
   Set<int> _expandedItineraryDays = {};
@@ -49,7 +50,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     _tourController = Get.find<TourController>();
     _reviewController = Get.find<ReviewController>();
     _wishlistController = Get.find<WishlistController>();
-    _tourId = parseTourId(Get.arguments);
+    final args = Get.arguments;
+    _tourId = parseTourId(args);
+    if (args is Map && args['heroTag'] != null) {
+      _heroTag = args['heroTag'];
+    }
 
     void refresh() {
       if (mounted) setState(() {});
@@ -465,7 +470,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
           height: 320,
           width: double.infinity,
           child: Hero(
-            tag: 'tour-image-${tour.id}',
+            tag: _heroTag ?? 'tour-image-${tour.id}',
             child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: tour.imageUrl!,

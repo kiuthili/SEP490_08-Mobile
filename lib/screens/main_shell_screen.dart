@@ -87,14 +87,15 @@ class MainShellScreen extends GetView<ShellController> {
       label: 'Lịch',
     ),
     IosBottomNavItem(
-      icon: Icons.qr_code_scanner_outlined,
-      selectedIcon: Icons.qr_code_scanner_rounded,
-      label: 'Check-in',
-    ),
-    IosBottomNavItem(
       icon: Icons.confirmation_number_outlined,
       selectedIcon: Icons.confirmation_number_rounded,
       label: 'Vé',
+    ),
+    IosBottomNavItem(
+      icon: Icons.qr_code_scanner_outlined,
+      selectedIcon: Icons.qr_code_scanner_rounded,
+      label: 'Check-in',
+      isProminent: true,
     ),
     IosBottomNavItem(
       icon: Icons.groups_outlined,
@@ -116,8 +117,8 @@ class MainShellScreen extends GetView<ShellController> {
       final pages = isStaff
           ? const [
               StaffSchedulesTab(),
-              StaffCheckInTab(),
               StaffTicketsTab(),
+              StaffCheckInTab(),
               StaffCustomersTab(),
               ProfileTab(),
             ]

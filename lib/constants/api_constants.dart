@@ -17,7 +17,7 @@ class ApiConstants {
       return 'https://jpg6krl7-7010.asse.devtunnels.ms';
     }
 
-    return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+    return 'https://localhost:7010';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
