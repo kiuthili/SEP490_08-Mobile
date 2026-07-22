@@ -141,7 +141,6 @@ class _TicketFilterBarState extends State<_TicketFilterBar> {
     null: 'Tất cả',
     'Pending': 'Chưa check-in',
     'CheckedIn': 'Đã check-in',
-    'Absent': 'Vắng mặt',
   };
 
   @override

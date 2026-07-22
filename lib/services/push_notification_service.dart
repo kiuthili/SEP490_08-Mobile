@@ -39,7 +39,7 @@ class PushNotificationService extends GetxService {
       requestSoundPermission: false,
     );
     await _localNotifications.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: androidInit,
         iOS: iosInit,
       ),
@@ -90,10 +90,10 @@ class PushNotificationService extends GetxService {
     required String body,
   }) async {
     await _localNotifications.show(
-      chatRoomId,
-      title,
-      body,
-      const NotificationDetails(
+      id: chatRoomId,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
@@ -133,10 +133,10 @@ class PushNotificationService extends GetxService {
 
     if (message.notification != null) {
       _localNotifications.show(
-        DateTime.now().millisecondsSinceEpoch % 100000,
-        message.notification!.title,
-        message.notification!.body,
-        const NotificationDetails(
+        id: DateTime.now().millisecondsSinceEpoch % 100000,
+        title: message.notification!.title,
+        body: message.notification!.body,
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             _channelId,
             _channelName,
