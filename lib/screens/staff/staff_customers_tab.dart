@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
+import '../../constants/api_constants.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
@@ -506,9 +507,14 @@ class _MapTab extends StatelessWidget {
             options: MapOptions(initialCenter: center, initialZoom: 13),
             children: [
               TileLayer(
-                urlTemplate:
-                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: ApiConstants.mapboxTileUrl,
+                additionalOptions: const {
+                  'accessToken': ApiConstants.mapboxAccessToken,
+                },
                 userAgentPackageName: 'com.stayhub.mobile',
+                maxZoom: 19,
+                tileSize: 256,
+                zoomOffset: -1,
               ),
               MarkerLayer(
                 markers: locs.map((loc) {

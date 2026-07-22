@@ -22,12 +22,12 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/feature_controllers.dart';
+import '../../models/feature_models.dart';
 import '../../services/location_helper.dart';
 import '../../utils/image_helper.dart';
 import '../../utils/snackbar_helper.dart';
 
 const int _kMaxCaption = 500;
-const Color _kBrand = Color(0xFF0068E0);
 
 /// Tuỳ chọn quyền riêng tư (value khớp backend: Public/Friend/Private).
 class _PrivacyOption {
@@ -39,6 +39,7 @@ class _PrivacyOption {
 
 const _privacyOptions = <_PrivacyOption>[
   _PrivacyOption('Public', 'Public', Icons.public),
+  _PrivacyOption('Tour', 'Tour members', Icons.directions_bus),
   _PrivacyOption('Friend', 'Friends', Icons.group),
   _PrivacyOption('Private', 'Only me', Icons.lock),
 ];
@@ -96,12 +97,33 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     }
   }
 
+  List<EligibleScheduleModel> get _ongoingSchedules {
+    final list = <EligibleScheduleModel>[
+      EligibleScheduleModel(
+        scheduleId: 0,
+        tourName: 'Cá nhân (Ngoài Tour)',
+        departureDate: DateTime.now(),
+        returnDate: DateTime.now(),
+        statusContext: 'Ongoing',
+      )
+    ];
+    final now = DateTime.now();
+    list.addAll(_orderController.eligibleSchedules.where((s) {
+      final status = s.statusContext.toLowerCase();
+      return status == 'ongoing' ||
+          status == 'completed' ||
+          s.departureDate.isBefore(now) ||
+          s.departureDate.isAtSameMomentAs(now);
+    }));
+    return list;
+  }
+
   Future<void> _fetchSchedules() async {
     await _orderController.fetchEligibleSchedules();
-    if (_orderController.eligibleSchedules.isNotEmpty && mounted) {
+    final ongoing = _ongoingSchedules;
+    if (ongoing.isNotEmpty && mounted) {
       setState(() {
-        _selectedScheduleId =
-            _orderController.eligibleSchedules.first.scheduleId;
+        _selectedScheduleId = ongoing.first.scheduleId;
       });
     }
   }
@@ -182,6 +204,10 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   }
 
   Future<void> _takePicture() async {
+    if (_ongoingSchedules.isEmpty) {
+      SnackbarHelper.error('Bạn chỉ có thể chụp Moment cho Tour đã hoặc đang diễn ra.');
+      return;
+    }
     final cam = _cameraController;
     if (cam == null || !cam.value.isInitialized) return;
     try {
@@ -208,6 +234,10 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   void _retake() => setState(() => _capturedImage = null);
 
   Future<void> _submitMoment() async {
+    if (_ongoingSchedules.isEmpty) {
+      SnackbarHelper.error('Bạn chỉ có thể đăng Moment cho Tour đã hoặc đang diễn ra.');
+      return;
+    }
     if (_capturedImage == null) return;
     
     // Check if the image file is valid to avoid sending an empty file
@@ -267,273 +297,354 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final schedules = _ongoingSchedules;
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: _ScheduleDropdown(
-          schedules: _orderController.eligibleSchedules,
-          selectedId: _selectedScheduleId,
-          onChanged: (id) => setState(() => _selectedScheduleId = id),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Get.back(),
-          ),
-        ],
-      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            _GeoStatusBadge(status: _geoStatus, onRetry: _fetchLocation),
-            Expanded(child: _buildPreview()),
-            _buildPrivacySelector(),
-            _buildCaption(),
-            _buildActions(),
-            const SizedBox(height: 12),
-          ],
-        ),
+        child: _capturedImage != null ? _buildReviewScreen() : _buildCameraScreen(schedules),
       ),
     );
   }
 
-  Widget _buildPreview() {
-    if (_capturedImage != null) {
-      return Padding(
-        padding: const EdgeInsets.all(12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Image.file(
-            _capturedImage!,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            cacheWidth: 600, // Tối ưu kích thước giải nén tránh lỗi OOM / Could not decompress image trên tablet
-            errorBuilder: (context, error, stackTrace) {
-              // Fallback: Thử tải không dùng cacheWidth nếu bị lỗi giải nén
-              return Image.file(
-                _capturedImage!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error2, stackTrace2) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.broken_image_rounded, color: Colors.redAccent, size: 48),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Captured image is invalid or decompression failed.',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          error2.toString(),
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 11),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
+  // ── CAMERA SCREEN ─────────────────────────────────────────────────────────
+
+  Widget _buildCameraScreen(List<EligibleScheduleModel> schedules) {
+    return Column(
+      children: [
+        // ── TOP BAR ──────────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // GPS badge (left)
+              _CompactGeoBadge(status: _geoStatus, onRetry: _fetchLocation),
+
+              // Tour selector pill (centre)
+              _TourPill(
+                schedules: schedules,
+                selectedId: _selectedScheduleId,
+                onChanged: (id) => setState(() {
+                  _selectedScheduleId = id;
+                  if (id == 0 && _privacy == 'Tour') _privacy = 'Public';
+                }),
+              ),
+
+              // Close button (right)
+              GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    }
+
+        // ── CAMERA PREVIEW CARD ───────────────────────────────────────────────
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCameraContent(),
+
+                  // Flash button (top-left inside preview)
+                  Positioned(
+                    top: 14,
+                    left: 14,
+                    child: _PreviewIconBtn(
+                      icon: switch (_flashMode) {
+                        FlashMode.off => Icons.flash_off_rounded,
+                        FlashMode.auto => Icons.flash_auto_rounded,
+                        _ => Icons.flash_on_rounded,
+                      },
+                      onTap: _toggleFlash,
+                    ),
+                  ),
+
+                  // Zoom indicator (top-right inside preview) — purely visual
+                  const Positioned(
+                    top: 14,
+                    right: 14,
+                    child: _ZoomLabel(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // ── SHUTTER ROW ───────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Gallery icon
+              _BottomIconBtn(
+                icon: Icons.photo_library_outlined,
+                onTap: () {
+                  // TODO: pick from gallery
+                },
+              ),
+
+              // Locket-style shutter button
+              _LocketShutterButton(onTap: _takePicture),
+
+              // Flip camera icon
+              _BottomIconBtn(
+                icon: Icons.flip_camera_ios_outlined,
+                onTap: _cameras.length >= 2 ? _switchCamera : () {},
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ── SCHEDULE / HISTORY PILL ──────────────────────────────────────────
+        _HistoryPill(
+          schedules: schedules,
+          selectedId: _selectedScheduleId,
+          onChanged: (id) => setState(() {
+            _selectedScheduleId = id;
+          }),
+        ),
+
+        const SizedBox(height: 8),
+
+        // ── BOTTOM NAV PLACEHOLDER ───────────────────────────────────────────
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Icon(Icons.grid_view_rounded, color: Colors.white54, size: 22),
+              _HomeNavDot(),
+              Icon(Icons.chat_bubble_outline_rounded, color: Colors.white54, size: 22),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildCameraContent() {
     if (_isInitializing) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Container(
+        color: Colors.black,
+        child: const Center(child: CircularProgressIndicator(color: Colors.white70)),
       );
     }
     final cam = _cameraController;
     if (cam == null || !cam.value.isInitialized) {
-      return const Center(
-        child: Text('Cannot open camera',
-            style: TextStyle(color: Colors.white70)),
+      return Container(
+        color: const Color(0xFF111111),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.camera_alt_outlined, color: Colors.white30, size: 48),
+              SizedBox(height: 12),
+              Text('Camera unavailable', style: TextStyle(color: Colors.white38, fontSize: 13)),
+            ],
+          ),
+        ),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CameraPreview(cam),
-            // Nút flash + đổi camera (góc trên phải preview).
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Column(
-                children: [
-                  _RoundIconBtn(
-                    icon: switch (_flashMode) {
-                      FlashMode.off => Icons.flash_off_rounded,
-                      FlashMode.auto => Icons.flash_auto_rounded,
-                      _ => Icons.flash_on_rounded,
-                    },
-                    onTap: _toggleFlash,
+    return CameraPreview(cam);
+  }
+
+  // ── REVIEW SCREEN (after capture) ────────────────────────────────────────
+
+  Widget _buildReviewScreen() {
+    return Column(
+      children: [
+        // Top bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: _retake,
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
                   ),
-                  if (_cameras.length >= 2) ...[
-                    const SizedBox(height: 10),
-                    _RoundIconBtn(
-                      icon: Icons.cameraswitch_rounded,
-                      onTap: _switchCamera,
+                  child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Preview',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+              ),
+              const Spacer(),
+              const SizedBox(width: 36),
+            ],
+          ),
+        ),
+
+        // Preview image
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.file(
+                    _capturedImage!,
+                    fit: BoxFit.cover,
+                    cacheWidth: 800,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade900,
+                      child: const Center(
+                        child: Icon(Icons.broken_image_rounded, color: Colors.white30, size: 48),
+                      ),
                     ),
-                  ],
+                  ),
+
+                  // Caption overlay at bottom of image
+                  Positioned(
+                    left: 0, right: 0, bottom: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Colors.black.withValues(alpha: 0.65), Colors.transparent],
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+                      child: TextField(
+                        controller: _captionController,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                        ),
+                        maxLines: 2,
+                        maxLength: _kMaxCaption,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(
+                          hintText: 'Add a caption...',
+                          hintStyle: TextStyle(color: Colors.white60, fontSize: 15),
+                          border: InputBorder.none,
+                          counterStyle: TextStyle(color: Colors.white54, fontSize: 11),
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPrivacySelector() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: _privacyOptions.map((opt) {
-          final selected = _privacy == opt.value;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(
-              avatar: Icon(
-                opt.icon,
-                size: 16,
-                color: selected ? Colors.white : Colors.white70,
-              ),
-              label: Text(opt.label),
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-              selected: selected,
-              selectedColor: _kBrand,
-              backgroundColor: Colors.grey.shade900,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: selected ? _kBrand : Colors.white12,
-                ),
-              ),
-              onSelected: (_) {
-                HapticFeedback.selectionClick();
-                setState(() => _privacy = opt.value);
-              },
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildCaption() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: TextField(
-        controller: _captionController,
-        style: const TextStyle(color: Colors.white),
-        maxLines: 2,
-        maxLength: _kMaxCaption,
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(
-          hintText: 'Add a caption...',
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: Colors.grey.shade900,
-          counterStyle: const TextStyle(color: Colors.grey),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
           ),
         ),
-      ),
-    );
-  }
 
-  Widget _buildActions() {
-    if (_capturedImage == null) {
-      // Nút chụp lớn ở giữa.
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: GestureDetector(
-          onTap: _takePicture,
-          child: Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 4),
-              gradient: const LinearGradient(
-                colors: [_kBrand, Color(0xFF34C3FF)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _kBrand.withValues(alpha: 0.5),
-                  blurRadius: 16,
+        const SizedBox(height: 16),
+
+        // Privacy chips
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: _privacyOptions
+                .where((opt) => opt.value != 'Tour' || (_selectedScheduleId ?? 0) != 0)
+                .map((opt) {
+              final sel = _privacy == opt.value;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _privacy = opt.value);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: sel ? const Color(0xFFFAA61A) : Colors.white12,
+                      border: Border.all(
+                        color: sel ? const Color(0xFFFAA61A) : Colors.white24,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(opt.icon, size: 13, color: sel ? Colors.black : Colors.white70),
+                        const SizedBox(width: 5),
+                        Text(
+                          opt.label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: sel ? Colors.black : Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: const Icon(Icons.camera_alt_rounded,
-                color: Colors.white, size: 32),
+              );
+            }).toList(),
           ),
         ),
-      );
-    }
-    // Retake / Post
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _isUploading ? null : _retake,
-              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-              label: const Text('Recapture',
-                  style: TextStyle(color: Colors.white)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Colors.white24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+
+        const SizedBox(height: 20),
+
+        // Send button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SizedBox(
+            width: double.infinity,
+            height: 54,
             child: FilledButton(
               onPressed: _isUploading ? null : _submitMoment,
               style: FilledButton.styleFrom(
-                backgroundColor: _kBrand,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                backgroundColor: const Color(0xFFFAA61A),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                elevation: 0,
               ),
               child: _isUploading
                   ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : const Text('Post',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.white)),
+                      width: 22, height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
+                    )
+                  : const Text(
+                      'Send Moment',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 0.3),
+                    ),
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
@@ -542,109 +653,252 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 // SUB-WIDGETS
 // ============================================================
 
-class _RoundIconBtn extends StatelessWidget {
-  const _RoundIconBtn({required this.icon, required this.onTap});
+/// Small circular button inside camera preview overlay.
+class _PreviewIconBtn extends StatelessWidget {
+  const _PreviewIconBtn({required this.icon, required this.onTap});
   final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.45),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: Colors.white, size: 22),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withValues(alpha: 0.40),
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
+}
+
+/// "1x" zoom label shown in preview corner (purely visual badge).
+class _ZoomLabel extends StatelessWidget {
+  const _ZoomLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.black.withValues(alpha: 0.40),
+      ),
+      child: const Text(
+        '1×',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+      ),
+    );
+  }
+}
+
+/// Large Locket-style shutter: white fill + golden ring border.
+class _LocketShutterButton extends StatelessWidget {
+  const _LocketShutterButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 78, height: 78,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFFAA61A), width: 3.5),
+          // Subtle outer shadow
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFAA61A).withValues(alpha: 0.35),
+              blurRadius: 14,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Container(
+          margin: const EdgeInsets.all(5),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Dropdown chọn lịch trình tour (hiển thị trên AppBar).
-class _ScheduleDropdown extends StatelessWidget {
-  const _ScheduleDropdown({
+/// Gallery / flip icon buttons at the bottom row.
+class _BottomIconBtn extends StatelessWidget {
+  const _BottomIconBtn({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 44, height: 44,
+        child: Icon(icon, color: Colors.white, size: 28),
+      ),
+    );
+  }
+}
+
+/// Tour pill in the top-centre (like "37 Friends" button in Locket).
+class _TourPill extends StatelessWidget {
+  const _TourPill({
     required this.schedules,
     required this.selectedId,
     required this.onChanged,
   });
 
-  final List schedules; // List<EligibleScheduleModel>
+  final List<EligibleScheduleModel> schedules;
+  final int? selectedId;
+  final ValueChanged<int?> onChanged;
+
+  String get _label {
+    if (schedules.isEmpty) return 'Personal';
+    final found = schedules.where((s) => s.scheduleId == selectedId).toList();
+    if (found.isEmpty) return schedules.first.tourName;
+    if (found.first.scheduleId == 0) {
+      final tourCount = schedules.length - 1;
+      return tourCount > 0 ? '$tourCount Tour${tourCount > 1 ? 's' : ''}' : 'Personal';
+    }
+    return found.first.tourName;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      offset: const Offset(0, 44),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.group_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: Text(
+                _label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (_) => schedules.map((s) {
+        return PopupMenuItem<int>(
+          value: s.scheduleId,
+          child: Row(
+            children: [
+              Icon(
+                s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
+                size: 16,
+                color: s.scheduleId == selectedId ? const Color(0xFFFAA61A) : Colors.white54,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  s.tourName,
+                  style: TextStyle(
+                    color: s.scheduleId == selectedId ? const Color(0xFFFAA61A) : Colors.white,
+                    fontWeight: s.scheduleId == selectedId ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (s.scheduleId == selectedId)
+                const Icon(Icons.check_rounded, size: 14, color: Color(0xFFFAA61A)),
+            ],
+          ),
+          onTap: () => onChanged(s.scheduleId),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// "History" pill below the shutter row (shows tour thumbnail + name).
+class _HistoryPill extends StatelessWidget {
+  const _HistoryPill({
+    required this.schedules,
+    required this.selectedId,
+    required this.onChanged,
+  });
+
+  final List<EligibleScheduleModel> schedules;
   final int? selectedId;
   final ValueChanged<int?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    if (schedules.isEmpty) {
-      return const Text('Personal Moment', style: TextStyle(fontSize: 15));
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white12,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: selectedId,
-          isDense: true,
-          dropdownColor: Colors.grey.shade900,
-          iconEnabledColor: Colors.white,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          items: [
-            for (final s in schedules)
-              DropdownMenuItem<int>(
-                value: s.scheduleId as int,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.place, size: 14, color: _kBrand),
-                    const SizedBox(width: 4),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 200),
-                      child: Text(
-                        s.tourName as String,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-          onChanged: onChanged,
-        ),
+    final label = schedules.where((s) => s.scheduleId == selectedId).firstOrNull?.tourName
+        ?? 'History';
+
+    return GestureDetector(
+      onTap: () {},
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // small thumbnail placeholder
+          Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white10,
+            ),
+            child: const Icon(Icons.photo, color: Colors.white30, size: 16),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 20),
+        ],
       ),
     );
   }
 }
 
-/// Badge trạng thái GPS.
-class _GeoStatusBadge extends StatelessWidget {
-  const _GeoStatusBadge({required this.status, required this.onRetry});
+/// Compact GPS status dot for the top-left corner.
+class _CompactGeoBadge extends StatelessWidget {
+  const _CompactGeoBadge({required this.status, required this.onRetry});
   final _GeoStatus status;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    late final String text;
-    late final Color color;
-    late final IconData icon;
+    final Color color;
+    final IconData icon;
     switch (status) {
       case _GeoStatus.locating:
-        text = 'Acquiring GPS...';
         color = Colors.amber;
         icon = Icons.gps_not_fixed;
         break;
       case _GeoStatus.ready:
-        text = 'GPS Ready';
         color = Colors.greenAccent;
         icon = Icons.gps_fixed;
         break;
       case _GeoStatus.failed:
-        text = 'No GPS — tap to retry';
         color = Colors.redAccent;
         icon = Icons.gps_off;
         break;
@@ -652,32 +906,37 @@ class _GeoStatusBadge extends StatelessWidget {
     return GestureDetector(
       onTap: status == _GeoStatus.failed ? onRetry : null,
       child: Container(
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        width: 36, height: 36,
         decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color),
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.12),
+          border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (status == _GeoStatus.locating)
-              const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.amber,
-                ),
+        child: status == _GeoStatus.locating
+            ? Padding(
+                padding: const EdgeInsets.all(9),
+                child: CircularProgressIndicator(strokeWidth: 1.5, color: color),
               )
-            else
-              Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
-            Text(text, style: TextStyle(color: color, fontSize: 12)),
-          ],
-        ),
+            : Icon(icon, color: color, size: 18),
       ),
     );
   }
 }
+
+/// Home nav dot (filled white circle in the centre of bottom nav bar).
+class _HomeNavDot extends StatelessWidget {
+  const _HomeNavDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44, height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.18),
+      ),
+      child: const Icon(Icons.home_rounded, color: Colors.white, size: 22),
+    );
+  }
+}
+

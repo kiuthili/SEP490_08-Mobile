@@ -215,6 +215,12 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<void> stopLocationSharing() async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.locations}/stop');
+    });
+  }
+
   Future<List<LiveLocationModel>> getScheduleLiveLocations(int scheduleId) async {
     return request(() async {
       final response = await api.dio.get('${ApiConstants.locations}/schedules/$scheduleId/live');
@@ -340,11 +346,14 @@ class SocialService extends GetxService with BaseServiceMixin {
 
   // ============ 4) FOOTPRINTS ("Cào Map") ============
   /// GET /api/moments/my-footprints  (token-based, KHÔNG truyền userId)
-  Future<List<FootprintDto>> getMyFootprints() async {
+  Future<List<FootprintDto>> getMyFootprints({int? scheduleId}) async {
     return request(() async {
-      // FIX: footprint phai lay tu LocationLogs (di chuyen), KHONG phai tu anh (moments).
-      final response =
-      await api.dio.get('${ApiConstants.locations}/footprints');
+      final response = await api.dio.get(
+        '${ApiConstants.locations}/footprints',
+        queryParameters: {
+          if (scheduleId != null && scheduleId > 0) 'scheduleId': scheduleId,
+        },
+      );
       return parseList(response.data, FootprintDto.fromJson);
     });
   }

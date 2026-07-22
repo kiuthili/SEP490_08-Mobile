@@ -599,6 +599,99 @@ class SocialMapController extends GetxController {
     }
   }
 
+  /// Tính toán các ô lục giác (BUMP Hexagons) từ dữ liệu footprints và liveTrail
+  List<Polygon> get bumpHexPolygons {
+    final validPoints = <LatLng>[];
+    for (final f in footprints) {
+      if (f.lat != 0 && f.lng != 0) {
+        validPoints.add(LatLng(f.lat, f.lng));
+      }
+    }
+    for (final t in liveTrail) {
+      if (t.latitude != 0 && t.longitude != 0) {
+        validPoints.add(t);
+      }
+    }
+
+    if (validPoints.isEmpty) return const [];
+
+    const double rEarth = 6378137.0;
+    const double hexR = 220.0;
+    final double sqrt3 = math.sqrt(3);
+
+    final refLat = validPoints.fold<double>(0.0, (sum, p) => sum + p.latitude) / validPoints.length;
+    final refLng = validPoints.fold<double>(0.0, (sum, p) => sum + p.longitude) / validPoints.length;
+    final cosRef = math.cos(refLat * math.pi / 180.0);
+
+    List<double> toLocal(double lat, double lng) => [
+      (lng - refLng) * (math.pi / 180.0) * rEarth * cosRef,
+      (lat - refLat) * (math.pi / 180.0) * rEarth,
+    ];
+
+    LatLng toGeo(double x, double y) => LatLng(
+      refLat + (y / rEarth) * (180.0 / math.pi),
+      refLng + (x / (rEarth * cosRef)) * (180.0 / math.pi),
+    );
+
+    final hexSet = <String, List<int>>{};
+    for (final p in validPoints) {
+      final loc = toLocal(p.latitude, p.longitude);
+      final x = loc[0];
+      final y = loc[1];
+
+      final fq = (2.0 / 3.0 * x) / hexR;
+      final fr = (-1.0 / 3.0 * x + sqrt3 / 3.0 * y) / hexR;
+      final fs = -fq - fr;
+
+      var rq = fq.round();
+      var rr = fr.round();
+      var rs = fs.round();
+
+      final dq = (rq - fq).abs();
+      final dr = (rr - fr).abs();
+      final ds = (rs - fs).abs();
+
+      if (dq > dr && dq > ds) {
+        rq = -rr - rs;
+      } else if (dr > ds) {
+        rr = -rq - rs;
+      }
+
+      final key = '$rq,$rr';
+      if (!hexSet.containsKey(key)) {
+        hexSet[key] = [rq, rr];
+      }
+    }
+
+    final polygons = <Polygon>[];
+    final hexFillColor = const Color(0xFFBAE6FF).withValues(alpha: 0.28);
+    final hexBorderColor = const Color(0xFFE0F2FE).withValues(alpha: 0.85);
+
+    for (final qr in hexSet.values) {
+      final q = qr[0];
+      final r = qr[1];
+      final cx = hexR * (3.0 / 2.0 * q);
+      final cy = hexR * (sqrt3 / 2.0 * q + sqrt3 * r);
+
+      final ring = <LatLng>[];
+      for (var i = 0; i < 6; i++) {
+        final a = (i * 60.0) * (math.pi / 180.0);
+        ring.add(toGeo(cx + hexR * math.cos(a), cy + hexR * math.sin(a)));
+      }
+
+      polygons.add(
+        Polygon(
+          points: ring,
+          color: hexFillColor,
+          borderColor: hexBorderColor,
+          borderStrokeWidth: 1.8,
+        ),
+      );
+    }
+
+    return polygons;
+  }
+
   // ======================= 5) HEATMAP =======================
   Future<void> toggleHeatmap() async {
     showHeatmap.toggle();

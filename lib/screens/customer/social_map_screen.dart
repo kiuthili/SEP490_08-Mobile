@@ -26,6 +26,7 @@ import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../constants/api_constants.dart';
 import '../../controllers/social_map_controller.dart';
 import '../../models/map_models.dart';
 import '../../models/social_models.dart';
@@ -235,11 +236,14 @@ class _MapView extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: ApiConstants.mapboxTileUrl,
+          additionalOptions: const {
+            'accessToken': ApiConstants.mapboxAccessToken,
+          },
           userAgentPackageName: 'com.stayhub.mobile',
           maxZoom: 19,
-          // OSM không hỗ trợ @2x ({r}) -> KHÔNG bật retinaMode để tránh
-          // emulation (tải 4 tile/level => tốn băng thông, giảm max zoom).
+          tileSize: 256,
+          zoomOffset: -1,
           tileProvider: NetworkTileProvider(),
         ),
 
@@ -265,24 +269,17 @@ class _MapView extends StatelessWidget {
           );
         }),
 
-        // --- 4) FOOTPRINTS ("cào map") ---
+        // --- 4) FOOTPRINTS ("cào map" - BUMP Hexagon Fog of War) ---
         Obx(() {
-          if (!c.showFootprints.value || c.footprints.isEmpty) {
+          if (!c.showFootprints.value) {
             return const SizedBox.shrink();
           }
-          return CircleLayer(
-            circles: c.footprints
-                .map(
-                  (f) => CircleMarker(
-                point: LatLng(f.lat, f.lng),
-                radius: 400, // mét (useRadiusInMeter)
-                useRadiusInMeter: true,
-                color: Colors.orange.withValues(alpha: 0.22),
-                borderColor: Colors.orange.withValues(alpha: 0.6),
-                borderStrokeWidth: 1.2,
-              ),
-            )
-                .toList(),
+          final hexPolygons = c.bumpHexPolygons;
+          if (hexPolygons.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return PolygonLayer(
+            polygons: hexPolygons,
           );
         }),
 
@@ -400,12 +397,16 @@ class _MapView extends StatelessWidget {
           );
         }),
 
-        // --- Attribution (bắt buộc theo điều khoản OSM) ---
+        // --- Attribution (bắt buộc theo điều khoản Mapbox) ---
         RichAttributionWidget(
           alignment: AttributionAlignment.bottomLeft,
           attributions: [
             TextSourceAttribution(
-              'OpenStreetMap contributors',
+              'Mapbox',
+              onTap: () {},
+            ),
+            TextSourceAttribution(
+              'OpenStreetMap',
               onTap: () {},
             ),
           ],

@@ -476,16 +476,16 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
 
   Widget _sentCard(FriendRequestModel request) {
     final busy = social.processingFriendshipIds.contains(request.id) ||
-        social.processingUserIds.contains(request.senderId);
+        social.processingUserIds.contains(request.receiverId);
     final date = request.createdAt == null
         ? 'Đã gửi lời mời'
         : 'Gửi ngày ${DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())}';
     return _PersonCard(
-      name: request.senderName ?? 'Người dùng #${request.senderId}',
+      name: request.senderName ?? 'Người dùng #${request.receiverId}',
       subtitle: date,
       avatarUrl: request.senderAvatarUrl,
       onTap: () =>
-          Get.toNamed(AppRoutes.userProfile, arguments: request.senderId),
+          Get.toNamed(AppRoutes.userProfile, arguments: request.receiverId),
       actions: [
         IconButton.outlined(
           tooltip: 'Thu hồi yêu cầu',

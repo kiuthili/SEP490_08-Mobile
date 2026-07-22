@@ -124,12 +124,24 @@ class SocialMapController extends GetxController {
     isLoading.value = true;
     try {
       await _orderController.fetchEligibleSchedules();
-      eligibleSchedules.assignAll(_orderController.eligibleSchedules);
+      
+      final List<EligibleScheduleModel> rawList = [];
+      if (_orderController.eligibleSchedules.isNotEmpty) {
+        rawList.add(EligibleScheduleModel(
+          scheduleId: 0,
+          tourName: 'Tất cả chuyến đi',
+          departureDate: DateTime.now(),
+          returnDate: DateTime.now(),
+          statusContext: 'All',
+        ));
+      }
+      rawList.addAll(_orderController.eligibleSchedules);
+      eligibleSchedules.assignAll(rawList);
+
       if (eligibleSchedules.isNotEmpty) {
-        await selectSchedule(eligibleSchedules.first.scheduleId);
+        await selectSchedule(0);
       } else {
-        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí.
-        await _loadFriendsLive();
+        await selectSchedule(0);
       }
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
@@ -142,7 +154,7 @@ class SocialMapController extends GetxController {
 
   // ======================= SCHEDULE SELECTION =======================
   Future<void> selectSchedule(int scheduleId) async {
-    if (selectedScheduleId.value == scheduleId && liveLocations.isNotEmpty) {
+    if (selectedScheduleId.value == scheduleId && liveLocations.isNotEmpty && scheduleId != 0) {
       return;
     }
     selectedScheduleId.value = scheduleId;
@@ -154,12 +166,20 @@ class SocialMapController extends GetxController {
     selectedDay.value = null;
 
     try {
-      await Future.wait([
-        _loadScheduleLive(scheduleId),
-        loadMapMoments(scheduleId),
-        _loadItineraries(scheduleId),
-      ]);
-      await _connectRealtime(scheduleId);
+      if (scheduleId == 0) {
+        await Future.wait([
+          _loadFriendsLive(),
+          loadMapMoments(null),
+        ]);
+        await _signalR.disconnectTracking();
+      } else {
+        await Future.wait([
+          _loadScheduleLive(scheduleId),
+          loadMapMoments(scheduleId),
+          _loadItineraries(scheduleId),
+        ]);
+        await _connectRealtime(scheduleId);
+      }
       _fitToLiveLocations();
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
@@ -216,7 +236,7 @@ class SocialMapController extends GetxController {
     }
 
     if (isSharingLocation.value) {
-      _stopSharing();
+      await _stopSharing();
       return;
     }
 
@@ -233,10 +253,13 @@ class SocialMapController extends GetxController {
     SnackbarHelper.success('Đang chia sẻ vị trí của bạn');
   }
 
-  void _stopSharing() {
+  Future<void> _stopSharing() async {
     _pingTimer?.cancel();
     _pingTimer = null;
     isSharingLocation.value = false;
+    try {
+      await _service.stopLocationSharing();
+    } catch (_) {}
     SnackbarHelper.success('Đã tắt chia sẻ vị trí');
   }
 
@@ -323,7 +346,9 @@ class SocialMapController extends GetxController {
   Future<void> loadFootprints() async {
     isFootprintsLoading.value = true;
     try {
-      final data = await _service.getMyFootprints();
+      final data = await _service.getMyFootprints(
+        scheduleId: selectedScheduleId.value,
+      );
       footprints.assignAll(data);
       if (data.isEmpty) {
         SnackbarHelper.success('Chưa có dấu chân nào được ghi nhận');

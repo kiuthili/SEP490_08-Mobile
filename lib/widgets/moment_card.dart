@@ -86,7 +86,29 @@ class MomentCard extends StatelessWidget {
                 if (moment.userId == currentUserId || onReport != null)
                   PopupMenuButton<String>(
                     onSelected: (val) {
-                      if (val == 'delete') onDelete(moment.id);
+                      if (val == 'delete') {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Xóa khoảnh khắc'),
+                            content: const Text('Bạn có chắc chắn muốn xóa khoảnh khắc này không? Thao tác này không thể hoàn tác.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Không'),
+                              ),
+                              FilledButton(
+                                onPressed: () {
+                                  Navigator.pop(dialogContext);
+                                  onDelete(moment.id);
+                                },
+                                style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                                child: const Text('Xóa'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                       if (val == 'report') onReport?.call(moment.id);
                     },
                     itemBuilder: (_) => [

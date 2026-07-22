@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import '../../constants/api_constants.dart';
 import '../../models/ai_models.dart';
 import '../../services/signalr_service.dart';
 import '../../services/social_service.dart';
@@ -129,9 +130,14 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: ApiConstants.mapboxTileUrl,
+                additionalOptions: const {
+                  'accessToken': ApiConstants.mapboxAccessToken,
+                },
                 userAgentPackageName: 'com.stayhub.mobile',
+                maxZoom: 19,
+                tileSize: 256,
+                zoomOffset: -1,
               ),
               MarkerLayer(
                 markers: [
