@@ -25,6 +25,7 @@ import 'services/storage_service.dart';
 import 'services/tour_service.dart';
 import 'services/user_study_service.dart';
 import 'controllers/auth_controller.dart';
+import 'controllers/home_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ Future<void> main() async {
   Get.put(SocialService(), permanent: true);
   Get.put(SignalRService(), permanent: true);
   Get.put(AuthController(), permanent: true);
+  Get.put(HomeController(), permanent: true);
   Get.put(StaffScheduleService(), permanent: true);
   Get.lazyPut<SocialService>(() => SocialService());
   Get.lazyPut<SocialController>(() => SocialController());
