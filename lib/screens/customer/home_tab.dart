@@ -214,7 +214,6 @@ class _HomeTabState extends State<HomeTab> {
                               tour.id,
                             );
                             return TourCard(
-                              heroTagPrefix: 'home',
                               tour: tour,
                               isInWishlist: inWishlist,
                               wishlistBusy: _wishlistController.isProcessing(
@@ -225,7 +224,7 @@ class _HomeTabState extends State<HomeTab> {
                                 tour.id,
                                 isInWishlist: inWishlist,
                               ),
-                              onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: {'id': tour.id, 'heroTag': 'home-tour-image-${tour.id}'}),
+                              onTap: () => _openTour(tour.id),
                             );
                           },
                         ),
