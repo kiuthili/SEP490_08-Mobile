@@ -7,7 +7,6 @@ import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
@@ -22,15 +21,24 @@ class ChatInboxScreen extends StatefulWidget {
   State<ChatInboxScreen> createState() => _ChatInboxScreenState();
 }
 
-class _ChatInboxScreenState extends State<ChatInboxScreen> {
+class _ChatInboxScreenState extends State<ChatInboxScreen> with SingleTickerProviderStateMixin {
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
+  late final TabController _tabController;
   _InboxFilter _filter = _InboxFilter.all;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          _filter = _InboxFilter.values[_tabController.index];
+        });
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _social.fetchChatRooms();
     });
@@ -38,6 +46,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -80,93 +89,10 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
   }
 
   Future<void> _showNewMessageSheet() async {
-    if (_social.friends.isEmpty) {
-      await _social.fetchFriends();
+    await Get.toNamed(AppRoutes.newMessage);
+    if (mounted) {
+      await _social.fetchChatRooms();
     }
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(sheetContext).height * 0.68,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tin nhắn mới',
-                      style: AppTextStyles.textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Chọn một người bạn để bắt đầu trò chuyện',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: Obx(() {
-                  if (_social.isLoading.value && _social.friends.isEmpty) {
-                    return const LoadingWidget();
-                  }
-                  if (_social.friends.isEmpty) {
-                    return const EmptyStateWidget(
-                      title: 'Chưa có bạn bè',
-                      subtitle: 'Kết bạn trước để gửi tin nhắn riêng',
-                      icon: Icons.person_add_alt_1_rounded,
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _social.friends.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final friend = _social.friends[index];
-                      return ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        tileColor: AppColors.surfaceGrouped,
-                        leading: _ChatAvatar(
-                          imageUrl: friend.avatarUrl,
-                          name: friend.fullName,
-                          isGroup: false,
-                          size: 46,
-                        ),
-                        title: Text(
-                          friend.fullName,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text(friend.email ?? 'Bạn bè trên StayHub'),
-                        trailing: const Icon(
-                          Icons.arrow_forward_rounded,
-                          color: AppColors.brand,
-                        ),
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          Get.toNamed(
-                            AppRoutes.chatRoom,
-                            arguments: friend.userId,
-                          )?.then((_) => _social.fetchChatRooms());
-                        },
-                      );
-                    },
-                  );
-                }),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -192,20 +118,20 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
-                child: _InboxHeader(
-                  directCount: _social.directChats.length,
-                  groupCount: _social.tourGroupChats.length,
-                  unreadCount: _social.unreadChatCount,
-                ),
-              ),
-              SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                   child: TextField(
                     controller: _searchController,
                     onChanged: (value) => setState(() => _query = value),
                     decoration: InputDecoration(
-                      hintText: 'Tìm cuộc trò chuyện...',
+                      hintText: 'Tìm kiếm...',
+                      filled: true,
+                      fillColor: AppColors.surfaceGrouped,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        borderSide: BorderSide.none,
+                      ),
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _query.isEmpty
                           ? null
@@ -221,33 +147,20 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 42,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      _FilterChip(
-                        label: 'Tất cả',
-                        selected: _filter == _InboxFilter.all,
-                        onTap: () => setState(() => _filter = _InboxFilter.all),
-                      ),
-                      _FilterChip(
-                        label: 'Tin nhắn riêng',
-                        icon: Icons.person_outline_rounded,
-                        selected: _filter == _InboxFilter.direct,
-                        onTap: () =>
-                            setState(() => _filter = _InboxFilter.direct),
-                      ),
-                      _FilterChip(
-                        label: 'Nhóm tour',
-                        icon: Icons.groups_2_outlined,
-                        selected: _filter == _InboxFilter.group,
-                        onTap: () =>
-                            setState(() => _filter = _InboxFilter.group),
-                      ),
-                    ],
-                  ),
+                child: TabBar(
+                  controller: _tabController,
+                  dividerColor: Colors.transparent,
+                  labelColor: AppColors.brand,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicatorColor: AppColors.brand,
+                  indicatorWeight: 3,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  tabs: const [
+                    Tab(text: 'Tất cả'),
+                    Tab(text: 'Tin nhắn riêng'),
+                    Tab(text: 'Nhóm tour'),
+                  ],
                 ),
               ),
               if (rooms.isEmpty)
@@ -292,132 +205,6 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> {
   }
 }
 
-class _InboxHeader extends StatelessWidget {
-  const _InboxHeader({
-    required this.directCount,
-    required this.groupCount,
-    required this.unreadCount,
-  });
-
-  final int directCount;
-  final int groupCount;
-  final int unreadCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF071A3D), Color(0xFF0068E0)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppRadius.card,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brand.withValues(alpha: 0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(17),
-            ),
-            child: const Icon(
-              Icons.forum_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Kết nối mọi hành trình',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  unreadCount > 0
-                      ? '$directCount chat riêng • $groupCount nhóm tour • $unreadCount chưa đọc'
-                      : '$directCount chat riêng • $groupCount nhóm tour',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.auto_awesome_rounded,
-            color: Color(0xFFFFD37A),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.icon,
-  });
-
-  final String label;
-  final IconData? icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        selected: selected,
-        showCheckmark: false,
-        avatar: icon == null
-            ? null
-            : Icon(
-                icon,
-                size: 17,
-                color: selected ? AppColors.brand : AppColors.textSecondary,
-              ),
-        label: Text(label),
-        onSelected: (_) => onTap(),
-        selectedColor: AppColors.brandLight,
-        backgroundColor: AppColors.surfaceElevated,
-        side: BorderSide(
-          color: selected
-              ? AppColors.brand.withValues(alpha: 0.2)
-              : AppColors.border,
-        ),
-        labelStyle: TextStyle(
-          color: selected ? AppColors.brand : AppColors.textSecondary,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
 
 class _ConversationCard extends StatelessWidget {
   const _ConversationCard({required this.room, required this.onTap});
@@ -433,118 +220,118 @@ class _ConversationCard extends StatelessWidget {
             ? 'Nhóm tour #${room.scheduleId ?? room.id}'
             : 'Cuộc trò chuyện #${room.id}';
     final hasUnread = room.unreadCount > 0;
+    
     final previewStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: hasUnread ? AppColors.textPrimary : null,
-          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+          color: hasUnread ? AppColors.textPrimary : AppColors.textSecondary,
+          fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w400,
+          fontSize: 13,
         );
+        
     final titleStyle = AppTextStyles.textTheme.titleSmall?.copyWith(
-      fontWeight: hasUnread || room.isPinned ? FontWeight.w800 : FontWeight.w700,
-      color: hasUnread ? AppColors.textPrimary : null,
+      fontWeight: hasUnread || room.isPinned ? FontWeight.w800 : FontWeight.w600,
+      color: hasUnread ? AppColors.textPrimary : AppColors.textPrimary,
+      fontSize: 15,
     );
-    return Material(
-      color: AppColors.surfaceElevated,
-      borderRadius: AppRadius.card,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.card,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              _ChatAvatar(
-                imageUrl: room.avatarUrl,
-                name: title,
-                isGroup: room.isGroup,
-                size: 54,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: titleStyle,
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            _ChatAvatar(
+              imageUrl: room.avatarUrl,
+              name: title,
+              isGroup: room.isGroup,
+              size: 56,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
+                        ),
+                      ),
+                      if (room.lastMessageAt != null)
+                        Text(
+                          _messageTime(room.lastMessageAt!),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: hasUnread
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                              ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (room.isGroup) ...[
+                        const Icon(
+                          Icons.groups_2_outlined,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                      Expanded(
+                        child: Text(
+                          room.lastMessage?.trim().isNotEmpty == true
+                              ? room.lastMessage!
+                              : room.isGroup
+                                  ? 'Nhóm trò chuyện theo lịch tour'
+                                  : 'Bắt đầu cuộc trò chuyện',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: previewStyle,
+                        ),
+                      ),
+                      if (room.isPinned)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 6),
+                          child: Icon(
+                            Icons.push_pin_rounded,
+                            size: 16,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        if (room.lastMessageAt != null)
-                          Text(
-                            _messageTime(room.lastMessageAt!),
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: hasUnread
-                                      ? AppColors.brand
-                                      : AppColors.textTertiary,
-                                  fontWeight:
-                                      hasUnread ? FontWeight.w700 : FontWeight.w400,
-                                ),
+                      if (room.isMuted)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 6),
+                          child: Icon(
+                            Icons.notifications_off_outlined,
+                            size: 16,
+                            color: AppColors.textSecondary,
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      children: [
-                        if (room.isGroup) ...[
-                          const Icon(
-                            Icons.groups_2_outlined,
-                            size: 15,
+                        ),
+                      if (hasUnread)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
                             color: AppColors.brand,
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        Expanded(
-                          child: Text(
-                            room.lastMessage?.trim().isNotEmpty == true
-                                ? room.lastMessage!
-                                : room.isGroup
-                                    ? 'Nhóm trò chuyện theo lịch tour'
-                                    : 'Bắt đầu cuộc trò chuyện',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: previewStyle,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        if (room.isPinned)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 6),
-                            child: Icon(
-                              Icons.push_pin_rounded,
-                              size: 15,
-                              color: AppColors.brand,
-                            ),
-                          ),
-                        if (room.isMuted)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 6),
-                            child: Icon(
-                              Icons.notifications_off_outlined,
-                              size: 15,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              if (hasUnread)
-                _UnreadBadge(count: room.unreadCount, compact: false)
-              else
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.textTertiary,
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -562,41 +349,6 @@ class _ConversationCard extends StatelessWidget {
   }
 }
 
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({
-    required this.count,
-    this.compact = true,
-  });
-
-  final int count;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = count > 99 ? '99+' : count.toString();
-    final minWidth = compact ? 18.0 : 22.0;
-    final height = compact ? 18.0 : 24.0;
-    return Container(
-      constraints: BoxConstraints(minWidth: minWidth, minHeight: height),
-      padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 7),
-      decoration: BoxDecoration(
-        color: AppColors.error,
-        borderRadius: BorderRadius.circular(height / 2),
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: compact ? 10 : 12,
-          fontWeight: FontWeight.w800,
-          height: 1,
-        ),
-      ),
-    );
-  }
-}
 
 class _ChatAvatar extends StatelessWidget {
   const _ChatAvatar({

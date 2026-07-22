@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+
 import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,9 +18,9 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_screen.dart';
-import '../../widgets/custom_button.dart';
+
 import '../../widgets/loading_widget.dart';
-import 'package:flutter/services.dart';
+
 import 'my_tickets_screen.dart';
 
 bool _isToday(DateTime? date) {
@@ -250,88 +250,130 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       return const _OrderNotFound();
     }
 
-    return RefreshIndicator(
-      onRefresh: () => _refreshOrder(order.id),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 36),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _OrderHero(order: order),
-            const SizedBox(height: 16),
-            _OrderValueCard(order: order),
-            const SizedBox(height: 20),
-            const _SectionTitle(
-              icon: Icons.route_rounded,
-              title: 'Hành trình',
-              subtitle: 'Thông tin lịch khởi hành của chuyến đi',
-            ),
-            const SizedBox(height: 10),
-            _TripTimeline(order: order),
-            if (_shouldLoadItineraries(order)) ...[
-              const SizedBox(height: 12),
-              _ScheduleItineraryPanel(
-                itineraries: _itineraries,
-                tourismInformation: _tourismInformation,
-                expandedDays: _expandedDays,
-                loading: _loadingItineraries,
-                error: _itineraryError,
-                onRetry: () => _loadItineraries(order, force: true),
-                onToggleDay: (day) {
-                  setState(() {
-                    if (_expandedDays.contains(day)) {
-                      _expandedDays.remove(day);
-                    } else {
-                      _expandedDays.add(day);
-                    }
-                  });
-                },
-                onToggleAll: () {
-                  final allDays =
-                      _itineraries.map((item) => item.dayNumber).toSet();
-                  setState(() {
-                    _expandedDays =
-                        _expandedDays.containsAll(allDays) ? <int>{} : allDays;
-                  });
-                },
+    return DefaultTabController(
+      length: 3,
+      child: RefreshIndicator(
+        onRefresh: () => _refreshOrder(order.id),
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _OrderHero(order: order),
+                    ],
+                  ),
+                ),
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SliverAppBarDelegate(
+                  const TabBar(
+                    labelColor: AppColors.brand,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.brand,
+                    indicatorWeight: 3,
+                    labelStyle: TextStyle(fontWeight: FontWeight.w700),
+                    unselectedLabelStyle:
+                        TextStyle(fontWeight: FontWeight.w500),
+                    tabs: [
+                      Tab(text: 'Thông tin'),
+                      Tab(text: 'Lịch trình'),
+                      Tab(text: 'Vé'),
+                    ],
+                  ),
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            children: [
+              // Tab 1: Thông tin đơn
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _OrderInformationCard(
+                      order: order,
+                      ticketTypeNames: _ticketTypeNames,
+                    ),
+                    if (order.status == 'Pending') ...[
+                      const SizedBox(height: 20),
+                      const _PendingOrderNotice(),
+                    ],
+                    if (order.status == 'Paid' ||
+                        order.status == 'Completed') ...[
+                      const SizedBox(height: 16),
+                      _PostPaymentActions(
+                        completed: order.status == 'Completed',
+                        showCancellation: _canRequestCancellation(order),
+                        onCancellation: () => _openCancellationRequest(order),
+                        onReview: () => _showReviewDialog(order),
+                      ),
+                    ],
+                    if (order.status == 'Cancelled' ||
+                        order.status == 'Request to Cancelled') ...[
+                      const SizedBox(height: 20),
+                      _InactiveOrderNotice(status: order.status),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Tab 2: Lịch trình
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TripTimeline(order: order),
+                    if (_shouldLoadItineraries(order)) ...[
+                      const SizedBox(height: 20),
+                      _ScheduleItineraryPanel(
+                        itineraries: _itineraries,
+                        tourismInformation: _tourismInformation,
+                        loading: _loadingItineraries,
+                        error: _itineraryError,
+                        onRetry: () => _loadItineraries(order, force: true),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Tab 3: Vé
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (order.status == 'Paid' || order.status == 'Completed')
+                      OrderTicketsPanel(
+                        tickets: order.tickets,
+                        ticketTypeNames: _ticketTypeNames,
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Center(
+                          child: Text(
+                            'Vé sẽ hiển thị khi đơn hàng đã thanh toán',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
-            const SizedBox(height: 20),
-            const _SectionTitle(
-              icon: Icons.receipt_long_outlined,
-              title: 'Thông tin đơn',
-              subtitle: 'Chi tiết thanh toán và ưu đãi',
-            ),
-            const SizedBox(height: 10),
-            _OrderInformationCard(
-              order: order,
-              ticketTypeNames: _ticketTypeNames,
-            ),
-            if (order.status == 'Pending') ...[
-              const SizedBox(height: 20),
-              const _PendingOrderNotice(),
-            ],
-            if (order.status == 'Paid' || order.status == 'Completed') ...[
-              const SizedBox(height: 20),
-              OrderTicketsPanel(
-                tickets: order.tickets,
-                ticketTypeNames: _ticketTypeNames,
-              ),
-              const SizedBox(height: 16),
-              _PostPaymentActions(
-                completed: order.status == 'Completed',
-                showCancellation: _canRequestCancellation(order),
-                onCancellation: () => _openCancellationRequest(order),
-                onReview: () => _showReviewDialog(order),
-              ),
-            ],
-            if (order.status == 'Cancelled' ||
-                order.status == 'Request to Cancelled') ...[
-              const SizedBox(height: 20),
-              _InactiveOrderNotice(status: order.status),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -487,45 +529,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     ).whenComplete(commentController.dispose);
   }
 }
-void _showQrDialog(BuildContext context, TicketModel ticket) {
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(ticket.attendeeName),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          QrImageView(
-            data: ticket.qrCode!,
-            size: 200,
-          ),
-          const SizedBox(height: 16),
-          SelectableText(
-            ticket.qrCode!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Đóng'),
-        ),
-        FilledButton.icon(
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: ticket.qrCode!));
-            Navigator.of(ctx).pop();
-            SnackbarHelper.success('Đã sao chép mã QR');
-          },
-          icon: const Icon(Icons.copy_rounded, size: 16),
-          label: const Text('Sao chép'),
-        ),
-      ],
-    ),
-  );
-}
 
 class _OrderHero extends StatelessWidget {
   const _OrderHero({required this.order});
@@ -658,126 +661,6 @@ class _OrderHero extends StatelessWidget {
   }
 }
 
-class _OrderValueCard extends StatelessWidget {
-  const _OrderValueCard({required this.order});
-
-  final OrderModel order;
-
-  int get _quantity =>
-      order.totalQuantity > 0 ? order.totalQuantity : order.ticketCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(17),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF071A3D), Color(0xFF073B78)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppRadius.card,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'TỔNG THANH TOÁN',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.62),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  CurrencyFormatter.format(order.finalAmount),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 42,
-            color: Colors.white.withValues(alpha: 0.16),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$_quantity vé',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormatter.display(order.orderedAt),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.65),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.brandLight,
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(icon, size: 21, color: AppColors.brand),
-        ),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTextStyles.textTheme.titleMedium),
-              const SizedBox(height: 2),
-              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _TripTimeline extends StatelessWidget {
   const _TripTimeline({required this.order});
@@ -841,22 +724,16 @@ class _ScheduleItineraryPanel extends StatelessWidget {
   const _ScheduleItineraryPanel({
     required this.itineraries,
     required this.tourismInformation,
-    required this.expandedDays,
     required this.loading,
     required this.error,
     required this.onRetry,
-    required this.onToggleDay,
-    required this.onToggleAll,
   });
 
   final List<TourScheduleItineraryModel> itineraries;
   final Map<int, TourismInformationModel> tourismInformation;
-  final Set<int> expandedDays;
   final bool loading;
   final String? error;
   final VoidCallback onRetry;
-  final ValueChanged<int> onToggleDay;
-  final VoidCallback onToggleAll;
 
   @override
   Widget build(BuildContext context) {
@@ -875,46 +752,29 @@ class _ScheduleItineraryPanel extends StatelessWidget {
       grouped.putIfAbsent(itinerary.dayNumber, () => []).add(itinerary);
     }
     final days = grouped.keys.toList()..sort();
-    final allExpanded = expandedDays.containsAll(days);
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
         borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF05073C), Color(0xFF0048B0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              color: AppColors.surfaceGrouped,
+              border: Border(
+                bottom: BorderSide(color: AppColors.border),
               ),
             ),
             child: Row(
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: const Icon(
-                    Icons.map_rounded,
-                    color: Colors.white,
-                  ),
+                const Icon(
+                  Icons.map_outlined,
+                  color: AppColors.brand,
                 ),
                 const SizedBox(width: 11),
                 Expanded(
@@ -924,7 +784,6 @@ class _ScheduleItineraryPanel extends StatelessWidget {
                       Text(
                         'Lịch trình chi tiết',
                         style: AppTextStyles.textTheme.titleSmall?.copyWith(
-                          color: Colors.white,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -932,19 +791,11 @@ class _ScheduleItineraryPanel extends StatelessWidget {
                       Text(
                         '${days.length} ngày • ${itineraries.length} hoạt động',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white70,
+                              color: AppColors.textSecondary,
                             ),
                       ),
                     ],
                   ),
-                ),
-                TextButton(
-                  onPressed: onToggleAll,
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: Text(allExpanded ? 'Thu gọn' : 'Mở hết'),
                 ),
               ],
             ),
@@ -954,9 +805,7 @@ class _ScheduleItineraryPanel extends StatelessWidget {
               day: days[index],
               activities: grouped[days[index]]!,
               tourismInformation: tourismInformation,
-              expanded: expandedDays.contains(days[index]),
               isLast: index == days.length - 1,
-              onTap: () => onToggleDay(days[index]),
             ),
         ],
       ),
@@ -964,26 +813,39 @@ class _ScheduleItineraryPanel extends StatelessWidget {
   }
 }
 
-class _ItineraryDayCard extends StatelessWidget {
+class _ItineraryDayCard extends StatefulWidget {
   const _ItineraryDayCard({
     required this.day,
     required this.activities,
     required this.tourismInformation,
-    required this.expanded,
     required this.isLast,
-    required this.onTap,
   });
 
   final int day;
   final List<TourScheduleItineraryModel> activities;
   final Map<int, TourismInformationModel> tourismInformation;
-  final bool expanded;
   final bool isLast;
-  final VoidCallback onTap;
+
+  @override
+  State<_ItineraryDayCard> createState() => _ItineraryDayCardState();
+}
+
+class _ItineraryDayCardState extends State<_ItineraryDayCard> {
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    final date = widget.activities
+        .map((item) => item.itineraryDate)
+        .whereType<DateTime>()
+        .firstOrNull;
+    _expanded = _isToday(date);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final date = activities
+    final date = widget.activities
         .map((item) => item.itineraryDate)
         .whereType<DateTime>()
         .firstOrNull;
@@ -995,7 +857,7 @@ class _ItineraryDayCard extends StatelessWidget {
           left: isToday
               ? const BorderSide(color: AppColors.brand, width: 4)
               : BorderSide.none,
-          bottom: isLast
+          bottom: widget.isLast
               ? BorderSide.none
               : const BorderSide(color: AppColors.separator),
         ),
@@ -1005,29 +867,33 @@ class _ItineraryDayCard extends StatelessWidget {
           Material(
             color: isToday
                 ? AppColors.brandLight
-                : expanded
+                : _expanded
                     ? AppColors.brandLight.withValues(alpha: 0.6)
                     : Colors.transparent,
             child: InkWell(
-              onTap: onTap,
+              onTap: () {
+                setState(() {
+                  _expanded = !_expanded;
+                });
+              },
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Row(
                   children: [
                     Container(
-                      width: 42,
-                      height: 42,
+                      width: 36,
+                      height: 36,
                       alignment: Alignment.center,
                       decoration: const BoxDecoration(
                         gradient: AppColors.brandGradient,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
-                        '$day',
+                        '${widget.day}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -1039,7 +905,7 @@ class _ItineraryDayCard extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                'Ngày $day',
+                                'Ngày ${widget.day}',
                                 style: AppTextStyles.textTheme.titleSmall
                                     ?.copyWith(
                                   fontWeight: FontWeight.w800,
@@ -1076,15 +942,15 @@ class _ItineraryDayCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             date == null
-                                ? '${activities.length} hoạt động'
-                                : '${DateFormatter.display(date)} • ${activities.length} hoạt động',
+                                ? '${widget.activities.length} hoạt động'
+                                : '${DateFormatter.display(date)} • ${widget.activities.length} hoạt động',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
                       ),
                     ),
                     AnimatedRotation(
-                      turns: expanded ? 0.5 : 0,
+                      turns: _expanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 220),
                       child: const Icon(
                         Icons.keyboard_arrow_down_rounded,
@@ -1102,20 +968,22 @@ class _ItineraryDayCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 2, 14, 15),
               child: Column(
                 children: [
-                  for (var index = 0; index < activities.length; index++)
+                  for (var index = 0; index < widget.activities.length; index++)
                     _ScheduleActivity(
-                      itinerary: activities[index],
-                      tourismInformation: activities[index].tourismInfoId ==
-                              null
-                          ? null
-                          : tourismInformation[activities[index].tourismInfoId],
-                      isLast: index == activities.length - 1,
+                      itinerary: widget.activities[index],
+                      tourismInformation:
+                          widget.activities[index].tourismInfoId == null
+                              ? null
+                              : widget.tourismInformation[
+                                  widget.activities[index].tourismInfoId],
+                      isLast: index == widget.activities.length - 1,
                     ),
                 ],
               ),
             ),
-            crossFadeState:
-                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 240),
             sizeCurve: Curves.easeInOutCubic,
           ),
@@ -1650,6 +1518,35 @@ class _TimelineDate extends StatelessWidget {
   }
 }
 
+class _DashedDivider extends StatelessWidget {
+  const _DashedDivider();
+  
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boxWidth = constraints.constrainWidth();
+        const dashWidth = 4.0;
+        const dashSpace = 4.0;
+        final dashCount = (boxWidth / (dashWidth + dashSpace)).floor();
+        return Flex(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          direction: Axis.horizontal,
+          children: List.generate(dashCount, (_) {
+            return const SizedBox(
+              width: dashWidth,
+              height: 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: AppColors.separator),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
+
 class _OrderInformationCard extends StatelessWidget {
   const _OrderInformationCard({
     required this.order,
@@ -1661,64 +1558,158 @@ class _OrderInformationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = _OrderStatusStyle.from(order.status);
     final hasNote = order.note?.isNotEmpty == true;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: AppRadius.card,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _DetailRow(
-            icon: Icons.tag_rounded,
-            label: 'Mã đơn',
-            value: '#${order.id}',
-          ),
-          _DetailRow(
-            icon: Icons.event_note_rounded,
-            label: 'Ngày đặt',
-            value: DateFormatter.display(order.orderedAt),
-          ),
-          _TicketBreakdownSection(
-            order: order,
-            ticketTypeNames: ticketTypeNames,
-          ),
-          _DetailRow(
-            icon: Icons.payments_outlined,
-            label: 'Tạm tính',
-            value: CurrencyFormatter.format(order.totalAmount),
-            isAmount: true,
-          ),
-          if ((order.discountValue ?? 0) > 0)
-            _DetailRow(
-              icon: Icons.local_offer_outlined,
-              label: 'Ưu đãi',
-              value: '-${CurrencyFormatter.format(order.discountValue!)}',
-              valueColor: AppColors.success,
-              isAmount: true,
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 32,
+                  color: AppColors.brand,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'HÓA ĐƠN ĐẶT TOUR',
+                  style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '#${order.id}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _StatusPill(style: status),
+                const SizedBox(height: 12),
+                Text(
+                  DateFormatter.display(order.orderedAt),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
-          if (order.voucherCode?.isNotEmpty == true)
-            _DetailRow(
-              icon: Icons.confirmation_number_outlined,
-              label: 'Voucher',
-              value: order.voucherCode!,
-            ),
-          _DetailRow(
-            icon: Icons.receipt_rounded,
-            label: 'Thành tiền',
-            value: CurrencyFormatter.format(order.finalAmount),
-            valueColor: AppColors.brand,
-            isAmount: true,
-            isLast: !hasNote,
           ),
-          if (hasNote)
-            _DetailRow(
-              icon: Icons.notes_rounded,
-              label: 'Ghi chú',
-              value: order.note!,
-              isLast: true,
+          
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: _DashedDivider(),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: _TicketBreakdownSection(
+              order: order,
+              ticketTypeNames: ticketTypeNames,
             ),
+          ),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: _DashedDivider(),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                _DetailRow(
+                  label: 'Tạm tính',
+                  value: CurrencyFormatter.format(order.totalAmount),
+                ),
+                if ((order.discountValue ?? 0) > 0)
+                  _DetailRow(
+                    label: 'Ưu đãi',
+                    value: '-${CurrencyFormatter.format(order.discountValue!)}',
+                    valueColor: AppColors.success,
+                  ),
+                if ((order.promotionDiscountValue ?? 0) > 0)
+                  _DetailRow(
+                    label: 'Khuyến mãi',
+                    value:
+                        '-${CurrencyFormatter.format(order.promotionDiscountValue!)}',
+                    valueColor: AppColors.success,
+                  ),
+                if (order.voucherCode?.isNotEmpty == true)
+                  _DetailRow(
+                    label: 'Voucher',
+                    value: order.voucherCode!,
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Thành tiền',
+                      style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      CurrencyFormatter.format(order.finalAmount),
+                      style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                        color: AppColors.brand,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          if (hasNote) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: _DashedDivider(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ghi chú:',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    order.note!,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1749,6 +1740,7 @@ class _TicketBreakdownSection extends StatelessWidget {
           quantity: quantity,
           unitPrice: detail.unitPrice,
           totalPrice: totalPrice,
+          promotionDiscountValue: detail.promotionDiscountValue,
         );
       }).toList();
     }
@@ -1766,6 +1758,7 @@ class _TicketBreakdownSection extends StatelessWidget {
             quantity: entry.value,
             unitPrice: 0,
             totalPrice: 0,
+            promotionDiscountValue: null,
           ),
         )
         .toList();
@@ -1782,54 +1775,27 @@ class _TicketBreakdownSection extends StatelessWidget {
     final items = _items;
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.separator),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Chi tiết vé',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.confirmation_number_outlined,
-              size: 17,
-              color: AppColors.textSecondary,
-            ),
+        const SizedBox(height: 12),
+        ...items.map(
+          (item) => _TicketBreakdownRow(
+            name: _ticketTypeName(item.ticketTypeId),
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            promotionDiscountValue: item.promotionDiscountValue,
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 5, bottom: 8),
-                  child: Text(
-                    'Chi tiết vé',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-                ...items.map(
-                  (item) => _TicketBreakdownRow(
-                    name: _ticketTypeName(item.ticketTypeId),
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    totalPrice: item.totalPrice,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1840,12 +1806,14 @@ class _TicketBreakdownItem {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.promotionDiscountValue,
   });
 
   final int ticketTypeId;
   final int quantity;
   final int unitPrice;
   final int totalPrice;
+  final int? promotionDiscountValue;
 }
 
 class _TicketBreakdownRow extends StatelessWidget {
@@ -1854,18 +1822,20 @@ class _TicketBreakdownRow extends StatelessWidget {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.promotionDiscountValue,
   });
 
   final String name;
   final int quantity;
   final int unitPrice;
   final int totalPrice;
+  final int? promotionDiscountValue;
 
   @override
   Widget build(BuildContext context) {
     final hasPrice = unitPrice > 0 || totalPrice > 0;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1878,14 +1848,14 @@ class _TicketBreakdownRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   hasPrice
-                      ? '$quantity vé x ${CurrencyFormatter.format(unitPrice)}'
+                      ? '$quantity x ${CurrencyFormatter.format(unitPrice)}'
                       : '$quantity vé',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
@@ -1895,16 +1865,27 @@ class _TicketBreakdownRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          SizedBox(
-            width: 124,
-            child: Text(
-              hasPrice ? CurrencyFormatter.format(totalPrice) : '',
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                hasPrice ? CurrencyFormatter.format(totalPrice) : '',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+              ),
+              if ((promotionDiscountValue ?? 0) > 0) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '-${CurrencyFormatter.format(promotionDiscountValue!)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -1914,72 +1895,40 @@ class _TicketBreakdownRow extends StatelessWidget {
 
 class _DetailRow extends StatelessWidget {
   const _DetailRow({
-    required this.icon,
     required this.label,
     required this.value,
     this.valueColor,
-    this.isAmount = false,
-    this.isLast = false,
   });
 
-  final IconData icon;
   final String label;
   final String value;
   final Color? valueColor;
-  final bool isAmount;
-  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(
-                bottom: BorderSide(color: AppColors.separator),
-              ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 17, color: AppColors.textSecondary),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
           ),
           const SizedBox(width: 12),
-          Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: isAmount ? 124 : 88,
-                maxWidth: MediaQuery.sizeOf(context).width * 0.46,
-              ),
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                maxLines: isAmount ? 1 : 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: valueColor ?? AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: valueColor ?? AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ),
         ],
@@ -2057,16 +2006,41 @@ class _PostPaymentActions extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 14),
-          CustomButton(
-            label: 'Viết đánh giá',
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.brand,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             onPressed: onReview,
+            child: const Text(
+              'Viết đánh giá',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
           if (showCancellation) ...[
             const SizedBox(height: 10),
-            CustomButton(
-              label: 'Yêu cầu hủy tour',
-              outlined: true,
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                side: const BorderSide(color: AppColors.brand),
+              ),
               onPressed: onCancellation,
+              child: const Text(
+                'Yêu cầu hủy tour',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.brand,
+                ),
+              ),
             ),
           ],
         ],
@@ -2279,5 +2253,30 @@ class _OrderNotFound extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

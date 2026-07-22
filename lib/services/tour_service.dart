@@ -103,6 +103,27 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<void> requestConsultation({
+    required int tourId,
+    required String fullName,
+    required String phone,
+    required String email,
+    String? note,
+  }) async {
+    return request(() async {
+      await api.dio.post(
+        '${ApiConstants.tours}/request-consultation',
+        data: {
+          'tourId': tourId,
+          'fullName': fullName,
+          'phone': phone,
+          'email': email,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      );
+    });
+  }
+
   Future<TourScheduleModel> getScheduleById(int id) async {
     return request(() async {
       final response = await api.dio.get('${ApiConstants.tourSchedules}/$id');

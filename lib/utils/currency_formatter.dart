@@ -10,7 +10,7 @@ class CurrencyFormatter {
     try {
       _fmt = NumberFormat.currency(
         locale: 'vi_VN',
-        symbol: 'đ',
+        symbol: 'VND',
         decimalDigits: 0,
       );
       _fmt!.format(0);
@@ -18,7 +18,7 @@ class CurrencyFormatter {
     } catch (_) {
       _fmt = NumberFormat.currency(
         locale: 'en_US',
-        symbol: 'đ',
+        symbol: 'VND',
         decimalDigits: 0,
       );
       return _fmt!;

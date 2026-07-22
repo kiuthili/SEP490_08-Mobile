@@ -913,6 +913,10 @@ class BookingController extends GetxController {
   String ticketTypeName(int ticketTypeId) {
     final name = ticketTypeNames[ticketTypeId]?.trim();
     if (name != null && name.isNotEmpty) return name;
+    
+    final fallback = tickets.firstWhereOrNull((t) => t.ticketTypeId == ticketTypeId)?.ticketTypeName;
+    if (fallback != null && fallback.trim().isNotEmpty) return fallback.trim();
+    
     return 'Loại vé #$ticketTypeId';
   }
 
@@ -929,7 +933,20 @@ class BookingController extends GetxController {
           final ticketType = await _catalogService.getTicketTypeById(id);
           final name = ticketType.name.trim();
           if (name.isEmpty) return null;
-          return MapEntry(id, name);
+          
+          String formattedName = name;
+          final min = ticketType.minAge ?? 0;
+          final max = ticketType.maxAge ?? 0;
+          
+          if (min > 0 && max > 0 && max < 99) {
+            formattedName = '$name (Từ $min - $max tuổi)';
+          } else if (max > 0 && max < 99) {
+            formattedName = '$name (Dưới $max tuổi)';
+          } else if (min > 0) {
+            formattedName = '$name (Từ $min tuổi trở lên)';
+          }
+          
+          return MapEntry(id, formattedName);
         } catch (_) {
           return null;
         }
@@ -942,6 +959,18 @@ class BookingController extends GetxController {
   void setTicketQty(int ticketId, int qty) {
     final ticket = tickets.firstWhereOrNull((t) => t.id == ticketId);
     if (ticket == null) return;
+    
+    final currentTotal = totalPassengers;
+    final oldQty = ticketQuantities[ticketId] ?? 0;
+    
+    if (qty > oldQty) {
+      final diff = qty - oldQty;
+      if (currentTotal + diff > 9) {
+        SnackbarHelper.error('Chỉ được đặt tối đa 9 vé mỗi đơn');
+        qty = oldQty + (9 - currentTotal);
+      }
+    }
+    
     final max = ticket.availableQuantity;
     ticketQuantities[ticketId] = qty.clamp(0, max);
     discountAmount.value = 0;
@@ -1053,6 +1082,7 @@ class BookingController extends GetxController {
         scheduleId: schedule.id,
         finalAmount: finalAmount,
         voucherCode: voucherCode.value.isNotEmpty ? voucherCode.value : null,
+        promotionValue: discountAmount.value > 0 ? discountAmount.value : null,
         note: orderNote,
         orderDetails: orderDetails,
       );

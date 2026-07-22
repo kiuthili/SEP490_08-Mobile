@@ -41,12 +41,16 @@ class TicketTypeModel {
   final String name;
   final String? description;
   final bool isActive;
+  final int? minAge;
+  final int? maxAge;
 
   TicketTypeModel({
     required this.id,
     required this.name,
     this.description,
     required this.isActive,
+    this.minAge,
+    this.maxAge,
   });
 
   factory TicketTypeModel.fromJson(Map<String, dynamic> json) =>
@@ -61,6 +65,8 @@ class TicketTypeModel {
           JsonUtils.pick(json, ['isActive', 'IsActive']),
           fallback: true,
         ),
+        minAge: JsonUtils.readInt(JsonUtils.pick(json, ['minAge', 'MinAge'])),
+        maxAge: JsonUtils.readInt(JsonUtils.pick(json, ['maxAge', 'MaxAge'])),
       );
 }
 

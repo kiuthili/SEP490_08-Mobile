@@ -14,17 +14,54 @@ import '../../utils/date_formatter.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
 
-class OrdersTab extends GetView<OrderController> {
+class OrdersTab extends StatefulWidget {
   const OrdersTab({super.key});
 
-  static const _filters = <String?, String>{
-    null: 'Tất cả',
-    'Pending': 'Chờ thanh toán',
+  @override
+  State<OrdersTab> createState() => _OrdersTabState();
+}
+
+class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMixin {
+  final OrderController controller = Get.find<OrderController>();
+
+  static const _filters = <String, String>{
     'Paid': 'Đã thanh toán',
-    'Completed': 'Hoàn thành',
     'Cancelled': 'Đã hủy',
     'Request to Cancelled': 'Yêu cầu hủy',
   };
+
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _filters.length, vsync: this);
+    
+    // Ensure initial status filter is valid for the tabs
+    if (!_filters.containsKey(controller.statusFilter.value)) {
+      // Must use addPostFrameCallback because we cannot trigger a refresh during init
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.setStatusFilter(_filters.keys.first);
+      });
+    } else {
+      _tabController.index = _filters.keys.toList().indexOf(controller.statusFilter.value!);
+    }
+    
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        final status = _filters.keys.elementAt(_tabController.index);
+        if (controller.statusFilter.value != status) {
+          controller.setStatusFilter(status);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,57 +85,21 @@ class OrdersTab extends GetView<OrderController> {
           ),
           const SizedBox(width: 6),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.brand,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.brand,
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+          tabs: _filters.values.map((label) => Tab(text: label)).toList(),
+        ),
       ),
       body: Obx(
         () => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _OrdersOverview(
-              count: controller.orders.length,
-              filterLabel: _filters[controller.statusFilter.value] ?? 'Tất cả',
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 42,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: _filters.entries.map((entry) {
-                  final selected = controller.statusFilter.value == entry.key;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(entry.value),
-                      selected: selected,
-                      showCheckmark: false,
-                      avatar: selected
-                          ? const Icon(
-                              Icons.check_circle_rounded,
-                              size: 17,
-                              color: AppColors.brand,
-                            )
-                          : null,
-                      onSelected: (_) => controller.setStatusFilter(entry.key),
-                      selectedColor: AppColors.brandLight,
-                      backgroundColor: AppColors.surfaceElevated,
-                      side: BorderSide(
-                        color: selected
-                            ? AppColors.brand.withValues(alpha: 0.2)
-                            : AppColors.border,
-                      ),
-                      labelStyle: TextStyle(
-                        color: selected
-                            ? AppColors.brand
-                            : AppColors.textSecondary,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 8),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () => controller.fetchOrders(refresh: true),
@@ -174,87 +175,6 @@ class OrdersTab extends GetView<OrderController> {
   }
 }
 
-class _OrdersOverview extends StatelessWidget {
-  const _OrdersOverview({
-    required this.count,
-    required this.filterLabel,
-  });
-
-  final int count;
-  final String filterLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF071A3D), Color(0xFF075CB8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: AppRadius.card,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brand.withValues(alpha: 0.2),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-              ),
-            ),
-            child: const Icon(
-              Icons.luggage_rounded,
-              color: Colors.white,
-              size: 27,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$count đơn đang hiển thị',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  filterLabel,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.auto_awesome_rounded,
-            color: Color(0xFFFFD37A),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.order, required this.onTap});
 
@@ -278,92 +198,113 @@ class _OrderCard extends StatelessWidget {
     final departure = order.schedule?.departureDate;
 
     return Material(
-      color: AppColors.surfaceElevated,
+      color: Colors.transparent,
       borderRadius: AppRadius.card,
-      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        borderRadius: AppRadius.card,
         child: Container(
           decoration: BoxDecoration(
+            color: AppColors.surfaceElevated,
             border: Border.all(color: AppColors.border),
             borderRadius: AppRadius.card,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                height: 138,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (order.tour?.imageUrl?.isNotEmpty == true)
-                      CachedNetworkImage(
-                        imageUrl: order.tour!.imageUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) =>
-                            Container(color: AppColors.brandLight),
-                        errorWidget: (_, __, ___) =>
-                            const _OrderImagePlaceholder(),
-                      )
-                    else
-                      const _OrderImagePlaceholder(),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.transparent, Color(0xA805073C)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: _StatusBadge(style: status),
-                    ),
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.lg),
+                ),
+                child: SizedBox(
+                  height: 150,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (order.tour?.imageUrl?.isNotEmpty == true)
+                        CachedNetworkImage(
+                          imageUrl: order.tour!.imageUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              Container(color: AppColors.brandLight),
+                          errorWidget: (_, __, ___) =>
+                              const _OrderImagePlaceholder(),
+                        )
+                      else
+                        const _OrderImagePlaceholder(),
+                      const DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.38),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '#${order.id}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                          gradient: LinearGradient(
+                            colors: [Colors.transparent, Color(0xCC05073C)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: [0.35, 1.0],
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      left: 14,
-                      right: 14,
-                      bottom: 12,
-                      child: Text(
-                        order.tour?.name ?? 'Đơn đặt tour #${order.id}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          height: 1.15,
-                          fontWeight: FontWeight.w800,
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: _StatusBadge(style: status),
+                      ),
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Text(
+                            '#${order.id}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        left: 14,
+                        right: 14,
+                        bottom: 12,
+                        child: Text(
+                          order.tour?.name ?? 'Đơn đặt tour #${order.id}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            height: 1.2,
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              Shadow(color: Color(0x88000000), blurRadius: 6),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                 child: Column(
                   children: [
                     Row(
@@ -376,42 +317,26 @@ class _OrderCard extends StatelessWidget {
                                 : DateFormatter.display(departure),
                           ),
                         ),
-                        Container(
-                          width: 1,
-                          height: 28,
-                          color: AppColors.separator,
-                        ),
+                        Container(width: 1, height: 24, color: AppColors.separator),
                         Expanded(
                           child: _OrderMeta(
                             icon: Icons.confirmation_number_outlined,
                             label: '$_quantity vé',
                           ),
                         ),
-                      ],
-                    ),
-                    if (_location.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 17,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
+                        if (_location.isNotEmpty) ...[
+                          Container(width: 1, height: 24, color: AppColors.separator),
                           Expanded(
-                            child: Text(
-                              _location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
+                            child: _OrderMeta(
+                              icon: Icons.location_on_outlined,
+                              label: _location,
                             ),
                           ),
                         ],
-                      ),
-                    ],
+                      ],
+                    ),
                     const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(vertical: 11),
                       child: Divider(height: 1),
                     ),
                     Row(
@@ -431,6 +356,7 @@ class _OrderCard extends StatelessWidget {
                                     ?.copyWith(
                                   color: AppColors.navy,
                                   fontWeight: FontWeight.w900,
+                                  fontSize: 17,
                                 ),
                               ),
                             ],
@@ -440,13 +366,24 @@ class _OrderCard extends StatelessWidget {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: AppColors.brandLight,
+                            gradient: const LinearGradient(
+                              colors: [AppColors.brand, Color(0xFF1565C0)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.brand.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.arrow_forward_rounded,
-                            size: 20,
-                            color: AppColors.brand,
+                            size: 18,
+                            color: Colors.white,
                           ),
                         ),
                       ],
