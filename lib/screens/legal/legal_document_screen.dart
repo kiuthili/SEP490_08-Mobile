@@ -14,6 +14,7 @@ class LegalDocumentScreen extends StatelessWidget {
     this.sections,
     this.relatedRoute,
     this.relatedLabel,
+    this.relatedDocuments,
   });
 
   final String? title;
@@ -21,6 +22,7 @@ class LegalDocumentScreen extends StatelessWidget {
   final List<LegalSection>? sections;
   final String? relatedRoute;
   final String? relatedLabel;
+  final List<Map<String, String>>? relatedDocuments;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,12 @@ class LegalDocumentScreen extends StatelessWidget {
         relatedRoute ?? args['relatedRoute'] as String?;
     final resolvedRelatedLabel =
         relatedLabel ?? args['relatedLabel'] as String?;
+    final resolvedRelatedDocs = relatedDocuments ??
+        (args['relatedDocuments'] as List<Map<String, String>>?) ??
+        [
+          if (resolvedRelatedRoute != null && resolvedRelatedLabel != null)
+            {'route': resolvedRelatedRoute, 'label': resolvedRelatedLabel},
+        ];
 
     return AppScreen(
       title: resolvedTitle,
@@ -48,14 +56,38 @@ class LegalDocumentScreen extends StatelessWidget {
                 color: AppColors.textSecondary,
               ),
             ),
-          if (resolvedRelatedRoute != null &&
-              resolvedRelatedLabel != null) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () => Get.toNamed(resolvedRelatedRoute!),
-                child: Text(resolvedRelatedLabel!),
+          if (resolvedRelatedDocs.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...resolvedRelatedDocs.map(
+              (doc) => Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: TextButton.icon(
+                    onPressed: () => Get.toNamed(doc['route'] ?? ''),
+                    icon: const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: AppColors.brand,
+                    ),
+                    label: Text(
+                      doc['label'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brand,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

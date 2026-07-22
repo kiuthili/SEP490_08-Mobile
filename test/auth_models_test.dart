@@ -8,8 +8,7 @@ void main() {
       password: 'Password1!',
       fullName: 'StayHub Customer',
       phoneNumber: '0901234567',
-      gender: 'Female',
-      dateOfBirth: '2000-01-02',
+      otpCode: '123456',
     );
 
     expect(request.toJson(), {
@@ -17,8 +16,7 @@ void main() {
       'password': 'Password1!',
       'fullName': 'StayHub Customer',
       'phoneNumber': '0901234567',
-      'gender': 'Female',
-      'dateOfBirth': '2000-01-02',
+      'otpCode': '123456',
     });
   });
 

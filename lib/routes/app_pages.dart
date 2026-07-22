@@ -7,6 +7,7 @@ import '../screens/auth/profile_auth_screens.dart';
 import '../screens/customer/ai_questionnaire_screen.dart';
 import '../screens/customer/ai_recommendations_screen.dart';
 import '../screens/customer/public_tracking_screen.dart';
+import '../screens/legal/booking_terms_screen.dart';
 import '../screens/legal/privacy_screen.dart';
 import '../screens/legal/terms_screen.dart';
 import '../screens/customer/booking_screen.dart';
@@ -243,6 +244,10 @@ class AppPages {
     ),
     GetPage(name: AppRoutes.terms, page: () => const TermsScreen()),
     GetPage(name: AppRoutes.privacy, page: () => const PrivacyScreen()),
+    GetPage(
+      name: AppRoutes.bookingTerms,
+      page: () => const BookingTermsScreen(),
+    ),
     GetPage(
       name: AppRoutes.publicTrack,
       page: () => const PublicTrackingScreen(),
