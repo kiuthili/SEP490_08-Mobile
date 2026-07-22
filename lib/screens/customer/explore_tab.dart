@@ -520,6 +520,7 @@ class _ExploreTabState extends State<ExploreTab> {
                             child: Padding(
                               padding: const EdgeInsets.only(bottom: 14),
                               child: TourCard(
+                                heroTagPrefix: 'explore',
                                 tour: entry.value,
                                 isInWishlist: _wishlistController.containsTour(
                                   entry.value.id,
@@ -537,7 +538,7 @@ class _ExploreTabState extends State<ExploreTab> {
                                 ),
                                 onTap: () => Get.toNamed(
                                   AppRoutes.tourDetail,
-                                  arguments: entry.value.id,
+                                  arguments: {'id': entry.value.id, 'heroTag': 'explore-tour-image-${entry.value.id}'},
                                 ),
                               ),
                             ),
