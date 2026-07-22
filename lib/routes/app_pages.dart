@@ -6,6 +6,9 @@ import '../controllers/tour_controller.dart';
 import '../screens/auth/profile_auth_screens.dart';
 import '../screens/customer/ai_questionnaire_screen.dart';
 import '../screens/customer/ai_recommendations_screen.dart';
+import '../screens/customer/search_suggestion_screen.dart';
+import '../screens/customer/search_result_screen.dart';
+import '../screens/customer/section_tours_screen.dart';
 import '../screens/customer/public_tracking_screen.dart';
 import '../screens/legal/booking_terms_screen.dart';
 import '../screens/legal/privacy_screen.dart';
@@ -267,6 +270,18 @@ class AppPages {
       page: () => const MainShellScreen(),
       binding: MainShellBinding(initialTab: 4),
       middlewares: _protected,
+    ),
+    GetPage(
+      name: AppRoutes.tourSearch,
+      page: () => const SearchSuggestionScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.searchResult,
+      page: () => const SearchResultScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.sectionTours,
+      page: () => const SectionToursScreen(),
     ),
   ];
 }
