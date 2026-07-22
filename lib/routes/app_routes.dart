@@ -33,6 +33,7 @@ class AppRoutes {
   static const String aiQuestionnaire = '/ai-assistant';
   static const String terms = '/terms';
   static const String privacy = '/privacy';
+  static const String bookingTerms = '/booking-terms';
   static const String publicTrack = '/track/:token';
   static const String userStudy = '/user-study';
 }

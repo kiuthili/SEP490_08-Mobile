@@ -1367,6 +1367,35 @@ class _PaymentMethodCard extends StatelessWidget {
                 : 'Thanh toán theo luồng ứng dụng MoMo.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          const SizedBox(height: 12),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                'Bằng việc thanh toán, bạn đồng ý với ',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+              GestureDetector(
+                onTap: () => Get.toNamed(AppRoutes.bookingTerms),
+                child: Text(
+                  'Quy định đặt tour & Hủy vé',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.brand,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                ),
+              ),
+              Text(
+                ' của StayHub.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+            ],
+          ),
         ],
       ),
     );
