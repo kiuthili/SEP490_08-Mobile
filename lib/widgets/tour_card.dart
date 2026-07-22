@@ -14,6 +14,7 @@ class TourCard extends StatelessWidget {
   final bool? isInWishlist;
   final bool wishlistBusy;
   final VoidCallback? onWishlistTap;
+  final String? heroTagPrefix;
 
   const TourCard({
     super.key,
@@ -22,6 +23,7 @@ class TourCard extends StatelessWidget {
     this.isInWishlist,
     this.wishlistBusy = false,
     this.onWishlistTap,
+    this.heroTagPrefix,
   });
 
   @override
@@ -45,7 +47,7 @@ class TourCard extends StatelessWidget {
                     AspectRatio(
                       aspectRatio: 16 / 9,
                       child: Hero(
-                        tag: 'tour-image-${tour.id}',
+                        tag: heroTagPrefix != null ? '$heroTagPrefix-tour-image-${tour.id}' : 'tour-image-${tour.id}',
                         child:
                             tour.imageUrl != null && tour.imageUrl!.isNotEmpty
                                 ? CachedNetworkImage(

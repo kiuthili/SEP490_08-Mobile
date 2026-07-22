@@ -12,8 +12,16 @@ class TermsScreen extends StatelessWidget {
       title: 'Điều khoản dịch vụ',
       lastUpdated: termsSectionsViLastUpdated,
       sections: termsSectionsVi,
-      relatedRoute: AppRoutes.privacy,
-      relatedLabel: 'Xem Chính sách quyền riêng tư',
+      relatedDocuments: const [
+        {
+          'label': 'Xem Chính sách quyền riêng tư',
+          'route': AppRoutes.privacy,
+        },
+        {
+          'label': 'Xem Quy định đặt tour & Hủy vé',
+          'route': AppRoutes.bookingTerms,
+        },
+      ],
     );
   }
 }
