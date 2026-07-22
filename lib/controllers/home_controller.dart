@@ -17,11 +17,11 @@ class HomeController extends GetxController {
   final isLoadingUpcoming = false.obs;
   final isLoadingRegion = false.obs;
 
-  // Region tabs
+  // Region tabs: (display label, API key)
   static const regions = [
-    ('Miền Bắc', 'mien-bac'),
-    ('Miền Trung', 'mien-trung'),
-    ('Miền Nam', 'mien-nam'),
+    ('Miền Bắc', 'north'),
+    ('Miền Trung', 'central'),
+    ('Miền Nam', 'south'),
   ];
   final selectedRegionIndex = 0.obs;
 
@@ -46,7 +46,8 @@ class HomeController extends GetxController {
   Future<void> _fetchHot() async {
     isLoadingHot.value = true;
     try {
-      hotTours.value = await _tourService.getHotTours(pageSize: 10);
+      final res = await _tourService.getHotTours(pageSize: 10);
+      hotTours.value = res.data;
     } catch (_) {
     } finally {
       isLoadingHot.value = false;
@@ -56,7 +57,8 @@ class HomeController extends GetxController {
   Future<void> _fetchSale() async {
     isLoadingSale.value = true;
     try {
-      saleTours.value = await _tourService.getSaleTours(pageSize: 10);
+      final res = await _tourService.getSaleTours(pageSize: 10);
+      saleTours.value = res.data;
     } catch (_) {
     } finally {
       isLoadingSale.value = false;
@@ -66,7 +68,8 @@ class HomeController extends GetxController {
   Future<void> _fetchUpcoming() async {
     isLoadingUpcoming.value = true;
     try {
-      upcomingTours.value = await _tourService.getUpcomingTours(pageSize: 10);
+      final res = await _tourService.getUpcomingTours(pageSize: 10);
+      upcomingTours.value = res.data;
     } catch (_) {
     } finally {
       isLoadingUpcoming.value = false;

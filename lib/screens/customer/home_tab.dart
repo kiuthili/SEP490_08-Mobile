@@ -7,17 +7,14 @@ import 'package:intl/intl.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../controllers/home_controller.dart';
-import '../../controllers/shell_controller.dart';
 import '../../models/tour_model.dart';
 import '../../routes/app_routes.dart';
 import '../../services/catalog_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
-import '../../theme/shell_layout.dart';
 import '../../utils/auth_gate.dart';
 import '../../utils/currency_formatter.dart';
-import '../../widgets/scroll_to_top_button.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Home Tab root
@@ -36,7 +33,6 @@ class _HomeTabState extends State<HomeTab> {
   final _scrollController = ScrollController();
 
   List<BannerModel> _banners = [];
-  bool _showScrollToTop = false;
 
   // Language popup state
   String _selectedLang = 'vi';
@@ -55,10 +51,7 @@ class _HomeTabState extends State<HomeTab> {
     });
 
     _scrollController.addListener(() {
-      final show = _scrollController.offset > 400;
-      if (show != _showScrollToTop && mounted) {
-        setState(() => _showScrollToTop = show);
-      }
+      // no-op, reserved for future use
     });
   }
 
@@ -69,9 +62,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _openTour(int id) => Get.toNamed(AppRoutes.tourDetail, arguments: id);
-
-  void _openExplore({String? searchTerm}) =>
-      Get.find<ShellController>().openExplore(searchTerm: searchTerm);
 
   void _showLanguagePopup() {
     showModalBottomSheet(
@@ -86,12 +76,6 @@ class _HomeTabState extends State<HomeTab> {
       ),
     );
   }
-
-  Future<void> _scrollToTop() => _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 550),
-        curve: Curves.easeOutCubic,
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -109,9 +93,14 @@ class _HomeTabState extends State<HomeTab> {
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // Space below fixed header
+                // Space below fixed header — no extra gap so hero connects seamlessly
                 SliverToBoxAdapter(
-                  child: SizedBox(height: topPadding + _kHeaderHeight + 8),
+                  child: SizedBox(height: topPadding + _kHeaderHeight),
+                ),
+
+                // ── Hero section ──
+                SliverToBoxAdapter(
+                  child: _HeroSection(onSearchTap: () => Get.toNamed(AppRoutes.tourSearch)),
                 ),
 
                 // Banner carousel
@@ -124,7 +113,10 @@ class _HomeTabState extends State<HomeTab> {
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
                         title: 'Tour nổi bật',
-                        onViewAll: _openExplore,
+                        onViewAll: () => Get.toNamed(
+                          AppRoutes.sectionTours,
+                          arguments: {'title': 'Tour nổi bật', 'type': 'hot'},
+                        ),
                         isLoading: _home.isLoadingHot.value,
                         tours: _home.hotTours,
                         badgeLabel: 'Nổi bật',
@@ -138,7 +130,10 @@ class _HomeTabState extends State<HomeTab> {
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
                         title: 'Ưu đãi giờ chót',
-                        onViewAll: _openExplore,
+                        onViewAll: () => Get.toNamed(
+                          AppRoutes.sectionTours,
+                          arguments: {'title': 'Ưu đãi giờ chót', 'type': 'sale'},
+                        ),
                         isLoading: _home.isLoadingSale.value,
                         tours: _home.saleTours,
                         badgeLabel: 'Giờ chót',
@@ -153,7 +148,10 @@ class _HomeTabState extends State<HomeTab> {
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
                         title: 'Sắp khởi hành',
-                        onViewAll: _openExplore,
+                        onViewAll: () => Get.toNamed(
+                          AppRoutes.sectionTours,
+                          arguments: {'title': 'Sắp khởi hành', 'type': 'upcoming'},
+                        ),
                         isLoading: _home.isLoadingUpcoming.value,
                         tours: _home.upcomingTours,
                         badgeLabel: 'Sắp đi',
@@ -167,7 +165,7 @@ class _HomeTabState extends State<HomeTab> {
                 SliverToBoxAdapter(child: _RegionSection(home: _home, onTap: _openTour)),
 
                 SliverToBoxAdapter(
-                  child: SizedBox(height: ShellLayout.bottomInset(context) + 16),
+                  child: const SizedBox(height: 20),
                 ),
               ],
             ),
@@ -181,7 +179,7 @@ class _HomeTabState extends State<HomeTab> {
             child: _StickyHeader(
               topPadding: topPadding,
               selectedLang: _selectedLang,
-              onSearchTap: _openExplore,
+              onSearchTap: () => Get.toNamed(AppRoutes.tourSearch),
               onNotificationTap: () {
                 if (AuthGate.requireLogin(route: AppRoutes.notifications)) {
                   Get.toNamed(AppRoutes.notifications);
@@ -192,8 +190,6 @@ class _HomeTabState extends State<HomeTab> {
             ),
           ),
 
-          // ── Scroll to top ──
-          ScrollToTopButton(visible: _showScrollToTop, onTap: _scrollToTop),
         ],
       ),
     );
@@ -421,7 +417,7 @@ class _HomeSectionRow extends StatelessWidget {
           )
         else
           SizedBox(
-            height: 260,
+            height: 285,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -625,23 +621,39 @@ class _TourCard extends StatelessWidget {
 
                     // Price row
                     if (tour.startingPrice != null)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Từ ',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
+                          // Gạch giá gốc nếu có khuyến mãi
+                          if (tour.originalPrice != null)
+                            Text(
+                              CurrencyFormatter.format(tour.originalPrice!),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                          Text(
-                            CurrencyFormatter.format(tour.startingPrice!),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFFE53935),
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'Từ ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                CurrencyFormatter.format(tour.startingPrice!),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFE53935),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       )
@@ -756,17 +768,26 @@ class _RegionSection extends StatelessWidget {
             )
           else
             SizedBox(
-              height: 160,
+              height: 285,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: home.regionTours.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final tour = home.regionTours[index];
-                  return GestureDetector(
+                  final wishlist = Get.find<WishlistController>();
+                  final inWishlist = wishlist.containsTour(tour.id);
+                  return _TourCard(
+                    tour: tour,
+                    badgeLabel: null,
+                    badgeColor: null,
+                    isInWishlist: inWishlist,
                     onTap: () => onTap(tour.id),
-                    child: _RegionCard(tour: tour),
+                    onWishlistTap: () => wishlist.toggleWishlist(
+                      tour.id,
+                      isInWishlist: inWishlist,
+                    ),
                   );
                 },
               ),
@@ -777,63 +798,168 @@ class _RegionSection extends StatelessWidget {
   }
 }
 
-class _RegionCard extends StatelessWidget {
-  const _RegionCard({required this.tour});
-  final TourModel tour;
+
+
+// ─────────────────────────────────────────────────────────────
+// Banner Carousel
+// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Hero Section
+// ─────────────────────────────────────────────────────────────
+class _HeroSection extends StatelessWidget {
+  const _HeroSection({required this.onSearchTap});
+  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: 160,
-        height: 160,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Image
-            if (tour.imageUrl != null && tour.imageUrl!.isNotEmpty)
-              CachedNetworkImage(
-                imageUrl: tour.imageUrl!,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) =>
-                    const ColoredBox(color: AppColors.brandLight),
-              )
-            else
-              const ColoredBox(color: AppColors.brandLight),
-            // Gradient overlay
-            const DecoratedBox(
+    return Container(
+      margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+      height: 220,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Gradient background — starts from same brand blue as sticky header
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.brand, Color(0xFF003A8C), Color(0xFF05073C)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.55, 1.0],
+              ),
+            ),
+          ),
+
+          // Decorative circles
+          Positioned(
+            right: -40,
+            top: -40,
+            child: Container(
+              width: 180,
+              height: 180,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x0005073C),
-                    Color(0xDD05073C),
-                  ],
-                  stops: [0.4, 1.0],
-                ),
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
               ),
             ),
-            // City name
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 12,
-              child: Text(
-                tour.city ?? tour.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  height: 1.2,
-                ),
+          ),
+          Positioned(
+            left: -30,
+            bottom: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.04),
               ),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            right: 60,
+            top: 30,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
+              ),
+            ),
+          ),
+
+          // Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Eyebrow tag
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEB662B),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_fire_department_rounded, size: 13, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'Ưu đãi độc quyền App',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Headline
+                const Text(
+                  'Khám phá\nViệt Nam cùng StayHub',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1.18,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Subtitle
+                Text(
+                  'Hàng nghìn tour đang chờ bạn với giá tốt nhất',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // CTA button
+                GestureDetector(
+                  onTap: onSearchTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.explore_outlined, size: 16, color: AppColors.brand),
+                        SizedBox(width: 6),
+                        Text(
+                          'Khám phá ngay',
+                          style: TextStyle(
+                            color: AppColors.brand,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

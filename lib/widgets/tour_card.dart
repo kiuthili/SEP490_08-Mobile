@@ -92,6 +92,25 @@ class TourCard extends StatelessWidget {
                           label: tour.averageStar!.toStringAsFixed(1),
                         ),
                       ),
+                    if (tour.discountPercentage != null && tour.discountPercentage! > 0)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Text(
+                            '-${tour.discountPercentage!.toStringAsFixed(0)}%',
+                            style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
                     if (isInWishlist != null && onWishlistTap != null)
                       Positioned(
                         top: 52,
@@ -215,9 +234,24 @@ class TourCard extends StatelessWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  'Từ',
-                                  style: AppTextStyles.textTheme.labelSmall,
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (tour.originalPrice != null) ...[
+                                      Text(
+                                        CurrencyFormatter.format(tour.originalPrice!),
+                                        style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                                          decoration: TextDecoration.lineThrough,
+                                          color: AppColors.textTertiary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      'Từ',
+                                      style: AppTextStyles.textTheme.labelSmall,
+                                    ),
+                                  ],
                                 ),
                                 Text(
                                   CurrencyFormatter.format(

@@ -10,9 +10,12 @@ class TourModel {
   final String? city;
   final String? address;
   final String? imageUrl;
+  final List<String> tourImages;
   final String? status;
   final double? averageStar;
-  final int? startingPrice;
+  final int? startingPrice;   // effective price (after discount)
+  final int? originalPrice;   // raw price before discount (null if no discount)
+  final double? discountPercentage; // percentage discount if applicable
   final DateTime? nextDeparture;
 
   TourModel({
@@ -24,9 +27,12 @@ class TourModel {
     this.city,
     this.address,
     this.imageUrl,
+    this.tourImages = const [],
     this.status,
     this.averageStar,
     this.startingPrice,
+    this.originalPrice,
+    this.discountPercentage,
     this.nextDeparture,
   });
 
@@ -37,6 +43,8 @@ class TourModel {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     int? startingPrice;
+    int? originalPrice;
+    double? discountPercentage;
     DateTime? nextDeparture;
 
     for (final schedule in schedules) {
@@ -67,15 +75,40 @@ class TourModel {
 
         hasAvailableTicket = true;
         final ticketModel = ScheduleTicketModel.fromJson(ticket);
-        final price = ticketModel.effectivePrice;
-        if (startingPrice == null || price < startingPrice) {
-          startingPrice = price;
+        final effective = ticketModel.effectivePrice;
+        final raw = ticketModel.price;
+        if (startingPrice == null || effective < startingPrice) {
+          startingPrice = effective;
+          // track raw price only if there's a real discount
+          if (effective < raw) {
+            originalPrice = raw;
+            final promo = ticketModel.promotion;
+            if (promo != null && promo.status == 'Active' && promo.discountType.toLowerCase() == 'percentage') {
+              discountPercentage = promo.discountValue;
+            } else {
+              discountPercentage = null;
+            }
+          } else {
+            originalPrice = null;
+            discountPercentage = null;
+          }
         }
       }
 
       if (hasAvailableTicket &&
           (nextDeparture == null || departure.isBefore(nextDeparture))) {
         nextDeparture = departure;
+      }
+    }
+
+    final List<String> extractedImages = [];
+    final imagesList = JsonUtils.pick(json, ['tourImages', 'TourImages']);
+    if (imagesList is List) {
+      for (final img in imagesList) {
+        final url = img['imageUrl']?.toString();
+        if (url != null && url.isNotEmpty) {
+          extractedImages.add(url);
+        }
       }
     }
 
@@ -88,9 +121,12 @@ class TourModel {
       city: json['city'] as String?,
       address: json['address'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      tourImages: extractedImages,
       status: json['status'] as String?,
       averageStar: (json['averageStar'] as num?)?.toDouble(),
       startingPrice: startingPrice,
+      originalPrice: originalPrice,
+      discountPercentage: discountPercentage,
       nextDeparture: nextDeparture,
     );
   }
@@ -270,7 +306,7 @@ class ScheduleTicketModel {
     }
 
     double discountAmount = 0;
-    if (promotion!.discountType == "PERCENTAGE") {
+    if (promotion!.discountType.toLowerCase() == "percentage") {
       discountAmount = price * (promotion!.discountValue / 100);
       if (promotion!.maxDiscountAmount != null && discountAmount > promotion!.maxDiscountAmount!) {
         discountAmount = promotion!.maxDiscountAmount!;
