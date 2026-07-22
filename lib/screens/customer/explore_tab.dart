@@ -522,20 +522,6 @@ class _ExploreTabState extends State<ExploreTab> {
                               child: TourCard(
                                 heroTagPrefix: 'explore',
                                 tour: entry.value,
-                                isInWishlist: _wishlistController.containsTour(
-                                  entry.value.id,
-                                ),
-                                wishlistBusy: _wishlistController.isProcessing(
-                                  entry.value.id,
-                                ),
-                                onWishlistTap: () =>
-                                    _wishlistController.toggleWishlist(
-                                  entry.value.id,
-                                  isInWishlist:
-                                      _wishlistController.containsTour(
-                                    entry.value.id,
-                                  ),
-                                ),
                                 onTap: () => Get.toNamed(
                                   AppRoutes.tourDetail,
                                   arguments: {'id': entry.value.id, 'heroTag': 'explore-tour-image-${entry.value.id}'},

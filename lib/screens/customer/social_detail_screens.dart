@@ -286,7 +286,59 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final myId = Get.find<StorageService>().user?.id;
 
     return AppScreen(
-      title: _roomTitle,
+      titleWidget: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              gradient: _isGroup ? AppColors.brandGradient : null,
+              color: _isGroup ? null : AppColors.brandLight,
+              shape: BoxShape.circle,
+            ),
+            child: _avatarUrl?.isNotEmpty == true
+                ? CachedNetworkImage(
+                    imageUrl: _avatarUrl!,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => Icon(
+                      _isGroup ? Icons.groups_2_rounded : Icons.person_rounded,
+                      color: _isGroup ? Colors.white : AppColors.brand,
+                      size: 20,
+                    ),
+                  )
+                : Icon(
+                    _isGroup ? Icons.groups_2_rounded : Icons.person_rounded,
+                    color: _isGroup ? Colors.white : AppColors.brand,
+                    size: 20,
+                  ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _roomTitle,
+                  style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  _isGroup ? 'Nhóm trò chuyện tour' : 'Đang hoạt động',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       centerTitle: false,
       leading: IconButton(
         onPressed: Get.back,
@@ -324,16 +376,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ? _ChatError(message: _error!, onRetry: _initRoom)
           : Column(
         children: [
-          _ConversationInfoBar(
-            title: _roomTitle,
-            avatarUrl: _avatarUrl,
-            isGroup: _isGroup,
-            scheduleId: _scheduleId,
-            schedule: _schedule,
-            loadingSchedule: _loadingSchedule,
-            scheduleError: _scheduleError,
-            onRetrySchedule: _loadSchedule,
-          ),
+          if (_isGroup && _scheduleId != null)
+            _GroupScheduleCard(
+              scheduleId: _scheduleId!,
+              fallbackTitle: _roomTitle,
+              fallbackAvatarUrl: _avatarUrl,
+              schedule: _schedule,
+              loading: _loadingSchedule,
+              hasError: _scheduleError != null,
+              onRetry: _loadSchedule,
+            ),
           if (_loadingOlder)
             const Padding(
               padding: EdgeInsets.all(8),
@@ -357,10 +409,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final m = _messages[index];
-                final previous =
-                index > 0 ? _messages[index - 1] : null;
-                final showDate = previous == null ||
-                    !_sameDay(previous.sentAt, m.sentAt);
+                final previous = index > 0 ? _messages[index - 1] : null;
+                final next = index < _messages.length - 1 ? _messages[index + 1] : null;
+                final showDate = previous == null || !_sameDay(previous.sentAt, m.sentAt);
+                
+                bool isLastInBlock = true;
+                if (next != null && next.senderId == m.senderId && m.sentAt != null && next.sentAt != null) {
+                   final diff = next.sentAt!.difference(m.sentAt!).inMinutes.abs();
+                   if (diff < 1) {
+                      isLastInBlock = false;
+                   }
+                }
+
                 return Column(
                   children: [
                     if (showDate) _DateDivider(date: m.sentAt),
@@ -368,6 +428,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       message: m,
                       isMe: m.senderId == myId,
                       showSender: _isGroup,
+                      showAvatar: m.senderId != myId && isLastInBlock,
                     ),
                   ],
                 );
@@ -394,117 +455,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 }
 
-class _ConversationInfoBar extends StatelessWidget {
-  const _ConversationInfoBar({
-    required this.title,
-    required this.avatarUrl,
-    required this.isGroup,
-    required this.scheduleId,
-    required this.schedule,
-    required this.loadingSchedule,
-    required this.scheduleError,
-    required this.onRetrySchedule,
-  });
-
-  final String title;
-  final String? avatarUrl;
-  final bool isGroup;
-  final int? scheduleId;
-  final TourScheduleModel? schedule;
-  final bool loadingSchedule;
-  final String? scheduleError;
-  final VoidCallback onRetrySchedule;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isGroup && scheduleId != null) {
-      return _GroupScheduleCard(
-        scheduleId: scheduleId!,
-        fallbackTitle: title,
-        fallbackAvatarUrl: avatarUrl,
-        schedule: schedule,
-        loading: loadingSchedule,
-        hasError: scheduleError != null,
-        onRetry: onRetrySchedule,
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceElevated,
-        border: Border(bottom: BorderSide(color: AppColors.separator)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              gradient: isGroup ? AppColors.brandGradient : null,
-              color: isGroup ? null : AppColors.brandLight,
-              shape: BoxShape.circle,
-            ),
-            child: avatarUrl?.isNotEmpty == true
-                ? CachedNetworkImage(
-              imageUrl: avatarUrl!,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _fallback(),
-            )
-                : _fallback(),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isGroup ? 'Nhóm trò chuyện tour' : 'Tin nhắn riêng',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isGroup && scheduleId != null
-                      ? 'Lịch trình #$scheduleId • $title'
-                      : 'Đang kết nối qua StayHub',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.lock_outline_rounded,
-              size: 16,
-              color: AppColors.success,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _fallback() {
-    return Icon(
-      isGroup ? Icons.groups_2_rounded : Icons.person_rounded,
-      color: isGroup ? Colors.white : AppColors.brand,
-      size: 20,
-    );
-  }
-}
 
 class _GroupScheduleCard extends StatelessWidget {
   const _GroupScheduleCard({
@@ -805,11 +755,13 @@ class _MessageBubble extends StatelessWidget {
     required this.message,
     required this.isMe,
     required this.showSender,
+    required this.showAvatar,
   });
 
   final ChatMessageModel message;
   final bool isMe;
   final bool showSender;
+  final bool showAvatar;
 
   Widget _buildContent(BuildContext context) {
     final content = message.content;
@@ -1005,8 +957,7 @@ class _MessageBubble extends StatelessWidget {
       constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
       padding: const EdgeInsets.fromLTRB(13, 10, 13, 8),
       decoration: BoxDecoration(
-        gradient: isMe ? AppColors.brandGradient : null,
-        color: isMe ? null : AppColors.surfaceElevated,
+        color: isMe ? AppColors.brand : AppColors.surfaceElevated,
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(18),
           topRight: const Radius.circular(18),
@@ -1020,38 +971,45 @@ class _MessageBubble extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (!isMe && showSender && message.senderName?.isNotEmpty == true) ...[
             Text(message.senderName!, style: const TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w800)),
             const SizedBox(height: 3),
           ],
-          _buildContent(context),
-          if (message.sentAt != null) ...[
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                DateFormat('HH:mm').format(message.sentAt!.toLocal()),
-                style: TextStyle(
-                  color: isMe ? Colors.white.withValues(alpha: 0.65) : AppColors.textTertiary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
+          Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.end,
+            children: [
+              _buildContent(context),
+              if (message.sentAt != null) ...[
+                const SizedBox(width: 10),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 1),
+                  child: Text(
+                    DateFormat('HH:mm').format(message.sentAt!.toLocal()),
+                    style: TextStyle(
+                      color: isMe ? Colors.white.withValues(alpha: 0.75) : AppColors.textTertiary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            ],
+          ),
         ],
       ),
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isMe && showSender) ...[
-            _MessageAvatar(message: message),
+          if (!isMe) ...[
+            if (showAvatar) _MessageAvatar(message: message) else const SizedBox(width: 28),
             const SizedBox(width: 7),
           ],
           bubble,
@@ -1146,7 +1104,7 @@ class _MessageComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Container(
-      padding: EdgeInsets.fromLTRB(12, 10, 12, bottom > 0 ? bottom : 12),
+      padding: EdgeInsets.fromLTRB(12, 10, 12, bottom > 0 ? bottom + 10 : 20),
       decoration: const BoxDecoration(
         color: AppColors.surfaceElevated,
         border: Border(top: BorderSide(color: AppColors.separator)),
@@ -1164,7 +1122,13 @@ class _MessageComposer extends StatelessWidget {
               textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
                 hintText: 'Nhập tin nhắn...',
-                prefixIcon: const Icon(Icons.chat_bubble_outline_rounded),
+                filled: true,
+                fillColor: AppColors.surfaceGrouped,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
                 suffixIcon: onShareLocation != null
                     ? IconButton(
                         icon: const Icon(Icons.location_on_rounded, color: AppColors.brand),
@@ -1174,19 +1138,19 @@ class _MessageComposer extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: sending ? null : onSend,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
               child: Ink(
-                width: 50,
-                height: 50,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   gradient: sending ? null : AppColors.brandGradient,
                   color: sending ? AppColors.brand.withValues(alpha: 0.35) : null,
-                  borderRadius: BorderRadius.circular(16),
+                  shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: sending

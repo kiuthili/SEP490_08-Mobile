@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -5,6 +6,7 @@ import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:stayhub_mobile/models/review_model.dart';
 import 'package:stayhub_mobile/models/reviewreply_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../controllers/auth_controller.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/tour_controller.dart';
 import '../routes/app_routes.dart';
@@ -62,7 +64,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   late final ReviewController _reviewController;
   late final WishlistController _wishlistController;
   final _workers = <Worker>[];
+  final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
+  Timer? _carouselTimer;
   int? _tourId;
+  bool _showTourNameInTitle = false;
   List<TourItineraryModel> _itineraries = [];
   Map<int, TourismInformationModel> _tourismInformation = {};
   Set<int> _expandedItineraryDays = {};
@@ -101,6 +107,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       _wishlistController.fetchWishlist();
       _loadItineraries(_tourId!);
     }
+    _startCarouselTimer();
+    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _loadItineraries(int tourId) async {
@@ -138,12 +146,47 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     }
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final show = _scrollController.offset > 240;
+    if (show != _showTourNameInTitle) {
+      setState(() {
+        _showTourNameInTitle = show;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
+    _carouselTimer?.cancel();
+    _pageController.dispose();
     for (final w in _workers) {
       w.dispose();
     }
     super.dispose();
+  }
+
+  void _startCarouselTimer() {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted) return;
+      final tour = _tourController.selectedTour.value;
+      if (tour == null) return;
+      final hasImages = tour.tourImages != null && tour.tourImages!.isNotEmpty;
+      final images = hasImages ? tour.tourImages! : (tour.imageUrl != null ? [tour.imageUrl!] : []);
+      if (images.length > 1 && _pageController.hasClients) {
+        int nextPage = _currentImageIndex + 1;
+        if (nextPage >= images.length) {
+          _pageController.jumpToPage(0);
+        } else {
+          _pageController.animateToPage(
+            nextPage,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
   }
 
   bool _isInWishlist(int tourId) =>
@@ -249,6 +292,175 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     );
   }
 
+  void _showConsultationSheet() {
+    final tour = _tourController.selectedTour.value;
+    if (tour == null) return;
+
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    final currentUser = authController?.currentUser.value;
+
+    final nameController = TextEditingController(text: currentUser?.fullName ?? '');
+    final phoneController = TextEditingController(text: currentUser?.phoneNumber ?? '');
+    final emailController = TextEditingController(text: currentUser?.email ?? '');
+    final noteController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final isSubmitting = false.obs;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.brandLight,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.support_agent_rounded, color: AppColors.brand, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Đăng ký nhận tư vấn',
+                              style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              tour.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Họ và tên *',
+                      prefixIcon: const Icon(Icons.person_outline_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập họ và tên' : null,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Số điện thoại *',
+                      prefixIcon: const Icon(Icons.phone_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập số điện thoại' : null,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Email *',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Vui lòng nhập email';
+                      if (!GetUtils.isEmail(v.trim())) return 'Email không hợp lệ';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: noteController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'Ghi chú / Yêu cầu đặc biệt (tùy chọn)',
+                      hintText: 'Ví dụ: Cần tư vấn về lịch trình đoàn đông, chính sách giá trẻ em...',
+                      alignLabelWithHint: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Obx(() {
+                    return CustomButton(
+                      label: 'Gửi yêu cầu tư vấn',
+                      isLoading: isSubmitting.value,
+                      onPressed: isSubmitting.value
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              isSubmitting.value = true;
+                              final success = await _tourController.requestConsultation(
+                                tourId: tour.id,
+                                fullName: nameController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                email: emailController.text.trim(),
+                                note: noteController.text.trim(),
+                              );
+                              isSubmitting.value = false;
+                              if (success && sheetContext.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
+                            },
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _proceedToBooking(TourModel tour) {
     final schedule = _selectedSchedule;
     if (schedule == null) {
@@ -347,10 +559,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   ),
                   child: IconButton(
                     icon: Icon(Icons.phone_in_talk_rounded, color: Colors.blue.shade700),
-                    onPressed: () {
-                      // TODO: Implement Consultation request
-                      SnackbarHelper.info('Tính năng yêu cầu tư vấn đang phát triển');
-                    },
+                    onPressed: _showConsultationSheet,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -404,8 +613,13 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tourForTitle = _tourController.selectedTour.value;
+    final displayTitle = _showTourNameInTitle && tourForTitle != null
+        ? tourForTitle.name
+        : 'Chi tiết tour';
+
     return AppScreen(
-      title: 'Chi tiết tour',
+      title: displayTitle,
       actions: [
         if (_tourController.selectedTour.value != null)
           Builder(
@@ -441,7 +655,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
             },
           ),
       ],
-      bottomBar: _buildCheckoutBar(),
+      bottomNavigationBar: _buildCheckoutBar(),
       body: _buildBody(),
     );
   }
@@ -467,16 +681,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     return DefaultTabController(
       length: 3,
       child: NestedScrollView(
+        controller: _scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverToBoxAdapter(
               child: _buildHero(tour),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: _buildQuickInfo(),
-              ),
             ),
             SliverPersistentHeader(
               pinned: true,
@@ -490,7 +699,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   tabs: const [
                     Tab(text: 'Tổng quan'),
                     Tab(text: 'Lịch trình'),
-                    Tab(text: 'Lưu ý'),
+                    Tab(text: 'Đánh giá'),
                   ],
                 ),
               ),
@@ -561,23 +770,12 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     )
                   : const Text('Chưa có thông tin lịch trình.'),
             ),
-            // Tab 3: Lưu ý / Đánh giá
+            // Tab 3: Đánh giá
             SingleChildScrollView(
               padding: const EdgeInsets.all(20).copyWith(bottom: 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _DetailSection(
-                    icon: Icons.info_outline_rounded,
-                    title: 'Lưu ý chuyến đi',
-                    child: HtmlWidget(
-                      '<p>Vui lòng đến đúng giờ khởi hành.</p><ul><li>Đem theo giấy tờ tùy thân.</li><li>Theo sát hướng dẫn viên.</li></ul>',
-                      textStyle: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                   _DetailSection(
                     icon: Icons.star_rounded,
                     title: 'Đánh giá',
@@ -589,11 +787,14 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                             'Hãy là người đầu tiên chia sẻ trải nghiệm về tour này.',
                           )
                         : Column(
-                            children: _reviewController.reviews
-                                .map(
-                                  (review) => _ReviewCard(review: review),
-                                )
-                                .toList(),
+                            children: [
+                              _buildReviewStatistics(_reviewController.reviews, tour.averageStar),
+                              ..._reviewController.reviews
+                                  .map(
+                                    (review) => _ReviewCard(review: review),
+                                  )
+                                  .toList(),
+                            ],
                           ),
                   ),
                 ],
@@ -603,6 +804,21 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
         ),
       ),
     );
+  }
+
+  IconData _getTransportIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'flight':
+        return Icons.flight_rounded;
+      case 'coach':
+        return Icons.directions_bus_rounded;
+      case 'train':
+        return Icons.directions_railway_rounded;
+      case 'boat':
+        return Icons.directions_boat_rounded;
+      default:
+        return Icons.directions_car_rounded;
+    }
   }
 
   Widget _buildHero(tour) {
@@ -617,16 +833,22 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       }
     }
     
-    final hasImages = tour.tourImages != null && tour.tourImages!.isNotEmpty;
-    final images = hasImages ? tour.tourImages! : (tour.imageUrl != null ? [tour.imageUrl!] : []);
+    final images = <String>[];
+    if (tour.imageUrl != null && tour.imageUrl!.isNotEmpty) {
+      images.add(tour.imageUrl!);
+    }
+    if (tour.tourImages != null && tour.tourImages!.isNotEmpty) {
+      images.addAll(tour.tourImages!);
+    }
 
     return Stack(
       children: [
         SizedBox(
-          height: 320,
+          height: 260,
           width: double.infinity,
           child: images.isNotEmpty
               ? PageView.builder(
+                  controller: _pageController,
                   itemCount: images.length,
                   onPageChanged: (index) {
                     setState(() {
@@ -650,43 +872,24 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 ),
         ),
         const Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.transparent,
-                  Color(0xCC05073C),
-                ],
-                stops: [0.0, 0.45, 1.0],
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0xCC05073C),
+                  ],
+                  stops: [0.0, 0.45, 1.0],
+                ),
               ),
             ),
           ),
         ),
-        if (images.length > 1)
-          Positioned(
-            bottom: 120, // Position above the title area
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(images.length, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 3.0),
-                  width: _currentImageIndex == index ? 8.0 : 6.0,
-                  height: _currentImageIndex == index ? 8.0 : 6.0,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentImageIndex == index
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.5),
-                  ),
-                );
-              }),
-            ),
-          ),
+
         Positioned(
           left: 20,
           right: 20,
@@ -694,26 +897,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (tour.averageStar != null)
-                    _heroPill(
-                      icon: Icons.star_rounded,
-                      iconColor: const Color(0xFFFFB800),
-                      label: tour.averageStar!.toStringAsFixed(1),
-                    ),
-                  if (minPrice != null)
-                    _heroPill(
-                      icon: Icons.local_offer_rounded,
-                      iconColor: Colors.white,
-                      label: 'Từ ${CurrencyFormatter.format(minPrice)}',
-                      background: AppColors.brand.withValues(alpha: 0.9),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
+
               Text(
                 tour.name,
                 style: AppTextStyles.textTheme.headlineMedium?.copyWith(
@@ -725,8 +909,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.place_rounded,
-                      size: 16, color: Colors.white70),
+                  const Icon(Icons.place_rounded, size: 16, color: Colors.white70),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -735,82 +918,60 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (tour.transportationType?.isNotEmpty == true) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white30, width: 0.5),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getTransportIcon(tour.transportationType!),
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            tour.transportationType!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
+              if (images.length > 1) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(images.length, (index) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                      width: _currentImageIndex == index ? 8.0 : 6.0,
+                      height: _currentImageIndex == index ? 8.0 : 6.0,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentImageIndex == index
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.5),
+                      ),
+                    );
+                  }),
+                ),
+              ],
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickInfo() {
-    final scheduleCount = _tourController.detailSchedules.length;
-    final dayCount = _itineraries
-        .map((e) => e.dayNumber ?? 0)
-        .fold<int>(0, (a, b) => b > a ? b : a);
-    final tour = _tourController.selectedTour.value;
-    final items = <List<dynamic>>[
-      [Icons.event_available_rounded, '$scheduleCount lịch', 'Khởi hành'],
-      [
-        Icons.schedule_rounded,
-        dayCount > 0 ? '$dayCount ngày' : 'Linh hoạt',
-        'Thời lượng',
-      ],
-      [
-        Icons.star_rounded,
-        tour?.averageStar != null
-            ? tour!.averageStar!.toStringAsFixed(1)
-            : 'Mới',
-        'Đánh giá',
-      ],
-    ];
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color:
-                      i == 0 ? AppColors.brandLight : AppColors.surfaceGrouped,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Column(
-                  children: [
-                    Icon(items[i][0] as IconData,
-                        color: AppColors.brand, size: 21),
-                    const SizedBox(height: 5),
-                    Text(
-                      items[i][1] as String,
-                      style: AppTextStyles.textTheme.titleSmall,
-                    ),
-                    Text(
-                      items[i][2] as String,
-                      style: AppTextStyles.textTheme.labelSmall,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (i < items.length - 1) const SizedBox(width: 8),
-          ],
-        ],
-      ),
     );
   }
 
@@ -916,7 +1077,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   )
                 else
                   Icon(
-                    selected
+                    selected 
                         ? Icons.check_circle_rounded
                         : Icons.chevron_right_rounded,
                     color: selected ? AppColors.brand : AppColors.textTertiary,
@@ -978,57 +1139,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
 
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF05073C), Color(0xFF0048B0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.explore_rounded,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${days.length} ngày khám phá',
-                      style: AppTextStyles.textTheme.titleSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Chạm vào từng ngày để xem hoặc thu gọn lịch trình.',
-                      style: AppTextStyles.textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
         for (var dayIndex = 0; dayIndex < days.length; dayIndex++) ...[
           _buildItineraryDay(
             day: days[dayIndex],
@@ -1279,6 +1389,107 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       ),
     );
   }
+
+  Widget _buildReviewStatistics(List<ReviewModel> reviews, double? averageStar) {
+    if (reviews.isEmpty) return const SizedBox.shrink();
+    
+    final totalCount = reviews.length;
+    final starCounts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+    
+    for (final review in reviews) {
+      if (review.rating >= 1 && review.rating <= 5) {
+        starCounts[review.rating] = starCounts[review.rating]! + 1;
+      }
+    }
+    
+    final average = averageStar ?? (reviews.fold<double>(0, (sum, item) => sum + item.rating) / totalCount);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceGrouped,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          // Average star block
+          Column(
+            children: [
+              Text(
+                average.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < average.round() ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: const Color(0xFFFFB800),
+                    size: 16,
+                  );
+                }),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$totalCount đánh giá',
+                style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 24),
+          // Progress bars block
+          Expanded(
+            child: Column(
+              children: List.generate(5, (index) {
+                final star = 5 - index;
+                final count = starCounts[star]!;
+                final percentage = totalCount > 0 ? count / totalCount : 0.0;
+                
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Text(
+                        '$star',
+                        style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.star_rounded, size: 12, color: AppColors.textSecondary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: percentage,
+                            minHeight: 6,
+                            backgroundColor: AppColors.border,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFB800)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ItineraryActivityCard extends StatelessWidget {
@@ -1452,26 +1663,6 @@ class _ItineraryActivityCard extends StatelessWidget {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _ItineraryTimeChip(
-                                icon: Icons.play_arrow_rounded,
-                                label: 'Bắt đầu',
-                                value: itinerary.startTimeLabel ?? 'Linh hoạt',
-                                color: AppColors.brand,
-                              ),
-                              if (itinerary.endTimeLabel != null)
-                                _ItineraryTimeChip(
-                                  icon: Icons.flag_rounded,
-                                  label: 'Kết thúc',
-                                  value: itinerary.endTimeLabel!,
-                                  color: AppColors.accent,
-                                ),
-                            ],
-                          ),
                           if (location != null) ...[
                             const SizedBox(height: 11),
                             Row(
@@ -1521,20 +1712,54 @@ class _ItineraryActivityCard extends StatelessWidget {
                           ],
                           if (heritage == null && itinerary.hasCoordinates) ...[
                             const SizedBox(height: 9),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.map_outlined,
-                                  size: 15,
-                                  color: AppColors.textSecondary,
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () async {
+                                  final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${itinerary.locationLat},${itinerary.locationLng}');
+                                  try {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  } catch (_) {
+                                    // Ignore error, or you can add a snackbar if context is available
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 2),
+                                        child: Icon(
+                                          Icons.map_outlined,
+                                          size: 15,
+                                          color: AppColors.brand,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          'Xem trên bản đồ',
+                                          style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                                            color: AppColors.brandDeep,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 2),
+                                        child: Icon(
+                                          Icons.open_in_new_rounded,
+                                          size: 12,
+                                          color: AppColors.brand,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '${itinerary.locationLat!.toStringAsFixed(5)}, '
-                                  '${itinerary.locationLng!.toStringAsFixed(5)}',
-                                  style: AppTextStyles.textTheme.labelSmall,
-                                ),
-                              ],
+                              ),
                             ),
                           ],
                         ],
@@ -2084,6 +2309,7 @@ class _SchedulePickerSheet extends StatefulWidget {
 
 class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
   late String _selectedMonth;
+  final Map<int, String> _ticketTypeNames = {};
 
   @override
   void initState() {
@@ -2096,6 +2322,29 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
           break;
         }
       }
+    }
+    _loadTicketTypes();
+  }
+
+  void _loadTicketTypes() {
+    final catalogService = Get.find<CatalogService>();
+    final Set<int> ids = {};
+    for (final month in widget.schedulesByMonth.values) {
+      for (final s in month) {
+        for (final t in s.tickets) {
+          ids.add(t.ticketTypeId);
+        }
+      }
+    }
+    
+    for (final id in ids) {
+      catalogService.getTicketTypeById(id).then((value) {
+        if (mounted) {
+          setState(() {
+            _ticketTypeNames[id] = value.name;
+          });
+        }
+      }).catchError((_) {});
     }
   }
 
@@ -2193,96 +2442,171 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                 final schedule = widget.schedulesByMonth[_selectedMonth]![index];
                 final isSelected = schedule.id == widget.selectedSchedule?.id;
                 
-                int? minPrice;
-                int? originalPrice;
-                for (final t in schedule.tickets) {
-                  if (t.isActive != false && t.availableQuantity > 0) {
-                    if (minPrice == null || t.effectivePrice < minPrice) {
-                      minPrice = t.effectivePrice;
-                      originalPrice = t.price;
-                    }
-                  }
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 60,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.brand : AppColors.brandLight,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.brandLight.withValues(alpha: 0.5) : AppColors.surface,
+                    border: Border.all(
+                      color: isSelected ? AppColors.brand : AppColors.border,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header: Dates and Select button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${schedule.departureDate.day}',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : AppColors.brand,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Đi: ${DateFormatter.display(schedule.departureDate)}',
+                                      style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Về: ${DateFormatter.display(schedule.returnDate)}',
+                                      style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            '${schedule.departureDate.month}-${schedule.departureDate.year}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isSelected ? Colors.white : AppColors.brand,
+                          if (isSelected)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                'Đang chọn',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.brand),
+                              ),
+                            )
+                          else
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.brand,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                minimumSize: Size.zero,
+                              ),
+                              onPressed: () => widget.onSelect(schedule),
+                              child: const Text('Chọn'),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (originalPrice != null && originalPrice > (minPrice ?? 0))
-                            Text(
-                              CurrencyFormatter.format(originalPrice),
-                              style: const TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          Row(
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(height: 1),
+                      ),
+                      // Tickets list
+                      const Text(
+                        'Chi tiết các loại vé:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 8),
+                      ...schedule.tickets.where((t) => t.isActive != false).map((t) {
+                        final isSoldOut = t.availableQuantity <= 0;
+                        final typeName = t.ticketTypeName ?? _ticketTypeNames[t.ticketTypeId] ?? (t.ticketTypeId == 1 ? 'Người lớn' : t.ticketTypeId == 2 ? 'Trẻ em' : 'Vé loại ${t.ticketTypeId}');
+                        
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Giá: ', style: TextStyle(color: AppColors.textSecondary)),
-                              Text(
-                                minPrice != null ? CurrencyFormatter.format(minPrice) : 'Chưa cập nhật',
-                                style: const TextStyle(
-                                  color: AppColors.brand,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                              Row(
+                                children: [
+                                  Icon(
+                                    t.ticketTypeId == 1 ? Icons.person_rounded : Icons.child_care_rounded,
+                                    size: 16,
+                                    color: isSoldOut ? AppColors.textSecondary : AppColors.textPrimary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    typeName,
+                                    style: TextStyle(
+                                      color: isSoldOut ? AppColors.textSecondary : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if (!isSoldOut) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accent.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Còn ${t.availableQuantity}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.accent,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  if (isSoldOut)
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 8),
+                                      child: Text(
+                                        '(Hết vé)',
+                                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (t.price > t.effectivePrice && !isSoldOut)
+                                    Text(
+                                      CurrencyFormatter.format(t.price),
+                                      style: const TextStyle(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  Text(
+                                    CurrencyFormatter.format(t.effectivePrice),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isSoldOut ? AppColors.textSecondary : AppColors.brand,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    if (isSelected)
-                      const Text(
-                        'Đang chọn',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      )
-                    else
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brand,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                        );
+                      }),
+                      if (schedule.tickets.isEmpty)
+                        const Text(
+                          'Chưa có thông tin vé.',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
-                        onPressed: () => widget.onSelect(schedule),
-                        child: const Text('Chọn', style: TextStyle(color: Colors.white)),
-                      ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),

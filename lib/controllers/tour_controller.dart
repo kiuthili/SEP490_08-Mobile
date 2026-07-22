@@ -91,4 +91,30 @@ class TourController extends GetxController {
       detailLoading.value = false;
     }
   }
+
+  Future<bool> requestConsultation({
+    required int tourId,
+    required String fullName,
+    required String phone,
+    required String email,
+    String? note,
+  }) async {
+    try {
+      await _tourService.requestConsultation(
+        tourId: tourId,
+        fullName: fullName,
+        phone: phone,
+        email: email,
+        note: note,
+      );
+      SnackbarHelper.success('Đã gửi yêu cầu tư vấn thành công! Chúng tôi sẽ sớm liên hệ với bạn.');
+      return true;
+    } on ApiError catch (e) {
+      SnackbarHelper.error(e.message);
+      return false;
+    } catch (e) {
+      SnackbarHelper.error('Không gửi được yêu cầu tư vấn. Vui lòng thử lại sau.');
+      return false;
+    }
+  }
 }

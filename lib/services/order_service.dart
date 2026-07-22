@@ -16,6 +16,7 @@ class OrderService extends GetxService with BaseServiceMixin {
     required int finalAmount,
     required List<Map<String, dynamic>> orderDetails,
     String? voucherCode,
+    int? promotionValue,
     String? note,
   }) async {
     return request(() async {
@@ -25,6 +26,7 @@ class OrderService extends GetxService with BaseServiceMixin {
           'scheduleId': scheduleId,
           'finalAmount': finalAmount,
           if (voucherCode != null) 'voucherCode': voucherCode,
+          if (promotionValue != null) 'promotionValue': promotionValue,
           if (note != null) 'note': note,
           'orderDetails': orderDetails,
         },

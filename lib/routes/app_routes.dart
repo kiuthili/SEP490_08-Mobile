@@ -21,6 +21,7 @@ class AppRoutes {
   static const String qrScan = '/qr-scan';
   static const String chatInbox = '/chat-inbox';
   static const String chatRoom = '/chat-room';
+  static const String newMessage = '/new-message';
   static const String momentDetail = '/moment-detail';
   static const String userProfile = '/user-profile';
   static const String payment = '/payment';
