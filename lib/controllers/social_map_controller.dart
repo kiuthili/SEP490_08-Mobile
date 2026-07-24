@@ -90,6 +90,9 @@ class SocialMapController extends GetxController {
   final showRoute = true.obs;
   final showFootprints = false.obs;
   final showHeatmap = false.obs;
+  
+  final heatmapType = 'all'.obs; // 'all', 'online', 'moments'
+  final heatmapRadius = 30.0.obs; // Similar to web radius
 
   // ======================= 1) LIVE LOCATION =======================
   final liveLocations = <LiveLocationModel>[].obs;
@@ -218,6 +221,7 @@ class SocialMapController extends GetxController {
   final routeDays = <RouteDayModel>[].obs;
   final RxnInt selectedDay = RxnInt();
   final routePoints = <RoutePointModel>[].obs;
+  final drivingRouteLatLngs = <LatLng>[].obs;
   final isRouteLoading = false.obs;
   final List<RoutePointModel> _allItineraryPoints = [];
 
@@ -281,8 +285,11 @@ class SocialMapController extends GetxController {
       if (eligibleSchedules.isNotEmpty) {
         await selectSchedule(eligibleSchedules.first.scheduleId);
       } else {
-        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí.
-        await _loadFriendsLive();
+        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí và tải heatmap/timeline toàn cầu.
+        await Future.wait([
+          _loadFriendsLive(),
+          loadMapMoments(null),
+        ]);
         _fitToLiveLocations();
       }
       _startFriendsPolling();
@@ -545,7 +552,7 @@ class SocialMapController extends GetxController {
       routeDays.assignAll(sorted);
 
       if (sorted.isNotEmpty) {
-        selectDay(sorted.first.dayNumber);
+        await selectDay(sorted.first.dayNumber);
       }
     } catch (_) {
       // tour chưa có lộ trình -> bỏ qua, không chặn các lớp khác
@@ -555,14 +562,31 @@ class SocialMapController extends GetxController {
   }
 
   /// Lọc các điểm của 1 ngày (đồng bộ, không gọi mạng lại).
-  void selectDay(int dayNumber) {
+  Future<void> selectDay(int dayNumber) async {
     selectedDay.value = dayNumber;
     final pts = _allItineraryPoints
         .where((p) => p.dayNumber == dayNumber)
         .toList()
       ..sort((a, b) => a.order.compareTo(b.order));
     routePoints.assignAll(pts);
-    _fitToRoute();
+    
+    // Fetch actual Mapbox driving route
+    final waypoints = routeLatLngs;
+    if (waypoints.isNotEmpty) {
+      try {
+        isRouteLoading.value = true;
+        final actualRoute = await _service.getDrivingRoute(waypoints);
+        drivingRouteLatLngs.assignAll(actualRoute.isNotEmpty ? actualRoute : waypoints);
+      } catch (e) {
+        drivingRouteLatLngs.assignAll(waypoints); // Fallback to straight lines
+      } finally {
+        isRouteLoading.value = false;
+      }
+    } else {
+      drivingRouteLatLngs.clear();
+    }
+    
+    fitToRoute();
   }
 
   // ======================= 4) FOOTPRINTS ("CÀO MAP") =======================
@@ -597,6 +621,99 @@ class SocialMapController extends GetxController {
     } finally {
       if (!silent) isFootprintsLoading.value = false;
     }
+  }
+
+  /// Tính toán các ô lục giác (BUMP Hexagons) từ dữ liệu footprints và liveTrail
+  List<Polygon> get bumpHexPolygons {
+    final validPoints = <LatLng>[];
+    for (final f in footprints) {
+      if (f.lat != 0 && f.lng != 0) {
+        validPoints.add(LatLng(f.lat, f.lng));
+      }
+    }
+    for (final t in liveTrail) {
+      if (t.latitude != 0 && t.longitude != 0) {
+        validPoints.add(t);
+      }
+    }
+
+    if (validPoints.isEmpty) return const [];
+
+    const double rEarth = 6378137.0;
+    const double hexR = 220.0;
+    final double sqrt3 = math.sqrt(3);
+
+    final refLat = validPoints.fold<double>(0.0, (sum, p) => sum + p.latitude) / validPoints.length;
+    final refLng = validPoints.fold<double>(0.0, (sum, p) => sum + p.longitude) / validPoints.length;
+    final cosRef = math.cos(refLat * math.pi / 180.0);
+
+    List<double> toLocal(double lat, double lng) => [
+      (lng - refLng) * (math.pi / 180.0) * rEarth * cosRef,
+      (lat - refLat) * (math.pi / 180.0) * rEarth,
+    ];
+
+    LatLng toGeo(double x, double y) => LatLng(
+      refLat + (y / rEarth) * (180.0 / math.pi),
+      refLng + (x / (rEarth * cosRef)) * (180.0 / math.pi),
+    );
+
+    final hexSet = <String, List<int>>{};
+    for (final p in validPoints) {
+      final loc = toLocal(p.latitude, p.longitude);
+      final x = loc[0];
+      final y = loc[1];
+
+      final fq = (2.0 / 3.0 * x) / hexR;
+      final fr = (-1.0 / 3.0 * x + sqrt3 / 3.0 * y) / hexR;
+      final fs = -fq - fr;
+
+      var rq = fq.round();
+      var rr = fr.round();
+      var rs = fs.round();
+
+      final dq = (rq - fq).abs();
+      final dr = (rr - fr).abs();
+      final ds = (rs - fs).abs();
+
+      if (dq > dr && dq > ds) {
+        rq = -rr - rs;
+      } else if (dr > ds) {
+        rr = -rq - rs;
+      }
+
+      final key = '$rq,$rr';
+      if (!hexSet.containsKey(key)) {
+        hexSet[key] = [rq, rr];
+      }
+    }
+
+    final polygons = <Polygon>[];
+    final hexFillColor = const Color(0xFFBAE6FF).withValues(alpha: 0.28);
+    final hexBorderColor = const Color(0xFFE0F2FE).withValues(alpha: 0.85);
+
+    for (final qr in hexSet.values) {
+      final q = qr[0];
+      final r = qr[1];
+      final cx = hexR * (3.0 / 2.0 * q);
+      final cy = hexR * (sqrt3 / 2.0 * q + sqrt3 * r);
+
+      final ring = <LatLng>[];
+      for (var i = 0; i < 6; i++) {
+        final a = (i * 60.0) * (math.pi / 180.0);
+        ring.add(toGeo(cx + hexR * math.cos(a), cy + hexR * math.sin(a)));
+      }
+
+      polygons.add(
+        Polygon(
+          points: ring,
+          color: hexFillColor,
+          borderColor: hexBorderColor,
+          borderStrokeWidth: 1.8,
+        ),
+      );
+    }
+
+    return polygons;
   }
 
   // ======================= 5) HEATMAP =======================
@@ -641,20 +758,25 @@ class SocialMapController extends GetxController {
   /// Gộp mọi toạ độ đang có thành điểm heatmap (fallback khi chưa có API).
   List<HeatPointModel> _buildHeatmapFromClientData() {
     final pts = <HeatPointModel>[];
-    for (final m in mapMoments) {
-      if (m.lat != null && m.lng != null) {
-        pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+    
+    if (heatmapType.value == 'all' || heatmapType.value == 'moments') {
+      for (final m in mapMoments) {
+        if (m.lat != null && m.lng != null) pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+      }
+      for (final f in footprints) {
+        pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
       }
     }
-    for (final f in footprints) {
-      pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
+    
+    if (heatmapType.value == 'all' || heatmapType.value == 'online') {
+      for (final l in liveLocations) {
+        pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
+      }
+      for (final t in liveTrail) {
+        pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
+      }
     }
-    for (final l in liveLocations) {
-      pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
-    }
-    for (final t in liveTrail) {
-      pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
-    }
+    
     return pts;
   }
 
@@ -704,7 +826,7 @@ class SocialMapController extends GetxController {
     _fitCamera(pts);
   }
 
-  void _fitToRoute() => _fitCamera(routeLatLngs);
+  void fitToRoute() => _fitCamera(routeLatLngs);
 
   void _safeMove(LatLng center, double zoom) {
     if (!isMapReady.value) return;

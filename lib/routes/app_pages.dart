@@ -35,6 +35,7 @@ import '../screens/staff/qr_scan_screen.dart';
 import '../screens/tour_detail_screen.dart';
 import '../controllers/user_study_controller.dart';
 import '../screens/customer/user_study_screen.dart';
+import '../screens/customer/footprint_screen.dart';
 import 'app_routes.dart';
 import '../utils/auth_gate.dart';
 
@@ -293,6 +294,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.sectionTours,
       page: () => const SectionToursScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.footprint,
+      page: () => const FootprintScreen(),
+      middlewares: _protected,
     ),
   ];
 }

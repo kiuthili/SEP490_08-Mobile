@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/feature_controllers.dart';
-import '../../controllers/social_controller.dart';
 import '../../controllers/staff_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../routes/app_routes.dart';

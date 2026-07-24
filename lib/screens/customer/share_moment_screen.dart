@@ -1,19 +1,3 @@
-// lib/screens/social/share_moment_screen.dart
-//
-// Màn chụp & đăng Moment (phong cách Locket), khớp với form web:
-//   - Chọn lịch trình tour (tuỳ chọn)
-//   - Chọn quyền riêng tư: Public / Friends / Only me
-//   - Tự lấy GPS để moment hiện đúng vị trí trên Bản đồ Social
-//   - Caption tối đa 500 ký tự
-//   - Chụp / Chụp lại / Đăng
-//
-// ✦ Bản nâng cấp (UI/UX + độ ổn định):
-//   - FIX lỗi double Get.back(): controller.shareMoment() đã tự pop màn này,
-//     nên màn KHÔNG gọi Get.back() lần nữa (trước đây pop nhầm cả màn bản đồ).
-//   - Quản lý vòng đời camera (pause/resume khi app vào nền) => hết đen hình/crash.
-//   - Thêm: bật/tắt flash, đổi camera trước/sau, haptics, nút chụp có hiệu ứng.
-//   - Bảo vệ: chặn đăng khi chưa có GPS bằng cách thử lại trước khi gửi.
-
 import 'dart:io';
 
 import 'package:camera/camera.dart';
@@ -22,14 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/feature_controllers.dart';
+import '../../models/feature_models.dart';
 import '../../services/location_helper.dart';
 import '../../utils/image_helper.dart';
 import '../../utils/snackbar_helper.dart';
 
 const int _kMaxCaption = 500;
-const Color _kBrand = Color(0xFF0068E0);
+const Color _kAccentCyan = Color(0xFF00E5FF);
 
-/// Tuỳ chọn quyền riêng tư (value khớp backend: Public/Friend/Private).
+/// Quyền riêng tư (Public/Friend/Private).
 class _PrivacyOption {
   final String value;
   final String label;
@@ -39,11 +24,10 @@ class _PrivacyOption {
 
 const _privacyOptions = <_PrivacyOption>[
   _PrivacyOption('Public', 'Public', Icons.public),
+  _PrivacyOption('Tour', 'Tour members', Icons.directions_bus),
   _PrivacyOption('Friend', 'Friends', Icons.group),
   _PrivacyOption('Private', 'Only me', Icons.lock),
 ];
-
-enum _GeoStatus { locating, ready, failed }
 
 class ShareMomentScreen extends StatefulWidget {
   const ShareMomentScreen({super.key});
@@ -61,7 +45,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   CameraController? _cameraController;
   List<CameraDescription> _cameras = const [];
   int _cameraIndex = 0;
-  FlashMode _flashMode = FlashMode.off;
+  final FlashMode _flashMode = FlashMode.off;
 
   File? _capturedImage;
   int? _selectedScheduleId;
@@ -69,7 +53,6 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   double? _lat;
   double? _lng;
-  _GeoStatus _geoStatus = _GeoStatus.locating;
 
   bool _isInitializing = true;
   bool _isUploading = false;
@@ -83,7 +66,6 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     _fetchLocation();
   }
 
-  // ----- Vòng đời: pause/resume camera khi app vào nền/quay lại -----
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final cam = _cameraController;
@@ -96,18 +78,38 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     }
   }
 
+  List<EligibleScheduleModel> get _ongoingSchedules {
+    final list = <EligibleScheduleModel>[
+      EligibleScheduleModel(
+        scheduleId: 0,
+        tourName: 'Cá nhân (Ngoài Tour)',
+        departureDate: DateTime.now(),
+        returnDate: DateTime.now(),
+        statusContext: 'Ongoing',
+      )
+    ];
+    final now = DateTime.now();
+    list.addAll(_orderController.eligibleSchedules.where((s) {
+      final status = s.statusContext.toLowerCase();
+      return status == 'ongoing' ||
+          status == 'completed' ||
+          s.departureDate.isBefore(now) ||
+          s.departureDate.isAtSameMomentAs(now);
+    }));
+    return list;
+  }
+
   Future<void> _fetchSchedules() async {
     await _orderController.fetchEligibleSchedules();
-    if (_orderController.eligibleSchedules.isNotEmpty && mounted) {
+    final ongoing = _ongoingSchedules;
+    if (ongoing.isNotEmpty && mounted) {
       setState(() {
-        _selectedScheduleId =
-            _orderController.eligibleSchedules.first.scheduleId;
+        _selectedScheduleId = ongoing.first.scheduleId;
       });
     }
   }
 
   Future<void> _fetchLocation() async {
-    setState(() => _geoStatus = _GeoStatus.locating);
     try {
       final pos = await LocationHelper.getCurrentPosition();
       if (!mounted) return;
@@ -115,14 +117,9 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         setState(() {
           _lat = pos.latitude;
           _lng = pos.longitude;
-          _geoStatus = _GeoStatus.ready;
         });
-      } else {
-        setState(() => _geoStatus = _GeoStatus.failed);
       }
-    } catch (_) {
-      if (mounted) setState(() => _geoStatus = _GeoStatus.failed);
-    }
+    } catch (_) {}
   }
 
   Future<void> _initCamera() async {
@@ -134,10 +131,9 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         if (mounted) setState(() => _isInitializing = false);
         return;
       }
-      // Lần đầu chọn camera sau.
       if (_cameraController == null) {
         _cameraIndex = _cameras.indexWhere(
-              (c) => c.lensDirection == CameraLensDirection.back,
+          (c) => c.lensDirection == CameraLensDirection.back,
         );
         if (_cameraIndex < 0) _cameraIndex = 0;
       }
@@ -166,38 +162,17 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     await _initCamera();
   }
 
-  Future<void> _toggleFlash() async {
-    final cam = _cameraController;
-    if (cam == null || !cam.value.isInitialized) return;
-    HapticFeedback.selectionClick();
-    final next = switch (_flashMode) {
-      FlashMode.off => FlashMode.auto,
-      FlashMode.auto => FlashMode.always,
-      _ => FlashMode.off,
-    };
-    try {
-      await cam.setFlashMode(next);
-      if (mounted) setState(() => _flashMode = next);
-    } catch (_) {}
-  }
-
   Future<void> _takePicture() async {
+    if (_ongoingSchedules.isEmpty) {
+      SnackbarHelper.error('Bạn chỉ có thể chụp Moment cho Tour đã hoặc đang diễn ra.');
+      return;
+    }
     final cam = _cameraController;
     if (cam == null || !cam.value.isInitialized) return;
     try {
       HapticFeedback.mediumImpact();
       final xFile = await cam.takePicture();
-      
-      // Chờ tệp được ghi xong hoàn toàn (kiểm tra kích thước > 0 bytes)
       final file = File(xFile.path);
-      int attempts = 0;
-      while (attempts < 10) {
-        if (await file.exists() && await file.length() > 0) {
-          break;
-        }
-        await Future.delayed(const Duration(milliseconds: 100));
-        attempts++;
-      }
 
       if (mounted) setState(() => _capturedImage = file);
     } catch (_) {
@@ -208,9 +183,12 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   void _retake() => setState(() => _capturedImage = null);
 
   Future<void> _submitMoment() async {
+    if (_ongoingSchedules.isEmpty) {
+      SnackbarHelper.error('Bạn chỉ có thể đăng Moment cho Tour đã hoặc đang diễn ra.');
+      return;
+    }
     if (_capturedImage == null) return;
     
-    // Check if the image file is valid to avoid sending an empty file
     if (!await _capturedImage!.exists() || await _capturedImage!.length() == 0) {
       SnackbarHelper.error('Captured image is invalid or empty. Please recapture.');
       return;
@@ -219,7 +197,6 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     setState(() => _isUploading = true);
 
     try {
-      // Ensure GPS coordinates are loaded (retry once if failed).
       if (_lat == null || _lng == null) {
         await _fetchLocation();
         if (_lat == null || _lng == null) {
@@ -229,7 +206,6 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         }
       }
 
-      // Nén ảnh trước khi gửi để giảm dung lượng file xuống ~200KB, tăng tốc độ gửi lên gấp 50 lần qua devtunnel
       final compressedFile = await ImageHelper.compressImage(_capturedImage!);
 
       final success = await _socialController.shareMoment(
@@ -242,7 +218,6 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
       );
 
       if (success) {
-        // Chờ hết frame hiện tại rồi mới pop để tránh xung đột với SnackBar overlay
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) Get.back();
         });
@@ -267,273 +242,370 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final schedules = _ongoingSchedules;
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: _ScheduleDropdown(
-          schedules: _orderController.eligibleSchedules,
-          selectedId: _selectedScheduleId,
-          onChanged: (id) => setState(() => _selectedScheduleId = id),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Get.back(),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _GeoStatusBadge(status: _geoStatus, onRetry: _fetchLocation),
-            Expanded(child: _buildPreview()),
-            _buildPrivacySelector(),
-            _buildCaption(),
-            _buildActions(),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
+      body: _capturedImage != null
+          ? SafeArea(child: _buildReviewScreen())
+          : _buildCameraScreen(schedules),
     );
   }
 
-  Widget _buildPreview() {
-    if (_capturedImage != null) {
-      return Padding(
-        padding: const EdgeInsets.all(12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Image.file(
-            _capturedImage!,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            cacheWidth: 600, // Tối ưu kích thước giải nén tránh lỗi OOM / Could not decompress image trên tablet
-            errorBuilder: (context, error, stackTrace) {
-              // Fallback: Thử tải không dùng cacheWidth nếu bị lỗi giải nén
-              return Image.file(
-                _capturedImage!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error2, stackTrace2) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.broken_image_rounded, color: Colors.redAccent, size: 48),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Captured image is invalid or decompression failed.',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          error2.toString(),
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 11),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+  // ── CAMERA SCREEN ─────────────────────────────────────────────────────────
+
+  Widget _buildCameraScreen(List<EligibleScheduleModel> schedules) {
+    return Stack(
+      children: [
+        // 1. Camera Preview covering the whole viewport
+        Positioned.fill(
+          child: _buildCameraContent(),
+        ),
+
+        // 2. Top Bar Overlay
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 16,
+              right: 16,
+              bottom: 24,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.6),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Invisible placeholder to keep TourPill perfectly centered
+                const SizedBox(width: 36),
+
+                // Tour selector pill (centre)
+                _TourPill(
+                  schedules: schedules,
+                  selectedId: _selectedScheduleId,
+                  onChanged: (id) => setState(() {
+                    _selectedScheduleId = id;
+                    if (id == 0 && _privacy == 'Tour') _privacy = 'Public';
+                  }),
+                ),
+
+                // Close button (right)
+                GestureDetector(
+                  onTap: () => Get.back(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.15),
                     ),
-                  );
-                },
-              );
-            },
+                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      );
-    }
+
+        // 3. Bottom controls floating overlay
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 24,
+              top: 32,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.65),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Tour dropdown & minimalist Privacy Selector Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _HistoryPill(
+                      schedules: schedules,
+                      selectedId: _selectedScheduleId,
+                      onChanged: (id) => setState(() {
+                        _selectedScheduleId = id;
+                        if (id == 0 && _privacy == 'Tour') _privacy = 'Public';
+                      }),
+                    ),
+                    const SizedBox(width: 12),
+                    _PrivacyPill(
+                      currentPrivacy: _privacy,
+                      hasTour: (_selectedScheduleId ?? 0) != 0,
+                      onChanged: (val) => setState(() {
+                        _privacy = val;
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Shutter Controls Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Spacer to balance flip button on right
+                      const SizedBox(width: 44),
+
+                      // Glowing Shutter button
+                      _LocketShutterButton(onTap: _takePicture),
+
+                      // Switch camera button
+                      _BottomIconBtn(
+                        icon: Icons.flip_camera_ios_outlined,
+                        onTap: _cameras.length >= 2 ? _switchCamera : () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCameraContent() {
     if (_isInitializing) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Container(
+        color: Colors.black,
+        child: const Center(child: CircularProgressIndicator(color: Colors.white70)),
       );
     }
     final cam = _cameraController;
     if (cam == null || !cam.value.isInitialized) {
-      return const Center(
-        child: Text('Cannot open camera',
-            style: TextStyle(color: Colors.white70)),
+      return Container(
+        color: const Color(0xFF111111),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.camera_alt_outlined, color: Colors.white30, size: 48),
+              SizedBox(height: 12),
+              Text('Camera unavailable', style: TextStyle(color: Colors.white38, fontSize: 13)),
+            ],
+          ),
+        ),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CameraPreview(cam),
-            // Nút flash + đổi camera (góc trên phải preview).
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Column(
-                children: [
-                  _RoundIconBtn(
-                    icon: switch (_flashMode) {
-                      FlashMode.off => Icons.flash_off_rounded,
-                      FlashMode.auto => Icons.flash_auto_rounded,
-                      _ => Icons.flash_on_rounded,
-                    },
-                    onTap: _toggleFlash,
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var scale = constraints.maxHeight / constraints.maxWidth * cam.value.aspectRatio;
+        if (scale < 1) scale = 1 / scale;
+        return Transform.scale(
+          scale: scale,
+          child: Center(
+            child: CameraPreview(cam),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── REVIEW SCREEN (after capture) ────────────────────────────────────────
+
+  Widget _buildReviewScreen() {
+    return Column(
+      children: [
+        // Top bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: _retake,
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
                   ),
-                  if (_cameras.length >= 2) ...[
-                    const SizedBox(height: 10),
-                    _RoundIconBtn(
-                      icon: Icons.cameraswitch_rounded,
-                      onTap: _switchCamera,
+                  child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Preview',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+              ),
+              const Spacer(),
+              const SizedBox(width: 36),
+            ],
+          ),
+        ),
+
+        // Preview image
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.file(
+                    _capturedImage!,
+                    fit: BoxFit.cover,
+                    cacheWidth: 800,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade900,
+                      child: const Center(
+                        child: Icon(Icons.broken_image_rounded, color: Colors.white30, size: 48),
+                      ),
                     ),
-                  ],
+                  ),
+
+                  // Caption overlay at bottom of image
+                  Positioned(
+                    left: 0, right: 0, bottom: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Colors.black.withValues(alpha: 0.65), Colors.transparent],
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+                      child: TextField(
+                        controller: _captionController,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                        ),
+                        maxLines: 2,
+                        maxLength: _kMaxCaption,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(
+                          hintText: 'Add a caption...',
+                          hintStyle: TextStyle(color: Colors.white60, fontSize: 15),
+                          border: InputBorder.none,
+                          counterStyle: TextStyle(color: Colors.white54, fontSize: 11),
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPrivacySelector() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: _privacyOptions.map((opt) {
-          final selected = _privacy == opt.value;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(
-              avatar: Icon(
-                opt.icon,
-                size: 16,
-                color: selected ? Colors.white : Colors.white70,
-              ),
-              label: Text(opt.label),
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-              selected: selected,
-              selectedColor: _kBrand,
-              backgroundColor: Colors.grey.shade900,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: selected ? _kBrand : Colors.white12,
-                ),
-              ),
-              onSelected: (_) {
-                HapticFeedback.selectionClick();
-                setState(() => _privacy = opt.value);
-              },
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildCaption() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: TextField(
-        controller: _captionController,
-        style: const TextStyle(color: Colors.white),
-        maxLines: 2,
-        maxLength: _kMaxCaption,
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(
-          hintText: 'Add a caption...',
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: Colors.grey.shade900,
-          counterStyle: const TextStyle(color: Colors.grey),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
           ),
         ),
-      ),
-    );
-  }
 
-  Widget _buildActions() {
-    if (_capturedImage == null) {
-      // Nút chụp lớn ở giữa.
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: GestureDetector(
-          onTap: _takePicture,
-          child: Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 4),
-              gradient: const LinearGradient(
-                colors: [_kBrand, Color(0xFF34C3FF)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _kBrand.withValues(alpha: 0.5),
-                  blurRadius: 16,
+        const SizedBox(height: 16),
+
+        // Privacy chips
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: _privacyOptions
+                .where((opt) => opt.value != 'Tour' || (_selectedScheduleId ?? 0) != 0)
+                .map((opt) {
+              final sel = _privacy == opt.value;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _privacy = opt.value);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: sel ? _kAccentCyan : Colors.white12,
+                      border: Border.all(
+                        color: sel ? _kAccentCyan : Colors.white24,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(opt.icon, size: 13, color: sel ? Colors.black : Colors.white70),
+                        const SizedBox(width: 5),
+                        Text(
+                          opt.label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: sel ? Colors.black : Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: const Icon(Icons.camera_alt_rounded,
-                color: Colors.white, size: 32),
+              );
+            }).toList(),
           ),
         ),
-      );
-    }
-    // Retake / Post
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _isUploading ? null : _retake,
-              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-              label: const Text('Recapture',
-                  style: TextStyle(color: Colors.white)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Colors.white24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+
+        const SizedBox(height: 20),
+
+        // Send button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SizedBox(
+            width: double.infinity,
+            height: 54,
             child: FilledButton(
               onPressed: _isUploading ? null : _submitMoment,
               style: FilledButton.styleFrom(
-                backgroundColor: _kBrand,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                backgroundColor: _kAccentCyan,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                elevation: 0,
               ),
               child: _isUploading
                   ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : const Text('Post',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.white)),
+                      width: 22, height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
+                    )
+                  : const Text(
+                      'Send Moment',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 0.3),
+                    ),
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
@@ -542,142 +614,314 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 // SUB-WIDGETS
 // ============================================================
 
-class _RoundIconBtn extends StatelessWidget {
-  const _RoundIconBtn({required this.icon, required this.onTap});
+/// Large Locket-style shutter: white fill + cyan glowing ring border.
+class _LocketShutterButton extends StatelessWidget {
+  const _LocketShutterButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 78, height: 78,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: _kAccentCyan, width: 3.5),
+          boxShadow: [
+            BoxShadow(
+              color: _kAccentCyan.withValues(alpha: 0.35),
+              blurRadius: 14,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Container(
+          margin: const EdgeInsets.all(5),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Flip camera icon button at the bottom row.
+class _BottomIconBtn extends StatelessWidget {
+  const _BottomIconBtn({required this.icon, required this.onTap});
   final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.45),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: Colors.white, size: 22),
-        ),
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 44, height: 44,
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
   }
 }
 
-/// Dropdown chọn lịch trình tour (hiển thị trên AppBar).
-class _ScheduleDropdown extends StatelessWidget {
-  const _ScheduleDropdown({
+/// Tour pill in the top-centre.
+class _TourPill extends StatelessWidget {
+  const _TourPill({
     required this.schedules,
     required this.selectedId,
     required this.onChanged,
   });
 
-  final List schedules; // List<EligibleScheduleModel>
+  final List<EligibleScheduleModel> schedules;
+  final int? selectedId;
+  final ValueChanged<int?> onChanged;
+
+  String get _label {
+    if (schedules.isEmpty) return 'Personal';
+    final found = schedules.where((s) => s.scheduleId == selectedId).toList();
+    if (found.isEmpty) return schedules.first.tourName;
+    if (found.first.scheduleId == 0) {
+      final tourCount = schedules.length - 1;
+      return tourCount > 0 ? '$tourCount Tour${tourCount > 1 ? 's' : ''}' : 'Personal';
+    }
+    return found.first.tourName;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      offset: const Offset(0, 44),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.group_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: Text(
+                _label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (_) => schedules.map((s) {
+        return PopupMenuItem<int>(
+          value: s.scheduleId,
+          child: Row(
+            children: [
+              Icon(
+                s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
+                size: 16,
+                color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  s.tourName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white,
+                    fontWeight: s.scheduleId == selectedId ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (s.scheduleId == selectedId)
+                const Icon(Icons.check_rounded, size: 14, color: _kAccentCyan),
+            ],
+          ),
+          onTap: () => onChanged(s.scheduleId),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// "History" pill below the shutter row (shows tour name as a dropdown).
+class _HistoryPill extends StatelessWidget {
+  const _HistoryPill({
+    required this.schedules,
+    required this.selectedId,
+    required this.onChanged,
+  });
+
+  final List<EligibleScheduleModel> schedules;
   final int? selectedId;
   final ValueChanged<int?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    if (schedules.isEmpty) {
-      return const Text('Personal Moment', style: TextStyle(fontSize: 15));
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white12,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int>(
-          value: selectedId,
-          isDense: true,
-          dropdownColor: Colors.grey.shade900,
-          iconEnabledColor: Colors.white,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          items: [
-            for (final s in schedules)
-              DropdownMenuItem<int>(
-                value: s.scheduleId as int,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.place, size: 14, color: _kBrand),
-                    const SizedBox(width: 4),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 200),
-                      child: Text(
-                        s.tourName as String,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
+    final label = schedules.where((s) => s.scheduleId == selectedId).firstOrNull?.tourName
+        ?? 'History';
 
-/// Badge trạng thái GPS.
-class _GeoStatusBadge extends StatelessWidget {
-  const _GeoStatusBadge({required this.status, required this.onRetry});
-  final _GeoStatus status;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    late final String text;
-    late final Color color;
-    late final IconData icon;
-    switch (status) {
-      case _GeoStatus.locating:
-        text = 'Acquiring GPS...';
-        color = Colors.amber;
-        icon = Icons.gps_not_fixed;
-        break;
-      case _GeoStatus.ready:
-        text = 'GPS Ready';
-        color = Colors.greenAccent;
-        icon = Icons.gps_fixed;
-        break;
-      case _GeoStatus.failed:
-        text = 'No GPS — tap to retry';
-        color = Colors.redAccent;
-        icon = Icons.gps_off;
-        break;
-    }
-    return GestureDetector(
-      onTap: status == _GeoStatus.failed ? onRetry : null,
+    return PopupMenuButton<int>(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      offset: const Offset(0, -120),
       child: Container(
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withValues(alpha: 0.12),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (status == _GeoStatus.locating)
-              const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.amber,
-                ),
-              )
-            else
-              Icon(icon, size: 14, color: color),
+            const Icon(Icons.tour_rounded, color: Colors.white, size: 16),
             const SizedBox(width: 6),
-            Text(text, style: TextStyle(color: color, fontSize: 12)),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
           ],
         ),
       ),
+      itemBuilder: (_) => schedules.map((s) {
+        return PopupMenuItem<int>(
+          value: s.scheduleId,
+          child: Row(
+            children: [
+              Icon(
+                s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
+                size: 16,
+                color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  s.tourName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white,
+                    fontWeight: s.scheduleId == selectedId ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (s.scheduleId == selectedId)
+                const Icon(Icons.check_rounded, size: 14, color: _kAccentCyan),
+            ],
+          ),
+          onTap: () => onChanged(s.scheduleId),
+        );
+      }).toList(),
+    );
+  }
+}
+
+/// Minimalist Privacy selector next to the Tour selection pill.
+class _PrivacyPill extends StatelessWidget {
+  const _PrivacyPill({
+    required this.currentPrivacy,
+    required this.hasTour,
+    required this.onChanged,
+  });
+
+  final String currentPrivacy;
+  final bool hasTour;
+  final ValueChanged<String> onChanged;
+
+  IconData get _icon {
+    final found = _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
+    return found?.icon ?? Icons.public;
+  }
+
+  String get _label {
+    final found = _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
+    return found?.label ?? 'Public';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      offset: const Offset(0, -120),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_icon, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              _label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+          ],
+        ),
+      ),
+      itemBuilder: (_) => _privacyOptions
+          .where((opt) => opt.value != 'Tour' || hasTour)
+          .map((opt) {
+        final isSelected = opt.value == currentPrivacy;
+        return PopupMenuItem<String>(
+          value: opt.value,
+          child: Row(
+            children: [
+              Icon(
+                opt.icon,
+                size: 16,
+                color: isSelected ? _kAccentCyan : Colors.white54,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                opt.label,
+                style: TextStyle(
+                  color: isSelected ? _kAccentCyan : Colors.white,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13,
+                ),
+              ),
+              if (isSelected)
+                const Spacer(),
+              if (isSelected)
+                const Icon(Icons.check_rounded, size: 14, color: _kAccentCyan),
+            ],
+          ),
+          onTap: () => onChanged(opt.value),
+        );
+      }).toList(),
     );
   }
 }

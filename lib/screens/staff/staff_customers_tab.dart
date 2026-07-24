@@ -1,13 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/shell_layout.dart';
+import '../../constants/api_constants.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
 
@@ -308,17 +309,27 @@ class _SmallPill extends StatelessWidget {
 
 // ── Map tab ───────────────────────────────────────────────────────────────────
 
-class _MapTab extends StatelessWidget {
+class _MapTab extends StatefulWidget {
   const _MapTab({required this.controller});
   final StaffController controller;
 
   @override
+  State<_MapTab> createState() => _MapTabState();
+}
+
+class _MapTabState extends State<_MapTab> {
+  final MapController _mapController = MapController();
+
+  static String get _tileUrl =>
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
+      '?access_token=${ApiConstants.mapboxAccessToken}';
+
+  @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final locs = controller.liveLocations;
-      final center = locs.isNotEmpty 
-          ? LatLng(locs.first.latitude, locs.first.longitude)
-          : const LatLng(16.047079, 108.206230); // Default to Da Nang, Vietnam
+      final locs = widget.controller.liveLocations;
+      final centerLng = locs.isNotEmpty ? locs.first.longitude : 108.206230;
+      final centerLat = locs.isNotEmpty ? locs.first.latitude : 16.047079;
 
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -326,39 +337,26 @@ class _MapTab extends StatelessWidget {
             return const SizedBox.shrink();
           }
           return FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
-              initialCenter: center, 
+              initialCenter: LatLng(centerLat, centerLng),
               initialZoom: 14,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-              ),
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.stayhub.mobile',
+                urlTemplate: _tileUrl,
+                userAgentPackageName: 'com.stayhub.stayhub_mobile',
+                maxZoom: 18,
               ),
               MarkerLayer(
-                markers: locs.map((loc) {
-                  return Marker(
-                    point: LatLng(loc.latitude, loc.longitude),
-                    width: 130,
-                    height: 78,
-                    alignment: Alignment.topCenter,
-                    child: RepaintBoundary(
-                      child: _LiveLocationMarker(location: loc),
-                    ),
-                  );
-                }).toList(),
-              ),
-              RichAttributionWidget(
-                alignment: AttributionAlignment.bottomLeft,
-                attributions: [
-                  TextSourceAttribution(
-                    'OpenStreetMap contributors',
-                    onTap: () {},
-                  ),
-                ],
+                markers: locs
+                    .map((loc) => Marker(
+                          point: LatLng(loc.latitude, loc.longitude),
+                          width: 70,
+                          height: 80,
+                          child: _LiveLocationMarker(location: loc),
+                        ))
+                    .toList(),
               ),
             ],
           );

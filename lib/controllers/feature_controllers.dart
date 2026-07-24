@@ -468,7 +468,7 @@ class SocialController extends GetxController {
     try {
       final list = await _service.getSentRequests();
       sentRequests.assignAll(list);
-      sentRequestUserIds.assignAll(list.map((r) => r.senderId));
+      sentRequestUserIds.assignAll(list.map((r) => r.receiverId));
     } catch (_) {}
   }
 

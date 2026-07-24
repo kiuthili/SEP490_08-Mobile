@@ -8,6 +8,8 @@ import '../models/feature_models.dart';
 import '../models/social_models.dart'; // Đã thêm import này
 import 'base_service.dart';
 import '../models/map_models.dart';
+import 'package:latlong2/latlong.dart';
+
 class SocialService extends GetxService with BaseServiceMixin {
   // ================= USERS & FRIENDS =================
   Future<PaginationModel<UserSearchModel>> searchUsers({required String query, int page = 1, int pageSize = AppConstants.defaultPageSize}) async {
@@ -215,6 +217,12 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<void> stopLocationSharing() async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.locations}/stop');
+    });
+  }
+
   Future<List<LiveLocationModel>> getScheduleLiveLocations(int scheduleId) async {
     return request(() async {
       final response = await api.dio.get('${ApiConstants.locations}/schedules/$scheduleId/live');
@@ -338,13 +346,16 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  // ============ 4) FOOTPRINTS ("Cào Map") ============
+    // ============ 4) FOOTPRINTS ("Cào Map") ============
   /// GET /api/moments/my-footprints  (token-based, KHÔNG truyền userId)
-  Future<List<FootprintDto>> getMyFootprints() async {
+  Future<List<FootprintDto>> getMyFootprints({int? scheduleId}) async {
     return request(() async {
-      // FIX: footprint phai lay tu LocationLogs (di chuyen), KHONG phai tu anh (moments).
-      final response =
-      await api.dio.get('${ApiConstants.locations}/footprints');
+      final response = await api.dio.get(
+        '${ApiConstants.moments}/my-footprints',
+        queryParameters: {
+          if (scheduleId != null && scheduleId > 0) 'scheduleId': scheduleId,
+        },
+      );
       return parseList(response.data, FootprintDto.fromJson);
     });
   }
@@ -379,6 +390,32 @@ class SocialService extends GetxService with BaseServiceMixin {
         'reason': reason,
         if (details != null) 'details': details,
       });
+    });
+  }
+
+  // ================= MAPBOX DIRECTIONS =================
+  Future<List<LatLng>> getDrivingRoute(List<LatLng> waypoints) async {
+    if (waypoints.length < 2) return [];
+    if (waypoints.length > 25) {
+      waypoints = waypoints.sublist(0, 25); // Mapbox limits
+    }
+    
+    return request(() async {
+      final coordsStr = waypoints.map((p) => '${p.longitude},${p.latitude}').join(';');
+      final url = 'https://api.mapbox.com/directions/v5/mapbox/driving/$coordsStr'
+          '?geometries=geojson'
+          '&access_token=${ApiConstants.mapboxAccessToken}';
+          
+      // Khong the dung api.dio vi no tu them baseUrl
+      final response = await Dio().get(url);
+      
+      final data = response.data;
+      if (data['code'] == 'Ok' && data['routes'] != null && data['routes'].isNotEmpty) {
+        final route = data['routes'][0];
+        final coords = route['geometry']['coordinates'] as List;
+        return coords.map((c) => LatLng(c[1] as double, c[0] as double)).toList();
+      }
+      return [];
     });
   }
 }

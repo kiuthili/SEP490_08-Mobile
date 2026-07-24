@@ -432,6 +432,11 @@ class _ProfileTabState extends State<ProfileTab> {
                     title: 'Social Map',
                     onTap: () => Get.toNamed(AppRoutes.socialMap),
                   ),
+                  IosMenuTile(
+                    icon: Icons.explore_outlined,
+                    title: 'Dấu chân của tôi',
+                    onTap: () => Get.toNamed(AppRoutes.footprint),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
