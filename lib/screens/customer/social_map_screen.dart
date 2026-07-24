@@ -16,6 +16,7 @@
 //   - RepaintBoundary cho marker để giảm repaint toàn cây.
 //   - FAB gradient, micro-interaction tinh tế.
 
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -94,7 +95,7 @@ class SocialMapScreen extends StatelessWidget {
             // ---- Overlay phải: control + layer toggle ----
             Obx(() => Positioned(
               right: 12,
-              bottom: c.showTimeline.value ? 260 : 24,
+              bottom: c.showTimeline.value ? 450 : 24,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -107,7 +108,7 @@ class SocialMapScreen extends StatelessWidget {
             // ---- Overlay trái: chú thích Heatmap ----
             Obx(() => Positioned(
               left: 12,
-              bottom: c.showTimeline.value ? 260 : 24,
+              bottom: c.showTimeline.value ? 450 : 24,
               child: _HeatmapLegend(c: c),
             )),
 
@@ -124,10 +125,12 @@ class SocialMapScreen extends StatelessWidget {
             // ---- Overlay dưới cùng: Dòng thời gian hành trình ----
             Obx(() => c.showTimeline.value
                 ? Positioned(
-                    bottom: 0,
+                    bottom: MediaQuery.of(context).padding.bottom + 20,
                     left: 0,
                     right: 0,
-                    child: _TimelinePanel(c: c),
+                    child: Center(
+                      child: _TimelinePanel(c: c),
+                    ),
                   )
                 : const SizedBox.shrink()),
 
@@ -873,26 +876,36 @@ class _DaySelectorBar extends StatelessWidget {
       if (!c.showRoute.value || c.routeDays.isEmpty) {
         return const SizedBox.shrink();
       }
+      final totalItems = c.routeDays.length + 1; // +1 for Overview (ALL)
+
       return Container(
         margin: const EdgeInsets.only(top: 8),
         height: 36,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: c.routeDays.length,
+          itemCount: totalItems,
           separatorBuilder: (_, __) => const SizedBox(width: 6),
           itemBuilder: (context, i) {
-            final d = c.routeDays[i];
-            final selected = c.selectedDay.value == d.dayNumber;
+            final bool isOverview = i == 0;
+            final bool selected = isOverview
+                ? c.selectedDay.value == null
+                : c.selectedDay.value == c.routeDays[i - 1].dayNumber;
+            
+            final String label = isOverview ? 'Overview' : 'Day ${c.routeDays[i - 1].dayNumber}';
+
             return GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
-                c.selectDay(d.dayNumber);
+                if (isOverview) {
+                  c.selectDay(null);
+                } else {
+                  c.selectDay(c.routeDays[i - 1].dayNumber);
+                }
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
                   color: selected
                       ? _kBrand
@@ -903,7 +916,7 @@ class _DaySelectorBar extends StatelessWidget {
                   ],
                 ),
                 child: Text(
-                  'Day ${d.dayNumber}',
+                  label,
                   style: TextStyle(
                     color: selected ? Colors.white : Colors.black87,
                     fontWeight: FontWeight.w700,
@@ -1436,89 +1449,329 @@ class _Glass extends StatelessWidget {
   }
 }
 
-/// Panel Dòng thời gian hành trình (Timeline Panel) vuốt hiển thị danh sách các bài viết/ảnh
-class _TimelinePanel extends StatelessWidget {
+/// Panel Dòng thời gian hành trình (Timeline Panel) lật ảnh kiểu Polaroid giống Web
+class _TimelinePanel extends StatefulWidget {
   const _TimelinePanel({required this.c});
   final SocialMapController c;
 
   @override
+  State<_TimelinePanel> createState() => _TimelinePanelState();
+}
+
+class _TimelinePanelState extends State<_TimelinePanel> {
+  int _currentIndex = 0;
+  Timer? _timer;
+  bool _isPlaying = false;
+  
+  // Smooth dragging physics states
+  double _dragOffset = 0.0;
+  double _targetOffset = 0.0;
+  bool _isDragging = false;
+  
+  // Autoplay speed states (1x = 3.0s, 2x = 1.5s, 3x = 1.0s)
+  int _playbackSpeed = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _moveCameraToCurrent();
+  }
+
+  void _moveCameraToCurrent() {
+    final moments = widget.c.timelineMoments;
+    if (moments.isNotEmpty && _currentIndex < moments.length) {
+      final m = moments[_currentIndex];
+      if (m.lat != null && m.lng != null) {
+        widget.c.mapController.move(LatLng(m.lat!, m.lng!), 15);
+      }
+    }
+  }
+
+  void _nextCard({bool manual = false}) {
+    if (manual) _stopPlayback();
+    final moments = widget.c.timelineMoments;
+    if (moments.isEmpty) return;
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % moments.length;
+    });
+    _moveCameraToCurrent();
+    HapticFeedback.lightImpact();
+  }
+
+  void _prevCard({bool manual = false}) {
+    if (manual) _stopPlayback();
+    final moments = widget.c.timelineMoments;
+    if (moments.isEmpty) return;
+    setState(() {
+      _currentIndex = (_currentIndex - 1 + moments.length) % moments.length;
+    });
+    _moveCameraToCurrent();
+    HapticFeedback.lightImpact();
+  }
+
+  void _togglePlay() {
+    if (_isPlaying) {
+      _stopPlayback();
+    } else {
+      _startPlayback();
+    }
+    HapticFeedback.mediumImpact();
+  }
+
+  void _startPlayback() {
+    setState(() {
+      _isPlaying = true;
+    });
+    _timer?.cancel();
+    
+    final double intervalSeconds = _playbackSpeed == 1 ? 3.0 : (_playbackSpeed == 2 ? 1.5 : 1.0);
+    _timer = Timer.periodic(Duration(milliseconds: (intervalSeconds * 1000).toInt()), (timer) {
+      _nextCard();
+    });
+  }
+
+  void _stopPlayback() {
+    if (!_isPlaying) return;
+    _timer?.cancel();
+    setState(() {
+      _isPlaying = false;
+    });
+  }
+
+  void _toggleSpeed() {
+    setState(() {
+      if (_playbackSpeed == 1) {
+        _playbackSpeed = 2;
+      } else if (_playbackSpeed == 2) {
+        _playbackSpeed = 3;
+      } else {
+        _playbackSpeed = 1;
+      }
+    });
+    if (_isPlaying) {
+      _startPlayback(); // Reset timer with the new speed setting
+    }
+    HapticFeedback.lightImpact();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final moments = c.timelineMoments;
+    final moments = widget.c.timelineMoments;
+
+    if (moments.isEmpty) {
+      return Container(
+        height: 120,
+        width: 320,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.65),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Text(
+          'No moments yet in this journey.',
+          style: TextStyle(color: Colors.white, fontSize: 13),
+        ),
+      );
+    }
+
+    final total = moments.length;
+    final m2 = moments[(_currentIndex + 2) % total];
+    final m1 = moments[(_currentIndex + 1) % total];
+    final mActive = moments[_currentIndex];
+
+    final timeStr = '${mActive.createdAt.hour.toString().padLeft(2, '0')}:${mActive.createdAt.minute.toString().padLeft(2, '0')}';
+    final dateStr = '${mActive.createdAt.day}/${mActive.createdAt.month}';
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 15,
-            offset: const Offset(0, -4),
-          )
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Tiêu đề
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Polaroid Stack Container
+          SizedBox(
+            width: 300,
+            height: 360,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.history_rounded, color: _kBrand, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Journey Timeline (${moments.length})',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                // 1. Bottom Card Layer 2 (rotated -6 degrees)
+                if (total > 2)
+                  Positioned.fill(
+                    child: Transform.rotate(
+                      angle: -6 * 3.1415926535 / 180,
+                      child: Transform.translate(
+                        offset: const Offset(4, 8),
+                        child: Opacity(
+                          opacity: 0.4,
+                          child: _PolaroidCard(m: m2, isBackground: true),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 22),
-                      onPressed: () => c.showTimeline.value = false,
+                  ),
+
+                // 2. Middle Card Layer 1 (rotated 4 degrees)
+                if (total > 1)
+                  Positioned.fill(
+                    child: Transform.rotate(
+                      angle: 4 * 3.1415926535 / 180,
+                      child: Transform.translate(
+                        offset: const Offset(2, 4),
+                        child: Opacity(
+                          opacity: 0.75,
+                          child: _PolaroidCard(m: m1, isBackground: true),
+                        ),
+                      ),
                     ),
-                  ],
+                  ),
+
+                // 3. Top Active Polaroid Card (with Swipe Gestures and Smooth Snapping Transition)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onHorizontalDragStart: (_) {
+                      setState(() {
+                        _isDragging = true;
+                      });
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      setState(() {
+                        _dragOffset += details.delta.dx;
+                        _targetOffset = _dragOffset;
+                      });
+                    },
+                    onHorizontalDragEnd: (details) {
+                      setState(() {
+                        _isDragging = false;
+                        if (_dragOffset < -80) {
+                          _nextCard(manual: true); // Swiped Left -> Next
+                        } else if (_dragOffset > 80) {
+                          _prevCard(manual: true); // Swiped Right -> Prev
+                        }
+                        _dragOffset = 0.0;
+                        _targetOffset = 0.0;
+                      });
+                    },
+                    child: TweenAnimationBuilder<double>(
+                      duration: _isDragging ? Duration.zero : const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      tween: Tween<double>(begin: _dragOffset, end: _targetOffset),
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(value, 0),
+                          child: Transform.rotate(
+                            angle: (value / 300) * (12 * 3.1415926535 / 180), // Rotate slightly on drag
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 350),
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeIn,
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.2, 0.0), // Slide in from right slightly
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: ScaleTransition(
+                                scale: Tween<double>(begin: 0.9, end: 1.0).animate(animation),
+                                child: child,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _PolaroidCard(
+                          key: ValueKey<int>(_currentIndex), // Trigger switch animation on change
+                          m: mActive,
+                          timeStr: timeStr,
+                          dateStr: dateStr,
+                          onClose: () => widget.c.showTimeline.value = false,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.black12),
+          
+          const SizedBox(height: 16),
+          
+          // Replay Control Panel with Play / Pause & Speed
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 28),
+                onPressed: () => _prevCard(manual: true),
+              ),
+              const SizedBox(width: 8),
+              
+              // Play/Pause button
+              IconButton(
+                icon: Icon(
+                  _isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                  color: const Color(0xFF00E5FF),
+                  size: 40,
+                ),
+                onPressed: _togglePlay,
+              ),
+              const SizedBox(width: 8),
 
-          // Danh sách Moment cuộn dọc (cột ảnh)
-          Expanded(
-            child: moments.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No moments yet in this journey.',
-                      style: TextStyle(color: Colors.black45, fontSize: 13),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: moments.length,
-                    itemBuilder: (context, index) {
-                      final m = moments[index];
-                      final timeStr = '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}';
-                      final dateStr = '${m.createdAt.day}/${m.createdAt.month}';
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 24.0),
-                        child: GesturefulMomentCard(c: c, m: m, timeStr: timeStr, dateStr: dateStr),
-                      );
-                    },
+              IconButton(
+                icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 28),
+                onPressed: () => _nextCard(manual: true),
+              ),
+              const SizedBox(width: 12),
+              
+              // Speed control badge
+              InkWell(
+                onTap: _toggleSpeed,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white.withValues(alpha: 0.15),
+                    border: Border.all(color: Colors.white24),
                   ),
+                  child: Text(
+                    '${_playbackSpeed}x',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.black.withValues(alpha: 0.6),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Text(
+                  '${_currentIndex + 1} / $total',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1526,97 +1779,133 @@ class _TimelinePanel extends StatelessWidget {
   }
 }
 
-/// Thẻ hiển thị khoảnh khắc trong Timeline và tự di chuyển camera khi chạm vào
-class GesturefulMomentCard extends StatelessWidget {
-  const GesturefulMomentCard({
+/// Thẻ Polaroid lật ảnh (RepaintBoundary Optimized)
+class _PolaroidCard extends StatelessWidget {
+  const _PolaroidCard({
     super.key,
-    required this.c,
     required this.m,
-    required this.timeStr,
-    required this.dateStr,
+    this.isBackground = false,
+    this.timeStr,
+    this.dateStr,
+    this.onClose,
   });
 
-  final SocialMapController c;
   final MomentModel m;
-  final String timeStr;
-  final String dateStr;
+  final bool isBackground;
+  final String? timeStr;
+  final String? dateStr;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        if (m.lat != null && m.lng != null) {
-          c.mapController.move(LatLng(m.lat!, m.lng!), 15);
-        }
-      },
+    // Isolate the card repaint boundary to boost UI rendering performance
+    return RepaintBoundary(
       child: Container(
-        width: double.infinity,
-        height: 380, // Chiều cao cố định để tạo thành cột ảnh lớn
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black12),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.shade200, width: 0.5),
         ),
         padding: const EdgeInsets.all(12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image Container
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: CachedNetworkImage(
-                  imageUrl: m.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Isolate network image rendering layer
+                    RepaintBoundary(
+                      child: CachedNetworkImage(
+                        imageUrl: m.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey.shade100,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey.shade100,
+                          child: const Icon(Icons.broken_image_rounded, size: 24, color: Colors.black38),
+                        ),
                       ),
                     ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.broken_image_rounded, size: 20, color: Colors.black38),
-                  ),
+                    if (!isBackground && onClose != null)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: onClose,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withValues(alpha: 0.4),
+                            ),
+                            child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              m.caption ?? 'No caption',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+            
+            if (!isBackground) ...[
+              const SizedBox(height: 12),
+              // Caption (Handwritten feel)
+              Text(
+                m.caption ?? 'No caption',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$timeStr - $dateStr',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.black54,
+              const SizedBox(height: 8),
+              const Divider(height: 1, color: Colors.black12),
+              const SizedBox(height: 8),
+              // Footer Info
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${timeStr ?? ""} - ${dateStr ?? ""}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                Text(
-                  m.fullName ?? 'User',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: _kBrand,
+                  Text(
+                    m.fullName ?? 'User',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: _kBrand,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -1666,77 +1955,112 @@ class _FogOfWarPainter extends CustomPainter {
     canvas.drawRect(rect, fogPaint);
 
     // 2. Playful Floating Icons (Sparser & Minimalist)
-    final bounds = camera.visibleBounds;
-    
-    // INCREASED STEP SIZES for a wider grid
-    double step = 0.025; 
-    if (camera.zoom < 10) step = 0.25;
-    if (camera.zoom < 13) step = 0.1;
-    if (camera.zoom > 16) step = 0.008;
+    // Only attempt grid rendering if zoom is high enough to avoid looping millions of coordinates
+    if (camera.zoom >= 8.5) {
+      final bounds = camera.visibleBounds;
+      
+      // Dynamic grid spacing based on zoom level
+      double step = 0.025; 
+      if (camera.zoom < 11) {
+        step = 0.4;
+      } else if (camera.zoom < 13) {
+        step = 0.15;
+      } else if (camera.zoom < 15) {
+        step = 0.05;
+      } else if (camera.zoom < 17) {
+        step = 0.02;
+      } else {
+        step = 0.008;
+      }
 
-    final startLat = (bounds.south / step).floor() * step;
-    final endLat = (bounds.north / step).ceil() * step;
-    final startLng = (bounds.west / step).floor() * step;
-    final endLng = (bounds.east / step).ceil() * step;
+      final startLat = (bounds.south / step).floor() * step;
+      final endLat = (bounds.north / step).ceil() * step;
+      final startLng = (bounds.west / step).floor() * step;
+      final endLng = (bounds.east / step).ceil() * step;
 
-    final icons = ['☁️', '✨', '☁️', '🌙'];
+      final icons = ['☁️', '✨', '☁️', '🌙'];
+      int iconCount = 0;
+      const int maxIcons = 60; // Strict hard limit to guarantee 60 FPS and prevent crashes
 
-    for (double lat = startLat; lat <= endLat; lat += step) {
-      for (double lng = startLng; lng <= endLng; lng += step) {
-        int hash = (lat * 10000).toInt() ^ (lng * 10000).toInt();
-        
-        // STRICTER FILTER: Only show an icon roughly 1 out of every 6 points
-        if (hash % 6 != 0) continue;
+      for (double lat = startLat; lat <= endLat; lat += step) {
+        for (double lng = startLng; lng <= endLng; lng += step) {
+          if (iconCount >= maxIcons) break;
 
-        String icon = icons[hash.abs() % icons.length];
-        
-        double latOffset = ((hash % 100) - 50) / 100 * (step * 0.5);
-        double lngOffset = (((hash ~/ 100) % 100) - 50) / 100 * (step * 0.5);
+          int hash = (lat * 10000).toInt() ^ (lng * 10000).toInt();
+          
+          // Show an icon for roughly 1 out of every 6 points
+          if (hash % 6 != 0) continue;
 
-        final targetPoint = LatLng(lat + latOffset, lng + lngOffset);
-        final pos = camera.project(targetPoint);
-        
-        final dx = pos.x - camera.pixelOrigin.x;
-        final dy = pos.y - camera.pixelOrigin.y;
+          String icon = icons[hash.abs() % icons.length];
+          
+          double latOffset = ((hash % 100) - 50) / 100 * (step * 0.5);
+          double lngOffset = (((hash ~/ 100) % 100) - 50) / 100 * (step * 0.5);
 
-        final span = TextSpan(
-          text: icon,
-          style: TextStyle(
-            fontSize: (hash % 2 == 0) ? 24 : 16, // Slightly reduced max size
-            color: Colors.white.withValues(alpha: 0.5), // Softer opacity
-          ),
-        );
-        final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
-        tp.layout();
-        
-        tp.paint(canvas, Offset(dx - tp.width / 2, dy - tp.height / 2));
+          final targetPoint = LatLng(lat + latOffset, lng + lngOffset);
+          final pos = camera.project(targetPoint);
+          
+          final dx = pos.x - camera.pixelOrigin.x;
+          final dy = pos.y - camera.pixelOrigin.y;
+
+          // Skip drawing if coordinates are far off viewport bounds
+          if (dx < -20 || dx > size.width + 20 || dy < -20 || dy > size.height + 20) {
+            continue;
+          }
+
+          final span = TextSpan(
+            text: icon,
+            style: TextStyle(
+              fontSize: (hash % 2 == 0) ? 24 : 16, 
+              color: Colors.white.withValues(alpha: 0.5), 
+            ),
+          );
+          final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+          tp.layout();
+          
+          tp.paint(canvas, Offset(dx - tp.width / 2, dy - tp.height / 2));
+          iconCount++;
+        }
+        if (iconCount >= maxIcons) break;
       }
     }
-
-    // 3. The Neon Glow Aura Paint (Vibrant Cyan)
-    final glowPaint = Paint()
-      ..color = const Color(0xFF00E5FF).withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 25
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
-
-    // 4. The Soft Eraser Paint
-    final erasePaint = Paint()
-      ..blendMode = BlendMode.dstOut
-      ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
 
     for (final fp in footprints) {
       final pos = camera.project(fp);
       final offset = Offset(pos.x - camera.pixelOrigin.x, pos.y - camera.pixelOrigin.y);
 
-      if (offset.dx < -100 || offset.dx > size.width + 100 ||
-          offset.dy < -100 || offset.dy > size.height + 100) {
+      if (offset.dx < -130 || offset.dx > size.width + 130 ||
+          offset.dy < -130 || offset.dy > size.height + 130) {
         continue;
       }
       
-      canvas.drawCircle(offset, 45, glowPaint);
-      canvas.drawCircle(offset, 45, erasePaint);
+      // Calculate a geographic-based radius (approx 800m in longitude)
+      final posOffset = camera.project(LatLng(fp.latitude, fp.longitude + 0.008));
+      final double radius = (pos.x - posOffset.x).abs();
+      
+      // Clamp the pixel radius to keep holes proportional and visible.
+      // Minimum 8.0 pixels ensures it stays visible as a small dot when zoomed out,
+      // without covering the entire region or country.
+      // Maximum 120.0 pixels limits the revealed area when zoomed in.
+      final double clampedRadius = radius.clamp(8.0, 120.0);
+
+      // Define dynamic stroke and blur sizes based on current pixel radius
+      final double glowStroke = (clampedRadius * 0.55).clamp(4.0, 25.0);
+      final double glowBlur = (clampedRadius * 0.45).clamp(3.0, 20.0);
+      final double eraseBlur = (clampedRadius * 0.33).clamp(2.0, 15.0);
+
+      final glowPaint = Paint()
+        ..color = const Color(0xFF00E5FF).withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = glowStroke
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur);
+
+      final erasePaint = Paint()
+        ..blendMode = BlendMode.dstOut
+        ..style = PaintingStyle.fill
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, eraseBlur);
+
+      canvas.drawCircle(offset, clampedRadius, glowPaint);
+      canvas.drawCircle(offset, clampedRadius, erasePaint);
     }
     canvas.restore();
   }
