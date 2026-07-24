@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/feature_controllers.dart';
-import '../../controllers/social_controller.dart';
 import '../../controllers/staff_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../routes/app_routes.dart';
@@ -64,7 +63,7 @@ class StaffSchedulesTab extends GetView<StaffController> {
                       EmptyStateWidget(
                         title: 'Chưa có lịch trình được giao',
                         subtitle:
-                        'Các lịch trình sẽ hiển thị khi được phân công',
+                            'Các lịch trình sẽ hiển thị khi được phân công',
                       ),
                     ],
                   );
@@ -158,17 +157,17 @@ class _FilterBarState extends State<_FilterBar> {
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                onPressed: () {
-                  _searchController.clear();
-                  widget.controller.applySearch('');
-                  setState(() {});
-                },
-              )
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        widget.controller.applySearch('');
+                        setState(() {});
+                      },
+                    )
                   : null,
               isDense: true,
               contentPadding:
-              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: AppColors.border),
@@ -225,7 +224,9 @@ class _ScheduleCard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       decoration: BoxDecoration(
-        color: selected ? AppColors.brandLight.withValues(alpha: 0.3) : AppColors.surface,
+        color: selected
+            ? AppColors.brandLight.withValues(alpha: 0.3)
+            : AppColors.surface,
         borderRadius: AppRadius.card,
         border: Border.all(
           color: selected ? AppColors.brand : AppColors.border,
@@ -262,27 +263,26 @@ class _ScheduleCard extends StatelessWidget {
                           Row(
                             children: [
                               Icon(Icons.calendar_today_rounded,
-                                  size: 13,
-                                  color: AppColors.textSecondary),
+                                  size: 13, color: AppColors.textSecondary),
                               const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
                                   '${DateFormatter.display(schedule.departureDate)}'
-                                      ' → ${DateFormatter.display(schedule.returnDate)}',
+                                  ' → ${DateFormatter.display(schedule.returnDate)}',
                                   style: AppTextStyles.textTheme.bodySmall
                                       ?.copyWith(
-                                      color: AppColors.textSecondary),
+                                          color: AppColors.textSecondary),
                                 ),
                               ),
                             ],
                           ),
-
                         ],
                       ),
                     ),
                     if (selected) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.check_circle_rounded, color: AppColors.brand, size: 24),
+                      Icon(Icons.check_circle_rounded,
+                          color: AppColors.brand, size: 24),
                     ]
                   ],
                 ),
@@ -302,8 +302,10 @@ class _ScheduleCard extends StatelessWidget {
                         icon: Icons.qr_code_scanner_rounded,
                         isPrimary: true,
                         onTap: () {
-                           Get.find<StaffController>().selectSchedule(schedule.scheduleId);
-                           Get.find<ShellController>().changeTab(_kCheckInTabIndex);
+                          Get.find<StaffController>()
+                              .selectSchedule(schedule.scheduleId);
+                          Get.find<ShellController>()
+                              .changeTab(_kCheckInTabIndex);
                         },
                       ),
                     ),
@@ -312,8 +314,10 @@ class _ScheduleCard extends StatelessWidget {
                       child: _ActionButton(
                         icon: Icons.confirmation_number_rounded,
                         onTap: () {
-                           Get.find<StaffController>().selectSchedule(schedule.scheduleId);
-                           Get.find<ShellController>().changeTab(_kTicketsTabIndex);
+                          Get.find<StaffController>()
+                              .selectSchedule(schedule.scheduleId);
+                          Get.find<ShellController>()
+                              .changeTab(_kTicketsTabIndex);
                         },
                       ),
                     ),
@@ -322,8 +326,10 @@ class _ScheduleCard extends StatelessWidget {
                       child: _ActionButton(
                         icon: Icons.people_alt_rounded,
                         onTap: () {
-                           Get.find<StaffController>().selectSchedule(schedule.scheduleId);
-                           Get.find<ShellController>().changeTab(_kCustomersTabIndex);
+                          Get.find<StaffController>()
+                              .selectSchedule(schedule.scheduleId);
+                          Get.find<ShellController>()
+                              .changeTab(_kCustomersTabIndex);
                         },
                       ),
                     ),
@@ -361,16 +367,21 @@ class _ActionButton extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isPrimary ? AppColors.brand : AppColors.brand.withValues(alpha: 0.08),
+            color: isPrimary
+                ? AppColors.brand
+                : AppColors.brand.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
-              color: isPrimary ? AppColors.brand : AppColors.brand.withValues(alpha: 0.2),
+              color: isPrimary
+                  ? AppColors.brand
+                  : AppColors.brand.withValues(alpha: 0.2),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: isPrimary ? Colors.white : AppColors.brand),
+              Icon(icon,
+                  size: 20, color: isPrimary ? Colors.white : AppColors.brand),
             ],
           ),
         ),
@@ -388,26 +399,25 @@ class _TourThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: SizedBox(
         width: 52,
         height: 52,
         child: imageUrl != null && imageUrl!.trim().isNotEmpty
             ? Image.network(
-          imageUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallback(),
-        )
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _fallback(),
+              )
             : _fallback(),
       ),
     );
   }
 
   Widget _fallback() => Container(
-    color: AppColors.brandLight,
-    child: const Center(
-      child: Icon(Icons.tour_rounded, color: AppColors.brand, size: 24),
-    ),
-  );
+        color: AppColors.brandLight,
+        child: const Center(
+          child: Icon(Icons.tour_rounded, color: AppColors.brand, size: 24),
+        ),
+      );
 }
-

@@ -13,8 +13,8 @@ class TourModel {
   final List<String> tourImages;
   final String? status;
   final double? averageStar;
-  final int? startingPrice;   // effective price (after discount)
-  final int? originalPrice;   // raw price before discount (null if no discount)
+  final int? startingPrice; // effective price (after discount)
+  final int? originalPrice; // raw price before discount (null if no discount)
   final double? discountPercentage; // percentage discount if applicable
   final DateTime? nextDeparture;
   final String? transportationType;
@@ -85,7 +85,9 @@ class TourModel {
           if (effective < raw) {
             originalPrice = raw;
             final promo = ticketModel.promotion;
-            if (promo != null && promo.status == 'Active' && promo.discountType.toLowerCase() == 'percentage') {
+            if (promo != null &&
+                promo.status == 'Active' &&
+                promo.discountType.toLowerCase() == 'percentage') {
               discountPercentage = promo.discountValue;
             } else {
               discountPercentage = null;
@@ -317,7 +319,8 @@ class ScheduleTicketModel {
     double discountAmount = 0;
     if (promotion!.discountType.toLowerCase() == "percentage") {
       discountAmount = price * (promotion!.discountValue / 100);
-      if (promotion!.maxDiscountAmount != null && discountAmount > promotion!.maxDiscountAmount!) {
+      if (promotion!.maxDiscountAmount != null &&
+          discountAmount > promotion!.maxDiscountAmount!) {
         discountAmount = promotion!.maxDiscountAmount!;
       }
     } else {
@@ -342,12 +345,15 @@ class ScheduleTicketModel {
       ticketTypeName: () {
         final t = JsonUtils.pick(json, ['ticketType', 'TicketType']);
         if (t is Map<String, dynamic>) {
-          final name = JsonUtils.readString(JsonUtils.pick(t, ['name', 'Name']));
+          final name =
+              JsonUtils.readString(JsonUtils.pick(t, ['name', 'Name']));
           if (name == null || name.isEmpty) return null;
-          
-          final min = JsonUtils.readInt(JsonUtils.pick(t, ['minAge', 'MinAge']));
-          final max = JsonUtils.readInt(JsonUtils.pick(t, ['maxAge', 'MaxAge']));
-          
+
+          final min =
+              JsonUtils.readInt(JsonUtils.pick(t, ['minAge', 'MinAge']));
+          final max =
+              JsonUtils.readInt(JsonUtils.pick(t, ['maxAge', 'MaxAge']));
+
           if (min > 0 && max > 0 && max < 99) {
             return '$name ($min - $max tuổi)';
           } else if (max > 0 && max < 99) {
@@ -414,13 +420,25 @@ class PromotionModel {
       id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
       code: JsonUtils.readString(JsonUtils.pick(json, ['code', 'Code'])) ?? '',
       name: JsonUtils.readString(JsonUtils.pick(json, ['name', 'Name'])) ?? '',
-      description: JsonUtils.readString(JsonUtils.pick(json, ['description', 'Description'])),
-      discountType: JsonUtils.readString(JsonUtils.pick(json, ['discountType', 'DiscountType'])) ?? '',
-      discountValue: JsonUtils.readDouble(JsonUtils.pick(json, ['discountValue', 'DiscountValue'])) ?? 0,
-      maxDiscountAmount: JsonUtils.readDouble(JsonUtils.pick(json, ['maxDiscountAmount', 'MaxDiscountAmount'])),
-      startDate: JsonUtils.readDateTime(JsonUtils.pick(json, ['startDate', 'StartDate'])) ?? DateTime.now(),
-      endDate: JsonUtils.readDateTime(JsonUtils.pick(json, ['endDate', 'EndDate'])) ?? DateTime.now(),
-      status: JsonUtils.readString(JsonUtils.pick(json, ['status', 'Status'])) ?? '',
+      description: JsonUtils.readString(
+          JsonUtils.pick(json, ['description', 'Description'])),
+      discountType: JsonUtils.readString(
+              JsonUtils.pick(json, ['discountType', 'DiscountType'])) ??
+          '',
+      discountValue: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['discountValue', 'DiscountValue'])) ??
+          0,
+      maxDiscountAmount: JsonUtils.readDouble(
+          JsonUtils.pick(json, ['maxDiscountAmount', 'MaxDiscountAmount'])),
+      startDate: JsonUtils.readDateTime(
+              JsonUtils.pick(json, ['startDate', 'StartDate'])) ??
+          DateTime.now(),
+      endDate: JsonUtils.readDateTime(
+              JsonUtils.pick(json, ['endDate', 'EndDate'])) ??
+          DateTime.now(),
+      status:
+          JsonUtils.readString(JsonUtils.pick(json, ['status', 'Status'])) ??
+              '',
     );
   }
 }
@@ -482,11 +500,19 @@ class ScoreDimensionExplanationModel {
 
   factory ScoreDimensionExplanationModel.fromJson(Map<String, dynamic> json) {
     return ScoreDimensionExplanationModel(
-      dimensionKey: JsonUtils.readString(JsonUtils.pick(json, ['dimensionKey', 'DimensionKey'])) ?? '',
-      label: JsonUtils.readString(JsonUtils.pick(json, ['label', 'Label'])) ?? '',
-      score: JsonUtils.readDouble(JsonUtils.pick(json, ['score', 'Score'])) ?? 0.0,
-      weight: JsonUtils.readDouble(JsonUtils.pick(json, ['weight', 'Weight'])) ?? 0.0,
-      explanation: JsonUtils.readString(JsonUtils.pick(json, ['explanation', 'Explanation'])) ?? '',
+      dimensionKey: JsonUtils.readString(
+              JsonUtils.pick(json, ['dimensionKey', 'DimensionKey'])) ??
+          '',
+      label:
+          JsonUtils.readString(JsonUtils.pick(json, ['label', 'Label'])) ?? '',
+      score:
+          JsonUtils.readDouble(JsonUtils.pick(json, ['score', 'Score'])) ?? 0.0,
+      weight:
+          JsonUtils.readDouble(JsonUtils.pick(json, ['weight', 'Weight'])) ??
+              0.0,
+      explanation: JsonUtils.readString(
+              JsonUtils.pick(json, ['explanation', 'Explanation'])) ??
+          '',
     );
   }
 }
@@ -518,17 +544,28 @@ class ScoreBreakdownModel {
 
   factory ScoreBreakdownModel.fromJson(Map<String, dynamic> json) {
     final rawPersona = JsonUtils.pick(json, ['personaScores', 'PersonaScores']);
-    final rawDimension = JsonUtils.pick(json, ['dimensionScores', 'DimensionScores']);
+    final rawDimension =
+        JsonUtils.pick(json, ['dimensionScores', 'DimensionScores']);
     final rawExplanations = JsonUtils.readMapList(
       JsonUtils.pick(json, ['dimensionExplanations', 'DimensionExplanations']),
     );
 
     return ScoreBreakdownModel(
-      fairnessScore: JsonUtils.readDouble(JsonUtils.pick(json, ['fairnessScore', 'FairnessScore'])) ?? 0.0,
-      minPersonaScore: JsonUtils.readDouble(JsonUtils.pick(json, ['minPersonaScore', 'MinPersonaScore'])) ?? 0.0,
-      meanPersonaScore: JsonUtils.readDouble(JsonUtils.pick(json, ['meanPersonaScore', 'MeanPersonaScore'])) ?? 0.0,
-      envyGap: JsonUtils.readDouble(JsonUtils.pick(json, ['envyGap', 'EnvyGap'])) ?? 0.0,
-      dissatisfactionVariance: JsonUtils.readDouble(JsonUtils.pick(json, ['dissatisfactionVariance', 'DissatisfactionVariance'])) ?? 0.0,
+      fairnessScore: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['fairnessScore', 'FairnessScore'])) ??
+          0.0,
+      minPersonaScore: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['minPersonaScore', 'MinPersonaScore'])) ??
+          0.0,
+      meanPersonaScore: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['meanPersonaScore', 'MeanPersonaScore'])) ??
+          0.0,
+      envyGap:
+          JsonUtils.readDouble(JsonUtils.pick(json, ['envyGap', 'EnvyGap'])) ??
+              0.0,
+      dissatisfactionVariance: JsonUtils.readDouble(JsonUtils.pick(
+              json, ['dissatisfactionVariance', 'DissatisfactionVariance'])) ??
+          0.0,
       personaScores: rawPersona is Map
           ? rawPersona.map(
               (k, v) => MapEntry(k.toString(), JsonUtils.readDouble(v) ?? 0.0),
@@ -539,11 +576,13 @@ class ScoreBreakdownModel {
               (k, v) => MapEntry(k.toString(), JsonUtils.readDouble(v) ?? 0.0),
             )
           : const {},
-      dimensionExplanations: rawExplanations
-          .map(ScoreDimensionExplanationModel.fromJson)
-          .toList(),
-      aggregationFormula: JsonUtils.readString(JsonUtils.pick(json, ['aggregationFormula', 'AggregationFormula'])) ?? '',
-      overallExplanation: JsonUtils.readString(JsonUtils.pick(json, ['overallExplanation', 'OverallExplanation'])),
+      dimensionExplanations:
+          rawExplanations.map(ScoreDimensionExplanationModel.fromJson).toList(),
+      aggregationFormula: JsonUtils.readString(JsonUtils.pick(
+              json, ['aggregationFormula', 'AggregationFormula'])) ??
+          '',
+      overallExplanation: JsonUtils.readString(
+          JsonUtils.pick(json, ['overallExplanation', 'OverallExplanation'])),
     );
   }
 }
@@ -587,8 +626,10 @@ class TourRecommendationModel {
 
   factory TourRecommendationModel.fromJson(Map<String, dynamic> json) {
     final rawReasons = JsonUtils.pick(json, ['matchReasons', 'MatchReasons']);
-    final rawBreakdown = JsonUtils.pick(json, ['scoreBreakdown', 'ScoreBreakdown']);
-    final rawWeather = JsonUtils.pick(json, ['destinationWeather', 'DestinationWeather']);
+    final rawBreakdown =
+        JsonUtils.pick(json, ['scoreBreakdown', 'ScoreBreakdown']);
+    final rawWeather =
+        JsonUtils.pick(json, ['destinationWeather', 'DestinationWeather']);
     final rawReasonsList = <String>[];
     if (rawReasons is List) {
       for (final e in rawReasons) {
@@ -609,11 +650,16 @@ class TourRecommendationModel {
       scoreBreakdown: rawBreakdown is Map<String, dynamic>
           ? ScoreBreakdownModel.fromJson(rawBreakdown)
           : null,
-      durationDays: JsonUtils.readInt(JsonUtils.pick(json, ['durationDays', 'DurationDays'])),
-      minPrice: JsonUtils.readInt(JsonUtils.pick(json, ['minPrice', 'MinPrice'])),
-      nextDeparture: JsonUtils.readString(JsonUtils.pick(json, ['nextDeparture', 'NextDeparture'])),
-      scheduleNote: JsonUtils.readString(JsonUtils.pick(json, ['scheduleNote', 'ScheduleNote'])),
-      matchesPreferredDates: JsonUtils.readBool(JsonUtils.pick(json, ['matchesPreferredDates', 'MatchesPreferredDates'])),
+      durationDays: JsonUtils.readInt(
+          JsonUtils.pick(json, ['durationDays', 'DurationDays'])),
+      minPrice:
+          JsonUtils.readInt(JsonUtils.pick(json, ['minPrice', 'MinPrice'])),
+      nextDeparture: JsonUtils.readString(
+          JsonUtils.pick(json, ['nextDeparture', 'NextDeparture'])),
+      scheduleNote: JsonUtils.readString(
+          JsonUtils.pick(json, ['scheduleNote', 'ScheduleNote'])),
+      matchesPreferredDates: JsonUtils.readBool(JsonUtils.pick(
+          json, ['matchesPreferredDates', 'MatchesPreferredDates'])),
       destinationWeather: rawWeather is Map<String, dynamic>
           ? WeatherAdviceModel.fromJson(rawWeather)
           : null,

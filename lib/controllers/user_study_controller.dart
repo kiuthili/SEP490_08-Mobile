@@ -10,7 +10,7 @@ class UserStudyController extends GetxController {
 
   final scenarios = <UserStudyScenarioModel>[].obs;
   final currentComparison = Rxn<UserStudyComparisonModel>();
-  
+
   final isLoadingScenarios = false.obs;
   final isLoadingComparison = false.obs;
   final isSubmitting = false.obs;
@@ -91,8 +91,10 @@ class UserStudyController extends GetxController {
       );
 
       final result = await _service.submitResponse(payload);
-      SnackbarHelper.success(result.message.isNotEmpty ? result.message : 'Đã lưu phản hồi khảo sát.');
-      
+      SnackbarHelper.success(result.message.isNotEmpty
+          ? result.message
+          : 'Đã lưu phản hồi khảo sát.');
+
       // Reload current comparison to reflect alreadySubmitted = true
       if (currentComparison.value != null) {
         await loadComparison(currentComparison.value!.scenarioId);

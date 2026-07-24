@@ -23,6 +23,7 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-Tunnel-Skip-AntiPhishing-Page': 'true',
         },
       ),
     );
@@ -34,6 +35,7 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-Tunnel-Skip-AntiPhishing-Page': 'true',
         },
       ),
     );

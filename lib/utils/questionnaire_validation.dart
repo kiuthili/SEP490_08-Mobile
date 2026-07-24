@@ -1,9 +1,7 @@
 import '../models/ai_models.dart';
 
 bool _isEmpty(dynamic value) =>
-    value == null ||
-    value == '' ||
-    (value is List && value.isEmpty);
+    value == null || value == '' || (value is List && value.isEmpty);
 
 String? validateQuestionnaireField(
   QuestionnaireField field,
@@ -34,7 +32,8 @@ String? validateQuestionnaireField(
       }
       final n = num.tryParse(raw.toString());
       if (n == null || n < 0) return 'Giá trị phải là số không âm';
-      if (field.fieldKey == 'adultCount' && n < 1) return 'Phải có ít nhất 1 người lớn';
+      if (field.fieldKey == 'adultCount' && n < 1)
+        return 'Phải có ít nhất 1 người lớn';
       return null;
     case 'boolean':
       if (field.required && raw is! bool) {
@@ -66,7 +65,7 @@ Map<String, String> validateQuestionnaireStep(
     final msg = validateQuestionnaireField(field, values);
     if (msg != null) errors[field.fieldKey] = msg;
   }
-  
+
   final start = values['preferredStartDate']?.toString();
   final end = values['preferredEndDate']?.toString();
   if (start != null &&
@@ -78,7 +77,6 @@ Map<String, String> validateQuestionnaireStep(
 
   return errors;
 }
-
 
 Map<String, dynamic> buildRecommendPayload(
   Map<String, dynamic> values,
@@ -92,8 +90,10 @@ Map<String, dynamic> buildRecommendPayload(
           : <String>[];
 
   final adultCount = int.tryParse(values['adultCount']?.toString() ?? '1') ?? 1;
-  final elderlyCount = int.tryParse(values['elderlyCount']?.toString() ?? '0') ?? 0;
-  final childrenCount = int.tryParse(values['childrenCount']?.toString() ?? '0') ?? 0;
+  final elderlyCount =
+      int.tryParse(values['elderlyCount']?.toString() ?? '0') ?? 0;
+  final childrenCount =
+      int.tryParse(values['childrenCount']?.toString() ?? '0') ?? 0;
   final total = adultCount + elderlyCount + childrenCount;
 
   String inferredCompanionType = 'group';
@@ -124,12 +124,17 @@ Map<String, dynamic> buildRecommendPayload(
   }
   if (values['maxBudgetPerPerson'] != null &&
       values['maxBudgetPerPerson'].toString().isNotEmpty) {
-    final rawBudget = values['maxBudgetPerPerson'].toString().replaceAll('.', '').replaceAll(',', '');
+    final rawBudget = values['maxBudgetPerPerson']
+        .toString()
+        .replaceAll('.', '')
+        .replaceAll(',', '');
     payload['maxBudgetPerPerson'] = int.tryParse(rawBudget);
   }
   if (values['travelPace'] != null &&
       values['travelPace'].toString().isNotEmpty) {
     payload['travelPace'] = values['travelPace'];
+  } else {
+    payload['travelPace'] = 'moderate';
   }
   if (values['adultCount'] != null) {
     payload['adultCount'] = int.tryParse(values['adultCount'].toString());
@@ -146,8 +151,7 @@ Map<String, dynamic> buildRecommendPayload(
   }
   if (values['preferredCountry'] != null &&
       values['preferredCountry'].toString().trim().isNotEmpty) {
-    payload['preferredCountry'] =
-        values['preferredCountry'].toString().trim();
+    payload['preferredCountry'] = values['preferredCountry'].toString().trim();
   }
 
   return payload;
@@ -155,4 +159,3 @@ Map<String, dynamic> buildRecommendPayload(
 
 bool isAiModelsNotReadyMessage(String message) =>
     message.toLowerCase().contains('ai models are not ready');
-

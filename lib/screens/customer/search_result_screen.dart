@@ -24,7 +24,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
         _controller.loadMore();
       }
     });
@@ -39,7 +40,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Light gray background for grid items
+      backgroundColor:
+          AppColors.backgroundSecondary, // Light gray background for grid items
       appBar: AppBar(
         backgroundColor: AppColors.brand,
         elevation: 0,
@@ -51,7 +53,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
           onPressed: () => Get.back(),
         ),
         title: GestureDetector(
-          onTap: () => Get.back(), // Go back to suggestion screen to search again
+          onTap: () =>
+              Get.back(), // Go back to suggestion screen to search again
           child: Container(
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -61,11 +64,14 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.search_rounded, size: 20, color: AppColors.brand.withValues(alpha: 0.7)),
+                Icon(Icons.search_rounded,
+                    size: 20, color: AppColors.brand.withValues(alpha: 0.7)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _controller.currentSearchTerm.isEmpty ? 'Tìm kiếm tour...' : _controller.currentSearchTerm,
+                    _controller.currentSearchTerm.isEmpty
+                        ? 'Tìm kiếm tour...'
+                        : _controller.currentSearchTerm,
                     style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -103,32 +109,40 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Obx(() => Text(
-                  '${_controller.tours.length} kết quả',
-                  style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )),
+                      '${_controller.tours.length} kết quả',
+                      style: AppTextStyles.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )),
                 Row(
                   children: [
-                    const Icon(Icons.sort_rounded, size: 18, color: AppColors.textSecondary),
+                    const Icon(Icons.sort_rounded,
+                        size: 18, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
                     Obx(() {
                       return DropdownButton<String>(
                         value: _controller.sortBy.value,
                         isDense: true,
                         underline: const SizedBox(),
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                            size: 18),
                         style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                         items: const [
                           DropdownMenuItem(value: '', child: Text('Đề xuất')),
-                          DropdownMenuItem(value: 'price_asc', child: Text('Giá: Thấp đến Cao')),
-                          DropdownMenuItem(value: 'price_desc', child: Text('Giá: Cao đến Thấp')),
-                          DropdownMenuItem(value: 'date_desc', child: Text('Mới nhất')),
-                          DropdownMenuItem(value: 'date_asc', child: Text('Cũ nhất')),
+                          DropdownMenuItem(
+                              value: 'price_asc',
+                              child: Text('Giá: Thấp đến Cao')),
+                          DropdownMenuItem(
+                              value: 'price_desc',
+                              child: Text('Giá: Cao đến Thấp')),
+                          DropdownMenuItem(
+                              value: 'date_desc', child: Text('Mới nhất')),
+                          DropdownMenuItem(
+                              value: 'date_asc', child: Text('Cũ nhất')),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -143,12 +157,13 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               ],
             ),
           ),
-          
+
           Expanded(
             child: Obx(() {
               if (_controller.isLoading.value) {
                 return const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.brand),
                 );
               }
 
@@ -157,7 +172,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search_off_rounded, size: 64, color: AppColors.textTertiary),
+                      Icon(Icons.search_off_rounded,
+                          size: 64, color: AppColors.textTertiary),
                       const SizedBox(height: 16),
                       Text(
                         'Không tìm thấy tour nào',
@@ -176,7 +192,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                   SliverPadding(
                     padding: const EdgeInsets.all(12),
                     sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
@@ -187,7 +204,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                           final tour = _controller.tours[index];
                           return SearchResultTourCard(
                             tour: tour,
-                            onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id),
+                            onTap: () => Get.toNamed(AppRoutes.tourDetail,
+                                arguments: tour.id),
                           );
                         },
                         childCount: _controller.tours.length,
@@ -199,7 +217,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
                         child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.brand),
                         ),
                       ),
                     ),
@@ -212,4 +231,3 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     );
   }
 }
-

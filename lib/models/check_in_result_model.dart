@@ -25,6 +25,6 @@ class CheckInResultModel {
         checkInStatus: JsonUtils.readString(json['checkInStatus']) ?? '',
         scheduleId: JsonUtils.readInt(json['scheduleId']),
         departureDate:
-        JsonUtils.readDateTime(json['departureDate']) ?? DateTime.now(),
+            JsonUtils.readDateTime(json['departureDate']) ?? DateTime.now(),
       );
 }

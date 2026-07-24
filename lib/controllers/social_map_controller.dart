@@ -48,6 +48,7 @@ import '../services/signalr_service.dart';
 import '../services/social_service.dart';
 import '../services/storage_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
 
 class SocialMapController extends GetxController {
   SocialMapController({
@@ -90,6 +91,9 @@ class SocialMapController extends GetxController {
   final showRoute = true.obs;
   final showFootprints = false.obs;
   final showHeatmap = false.obs;
+
+  final heatmapType = 'all'.obs; // 'all', 'online', 'moments'
+  final heatmapRadius = 30.0.obs; // Similar to web radius
 
   // ======================= 1) LIVE LOCATION =======================
   final liveLocations = <LiveLocationModel>[].obs;
@@ -148,10 +152,11 @@ class SocialMapController extends GetxController {
       final fLng = loc.longitude;
       if (fLat == 0 && fLng == 0) continue;
 
-      final overlaps = placed.where((p) =>
-        (p.latitude - fLat).abs() < threshold &&
-        (p.longitude - fLng).abs() < threshold
-      ).toList();
+      final overlaps = placed
+          .where((p) =>
+              (p.latitude - fLat).abs() < threshold &&
+              (p.longitude - fLng).abs() < threshold)
+          .toList();
 
       if (overlaps.isNotEmpty) {
         final count = overlaps.length;
@@ -187,7 +192,6 @@ class SocialMapController extends GetxController {
   Timer? _footprintsTimer;
   StreamSubscription<Position>? _positionStreamSubscription;
   Position? _latestPosition;
-  Position? _lastPingedPosition;
   // Ping vị trí của tôi: 5s/lần để tracking liên tục thời gian thực.
   static const _pingInterval = Duration(seconds: 5);
   // Poll vị trí bạn bè: 10s/lần (đồng bộ tốc độ với bản web).
@@ -218,6 +222,7 @@ class SocialMapController extends GetxController {
   final routeDays = <RouteDayModel>[].obs;
   final RxnInt selectedDay = RxnInt();
   final routePoints = <RoutePointModel>[].obs;
+  final drivingRouteLatLngs = <LatLng>[].obs;
   final isRouteLoading = false.obs;
   final List<RoutePointModel> _allItineraryPoints = [];
 
@@ -237,7 +242,7 @@ class SocialMapController extends GetxController {
 
   /// Stream để ép HeatMapLayer rebuild khi dữ liệu thay đổi.
   final StreamController<void> heatmapResetController =
-  StreamController<void>.broadcast();
+      StreamController<void>.broadcast();
   Stream<void> get heatmapResetStream => heatmapResetController.stream;
   Timer? _heatmapDebounce;
 
@@ -281,8 +286,11 @@ class SocialMapController extends GetxController {
       if (eligibleSchedules.isNotEmpty) {
         await selectSchedule(eligibleSchedules.first.scheduleId);
       } else {
-        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí.
-        await _loadFriendsLive();
+        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí và tải heatmap/timeline toàn cầu.
+        await Future.wait([
+          _loadFriendsLive(),
+          loadMapMoments(null),
+        ]);
         _fitToLiveLocations();
       }
       _startFriendsPolling();
@@ -306,7 +314,7 @@ class SocialMapController extends GetxController {
     _friendsTimer?.cancel();
     _friendsTimer = Timer.periodic(
       _friendsRefreshInterval,
-          (_) => _loadFriendsLive(),
+      (_) => _loadFriendsLive(),
     );
   }
 
@@ -323,7 +331,6 @@ class SocialMapController extends GetxController {
     }
     return null;
   }
-
   // ======================= SCHEDULE SELECTION =======================
   Future<void> selectSchedule(int scheduleId) async {
     if (selectedScheduleId.value == scheduleId && liveLocations.isNotEmpty) {
@@ -336,15 +343,26 @@ class SocialMapController extends GetxController {
     routePoints.clear();
     _allItineraryPoints.clear();
     selectedDay.value = null;
+    drivingRouteLatLngs.clear();
 
     try {
-      await Future.wait([
-        _loadScheduleLive(scheduleId),
-        _loadFriendsLive(),
-        loadMapMoments(scheduleId),
-        _loadItineraries(scheduleId),
-      ]);
-      await _connectRealtime(scheduleId);
+      if (scheduleId > 0) {
+        await Future.wait([
+          _loadScheduleLive(scheduleId),
+          _loadFriendsLive(),
+          loadMapMoments(scheduleId),
+          _loadItineraries(scheduleId),
+        ]);
+        await _connectRealtime(scheduleId);
+      } else {
+        // All Trips: Clear schedule-specific live locations, load friends and all moments
+        liveLocations.clear();
+        await Future.wait([
+          _loadFriendsLive(),
+          loadMapMoments(null),
+        ]);
+        await _signalR.disconnectTracking();
+      }
       _fitToLiveLocations();
       // Nếu heatmap đang bật, nạp lại theo schedule mới.
       if (showHeatmap.value) {
@@ -421,7 +439,9 @@ class SocialMapController extends GetxController {
     if (isSharingLocation.value) return true;
     final granted = await LocationHelper.ensurePermission();
     if (!granted) {
-      if (notify) SnackbarHelper.error('Location permission is required for tracking and sharing');
+      if (notify)
+        SnackbarHelper.error(
+            'Location permission is required for tracking and sharing');
       return false;
     }
     isSharingLocation.value = true;
@@ -478,7 +498,6 @@ class SocialMapController extends GetxController {
         lng: pos.longitude,
         scheduleId: selectedScheduleId.value,
       );
-      _lastPingedPosition = pos;
     } catch (_) {}
   }
 
@@ -511,7 +530,8 @@ class SocialMapController extends GetxController {
   // ======================= 2) MOMENTS ON MAP =======================
   Future<void> loadMapMoments(int? scheduleId) async {
     try {
-      final data = await _service.getMomentsWithLocation(scheduleId: scheduleId);
+      final data =
+          await _service.getMomentsWithLocation(scheduleId: scheduleId);
       mapMoments.assignAll(
         data.where((m) => m.lat != null && m.lng != null),
       );
@@ -534,7 +554,7 @@ class SocialMapController extends GetxController {
       for (final p in points) {
         byDay.putIfAbsent(
           p.dayNumber,
-              () => RouteDayModel(
+          () => RouteDayModel(
             dayNumber: p.dayNumber,
             title: 'Day ${p.dayNumber}',
           ),
@@ -545,7 +565,7 @@ class SocialMapController extends GetxController {
       routeDays.assignAll(sorted);
 
       if (sorted.isNotEmpty) {
-        selectDay(sorted.first.dayNumber);
+        await selectDay(null); // Default to Overview (all days route)
       }
     } catch (_) {
       // tour chưa có lộ trình -> bỏ qua, không chặn các lớp khác
@@ -554,15 +574,45 @@ class SocialMapController extends GetxController {
     }
   }
 
-  /// Lọc các điểm của 1 ngày (đồng bộ, không gọi mạng lại).
-  void selectDay(int dayNumber) {
+  /// Lọc các điểm của 1 ngày hoặc toàn bộ lộ trình nếu dayNumber là null (Overview).
+  Future<void> selectDay(int? dayNumber) async {
     selectedDay.value = dayNumber;
-    final pts = _allItineraryPoints
-        .where((p) => p.dayNumber == dayNumber)
-        .toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    
+    final List<RoutePointModel> pts;
+    if (dayNumber == null) {
+      // Overview mode: Show all itineraries
+      pts = List<RoutePointModel>.from(_allItineraryPoints);
+    } else {
+      pts = _allItineraryPoints
+          .where((p) => p.dayNumber == dayNumber)
+          .toList();
+    }
+    
+    // Sort chronologically: by day number first, then order sequence
+    pts.sort((a, b) => a.dayNumber == b.dayNumber 
+        ? a.order.compareTo(b.order) 
+        : a.dayNumber.compareTo(b.dayNumber));
+        
     routePoints.assignAll(pts);
-    _fitToRoute();
+
+    // Fetch actual Mapbox driving route
+    final waypoints = routeLatLngs;
+    if (waypoints.isNotEmpty) {
+      try {
+        isRouteLoading.value = true;
+        final actualRoute = await _service.getDrivingRoute(waypoints);
+        drivingRouteLatLngs
+            .assignAll(actualRoute.isNotEmpty ? actualRoute : waypoints);
+      } catch (e) {
+        drivingRouteLatLngs.assignAll(waypoints); // Fallback to straight lines
+      } finally {
+        isRouteLoading.value = false;
+      }
+    } else {
+      drivingRouteLatLngs.clear();
+    }
+
+    fitToRoute();
   }
 
   // ======================= 4) FOOTPRINTS ("CÀO MAP") =======================
@@ -574,7 +624,7 @@ class SocialMapController extends GetxController {
       _footprintsTimer?.cancel();
       _footprintsTimer = Timer.periodic(
         _footprintsRefreshInterval,
-            (_) => loadFootprints(silent: true),
+        (_) => loadFootprints(silent: true),
       );
     } else {
       _footprintsTimer?.cancel();
@@ -588,7 +638,8 @@ class SocialMapController extends GetxController {
       final data = await _service.getMyFootprints();
       footprints.assignAll(data);
       if (data.isEmpty && !silent && liveTrail.isEmpty) {
-        SnackbarHelper.success('No footprints recorded yet — start moving to map your path');
+        SnackbarHelper.success(
+            'No footprints recorded yet — start moving to map your path');
       }
     } on ApiError catch (e) {
       if (!silent) SnackbarHelper.error(e.message);
@@ -597,6 +648,102 @@ class SocialMapController extends GetxController {
     } finally {
       if (!silent) isFootprintsLoading.value = false;
     }
+  }
+
+  /// Tính toán các ô lục giác (BUMP Hexagons) từ dữ liệu footprints và liveTrail
+  List<Polygon> get bumpHexPolygons {
+    final validPoints = <LatLng>[];
+    for (final f in footprints) {
+      if (f.lat != 0 && f.lng != 0) {
+        validPoints.add(LatLng(f.lat, f.lng));
+      }
+    }
+    for (final t in liveTrail) {
+      if (t.latitude != 0 && t.longitude != 0) {
+        validPoints.add(t);
+      }
+    }
+
+    if (validPoints.isEmpty) return const [];
+
+    const double rEarth = 6378137.0;
+    const double hexR = 220.0;
+    final double sqrt3 = math.sqrt(3);
+
+    final refLat = validPoints.fold<double>(0.0, (sum, p) => sum + p.latitude) /
+        validPoints.length;
+    final refLng =
+        validPoints.fold<double>(0.0, (sum, p) => sum + p.longitude) /
+            validPoints.length;
+    final cosRef = math.cos(refLat * math.pi / 180.0);
+
+    List<double> toLocal(double lat, double lng) => [
+          (lng - refLng) * (math.pi / 180.0) * rEarth * cosRef,
+          (lat - refLat) * (math.pi / 180.0) * rEarth,
+        ];
+
+    LatLng toGeo(double x, double y) => LatLng(
+          refLat + (y / rEarth) * (180.0 / math.pi),
+          refLng + (x / (rEarth * cosRef)) * (180.0 / math.pi),
+        );
+
+    final hexSet = <String, List<int>>{};
+    for (final p in validPoints) {
+      final loc = toLocal(p.latitude, p.longitude);
+      final x = loc[0];
+      final y = loc[1];
+
+      final fq = (2.0 / 3.0 * x) / hexR;
+      final fr = (-1.0 / 3.0 * x + sqrt3 / 3.0 * y) / hexR;
+      final fs = -fq - fr;
+
+      var rq = fq.round();
+      var rr = fr.round();
+      var rs = fs.round();
+
+      final dq = (rq - fq).abs();
+      final dr = (rr - fr).abs();
+      final ds = (rs - fs).abs();
+
+      if (dq > dr && dq > ds) {
+        rq = -rr - rs;
+      } else if (dr > ds) {
+        rr = -rq - rs;
+      }
+
+      final key = '$rq,$rr';
+      if (!hexSet.containsKey(key)) {
+        hexSet[key] = [rq, rr];
+      }
+    }
+
+    final polygons = <Polygon>[];
+    final hexFillColor = AppColors.brandLight.withValues(alpha: 0.28);
+    final hexBorderColor = const Color(0xFFE0F2FE).withValues(alpha: 0.85);
+
+    for (final qr in hexSet.values) {
+      final q = qr[0];
+      final r = qr[1];
+      final cx = hexR * (3.0 / 2.0 * q);
+      final cy = hexR * (sqrt3 / 2.0 * q + sqrt3 * r);
+
+      final ring = <LatLng>[];
+      for (var i = 0; i < 6; i++) {
+        final a = (i * 60.0) * (math.pi / 180.0);
+        ring.add(toGeo(cx + hexR * math.cos(a), cy + hexR * math.sin(a)));
+      }
+
+      polygons.add(
+        Polygon(
+          points: ring,
+          color: hexFillColor,
+          borderColor: hexBorderColor,
+          borderStrokeWidth: 1.8,
+        ),
+      );
+    }
+
+    return polygons;
   }
 
   // ======================= 5) HEATMAP =======================
@@ -641,20 +788,26 @@ class SocialMapController extends GetxController {
   /// Gộp mọi toạ độ đang có thành điểm heatmap (fallback khi chưa có API).
   List<HeatPointModel> _buildHeatmapFromClientData() {
     final pts = <HeatPointModel>[];
-    for (final m in mapMoments) {
-      if (m.lat != null && m.lng != null) {
-        pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+
+    if (heatmapType.value == 'all' || heatmapType.value == 'moments') {
+      for (final m in mapMoments) {
+        if (m.lat != null && m.lng != null)
+          pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+      }
+      for (final f in footprints) {
+        pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
       }
     }
-    for (final f in footprints) {
-      pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
+
+    if (heatmapType.value == 'all' || heatmapType.value == 'online') {
+      for (final l in liveLocations) {
+        pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
+      }
+      for (final t in liveTrail) {
+        pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
+      }
     }
-    for (final l in liveLocations) {
-      pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
-    }
-    for (final t in liveTrail) {
-      pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
-    }
+
     return pts;
   }
 
@@ -704,7 +857,7 @@ class SocialMapController extends GetxController {
     _fitCamera(pts);
   }
 
-  void _fitToRoute() => _fitCamera(routeLatLngs);
+  void fitToRoute() => _fitCamera(routeLatLngs);
 
   void _safeMove(LatLng center, double zoom) {
     if (!isMapReady.value) return;
@@ -722,24 +875,27 @@ class SocialMapController extends GetxController {
 
     try {
       // 1. Tạo cấu trúc dữ liệu JSON dòng thời gian hành trình
-      final momentsData = timelineMoments.map((m) => {
-        'id': m.id,
-        'user': m.fullName ?? 'User',
-        'caption': m.caption ?? '',
-        'imageUrl': m.imageUrl,
-        'lat': m.lat,
-        'lng': m.lng,
-        'time': m.createdAt.toIso8601String(),
-      }).toList();
+      final momentsData = timelineMoments
+          .map((m) => {
+                'id': m.id,
+                'user': m.fullName ?? 'User',
+                'caption': m.caption ?? '',
+                'imageUrl': m.imageUrl,
+                'lat': m.lat,
+                'lng': m.lng,
+                'time': m.createdAt.toIso8601String(),
+              })
+          .toList();
 
-      final jsonString = JsonEncoder.withIndent('  ').convert(momentsData);
+      final jsonString = const JsonEncoder.withIndent('  ').convert(momentsData);
 
       // 2. Thử lưu vào thư mục Download công cộng của thiết bị Android
       File? savedFile;
       try {
         final downloadDir = Directory('/storage/emulated/0/Download');
         if (await downloadDir.exists()) {
-          final file = File('${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+          final file = File(
+              '${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
           await file.writeAsString(jsonString);
           savedFile = file;
         }
@@ -750,7 +906,8 @@ class SocialMapController extends GetxController {
       // 3. Nếu là iOS hoặc thư mục Download công cộng bị giới hạn quyền, lưu vào thư mục tạm của ứng dụng
       if (savedFile == null) {
         final tempDir = Directory.systemTemp;
-        final file = File('${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+        final file = File(
+            '${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
         await file.writeAsString(jsonString);
         savedFile = file;
       }
@@ -759,7 +916,8 @@ class SocialMapController extends GetxController {
       await Clipboard.setData(ClipboardData(text: jsonString));
 
       // 5. Hiển thị thông báo thành công
-      SnackbarHelper.success('Timeline downloaded to: ${savedFile.path}\n(Data has also been copied to Clipboard!)');
+      SnackbarHelper.success(
+          'Timeline downloaded to: ${savedFile.path}\n(Data has also been copied to Clipboard!)');
     } catch (e) {
       SnackbarHelper.error('Error exporting timeline: $e');
     }

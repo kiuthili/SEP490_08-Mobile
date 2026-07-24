@@ -325,7 +325,7 @@ class IosMenuTile extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: (iconColor ?? AppColors.brand).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(icon, size: 20, color: iconColor ?? AppColors.brand),
       ),

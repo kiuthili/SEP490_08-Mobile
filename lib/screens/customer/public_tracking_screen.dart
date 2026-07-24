@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:get/get.dart';
 import '../../models/ai_models.dart';
 import '../../services/signalr_service.dart';
 import '../../services/social_service.dart';
-import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/loading_widget.dart';
+import '../../constants/api_constants.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
-/// Theo dõi vị trí công khai qua token — `/track/:token` (giống web).
+/// Theo dõi vị trí công khai qua token (giống web).
 class PublicTrackingScreen extends StatefulWidget {
   const PublicTrackingScreen({super.key});
 
@@ -20,7 +22,8 @@ class PublicTrackingScreen extends StatefulWidget {
 class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
   final _social = Get.find<SocialService>();
   final _signalR = Get.find<SignalRService>();
-  final _mapController = MapController();
+
+  final MapController _mapController = MapController();
 
   late final String _token;
   PublicLocationModel? _location;
@@ -47,7 +50,8 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
         _location = loc;
         _loading = false;
       });
-      _mapController.move(LatLng(loc.lat, loc.lng), 15);
+      _moveCamera(loc.lat, loc.lng, 15);
+
       await _signalR.connectPublicTracking(
         token: _token,
         onLocationUpdate: (lat, lng) {
@@ -59,7 +63,7 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
               fullName: _location?.fullName ?? 'Khách',
             );
           });
-          _mapController.move(LatLng(lat, lng), _mapController.camera.zoom);
+          _moveCamera(lat, lng, _mapController.camera.zoom);
         },
       );
     } catch (_) {
@@ -72,11 +76,21 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
     }
   }
 
+  void _moveCamera(double lat, double lng, double? zoom) {
+    try {
+      _mapController.move(LatLng(lat, lng), zoom ?? 15);
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     _signalR.disconnectPublicTracking();
     super.dispose();
   }
+
+  static String get _tileUrl =>
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
+      '?access_token=${ApiConstants.mapboxAccessToken}';
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +109,7 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.link_off, size: 56, color: Colors.red.shade300),
+                Icon(Icons.link_off, size: 56, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
                   'Liên kết không hợp lệ hoặc đã hết hạn',
@@ -116,7 +130,6 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
     }
 
     final loc = _location!;
-    final point = LatLng(loc.lat, loc.lng);
 
     return Scaffold(
       body: Stack(
@@ -124,25 +137,27 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: point,
+              initialCenter: LatLng(loc.lat, loc.lng),
               initialZoom: 15,
+              minZoom: 2,
+              maxZoom: 18,
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.stayhub.mobile',
+                urlTemplate: _tileUrl,
+                userAgentPackageName: 'com.stayhub.stayhub_mobile',
+                maxZoom: 18,
               ),
               MarkerLayer(
                 markers: [
                   Marker(
-                    point: point,
-                    width: 48,
-                    height: 48,
+                    point: LatLng(loc.lat, loc.lng),
+                    width: 50,
+                    height: 50,
                     child: const Icon(
-                      Icons.location_pin,
-                      color: AppColors.brand,
-                      size: 48,
+                      Icons.location_on,
+                      color: AppColors.error,
+                      size: 40,
                     ),
                   ),
                 ],
@@ -176,13 +191,13 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(20),
+                          color: AppColors.error.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.circle, size: 8, color: Colors.red),
+                            Icon(Icons.circle, size: 8, color: AppColors.error),
                             SizedBox(width: 4),
                             Text(
                               'LIVE',

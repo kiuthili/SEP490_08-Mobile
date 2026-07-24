@@ -23,10 +23,10 @@ class AssignedScheduleModel {
       AssignedScheduleModel(
         scheduleId: JsonUtils.readInt(json['scheduleId']),
         tourId: JsonUtils.readInt(json['tourId']),
-        departureDate: JsonUtils.readDateTime(json['departureDate']) ??
-            DateTime.now(),
-        returnDate: JsonUtils.readDateTime(json['returnDate']) ??
-            DateTime.now(),
+        departureDate:
+            JsonUtils.readDateTime(json['departureDate']) ?? DateTime.now(),
+        returnDate:
+            JsonUtils.readDateTime(json['returnDate']) ?? DateTime.now(),
         tourName: JsonUtils.readString(json['tourName']),
         tourImageUrl: JsonUtils.readString(json['tourImageUrl']),
         assignedRole: JsonUtils.readString(json['assignedRole']),

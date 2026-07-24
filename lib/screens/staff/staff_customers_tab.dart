@@ -1,13 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/shell_layout.dart';
+import '../../constants/api_constants.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
 
@@ -78,17 +79,17 @@ class _CustomersTabState extends State<_CustomersTab> {
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                onPressed: () {
-                  _searchController.clear();
-                  widget.controller.applyCustomerFilter('');
-                  setState(() {});
-                },
-              )
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        widget.controller.applyCustomerFilter('');
+                        setState(() {});
+                      },
+                    )
                   : null,
               isDense: true,
               contentPadding:
-              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: AppColors.border),
@@ -173,7 +174,8 @@ class _CustomerCard extends StatelessWidget {
           ),
           title: Text(
             name,
-            style: AppTextStyles.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -207,16 +209,27 @@ class _CustomerCard extends StatelessWidget {
               child: Column(
                 children: [
                   if (phone != null && phone.isNotEmpty)
-                    _InfoRow(icon: Icons.phone_rounded, label: 'SĐT', value: phone),
+                    _InfoRow(
+                        icon: Icons.phone_rounded, label: 'SĐT', value: phone),
                   _InfoRow(
-                    icon: Icons.badge_rounded, 
-                    label: 'CCCD/Passport', 
-                    value: (customer.idCard as String?)?.isNotEmpty == true ? customer.idCard! : '—'
-                  ),
-                  if (customer.dateOfBirth != null && (customer.dateOfBirth as String).isNotEmpty)
-                    _InfoRow(icon: Icons.cake_rounded, label: 'Ngày sinh', value: customer.dateOfBirth as String),
-                  if (customer.nationality != null && (customer.nationality as String).isNotEmpty)
-                    _InfoRow(icon: Icons.flag_rounded, label: 'Quốc tịch', value: customer.nationality as String, isLast: true),
+                      icon: Icons.badge_rounded,
+                      label: 'CCCD/Passport',
+                      value: (customer.idCard as String?)?.isNotEmpty == true
+                          ? customer.idCard!
+                          : '—'),
+                  if (customer.dateOfBirth != null &&
+                      (customer.dateOfBirth as String).isNotEmpty)
+                    _InfoRow(
+                        icon: Icons.cake_rounded,
+                        label: 'Ngày sinh',
+                        value: customer.dateOfBirth as String),
+                  if (customer.nationality != null &&
+                      (customer.nationality as String).isNotEmpty)
+                    _InfoRow(
+                        icon: Icons.flag_rounded,
+                        label: 'Quốc tịch',
+                        value: customer.nationality as String,
+                        isLast: true),
                 ],
               ),
             ),
@@ -250,13 +263,15 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '$label:',
-            style: AppTextStyles.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.textTheme.bodySmall
+                ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              style: AppTextStyles.textTheme.bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.right,
             ),
           ),
@@ -285,7 +300,7 @@ class _SmallPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -308,17 +323,27 @@ class _SmallPill extends StatelessWidget {
 
 // ── Map tab ───────────────────────────────────────────────────────────────────
 
-class _MapTab extends StatelessWidget {
+class _MapTab extends StatefulWidget {
   const _MapTab({required this.controller});
   final StaffController controller;
 
   @override
+  State<_MapTab> createState() => _MapTabState();
+}
+
+class _MapTabState extends State<_MapTab> {
+  final MapController _mapController = MapController();
+
+  static String get _tileUrl =>
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
+      '?access_token=${ApiConstants.mapboxAccessToken}';
+
+  @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final locs = controller.liveLocations;
-      final center = locs.isNotEmpty 
-          ? LatLng(locs.first.latitude, locs.first.longitude)
-          : const LatLng(16.047079, 108.206230); // Default to Da Nang, Vietnam
+      final locs = widget.controller.liveLocations;
+      final centerLng = locs.isNotEmpty ? locs.first.longitude : 108.206230;
+      final centerLat = locs.isNotEmpty ? locs.first.latitude : 16.047079;
 
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -326,39 +351,26 @@ class _MapTab extends StatelessWidget {
             return const SizedBox.shrink();
           }
           return FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
-              initialCenter: center, 
+              initialCenter: LatLng(centerLat, centerLng),
               initialZoom: 14,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-              ),
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.stayhub.mobile',
+                urlTemplate: _tileUrl,
+                userAgentPackageName: 'com.stayhub.stayhub_mobile',
+                maxZoom: 18,
               ),
               MarkerLayer(
-                markers: locs.map((loc) {
-                  return Marker(
-                    point: LatLng(loc.latitude, loc.longitude),
-                    width: 130,
-                    height: 78,
-                    alignment: Alignment.topCenter,
-                    child: RepaintBoundary(
-                      child: _LiveLocationMarker(location: loc),
-                    ),
-                  );
-                }).toList(),
-              ),
-              RichAttributionWidget(
-                alignment: AttributionAlignment.bottomLeft,
-                attributions: [
-                  TextSourceAttribution(
-                    'OpenStreetMap contributors',
-                    onTap: () {},
-                  ),
-                ],
+                markers: locs
+                    .map((loc) => Marker(
+                          point: LatLng(loc.latitude, loc.longitude),
+                          width: 70,
+                          height: 80,
+                          child: _LiveLocationMarker(location: loc),
+                        ))
+                    .toList(),
               ),
             ],
           );
@@ -370,7 +382,7 @@ class _MapTab extends StatelessWidget {
 
 class _LiveLocationMarker extends StatefulWidget {
   const _LiveLocationMarker({required this.location});
-  final dynamic location; 
+  final dynamic location;
 
   @override
   State<_LiveLocationMarker> createState() => _LiveLocationMarkerState();
@@ -428,9 +440,9 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
             margin: const EdgeInsets.only(bottom: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF059669),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF34D399), width: 1),
+              color: AppColors.success,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.success, width: 1),
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 2),
               ],
@@ -460,7 +472,7 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                     height: 24 + 26 * t,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: (isStaff ? const Color(0xFF10B981) : AppColors.brand)
+                      color: (isStaff ? AppColors.success : AppColors.brand)
                           .withValues(alpha: (1 - t) * 0.35),
                     ),
                   );
@@ -471,9 +483,9 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isStaff ? const Color(0xFF10B981) : AppColors.brand,
+                  color: isStaff ? AppColors.success : AppColors.brand,
                   border: Border.all(
-                    color: isStaff ? const Color(0xFF10B981) : Colors.white,
+                    color: isStaff ? AppColors.success : Colors.white,
                     width: 2.5,
                   ),
                   boxShadow: const [
@@ -501,7 +513,7 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.70),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
           child: Text(
             _name,

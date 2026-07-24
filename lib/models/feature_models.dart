@@ -94,7 +94,6 @@ class VoucherModel {
           voucherStatus!.toLowerCase() == 'active');
 }
 
-
 /// API: ReadWishlistItemDTO — tourId, tourName, tourImageUrl (không có nested tour).
 class WishlistItemModel {
   final int tourId;
@@ -202,27 +201,39 @@ class FriendModel {
 
   factory FriendModel.fromJson(Map<String, dynamic> json) => FriendModel(
         friendshipId: JsonUtils.readInt(
-          JsonUtils.pick(json, ['friendshipId', 'id']),
+          JsonUtils.pick(json, ['friendshipId', 'id', 'Id', 'FriendshipId']),
         ),
         userId: JsonUtils.readInt(
-          JsonUtils.pick(json, ['userId', 'friendId', 'friendUserId']),
+          JsonUtils.pick(json,
+              ['userId', 'friendId', 'friendUserId', 'FriendId', 'UserId']),
         ),
         fullName: JsonUtils.readString(
-              JsonUtils.pick(json, ['fullName', 'friendName', 'name']),
+              JsonUtils.pick(json, [
+                'fullName',
+                'friendName',
+                'name',
+                'FullName',
+                'FriendName',
+                'Name'
+              ]),
             ) ??
             '',
-        email: JsonUtils.readString(json['email']),
+        email: JsonUtils.readString(JsonUtils.pick(json, ['email', 'Email'])),
         avatarUrl: JsonUtils.readString(
-          JsonUtils.pick(json, ['avatarUrl', 'friendAvatarUrl']),
+          JsonUtils.pick(json,
+              ['avatarUrl', 'friendAvatarUrl', 'AvatarUrl', 'FriendAvatarUrl']),
         ),
-        status: JsonUtils.readString(json['status']),
-        createdAt: JsonUtils.readDateTime(json['createdAt']),
+        status:
+            JsonUtils.readString(JsonUtils.pick(json, ['status', 'Status'])),
+        createdAt: JsonUtils.readDateTime(
+            JsonUtils.pick(json, ['createdAt', 'CreatedAt'])),
       );
 }
 
 class FriendRequestModel {
   final int id;
   final int senderId;
+  final int receiverId;
   final String? senderName;
   final String? senderAvatarUrl;
   final String? status;
@@ -231,6 +242,7 @@ class FriendRequestModel {
   FriendRequestModel({
     required this.id,
     required this.senderId,
+    required this.receiverId,
     this.senderName,
     this.senderAvatarUrl,
     this.status,
@@ -239,18 +251,45 @@ class FriendRequestModel {
 
   factory FriendRequestModel.fromJson(Map<String, dynamic> json) =>
       FriendRequestModel(
-        id: JsonUtils.readInt(json['id']),
+        id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
         senderId: JsonUtils.readInt(
-          JsonUtils.pick(json, ['senderId', 'fromUserId', 'friendId']),
+          JsonUtils.pick(json, [
+            'requesterId',
+            'RequesterId',
+            'senderId',
+            'SenderId',
+            'fromUserId',
+            'FromUserId'
+          ]),
+        ),
+        receiverId: JsonUtils.readInt(
+          JsonUtils.pick(json, [
+            'friendId',
+            'FriendId',
+            'receiverId',
+            'ReceiverId',
+            'toUserId',
+            'ToUserId'
+          ]),
         ),
         senderName: JsonUtils.readString(
-          JsonUtils.pick(json, ['senderName', 'fullName']),
+          JsonUtils.pick(json, [
+            'senderName',
+            'fullName',
+            'SenderName',
+            'FullName',
+            'name',
+            'Name'
+          ]),
         ),
         senderAvatarUrl: JsonUtils.readString(
-          JsonUtils.pick(json, ['senderAvatarUrl', 'avatarUrl']),
+          JsonUtils.pick(json,
+              ['senderAvatarUrl', 'avatarUrl', 'SenderAvatarUrl', 'AvatarUrl']),
         ),
-        status: JsonUtils.readString(json['status']),
-        createdAt: JsonUtils.readDateTime(json['createdAt']),
+        status:
+            JsonUtils.readString(JsonUtils.pick(json, ['status', 'Status'])),
+        createdAt: JsonUtils.readDateTime(
+            JsonUtils.pick(json, ['createdAt', 'CreatedAt'])),
       );
 }
 
@@ -279,18 +318,24 @@ class UserSearchModel {
 
   factory UserSearchModel.fromJson(Map<String, dynamic> json) =>
       UserSearchModel(
-        id: JsonUtils.readInt(json['id']),
+        id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
         fullName: JsonUtils.readString(
-              JsonUtils.pick(json, ['fullName', 'name']),
+              JsonUtils.pick(json, ['fullName', 'name', 'FullName', 'Name']),
             ) ??
             '',
-        email: JsonUtils.readString(json['email']),
-        avatarUrl: JsonUtils.readString(json['avatarUrl']),
-        gender: JsonUtils.readString(json['gender']),
-        dateOfBirth: JsonUtils.readString(json['dateOfBirth']),
-        phoneNumber: JsonUtils.readString(json['phoneNumber']),
-        status: JsonUtils.readString(json['status']),
-        createdAt: JsonUtils.readDateTime(json['createdAt']),
+        email: JsonUtils.readString(JsonUtils.pick(json, ['email', 'Email'])),
+        avatarUrl: JsonUtils.readString(
+            JsonUtils.pick(json, ['avatarUrl', 'AvatarUrl'])),
+        gender:
+            JsonUtils.readString(JsonUtils.pick(json, ['gender', 'Gender'])),
+        dateOfBirth: JsonUtils.readString(
+            JsonUtils.pick(json, ['dateOfBirth', 'DateOfBirth'])),
+        phoneNumber: JsonUtils.readString(
+            JsonUtils.pick(json, ['phoneNumber', 'PhoneNumber'])),
+        status:
+            JsonUtils.readString(JsonUtils.pick(json, ['status', 'Status'])),
+        createdAt: JsonUtils.readDateTime(
+            JsonUtils.pick(json, ['createdAt', 'CreatedAt'])),
       );
 }
 
@@ -600,6 +645,7 @@ class EligibleScheduleModel {
             '',
       );
 }
+
 class SocialReactionModel {
   final int userId;
   final String? userName;
@@ -611,10 +657,10 @@ class SocialReactionModel {
     required this.type,
   });
 
-  factory SocialReactionModel.fromJson(Map<String, dynamic> json) => SocialReactionModel(
-    userId: JsonUtils.readInt(json['userId']),
-    userName: JsonUtils.readString(json['userName']),
-    type: JsonUtils.readString(json['type']) ?? '',
-  );
+  factory SocialReactionModel.fromJson(Map<String, dynamic> json) =>
+      SocialReactionModel(
+        userId: JsonUtils.readInt(json['userId']),
+        userName: JsonUtils.readString(json['userName']),
+        type: JsonUtils.readString(json['type']) ?? '',
+      );
 }
-

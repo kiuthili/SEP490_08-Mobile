@@ -8,7 +8,7 @@ class ReviewService extends GetxService with BaseServiceMixin {
   Future<List<ReviewModel>> getReviewsByTour(int tourId) async {
     return request(() async {
       final response =
-      await api.dio.get('${ApiConstants.reviews}/tour/$tourId');
+          await api.dio.get('${ApiConstants.reviews}/tour/$tourId');
       return parseList(response.data, ReviewModel.fromJson);
     });
   }
@@ -16,7 +16,8 @@ class ReviewService extends GetxService with BaseServiceMixin {
   Future<ReviewModel?> getMyReviewByTour(int tourId) async {
     return request(() async {
       try {
-        final response = await api.dio.get('${ApiConstants.reviews}/tour/$tourId/mine');
+        final response =
+            await api.dio.get('${ApiConstants.reviews}/tour/$tourId/mine');
         final body = response.data;
         if (body is Map<String, dynamic>) {
           return ReviewModel.fromJson(body);

@@ -38,20 +38,20 @@ class SearchResultTourCard extends StatelessWidget {
                       tag: 'tour-search-image-${tour.id}',
                       child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
                           ? CachedNetworkImage(
-                        imageUrl: tour.imageUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) =>
-                            ColoredBox(
-                              color: AppColors.brandLight,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.brand.withValues(alpha: 0.5),
+                              imageUrl: tour.imageUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => ColoredBox(
+                                color: AppColors.brandLight,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color:
+                                        AppColors.brand.withValues(alpha: 0.5),
+                                  ),
                                 ),
                               ),
-                            ),
-                        errorWidget: (_, __, ___) => _placeholderImage(),
-                      )
+                              errorWidget: (_, __, ___) => _placeholderImage(),
+                            )
                           : _placeholderImage(),
                     ),
                   ),
@@ -70,12 +70,14 @@ class SearchResultTourCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (tour.discountPercentage != null && tour.discountPercentage! > 0)
+                  if (tour.discountPercentage != null &&
+                      tour.discountPercentage! > 0)
                     Positioned(
                       top: 32,
                       right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.error,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -105,9 +107,7 @@ class SearchResultTourCard extends StatelessWidget {
                     left: 8,
                     child: _ImageBadge(
                       icon: Icons.place_rounded,
-                      label: tour.locationLabel
-                          .split(',')
-                          .first,
+                      label: tour.locationLabel.split(',').first,
                       iconColor: Colors.white,
                     ),
                   ),
@@ -140,8 +140,10 @@ class SearchResultTourCard extends StatelessWidget {
                                 children: [
                                   if (tour.originalPrice != null) ...[
                                     Text(
-                                      CurrencyFormatter.format(tour.originalPrice!),
-                                      style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                                      CurrencyFormatter.format(
+                                          tour.originalPrice!),
+                                      style: AppTextStyles.textTheme.labelSmall
+                                          ?.copyWith(
                                         decoration: TextDecoration.lineThrough,
                                         color: AppColors.textTertiary,
                                         fontSize: 9,
@@ -151,7 +153,8 @@ class SearchResultTourCard extends StatelessWidget {
                                   ],
                                   Text(
                                     'Từ',
-                                    style: AppTextStyles.textTheme.labelSmall?.copyWith(fontSize: 10),
+                                    style: AppTextStyles.textTheme.labelSmall
+                                        ?.copyWith(fontSize: 10),
                                   ),
                                 ],
                               ),
@@ -234,4 +237,3 @@ class _ImageBadge extends StatelessWidget {
     );
   }
 }
-

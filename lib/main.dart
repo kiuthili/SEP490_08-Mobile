@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:stayhub_mobile/firebase_options.dart';
+import 'package:stayhub_mobile/constants/api_constants.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/push_notification_service.dart';
 import 'package:stayhub_mobile/services/review_service.dart';
@@ -68,6 +70,7 @@ Future<void> main() async {
   Get.put(StaffScheduleService(), permanent: true);
   Get.lazyPut<SocialService>(() => SocialService());
   Get.lazyPut<SocialController>(() => SocialController());
+
   runApp(const StayHubApp());
   WidgetsBinding.instance.addPostFrameCallback((_) {
     paymentDeepLinks.start();

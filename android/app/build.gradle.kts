@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "com.stayhub.stayhub_mobile"
-        minSdk = flutter.minSdkVersion
+        minSdk = 24  // Mapbox Maps Flutter v2 requires minimum API 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -79,7 +79,8 @@ class HomeController extends GetxController {
   Future<void> _fetchRegion(String region) async {
     isLoadingRegion.value = true;
     try {
-      regionTours.value = await _tourService.getToursByRegion(region, pageSize: 12);
+      regionTours.value =
+          await _tourService.getToursByRegion(region, pageSize: 12);
     } catch (_) {
     } finally {
       isLoadingRegion.value = false;

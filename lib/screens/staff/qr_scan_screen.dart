@@ -6,6 +6,7 @@ import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import 'package:stayhub_mobile/models/check_in_result_model.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class QrScanScreen extends StatefulWidget {
   const QrScanScreen({super.key});
@@ -33,8 +34,7 @@ class _QrScanScreenState extends State<QrScanScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _lineAnimation =
-        Tween<double>(begin: 0, end: 1).animate(_lineController);
+    _lineAnimation = Tween<double>(begin: 0, end: 1).animate(_lineController);
   }
 
   @override
@@ -70,8 +70,8 @@ class _QrScanScreenState extends State<QrScanScreen>
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -261,12 +261,10 @@ class _OverlayPainter extends CustomPainter {
     final paint = Paint()..color = Colors.black.withValues(alpha: 0.6);
 
     // Vẽ 4 vùng tối xung quanh khung
-    canvas.drawRect(
-        Rect.fromLTRB(0, 0, size.width, rect.top), paint);
+    canvas.drawRect(Rect.fromLTRB(0, 0, size.width, rect.top), paint);
     canvas.drawRect(
         Rect.fromLTRB(0, rect.bottom, size.width, size.height), paint);
-    canvas.drawRect(
-        Rect.fromLTRB(0, rect.top, rect.left, rect.bottom), paint);
+    canvas.drawRect(Rect.fromLTRB(0, rect.top, rect.left, rect.bottom), paint);
     canvas.drawRect(
         Rect.fromLTRB(rect.right, rect.top, size.width, rect.bottom), paint);
   }
@@ -294,32 +292,48 @@ class _CornerMarkers extends StatelessWidget {
           top: 0,
           left: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: false, flipV: false),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: false,
+              flipV: false),
         ),
         // Top-right
         Positioned(
           top: 0,
           right: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: true, flipV: false),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: true,
+              flipV: false),
         ),
         // Bottom-left
         Positioned(
           bottom: 0,
           left: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: false, flipV: true),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: false,
+              flipV: true),
         ),
         // Bottom-right
         Positioned(
           bottom: 0,
           right: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: true, flipV: true),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: true,
+              flipV: true),
         ),
       ],
     );
@@ -358,9 +372,7 @@ class _Corner extends StatelessWidget {
 
 class _CornerPainter extends CustomPainter {
   const _CornerPainter(
-      {required this.color,
-        required this.thickness,
-        required this.radius});
+      {required this.color, required this.thickness, required this.radius});
 
   final Color color;
   final double thickness, radius;

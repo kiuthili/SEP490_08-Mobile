@@ -53,7 +53,9 @@ class LoginResponse {
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    final requirePhone = JsonUtils.pick(json, ['requirePhoneNumber', 'RequirePhoneNumber']) == true;
+    final requirePhone =
+        JsonUtils.pick(json, ['requirePhoneNumber', 'RequirePhoneNumber']) ==
+            true;
     final userRaw = JsonUtils.pick(json, ['user', 'User']);
     if (userRaw is! Map<String, dynamic>) {
       throw StateError('Thiếu user trong phản hồi đăng nhập');
@@ -61,8 +63,9 @@ class LoginResponse {
     final token =
         JsonUtils.readString(JsonUtils.pick(json, ['token', 'Token'])) ?? '';
     final refresh = JsonUtils.readString(
-      JsonUtils.pick(json, ['refreshToken', 'RefreshToken']),
-    ) ?? '';
+          JsonUtils.pick(json, ['refreshToken', 'RefreshToken']),
+        ) ??
+        '';
     if (!requirePhone && token.isEmpty) {
       throw StateError('Thiếu token trong phản hồi');
     }

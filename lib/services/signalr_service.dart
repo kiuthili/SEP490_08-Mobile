@@ -82,11 +82,11 @@ class SignalRService extends GetxService {
     _chatToken = token;
     final connection = HubConnectionBuilder()
         .withUrl(
-      ApiConstants.chatHubUrl,
-      options: _connectionOptions(
-        accessTokenFactory: () async => _chatToken ?? '',
-      ),
-    )
+          ApiConstants.chatHubUrl,
+          options: _connectionOptions(
+            accessTokenFactory: () async => _chatToken ?? '',
+          ),
+        )
         .withAutomaticReconnect()
         .build();
     _chatConnection = connection;
@@ -230,17 +230,17 @@ class SignalRService extends GetxService {
     _friendshipToken = token;
     final connection = HubConnectionBuilder()
         .withUrl(
-      ApiConstants.friendshipHubUrl,
-      options: _connectionOptions(
-        accessTokenFactory: () async => _friendshipToken ?? '',
-      ),
-    )
+          ApiConstants.friendshipHubUrl,
+          options: _connectionOptions(
+            accessTokenFactory: () async => _friendshipToken ?? '',
+          ),
+        )
         .withAutomaticReconnect()
         .build();
     _friendshipConnection = connection;
     _bindFriendshipHandlers();
     connection.onreconnected(
-          ({connectionId}) {
+      ({connectionId}) {
         _friendshipReconnectedHandler?.call();
       },
     );
@@ -348,17 +348,17 @@ class SignalRService extends GetxService {
     _notificationToken = token;
     final connection = HubConnectionBuilder()
         .withUrl(
-      ApiConstants.notificationHubUrl,
-      options: _connectionOptions(
-        accessTokenFactory: () async => _notificationToken ?? '',
-      ),
-    )
+          ApiConstants.notificationHubUrl,
+          options: _connectionOptions(
+            accessTokenFactory: () async => _notificationToken ?? '',
+          ),
+        )
         .withAutomaticReconnect()
         .build();
     _notificationConnection = connection;
     _bindNotificationHandlers();
     connection.onreconnected(
-          ({connectionId}) {
+      ({connectionId}) {
         _notificationReconnectedHandler?.call();
       },
     );
@@ -413,7 +413,8 @@ class SignalRService extends GetxService {
     await _connectGlobalChat(onReconnected: onReconnected);
   }
 
-  Future<HubConnection> _connectGlobalChat({void Function()? onReconnected}) async {
+  Future<HubConnection> _connectGlobalChat(
+      {void Function()? onReconnected}) async {
     final token = _token;
     final current = _globalChatConnection;
     if (current?.state == HubConnectionState.Connected &&
@@ -454,11 +455,11 @@ class SignalRService extends GetxService {
     _globalChatToken = token;
     final connection = HubConnectionBuilder()
         .withUrl(
-      ApiConstants.globalChatHubUrl,
-      options: _connectionOptions(
-        accessTokenFactory: () async => _globalChatToken ?? '',
-      ),
-    )
+          ApiConstants.globalChatHubUrl,
+          options: _connectionOptions(
+            accessTokenFactory: () async => _globalChatToken ?? '',
+          ),
+        )
         .withAutomaticReconnect()
         .build();
     _globalChatConnection = connection;
@@ -523,11 +524,11 @@ class SignalRService extends GetxService {
     await _trackingConnection?.stop();
     _trackingConnection = HubConnectionBuilder()
         .withUrl(
-      ApiConstants.trackingHubUrl,
-      options: _connectionOptions(
-        accessTokenFactory: () async => _token ?? '',
-      ),
-    )
+          ApiConstants.trackingHubUrl,
+          options: _connectionOptions(
+            accessTokenFactory: () async => _token ?? '',
+          ),
+        )
         .withAutomaticReconnect()
         .build();
 
@@ -621,11 +622,11 @@ class SignalRService extends GetxService {
       accessTokenFactory: accessTokenFactory,
       httpClient: localDev
           ? WebSupportingHttpClient(
-        null,
-        httpClientCreateCallback: (_) {
-          HttpOverrides.global = _SignalRLocalDevHttpOverrides();
-        },
-      )
+              null,
+              httpClientCreateCallback: (_) {
+                HttpOverrides.global = _SignalRLocalDevHttpOverrides();
+              },
+            )
           : null,
       transport: localDev ? HttpTransportType.WebSockets : null,
       requestTimeout: 30000,

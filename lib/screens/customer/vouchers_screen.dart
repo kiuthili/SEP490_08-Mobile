@@ -8,8 +8,10 @@ import '../../utils/date_formatter.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
+import '../../routes/app_routes.dart';
 import '../../utils/validators.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class VouchersScreen extends StatefulWidget {
   const VouchersScreen({super.key});
@@ -108,65 +110,174 @@ class _VouchersScreenState extends State<VouchersScreen> {
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       physics: physics,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: _controller.vouchers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final v = _controller.vouchers[index];
         final statusLabel = _statusLabel(v.status, v.voucherStatus);
         final discountText = _discountText(v);
-        return IosSurfaceCard(
-          margin: EdgeInsets.zero,
-          padding: EdgeInsets.zero,
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: AppColors.brandLight,
-              child: Icon(
-                Icons.percent_rounded,
-                color: AppColors.brand,
-                size: 20,
+        final isAvailable = v.isAvailable;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          height: 115,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-            title: Text(
-              v.code,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (v.description != null && v.description!.isNotEmpty)
-                    Text(v.description!),
-                  Text(
-                    [
-                      statusLabel,
-                      'Còn ${v.quantity} lượt',
-                      if (v.minOrderAmount != null && v.minOrderAmount! > 0)
-                        'Đơn tối thiểu ${CurrencyFormatter.format(v.minOrderAmount!)}',
-                      if (v.tourName != null && v.tourName!.isNotEmpty)
-                        v.tourName!,
-                      if (v.endDate != null)
-                        'HSD ${DateFormatter.display(v.endDate)}',
-                    ].join(' • '),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: v.isAvailable
-                              ? AppColors.textSecondary
-                              : AppColors.error,
-                        ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 110,
+                decoration: BoxDecoration(
+                  color:
+                      isAvailable ? AppColors.brand : const Color(0xFFE0E0E0),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
                   ),
-                ],
+                ),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: FittedBox(
+                        child: Text(
+                          discountText,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: isAvailable ? Colors.white : Colors.black45,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'VOUCHER',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isAvailable ? Colors.white70 : Colors.black38,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            trailing: Text(
-              discountText,
-              style: const TextStyle(
-                color: AppColors.accent,
-                fontWeight: FontWeight.bold,
+              Container(
+                width: 1,
+                color: const Color(0xFFF0F0F0),
               ),
-            ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        v.code,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isAvailable ? Colors.black87 : Colors.black45,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      if (v.minOrderAmount != null && v.minOrderAmount! > 0)
+                        Text(
+                          'Đơn tối thiểu ${CurrencyFormatter.format(v.minOrderAmount!)}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black54),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isAvailable
+                                      ? const Color(0xFFE8F5E9)
+                                      : const Color(0xFFFFEBEE),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.xs),
+                                ),
+                                child: Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: isAvailable
+                                        ? const Color(0xFF2E7D32)
+                                        : const Color(0xFFC62828),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              if (v.endDate != null)
+                                Text(
+                                  'HSD: ${DateFormatter.display(v.endDate)}',
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.black45),
+                                ),
+                            ],
+                          ),
+                          if (isAvailable)
+                            OutlinedButton(
+                              onPressed: () {
+                                if (v.tourId != null && v.tourId! > 0) {
+                                  Get.toNamed(AppRoutes.tourDetail,
+                                      arguments: v.tourId);
+                                } else {
+                                  Get.toNamed(AppRoutes.tourSearch);
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.brand,
+                                side: const BorderSide(
+                                    color: AppColors.brand, width: 1),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 4),
+                                minimumSize: const Size(0, 26),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.lg)),
+                              ),
+                              child: const Text('Dùng ngay',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -176,8 +287,11 @@ class _VouchersScreenState extends State<VouchersScreen> {
   String _discountText(VoucherModel voucher) {
     final value = voucher.discountValue ?? 0;
     final type = voucher.discountType?.toLowerCase() ?? '';
-    if (type.contains('percent')) return '-$value%';
-    return '-${CurrencyFormatter.format(value)}';
+    if (type.contains('percent')) return 'Giảm $value%';
+    if (value >= 1000) {
+      return 'Giảm ${(value / 1000).toStringAsFixed(0)}K';
+    }
+    return 'Giảm ${CurrencyFormatter.format(value)}';
   }
 
   String _statusLabel(String? userStatus, String? voucherStatus) {

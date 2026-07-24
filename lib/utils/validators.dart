@@ -2,8 +2,7 @@
 class Validators {
   Validators._();
 
-  static final _emailRegex =
-      RegExp(r'^[\w.+-]+@([\w-]+\.)+[\w-]{2,}$');
+  static final _emailRegex = RegExp(r'^[\w.+-]+@([\w-]+\.)+[\w-]{2,}$');
   // VN: 0xxxxxxxxx (10 số) hoặc +84xxxxxxxxx.
   static final _phoneRegex = RegExp(r'^(0\d{9}|\+84\d{9})$');
 

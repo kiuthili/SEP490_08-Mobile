@@ -300,7 +300,7 @@ class _CancellationIntro extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: AppColors.accentLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: const Icon(
               Icons.assignment_return_outlined,
@@ -342,7 +342,7 @@ class _BankFallbackNotice extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.accentLight,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
       ),
       child: Row(

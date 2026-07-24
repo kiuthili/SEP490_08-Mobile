@@ -9,15 +9,16 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-      //return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
+      // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+      return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
       return 'https://jpg6krl7-7010.asse.devtunnels.ms';
     }
 
-    return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+    // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+    return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
@@ -65,4 +66,14 @@ class ApiConstants {
   static const aiTourAssistant = '/api/ai/tour-assistant';
   static const tourScheduleStaffs = '/api/TourScheduleStaffs';
   static const aiEvaluation = '/api/ai/evaluation';
+
+  /// Mapbox Access Token & Tile Template (Đồng bộ với Frontend Web)
+  static const mapboxAccessToken = String.fromEnvironment(
+    'MAPBOX_ACCESS_TOKEN',
+    defaultValue:
+        'pk.eyJ1IjoicGhhbWtoYXZ5MTEwMiIsImEiOiJjbWZxdzRyOGcwMzU0MmlwYXozdG5zdjI0In0.TF-jItzlzC3i-LLE4sepEA',
+  );
+
+  static const mapboxTileUrl =
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}';
 }

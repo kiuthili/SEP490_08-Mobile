@@ -39,7 +39,7 @@ class PushNotificationService extends GetxService {
       requestSoundPermission: false,
     );
     await _localNotifications.initialize(
-      settings: const InitializationSettings(
+      const InitializationSettings(
         android: androidInit,
         iOS: iosInit,
       ),
@@ -90,10 +90,10 @@ class PushNotificationService extends GetxService {
     required String body,
   }) async {
     await _localNotifications.show(
-      id: chatRoomId,
-      title: title,
-      body: body,
-      notificationDetails: const NotificationDetails(
+      chatRoomId,
+      title,
+      body,
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
@@ -116,9 +116,8 @@ class PushNotificationService extends GetxService {
         return;
       }
 
-      final title = message.notification?.title ??
-          data['senderName'] ??
-          'Tin nhắn mới';
+      final title =
+          message.notification?.title ?? data['senderName'] ?? 'Tin nhắn mới';
       final body = message.notification?.body ??
           data['content'] ??
           'Bạn có tin nhắn mới';
@@ -133,10 +132,10 @@ class PushNotificationService extends GetxService {
 
     if (message.notification != null) {
       _localNotifications.show(
-        id: DateTime.now().millisecondsSinceEpoch % 100000,
-        title: message.notification!.title,
-        body: message.notification!.body,
-        notificationDetails: const NotificationDetails(
+        DateTime.now().millisecondsSinceEpoch % 100000,
+        message.notification!.title,
+        message.notification!.body,
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             _channelId,
             _channelName,

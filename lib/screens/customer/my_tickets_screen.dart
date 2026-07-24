@@ -165,9 +165,11 @@ class OrderTicketsPanel extends StatelessWidget {
           Color statusColor = AppColors.textSecondary;
           if (statusStr.contains('checked') || statusStr.contains('đã')) {
             statusColor = AppColors.success;
-          } else if (statusStr.contains('pending') || statusStr.contains('chờ')) {
+          } else if (statusStr.contains('pending') ||
+              statusStr.contains('chờ')) {
             statusColor = Colors.orange;
-          } else if (statusStr.contains('cancel') || statusStr.contains('hủy')) {
+          } else if (statusStr.contains('cancel') ||
+              statusStr.contains('hủy')) {
             statusColor = AppColors.error;
           }
 
@@ -223,7 +225,7 @@ class OrderTicketsPanel extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
                           t.checkInStatus ?? 'Chưa check-in',
@@ -296,10 +298,12 @@ class OrderTicketsPanel extends StatelessWidget {
                           children: [
                             TextButton.icon(
                               onPressed: () {
-                                Clipboard.setData(ClipboardData(text: t.qrCode!));
+                                Clipboard.setData(
+                                    ClipboardData(text: t.qrCode!));
                                 SnackbarHelper.success('Đã sao chép mã QR');
                               },
-                              icon: const Icon(Icons.copy_all_rounded, size: 16),
+                              icon:
+                                  const Icon(Icons.copy_all_rounded, size: 16),
                               label: const Text('Sao chép mã'),
                             )
                           ],

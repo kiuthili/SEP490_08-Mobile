@@ -105,27 +105,27 @@ class _AuthInputFieldState extends State<AuthInputField> {
               vertical: 16,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error, width: 1.5),
             ),
           ),
@@ -227,13 +227,13 @@ class AuthGoogleButton extends StatelessWidget {
           side: BorderSide(color: Colors.grey.shade300),
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.g_mobiledata, size: 26, color: Colors.red.shade600),
+            Icon(Icons.g_mobiledata, size: 26, color: AppColors.error),
             const SizedBox(width: 8),
             Text(
               label,
@@ -322,7 +322,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                     height: 48,
                     decoration: BoxDecoration(
                       color: AppColors.brand.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Icon(
                       Icons.phone_rounded,
@@ -363,12 +363,13 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Row(
                   children: [
-                    if (widget.user.avatarUrl != null && widget.user.avatarUrl!.isNotEmpty)
+                    if (widget.user.avatarUrl != null &&
+                        widget.user.avatarUrl!.isNotEmpty)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(22),
                         child: Image.network(
@@ -376,7 +377,8 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                           width: 44,
                           height: 44,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildAvatarPlaceholder(),
+                          errorBuilder: (_, __, ___) =>
+                              _buildAvatarPlaceholder(),
                         ),
                       )
                     else
@@ -449,18 +451,20 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                   ),
                   filled: true,
                   fillColor: const Color(0xFFF8F9FF),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                     borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                     borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderSide:
+                        const BorderSide(color: AppColors.brand, width: 1.5),
                   ),
                 ),
               ),
@@ -471,7 +475,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Colors.red,
+                    color: AppColors.error,
                   ),
                 ),
               ],
@@ -488,7 +492,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.grey.shade300),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                         ),
                         child: const Text(
@@ -513,7 +517,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                         ),
                         child: widget.isLoading
@@ -522,7 +526,8 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text(
@@ -554,7 +559,9 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
       ),
       alignment: Alignment.center,
       child: Text(
-        widget.user.fullName.isNotEmpty ? widget.user.fullName[0].toUpperCase() : 'G',
+        widget.user.fullName.isNotEmpty
+            ? widget.user.fullName[0].toUpperCase()
+            : 'G',
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,

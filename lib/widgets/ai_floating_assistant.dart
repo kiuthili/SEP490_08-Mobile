@@ -8,6 +8,7 @@ import '../theme/app_text_styles.dart';
 import 'ios_grouped.dart';
 import '../screens/customer/ai_questionnaire_screen.dart';
 import '../screens/customer/ai_recommendations_screen.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class AiFloatingAssistant extends StatelessWidget {
   const AiFloatingAssistant({super.key});
@@ -111,7 +112,7 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet>
             height: 4,
             decoration: BoxDecoration(
               color: AppColors.separator,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
             ),
           ),
           Container(
@@ -119,7 +120,7 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet>
             padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
             decoration: BoxDecoration(
               gradient: AppColors.brandGradient,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Row(
               children: [
@@ -171,7 +172,7 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet>
             child: Container(
               decoration: BoxDecoration(
                 color: AppColors.surfaceGrouped,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: TabBar(
                 controller: _tabController,
@@ -181,7 +182,7 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet>
                 unselectedLabelColor: AppColors.textSecondary,
                 indicator: BoxDecoration(
                   color: AppColors.brand,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 tabs: const [
                   Tab(icon: Icon(Icons.travel_explore), text: 'AI Guide'),
@@ -425,7 +426,7 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
                             Colors.indigo.withOpacity(0.06),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(
                           color: AppColors.brand.withOpacity(0.25),
                         ),
@@ -439,7 +440,8 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: AppColors.brandLight,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.xs),
                                 ),
                                 child: const Icon(
                                   Icons.bolt,
@@ -450,7 +452,8 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
                               const SizedBox(width: 8),
                               Text(
                                 'Nhận đề xuất nhanh',
-                                style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                                style: AppTextStyles.textTheme.titleSmall
+                                    ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -474,9 +477,11 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
                                 backgroundColor: AppColors.brand,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                               ),
                               child: const Text(
                                 'Chuyển sang điền Form khảo sát',
@@ -593,7 +598,7 @@ class _ChatBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isUser ? AppColors.brand : AppColors.surfaceGrouped,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(
                 message.text,
@@ -661,7 +666,7 @@ class _TypingBubble extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surfaceGrouped,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: const SizedBox(
           width: 20,

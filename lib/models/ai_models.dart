@@ -150,18 +150,33 @@ class TourPreferenceQuestionnaireModel {
 
   factory TourPreferenceQuestionnaireModel.fromJson(Map<String, dynamic> json) {
     return TourPreferenceQuestionnaireModel(
-      companionType: JsonUtils.readString(JsonUtils.pick(json, ['companionType', 'CompanionType'])) ?? 'solo',
-      preferredStartDate: JsonUtils.readString(JsonUtils.pick(json, ['preferredStartDate', 'PreferredStartDate'])) ?? '',
-      preferredEndDate: JsonUtils.readString(JsonUtils.pick(json, ['preferredEndDate', 'PreferredEndDate'])),
-      maxBudgetPerPerson: JsonUtils.readInt(JsonUtils.pick(json, ['maxBudgetPerPerson', 'MaxBudgetPerPerson'])),
-      hasElderly: JsonUtils.readBool(JsonUtils.pick(json, ['hasElderly', 'HasElderly'])),
-      hasChildren: JsonUtils.readBool(JsonUtils.pick(json, ['hasChildren', 'HasChildren'])),
-      elderlyCount: JsonUtils.readInt(JsonUtils.pick(json, ['elderlyCount', 'ElderlyCount'])),
-      childrenCount: JsonUtils.readInt(JsonUtils.pick(json, ['childrenCount', 'ChildrenCount'])),
-      travelInterests: _readStringList(JsonUtils.pick(json, ['travelInterests', 'TravelInterests'])),
-      nationalityType: JsonUtils.readString(JsonUtils.pick(json, ['nationalityType', 'NationalityType'])) ?? 'vietnamese',
-      preferredCity: JsonUtils.readString(JsonUtils.pick(json, ['preferredCity', 'PreferredCity'])),
-      preferredCountry: JsonUtils.readString(JsonUtils.pick(json, ['preferredCountry', 'PreferredCountry'])),
+      companionType: JsonUtils.readString(
+              JsonUtils.pick(json, ['companionType', 'CompanionType'])) ??
+          'solo',
+      preferredStartDate: JsonUtils.readString(JsonUtils.pick(
+              json, ['preferredStartDate', 'PreferredStartDate'])) ??
+          '',
+      preferredEndDate: JsonUtils.readString(
+          JsonUtils.pick(json, ['preferredEndDate', 'PreferredEndDate'])),
+      maxBudgetPerPerson: JsonUtils.readInt(
+          JsonUtils.pick(json, ['maxBudgetPerPerson', 'MaxBudgetPerPerson'])),
+      hasElderly: JsonUtils.readBool(
+          JsonUtils.pick(json, ['hasElderly', 'HasElderly'])),
+      hasChildren: JsonUtils.readBool(
+          JsonUtils.pick(json, ['hasChildren', 'HasChildren'])),
+      elderlyCount: JsonUtils.readInt(
+          JsonUtils.pick(json, ['elderlyCount', 'ElderlyCount'])),
+      childrenCount: JsonUtils.readInt(
+          JsonUtils.pick(json, ['childrenCount', 'ChildrenCount'])),
+      travelInterests: _readStringList(
+          JsonUtils.pick(json, ['travelInterests', 'TravelInterests'])),
+      nationalityType: JsonUtils.readString(
+              JsonUtils.pick(json, ['nationalityType', 'NationalityType'])) ??
+          'vietnamese',
+      preferredCity: JsonUtils.readString(
+          JsonUtils.pick(json, ['preferredCity', 'PreferredCity'])),
+      preferredCountry: JsonUtils.readString(
+          JsonUtils.pick(json, ['preferredCountry', 'PreferredCountry'])),
     );
   }
 }

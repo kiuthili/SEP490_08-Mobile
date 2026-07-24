@@ -6,8 +6,6 @@ import '../models/feature_models.dart';
 import '../models/tour_model.dart';
 import 'base_service.dart';
 
-
-
 class VoucherService extends GetxService with BaseServiceMixin {
   Future<void> saveVoucher(String code) async {
     await request(() async {
@@ -113,13 +111,15 @@ class AiService extends GetxService with BaseServiceMixin {
   Future<AiChatResponseModel> sendChatMessage({
     required String message,
     required String sessionId,
+    List<Map<String, String>>? history,
   }) async {
     return request(() async {
       final response = await api.dio.post(
-        '${ApiConstants.aiTourAssistant}/chat',
+        '${ApiConstants.aiIntelligentChat}/chat',
         data: {
           'message': message,
           'sessionId': sessionId,
+          if (history != null) 'history': history,
         },
       );
       final body = response.data;

@@ -80,15 +80,18 @@ class AuthController extends GetxController {
         );
       } else {
         SnackbarHelper.success(
-          result.message ?? 'Mã xác nhận đăng ký đã được gửi đến email của bạn.',
+          result.message ??
+              'Mã xác nhận đăng ký đã được gửi đến email của bạn.',
         );
       }
       return result;
     } on ApiError catch (e) {
       if (e.message == 'FullNameCannotContainSpecialCharacters') {
-        SnackbarHelper.error('Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
+        SnackbarHelper.error(
+            'Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
       } else if (e.message == 'PhoneNumberExists') {
-        SnackbarHelper.error('Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
+        SnackbarHelper.error(
+            'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -134,14 +137,17 @@ class AuthController extends GetxController {
       return true;
     } on ApiError catch (e) {
       if (e.message == 'FullNameCannotContainSpecialCharacters') {
-        SnackbarHelper.error('Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
+        SnackbarHelper.error(
+            'Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
       } else if (e.message == 'PhoneNumberExists') {
-        SnackbarHelper.error('Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
+        SnackbarHelper.error(
+            'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
       } else if (e.message == 'InvalidOrExpiredOtp' ||
           e.message.toLowerCase().contains('invalid') ||
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
-        SnackbarHelper.error('Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+        SnackbarHelper.error(
+            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
       } else {
         SnackbarHelper.error(e.message);
       }

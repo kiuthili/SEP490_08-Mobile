@@ -1,3 +1,6 @@
+import 'package:stayhub_mobile/theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
+
 // import 'package:flutter/material.dart';
 // import 'package:flutter_map/flutter_map.dart';
 // import 'package:get/get.dart';
@@ -185,7 +188,7 @@
 //                 child: Container(
 //                   decoration: BoxDecoration(
 //                     shape: BoxShape.circle,
-//                     color: Colors.green,
+//                     color: AppColors.success,
 //                     border: Border.all(color: Colors.white, width: 2),
 //                   ),
 //                   child: Center(
@@ -330,7 +333,7 @@
 //                 padding: const EdgeInsets.all(12),
 //                 decoration: BoxDecoration(
 //                   color: Colors.grey[200],
-//                   borderRadius: BorderRadius.circular(8),
+//                   borderRadius: BorderRadius.circular(AppRadius.xs),
 //                 ),
 //                 child: SelectableText(token),
 //               ),
