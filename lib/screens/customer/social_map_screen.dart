@@ -23,10 +23,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../constants/api_constants.dart';
 import '../../controllers/social_map_controller.dart';
 import '../../models/map_models.dart';
 import '../../models/social_models.dart';
@@ -37,6 +37,8 @@ import '../../widgets/loading_widget.dart';
 // Bảng màu thương hiệu (đồng bộ với web: brand #0068E0).
 const Color _kBrand = Color(0xFF0068E0);
 const Color _kBrandDark = Color(0xFF0050B3);
+
+
 
 class SocialMapScreen extends StatelessWidget {
   const SocialMapScreen({super.key});
@@ -89,18 +91,17 @@ class SocialMapScreen extends StatelessWidget {
               ),
             ),
 
-            // ---- Nút điều khiển bản đồ (phải, trên panel layer) ----
-            Obx(() => Positioned(
-              right: 12,
-              bottom: c.showTimeline.value ? 370 : 150,
-              child: _MapControls(c: c),
-            )),
-
-            // ---- Overlay phải: bảng bật/tắt các lớp ----
+            // ---- Overlay phải: control + layer toggle ----
             Obx(() => Positioned(
               right: 12,
               bottom: c.showTimeline.value ? 260 : 24,
-              child: _LayerTogglePanel(c: c),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _MapControls(c: c),
+                ],
+              ),
             )),
 
             // ---- Overlay trái: chú thích Heatmap ----
@@ -163,8 +164,8 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
   await Get.dialog(
     AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Row(
-        children: const [
+      title: const Row(
+        children: [
           Icon(Icons.share_location_rounded, color: _kBrand),
           SizedBox(width: 8),
           Expanded(child: Text('Share my location')),
@@ -236,14 +237,11 @@ class _MapView extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: ApiConstants.mapboxTileUrl,
-          additionalOptions: const {
-            'accessToken': ApiConstants.mapboxAccessToken,
-          },
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.stayhub.mobile',
           maxZoom: 19,
-          tileSize: 256,
-          zoomOffset: -1,
+          // OSM không hỗ trợ @2x ({r}) -> KHÔNG bật retinaMode để tránh
+          // emulation (tải 4 tile/level => tốn băng thông, giảm max zoom).
           tileProvider: NetworkTileProvider(),
         ),
 
@@ -261,26 +259,32 @@ class _MapView extends StatelessWidget {
                   .toList(),
             ),
             heatMapOptions: HeatMapOptions(
-              gradient: HeatMapOptions.defaultGradient,
-              minOpacity: 0.1,
-              radius: 60,
+              gradient: {
+                0.4: Colors.teal,
+                0.6: Colors.purple,
+                0.8: Colors.pink,
+                1.0: Colors.orange,
+              },
+              minOpacity: 0.2,
+              radius: c.heatmapRadius.value,
             ),
             reset: c.heatmapResetStream,
           );
         }),
 
-        // --- 4) FOOTPRINTS ("cào map" - BUMP Hexagon Fog of War) ---
+        // --- 4) FOOTPRINTS ("cào map" - Smooth Bump Effect) ---
         Obx(() {
           if (!c.showFootprints.value) {
             return const SizedBox.shrink();
           }
-          final hexPolygons = c.bumpHexPolygons;
-          if (hexPolygons.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return PolygonLayer(
-            polygons: hexPolygons,
-          );
+
+          final List<LatLng> activeFootprints = [
+            ...c.footprints.map((f) => LatLng(f.lat, f.lng)),
+            const LatLng(20.2536, 105.9754), // Dummy point 1 (Ninh Binh)
+            const LatLng(20.2650, 105.9800), // Dummy point 2 (Ninh Binh)
+          ];
+
+          return FogOfWarLayer(footprints: activeFootprints);
         }),
 
         // --- 4b) VỆT DI CHUYỂN REALTIME của tôi ("cào map liên tục") ---
@@ -303,13 +307,21 @@ class _MapView extends StatelessWidget {
 
         // --- 3) LỘ TRÌNH TOUR (Polyline) ---
         Obx(() {
-          if (!c.showRoute.value || c.routeLatLngs.length < 2) {
+          if (!c.showRoute.value || c.drivingRouteLatLngs.isEmpty) {
             return const SizedBox.shrink();
           }
           return PolylineLayer(
             polylines: [
+              // Underglow (thicker, semi-transparent)
               Polyline(
-                points: c.routeLatLngs,
+                points: c.drivingRouteLatLngs,
+                strokeWidth: 8,
+                color: _kBrandDark.withValues(alpha: 0.4),
+                borderStrokeWidth: 0,
+              ),
+              // Main solid line
+              Polyline(
+                points: c.drivingRouteLatLngs,
                 strokeWidth: 4.5,
                 color: _kBrand,
                 borderColor: Colors.white,
@@ -346,16 +358,35 @@ class _MapView extends StatelessWidget {
           if (!c.showMoments.value || c.mapMoments.isEmpty) {
             return const SizedBox.shrink();
           }
-          return MarkerLayer(
-            markers: [
-              for (final m in c.mapMoments)
-                Marker(
-                  point: LatLng(m.lat!, m.lng!),
-                  width: 66,
-                  height: 66,
-                  child: RepaintBoundary(child: _MomentMarker(moment: m)),
-                ),
-            ],
+          return MarkerClusterLayerWidget(
+            options: MarkerClusterLayerOptions(
+              maxClusterRadius: 45,
+              size: const Size(40, 40),
+              markers: [
+                for (final m in c.mapMoments)
+                  Marker(
+                    point: LatLng(m.lat!, m.lng!),
+                    width: 66,
+                    height: 66,
+                    child: RepaintBoundary(child: _MomentMarker(moment: m)),
+                  ),
+              ],
+              builder: (context, markers) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: _kBrand,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${markers.length}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         }),
 
@@ -397,16 +428,12 @@ class _MapView extends StatelessWidget {
           );
         }),
 
-        // --- Attribution (bắt buộc theo điều khoản Mapbox) ---
+        // --- Attribution (bắt buộc theo điều khoản OSM) ---
         RichAttributionWidget(
           alignment: AttributionAlignment.bottomLeft,
           attributions: [
             TextSourceAttribution(
-              'Mapbox',
-              onTap: () {},
-            ),
-            TextSourceAttribution(
-              'OpenStreetMap',
+              'OpenStreetMap contributors',
               onTap: () {},
             ),
           ],
@@ -433,14 +460,14 @@ class _MomentMarker extends StatelessWidget {
         Get.toNamed(AppRoutes.momentDetail, arguments: moment);
       },
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [_kBrand, Color(0xFF34C3FF)],
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
               color: Colors.black26,
               blurRadius: 6,
@@ -685,7 +712,7 @@ class _RoutePin extends StatelessWidget {
 // OVERLAY UI WIDGETS
 // ============================================================
 
-/// Thanh chọn lịch trình tour (ngang).
+/// Thanh chọn lịch trình tour (Pill Dropdown).
 class _ScheduleSelectorBar extends StatelessWidget {
   const _ScheduleSelectorBar({required this.c});
   final SocialMapController c;
@@ -694,59 +721,145 @@ class _ScheduleSelectorBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       if (c.eligibleSchedules.isEmpty) return const SizedBox.shrink();
-      return SizedBox(
-        height: 46,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: c.eligibleSchedules.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, i) {
-            final s = c.eligibleSchedules[i];
-            final selected = c.selectedScheduleId.value == s.scheduleId;
-            return _Glass(
-              borderRadius: 22,
-              padding: EdgeInsets.zero,
-              color: selected
-                  ? _kBrand.withValues(alpha: 0.92)
-                  : Colors.white.withValues(alpha: 0.85),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(22),
-                onTap: () => c.selectSchedule(s.scheduleId),
-                child: Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.tour_rounded,
-                        size: 15,
-                        color: selected ? Colors.white : _kBrand,
-                      ),
-                      const SizedBox(width: 6),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 160),
-                        child: Text(
-                          s.tourName,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: selected ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ),
-                    ],
+      
+      final selectedSchedule = c.eligibleSchedules.firstWhereOrNull(
+        (s) => s.scheduleId == c.selectedScheduleId.value
+      );
+      final label = c.selectedScheduleId.value == 0 ? 'All Trips' : (selectedSchedule?.tourName ?? 'All Trips');
+
+      return GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _showTourSelector(context, c);
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.tour_rounded, size: 18, color: _kBrand),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.5),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: Colors.black87,
                   ),
                 ),
               ),
-            );
-          },
+              const SizedBox(width: 8),
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.black54),
+            ],
+          ),
         ),
       );
     });
   }
+}
+
+void _showTourSelector(BuildContext context, SocialMapController c) {
+  Get.bottomSheet(
+    Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Select Tour',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                // All Trips Option
+                Obx(() {
+                  final isAllTrips = c.selectedScheduleId.value == 0;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: isAllTrips ? _kBrand : Colors.grey.shade200,
+                      child: Icon(Icons.public_rounded,
+                          color: isAllTrips ? Colors.white : Colors.black54, size: 20),
+                    ),
+                    title: Text(
+                      'All Trips',
+                      style: TextStyle(
+                        fontWeight: isAllTrips ? FontWeight.bold : FontWeight.normal,
+                        color: isAllTrips ? _kBrand : Colors.black87,
+                      ),
+                    ),
+                    trailing: isAllTrips
+                        ? const Icon(Icons.check_circle_rounded, color: _kBrand)
+                        : null,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      c.selectSchedule(0);
+                      Get.back();
+                    },
+                  );
+                }),
+                
+                // Real Schedules
+                ...c.eligibleSchedules.map((s) {
+                  return Obx(() {
+                    final selected = c.selectedScheduleId.value == s.scheduleId;
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: selected ? _kBrand : Colors.grey.shade200,
+                        child: Icon(Icons.tour_rounded,
+                            color: selected ? Colors.white : Colors.black54, size: 20),
+                      ),
+                      title: Text(
+                        s.tourName,
+                        style: TextStyle(
+                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                          color: selected ? _kBrand : Colors.black87,
+                        ),
+                      ),
+                      trailing: selected
+                          ? const Icon(Icons.check_circle_rounded, color: _kBrand)
+                          : null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        c.selectSchedule(s.scheduleId);
+                        Get.back();
+                      },
+                    );
+                  });
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    isScrollControlled: true,
+  );
 }
 
 /// Thanh chọn ngày của lộ trình (Day 1, Day 2 ...).
@@ -826,6 +939,18 @@ class _MapControls extends StatelessWidget {
             onTap: c.recenter,
           ),
           const _CtrlDivider(),
+          _CtrlBtn(
+            icon: Icons.route_outlined,
+            tooltip: 'Fit to Route',
+            onTap: c.fitToRoute,
+          ),
+          const _CtrlDivider(),
+          _CtrlBtn(
+            icon: Icons.layers_rounded,
+            tooltip: 'Map Layers',
+            onTap: () => _showLayersSheet(context, c),
+          ),
+          const _CtrlDivider(),
           Obx(() => _CtrlBtn(
             icon: Icons.history_rounded,
             tooltip: 'Journey Timeline',
@@ -888,58 +1013,169 @@ class _CtrlBtn extends StatelessWidget {
   }
 }
 
-/// Bảng bật/tắt các lớp bản đồ (glassmorphism).
-class _LayerTogglePanel extends StatelessWidget {
-  const _LayerTogglePanel({required this.c});
-  final SocialMapController c;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Glass(
-      borderRadius: 16,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      color: Colors.white.withValues(alpha: 0.9),
+void _showLayersSheet(BuildContext context, SocialMapController c) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Obx(() => _LayerButton(
-            icon: Icons.people_alt_rounded,
-            label: 'Friends',
-            active: c.showLiveLocations.value,
-            onTap: c.showLiveLocations.toggle,
-          )),
-          Obx(() => _LayerButton(
-            icon: c.showMoments.value
-                ? Icons.photo_library_rounded
-                : Icons.hide_image_rounded,
-            label: 'Moments',
-            active: c.showMoments.value,
-            onTap: c.showMoments.toggle,
-          )),
-          Obx(() => _LayerButton(
-            icon: Icons.route_rounded,
-            label: 'Route',
-            active: c.showRoute.value,
-            onTap: c.showRoute.toggle,
-          )),
-          Obx(() => _LayerButton(
-            icon: Icons.terrain_rounded,
-            label: 'Footprints',
-            active: c.showFootprints.value,
-            loading: c.isFootprintsLoading.value,
-            onTap: c.toggleFootprints,
-          )),
-          Obx(() => _LayerButton(
-            icon: Icons.local_fire_department_rounded,
-            label: 'Heatmap',
-            active: c.showHeatmap.value,
-            loading: c.isHeatmapLoading.value,
-            onTap: c.toggleHeatmap,
-          )),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Map Layers',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 12,
+            runSpacing: 16,
+            alignment: WrapAlignment.center,
+            children: [
+              Obx(() => _LayerButton(
+                icon: Icons.people_alt_rounded,
+                label: 'Friends',
+                active: c.showLiveLocations.value,
+                onTap: c.showLiveLocations.toggle,
+              )),
+              Obx(() => _LayerButton(
+                icon: c.showMoments.value
+                    ? Icons.photo_library_rounded
+                    : Icons.hide_image_rounded,
+                label: 'Moments',
+                active: c.showMoments.value,
+                onTap: c.showMoments.toggle,
+              )),
+              Obx(() => _LayerButton(
+                icon: Icons.route_rounded,
+                label: 'Route',
+                active: c.showRoute.value,
+                onTap: c.showRoute.toggle,
+              )),
+              Obx(() => _LayerButton(
+                icon: Icons.terrain_rounded,
+                label: 'Footprints',
+                active: c.showFootprints.value,
+                loading: c.isFootprintsLoading.value,
+                onTap: c.toggleFootprints,
+              )),
+              Obx(() => _LayerButton(
+                icon: Icons.local_fire_department_rounded,
+                label: 'Heatmap',
+                active: c.showHeatmap.value,
+                loading: c.isHeatmapLoading.value,
+                onTap: () {
+                  c.toggleHeatmap();
+                  if (c.showHeatmap.value) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Long press the Heatmap button for options'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                onLongPress: () {
+                  _showHeatmapSettings(context, c);
+                },
+              )),
+            ],
+          ),
+          const SizedBox(height: 16),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+void _showHeatmapSettings(BuildContext context, SocialMapController c) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Heatmap Settings', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            const Text('Data Source', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Obx(() => Row(
+              children: [
+                Expanded(child: _buildTypeOption(c, 'all', 'All Data')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildTypeOption(c, 'online', 'Online')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildTypeOption(c, 'moments', 'Moments')),
+              ],
+            )),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Radius & Intensity', style: TextStyle(fontWeight: FontWeight.bold)),
+                Obx(() => Text('${c.heatmapRadius.value.toInt()}', style: const TextStyle(color: _kBrand, fontWeight: FontWeight.bold))),
+              ],
+            ),
+            Obx(() => Slider(
+              value: c.heatmapRadius.value,
+              min: 10,
+              max: 100,
+              activeColor: _kBrand,
+              inactiveColor: _kBrand.withValues(alpha: 0.2),
+              onChanged: (val) {
+                c.heatmapRadius.value = val;
+                c.loadHeatmap();
+              },
+            )),
+            const SizedBox(height: 20),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildTypeOption(SocialMapController c, String type, String label) {
+  final isSelected = c.heatmapType.value == type;
+  return InkWell(
+    onTap: () {
+      c.heatmapType.value = type;
+      c.loadHeatmap();
+    },
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: isSelected ? _kBrand.withValues(alpha: 0.1) : Colors.grey.shade100,
+        border: Border.all(color: isSelected ? _kBrand : Colors.transparent),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Text(label, style: TextStyle(
+        color: isSelected ? _kBrand : Colors.black87,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      )),
+    ),
+  );
 }
 
 class _LayerButton extends StatelessWidget {
@@ -948,6 +1184,7 @@ class _LayerButton extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    this.onLongPress,
     this.loading = false,
   });
 
@@ -956,6 +1193,7 @@ class _LayerButton extends StatelessWidget {
   final bool active;
   final bool loading;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -967,6 +1205,14 @@ class _LayerButton extends StatelessWidget {
           : () {
         HapticFeedback.selectionClick();
         onTap();
+      },
+      onLongPress: loading
+          ? null
+          : () {
+        if (onLongPress != null) {
+          HapticFeedback.heavyImpact();
+          onLongPress!();
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -1068,12 +1314,12 @@ class _CaptureMomentButton extends StatelessWidget {
           await c.loadMapMoments(c.selectedScheduleId.value);
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
+            shape: BoxShape.circle,
             gradient: const LinearGradient(
               colors: [_kBrand, Color(0xFF34C3FF)],
             ),
-            borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
                 color: _kBrand.withValues(alpha: 0.4),
@@ -1082,21 +1328,7 @@ class _CaptureMomentButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add_a_photo_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'Capture & Post',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
+          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 24),
         ),
       ),
     );
@@ -1214,7 +1446,7 @@ class _TimelinePanel extends StatelessWidget {
     final moments = c.timelineMoments;
 
     return Container(
-      height: 250,
+      height: MediaQuery.of(context).size.height * 0.75,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.only(
@@ -1231,7 +1463,7 @@ class _TimelinePanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Tiêu đề và nút Tải xuống
+          // Tiêu đề
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
@@ -1254,12 +1486,6 @@ class _TimelinePanel extends StatelessWidget {
                 Row(
                   children: [
                     IconButton(
-                      tooltip: 'Download Timeline',
-                      icon: const Icon(Icons.download_rounded, color: _kBrand, size: 22),
-                      onPressed: c.downloadTimeline,
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 22),
                       onPressed: () => c.showTimeline.value = false,
                     ),
@@ -1270,7 +1496,7 @@ class _TimelinePanel extends StatelessWidget {
           ),
           const Divider(height: 1, color: Colors.black12),
 
-          // Danh sách Moment cuộn ngang
+          // Danh sách Moment cuộn dọc (cột ảnh)
           Expanded(
             child: moments.isEmpty
                 ? const Center(
@@ -1280,7 +1506,6 @@ class _TimelinePanel extends StatelessWidget {
                     ),
                   )
                 : ListView.builder(
-                    scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     itemCount: moments.length,
                     itemBuilder: (context, index) {
@@ -1288,19 +1513,9 @@ class _TimelinePanel extends StatelessWidget {
                       final timeStr = '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}';
                       final dateStr = '${m.createdAt.day}/${m.createdAt.month}';
 
-                      return Row(
-                        children: [
-                          GesturefulMomentCard(c: c, m: m, timeStr: timeStr, dateStr: dateStr),
-                          if (index < moments.length - 1)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.black26,
-                                size: 24,
-                              ),
-                            ),
-                        ],
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 24.0),
+                        child: GesturefulMomentCard(c: c, m: m, timeStr: timeStr, dateStr: dateStr),
                       );
                     },
                   ),
@@ -1335,13 +1550,14 @@ class GesturefulMomentCard extends StatelessWidget {
         }
       },
       child: Container(
-        width: 170,
+        width: double.infinity,
+        height: 380, // Chiều cao cố định để tạo thành cột ảnh lớn
         decoration: BoxDecoration(
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.black12),
         ),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1407,3 +1623,129 @@ class GesturefulMomentCard extends StatelessWidget {
     );
   }
 }
+
+class FogOfWarLayer extends StatelessWidget {
+  final List<LatLng> footprints;
+  const FogOfWarLayer({super.key, required this.footprints});
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = MapCamera.of(context);
+    return IgnorePointer(
+      child: CustomPaint(
+        size: Size(camera.size.x, camera.size.y),
+        painter: _FogOfWarPainter(camera, footprints),
+      ),
+    );
+  }
+}
+
+class _FogOfWarPainter extends CustomPainter {
+  final MapCamera camera;
+  final List<LatLng> footprints;
+
+  _FogOfWarPainter(this.camera, this.footprints);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.saveLayer(rect, Paint());
+    
+    // 1. Gen Z Aesthetic Holographic Gradient Fog
+    final fogPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xDD1E1B4B), // Deep Indigo
+          Color(0xDD4C1D95), // Vibrant Purple
+          Color(0xDD9D174D), // Deep Pink
+        ],
+      ).createShader(rect)
+      ..blendMode = BlendMode.srcOver;
+    canvas.drawRect(rect, fogPaint);
+
+    // 2. Playful Floating Icons (Sparser & Minimalist)
+    final bounds = camera.visibleBounds;
+    
+    // INCREASED STEP SIZES for a wider grid
+    double step = 0.025; 
+    if (camera.zoom < 10) step = 0.25;
+    if (camera.zoom < 13) step = 0.1;
+    if (camera.zoom > 16) step = 0.008;
+
+    final startLat = (bounds.south / step).floor() * step;
+    final endLat = (bounds.north / step).ceil() * step;
+    final startLng = (bounds.west / step).floor() * step;
+    final endLng = (bounds.east / step).ceil() * step;
+
+    final icons = ['☁️', '✨', '☁️', '🌙'];
+
+    for (double lat = startLat; lat <= endLat; lat += step) {
+      for (double lng = startLng; lng <= endLng; lng += step) {
+        int hash = (lat * 10000).toInt() ^ (lng * 10000).toInt();
+        
+        // STRICTER FILTER: Only show an icon roughly 1 out of every 6 points
+        if (hash % 6 != 0) continue;
+
+        String icon = icons[hash.abs() % icons.length];
+        
+        double latOffset = ((hash % 100) - 50) / 100 * (step * 0.5);
+        double lngOffset = (((hash ~/ 100) % 100) - 50) / 100 * (step * 0.5);
+
+        final targetPoint = LatLng(lat + latOffset, lng + lngOffset);
+        final pos = camera.project(targetPoint);
+        
+        final dx = pos.x - camera.pixelOrigin.x;
+        final dy = pos.y - camera.pixelOrigin.y;
+
+        final span = TextSpan(
+          text: icon,
+          style: TextStyle(
+            fontSize: (hash % 2 == 0) ? 24 : 16, // Slightly reduced max size
+            color: Colors.white.withValues(alpha: 0.5), // Softer opacity
+          ),
+        );
+        final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+        tp.layout();
+        
+        tp.paint(canvas, Offset(dx - tp.width / 2, dy - tp.height / 2));
+      }
+    }
+
+    // 3. The Neon Glow Aura Paint (Vibrant Cyan)
+    final glowPaint = Paint()
+      ..color = const Color(0xFF00E5FF).withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 25
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+
+    // 4. The Soft Eraser Paint
+    final erasePaint = Paint()
+      ..blendMode = BlendMode.dstOut
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+
+    for (final fp in footprints) {
+      final pos = camera.project(fp);
+      final offset = Offset(pos.x - camera.pixelOrigin.x, pos.y - camera.pixelOrigin.y);
+
+      if (offset.dx < -100 || offset.dx > size.width + 100 ||
+          offset.dy < -100 || offset.dy > size.height + 100) {
+        continue;
+      }
+      
+      canvas.drawCircle(offset, 45, glowPaint);
+      canvas.drawCircle(offset, 45, erasePaint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _FogOfWarPainter oldDelegate) {
+    return oldDelegate.camera.zoom != camera.zoom ||
+        oldDelegate.camera.center != camera.center ||
+        oldDelegate.footprints != footprints;
+  }
+}
+

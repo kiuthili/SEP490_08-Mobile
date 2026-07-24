@@ -10,9 +10,12 @@ class TourModel {
   final String? city;
   final String? address;
   final String? imageUrl;
+  final List<String> tourImages;
   final String? status;
   final double? averageStar;
-  final int? startingPrice;
+  final int? startingPrice;   // effective price (after discount)
+  final int? originalPrice;   // raw price before discount (null if no discount)
+  final double? discountPercentage; // percentage discount if applicable
   final DateTime? nextDeparture;
 
   TourModel({
@@ -24,9 +27,12 @@ class TourModel {
     this.city,
     this.address,
     this.imageUrl,
+    this.tourImages = const [],
     this.status,
     this.averageStar,
     this.startingPrice,
+    this.originalPrice,
+    this.discountPercentage,
     this.nextDeparture,
   });
 
@@ -37,6 +43,8 @@ class TourModel {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     int? startingPrice;
+    int? originalPrice;
+    double? discountPercentage;
     DateTime? nextDeparture;
 
     for (final schedule in schedules) {
@@ -66,17 +74,41 @@ class TourModel {
         if (!isActive || available <= 0) continue;
 
         hasAvailableTicket = true;
-        final price = JsonUtils.readInt(
-          JsonUtils.pick(ticket, ['price', 'Price']),
-        );
-        if (startingPrice == null || price < startingPrice) {
-          startingPrice = price;
+        final ticketModel = ScheduleTicketModel.fromJson(ticket);
+        final effective = ticketModel.effectivePrice;
+        final raw = ticketModel.price;
+        if (startingPrice == null || effective < startingPrice) {
+          startingPrice = effective;
+          // track raw price only if there's a real discount
+          if (effective < raw) {
+            originalPrice = raw;
+            final promo = ticketModel.promotion;
+            if (promo != null && promo.status == 'Active' && promo.discountType.toLowerCase() == 'percentage') {
+              discountPercentage = promo.discountValue;
+            } else {
+              discountPercentage = null;
+            }
+          } else {
+            originalPrice = null;
+            discountPercentage = null;
+          }
         }
       }
 
       if (hasAvailableTicket &&
           (nextDeparture == null || departure.isBefore(nextDeparture))) {
         nextDeparture = departure;
+      }
+    }
+
+    final List<String> extractedImages = [];
+    final imagesList = JsonUtils.pick(json, ['tourImages', 'TourImages']);
+    if (imagesList is List) {
+      for (final img in imagesList) {
+        final url = img['imageUrl']?.toString();
+        if (url != null && url.isNotEmpty) {
+          extractedImages.add(url);
+        }
       }
     }
 
@@ -89,9 +121,12 @@ class TourModel {
       city: json['city'] as String?,
       address: json['address'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      tourImages: extractedImages,
       status: json['status'] as String?,
       averageStar: (json['averageStar'] as num?)?.toDouble(),
       startingPrice: startingPrice,
+      originalPrice: originalPrice,
+      discountPercentage: discountPercentage,
       nextDeparture: nextDeparture,
     );
   }
@@ -243,6 +278,7 @@ class ScheduleTicketModel {
   final int quantity;
   final int availableQuantity;
   final bool? isActive;
+  final PromotionModel? promotion;
 
   ScheduleTicketModel({
     required this.id,
@@ -252,7 +288,36 @@ class ScheduleTicketModel {
     required this.quantity,
     required this.availableQuantity,
     this.isActive,
+    this.promotion,
   });
+
+  int get effectivePrice {
+    if (promotion == null || promotion!.status != "Active") {
+      return price;
+    }
+
+    final now = DateTime.now();
+    if (now.isBefore(promotion!.startDate) || now.isAfter(promotion!.endDate)) {
+      return price;
+    }
+
+    if (promotion!.discountValue <= 0) {
+      return price;
+    }
+
+    double discountAmount = 0;
+    if (promotion!.discountType.toLowerCase() == "percentage") {
+      discountAmount = price * (promotion!.discountValue / 100);
+      if (promotion!.maxDiscountAmount != null && discountAmount > promotion!.maxDiscountAmount!) {
+        discountAmount = promotion!.maxDiscountAmount!;
+      }
+    } else {
+      discountAmount = promotion!.discountValue;
+    }
+
+    final finalPrice = price - discountAmount.toInt();
+    return finalPrice > 0 ? finalPrice : 0;
+  }
 
   factory ScheduleTicketModel.fromJson(Map<String, dynamic> json) {
     return ScheduleTicketModel(
@@ -265,6 +330,54 @@ class ScheduleTicketModel {
         JsonUtils.pick(json, ['availableQuantity', 'AvailableQuantity']),
       ),
       isActive: JsonUtils.readBool(json['isActive']),
+      promotion: () {
+        final p = JsonUtils.pick(json, ['promotion', 'Promotion']);
+        if (p is Map<String, dynamic>) {
+          return PromotionModel.fromJson(p);
+        }
+        return null;
+      }(),
+    );
+  }
+}
+
+class PromotionModel {
+  final int id;
+  final String code;
+  final String name;
+  final String? description;
+  final String discountType;
+  final double discountValue;
+  final double? maxDiscountAmount;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String status;
+
+  PromotionModel({
+    required this.id,
+    required this.code,
+    required this.name,
+    this.description,
+    required this.discountType,
+    required this.discountValue,
+    this.maxDiscountAmount,
+    required this.startDate,
+    required this.endDate,
+    required this.status,
+  });
+
+  factory PromotionModel.fromJson(Map<String, dynamic> json) {
+    return PromotionModel(
+      id: JsonUtils.readInt(JsonUtils.pick(json, ['id', 'Id'])),
+      code: JsonUtils.readString(JsonUtils.pick(json, ['code', 'Code'])) ?? '',
+      name: JsonUtils.readString(JsonUtils.pick(json, ['name', 'Name'])) ?? '',
+      description: JsonUtils.readString(JsonUtils.pick(json, ['description', 'Description'])),
+      discountType: JsonUtils.readString(JsonUtils.pick(json, ['discountType', 'DiscountType'])) ?? '',
+      discountValue: JsonUtils.readDouble(JsonUtils.pick(json, ['discountValue', 'DiscountValue'])) ?? 0,
+      maxDiscountAmount: JsonUtils.readDouble(JsonUtils.pick(json, ['maxDiscountAmount', 'MaxDiscountAmount'])),
+      startDate: JsonUtils.readDateTime(JsonUtils.pick(json, ['startDate', 'StartDate'])) ?? DateTime.now(),
+      endDate: JsonUtils.readDateTime(JsonUtils.pick(json, ['endDate', 'EndDate'])) ?? DateTime.now(),
+      status: JsonUtils.readString(JsonUtils.pick(json, ['status', 'Status'])) ?? '',
     );
   }
 }

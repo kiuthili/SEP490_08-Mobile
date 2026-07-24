@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/feature_controllers.dart';
-import '../../controllers/social_controller.dart';
 import '../../controllers/staff_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../routes/app_routes.dart';
@@ -13,8 +12,9 @@ import '../../widgets/empty_state_widget.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/loading_widget.dart';
 
-const _kTicketsTabIndex = 2;
+const _kTicketsTabIndex = 1;
 const _kCustomersTabIndex = 3;
+const _kCheckInTabIndex = 2;
 
 class StaffSchedulesTab extends GetView<StaffController> {
   const StaffSchedulesTab({super.key});
@@ -224,11 +224,11 @@ class _ScheduleCard extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       decoration: BoxDecoration(
-        color: selected ? AppColors.brandLight : AppColors.surface,
+        color: selected ? AppColors.brandLight.withValues(alpha: 0.3) : AppColors.surface,
         borderRadius: AppRadius.card,
         border: Border.all(
           color: selected ? AppColors.brand : AppColors.border,
-          width: selected ? 1.5 : 0.5,
+          width: selected ? 1.5 : 1.0,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -275,73 +275,60 @@ class _ScheduleCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          if (schedule.assignedRole != null) ...[
-                            const SizedBox(height: 6),
-                            _RoleBadge(role: schedule.assignedRole!),
-                          ],
+
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Selected indicator
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          selected
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: selected
-                              ? AppColors.brand
-                              : AppColors.border,
-                          size: 22,
-                        ),
-                        if (!selected) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            'Chọn',
-                            style: AppTextStyles.textTheme.labelSmall
-                                ?.copyWith(
-                                color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ],
-                    ),
+                    if (selected) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.check_circle_rounded, color: AppColors.brand, size: 24),
+                    ]
                   ],
                 ),
               ),
 
-              // ── Action buttons (chỉ hiện khi selected) ───
-              if (selected) ...[
-                Divider(
-                  height: 1,
-                  color: AppColors.brand.withValues(alpha: 0.2),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.confirmation_number_rounded,
-                          label: 'Xem vé',
-                          onTap: () => Get.find<ShellController>()
-                              .changeTab(_kTicketsTabIndex),
-                        ),
+              // ── Action buttons ───
+              Divider(
+                height: 1,
+                color: AppColors.border,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.qr_code_scanner_rounded,
+                        isPrimary: true,
+                        onTap: () {
+                           Get.find<StaffController>().selectSchedule(schedule.scheduleId);
+                           Get.find<ShellController>().changeTab(_kCheckInTabIndex);
+                        },
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.people_alt_rounded,
-                          label: 'Xem khách',
-                          onTap: () => Get.find<ShellController>()
-                              .changeTab(_kCustomersTabIndex),
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.confirmation_number_rounded,
+                        onTap: () {
+                           Get.find<StaffController>().selectSchedule(schedule.scheduleId);
+                           Get.find<ShellController>().changeTab(_kTicketsTabIndex);
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.people_alt_rounded,
+                        onTap: () {
+                           Get.find<StaffController>().selectSchedule(schedule.scheduleId);
+                           Get.find<ShellController>().changeTab(_kCustomersTabIndex);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -355,13 +342,13 @@ class _ScheduleCard extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon,
-    required this.label,
     required this.onTap,
+    this.isPrimary = false,
   });
 
   final IconData icon;
-  final String label;
   final VoidCallback onTap;
+  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -373,24 +360,16 @@ class _ActionButton extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.brand.withValues(alpha: 0.08),
+            color: isPrimary ? AppColors.brand : AppColors.brand.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
-              color: AppColors.brand.withValues(alpha: 0.2),
+              color: isPrimary ? AppColors.brand : AppColors.brand.withValues(alpha: 0.2),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: AppColors.brand),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppTextStyles.textTheme.labelMedium?.copyWith(
-                  color: AppColors.brand,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Icon(icon, size: 20, color: isPrimary ? Colors.white : AppColors.brand),
             ],
           ),
         ),
@@ -430,38 +409,4 @@ class _TourThumbnail extends StatelessWidget {
     ),
   );
 }
-
-// ── Role badge ────────────────────────────────────────────────────────────────
-
-class _RoleBadge extends StatelessWidget {
-  const _RoleBadge({required this.role});
-  final String role;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.brand.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.brand.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.badge_rounded, size: 12, color: AppColors.brand),
-          const SizedBox(width: 4),
-          Text(
-            role,
-            style: AppTextStyles.textTheme.labelSmall?.copyWith(
-              color: AppColors.brand,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+

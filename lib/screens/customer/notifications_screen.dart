@@ -104,27 +104,33 @@ class NotificationsScreen extends GetView<NotificationController> {
                   ),
                 ),
               ),
-              // Badge số lượng chưa đọc — thay cho SizedBox(width: 48) cố định trước đây
+              // Badge số lượng chưa đọc kết hợp icon chuông
               SizedBox(
                 width: 48,
                 child: Obx(() {
                   final count = controller.unreadCount;
-                  if (count == 0) return const SizedBox.shrink();
-
                   return Align(
                     alignment: Alignment.centerRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        count > 99 ? '99+' : '$count',
-                        style: const TextStyle(
+                    child: Badge(
+                      label: Text(count > 99 ? '99+' : '$count'),
+                      isLabelVisible: count > 0,
+                      backgroundColor: AppColors.error,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      largeSize: 18,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          count > 0
+                              ? Icons.notifications_active_rounded
+                              : Icons.notifications_none_rounded,
                           color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          size: 20,
                         ),
                       ),
                     ),

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
@@ -23,6 +21,34 @@ class AuthService extends GetxService with BaseServiceMixin {
       );
       return _handleAuthResponse(response.data as Map<String, dynamic>);
     });
+  }
+
+  Future<ForgotPasswordResult> sendRegisterOtp({
+    required String email,
+    required String fullName,
+  }) async {
+    try {
+      final response = await request(() async {
+        return await api.dio.post(
+          '${ApiConstants.auth}/send-register-otp',
+          data: {
+            'email': email.trim(),
+            'fullName': fullName.trim(),
+          },
+        );
+      });
+      final map = response.data as Map<String, dynamic>?;
+      final msg = map?['message'] as String?;
+      return ForgotPasswordResult(message: msg);
+    } on ApiError catch (e) {
+      if (e.statusCode == 429) {
+        return ForgotPasswordResult(
+          retryAfterSeconds: e.retryAfterSeconds ?? 60,
+          message: e.message,
+        );
+      }
+      rethrow;
+    }
   }
 
   Future<UserModel> register(RegisterRequest payload) async {
@@ -53,29 +79,43 @@ class AuthService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<LoginResponse> googleLogin() async {
+  Future<LoginResponse> googleLogin({
+    String? idToken,
+    String? phoneNumber,
+  }) async {
     try {
-      final googleSignIn = GoogleSignIn(
-        serverClientId: ApiConstants.googleClientId,
-        scopes: const ['email', 'profile'],
-      );
+      String? tokenToSend = idToken;
+      if (tokenToSend == null || tokenToSend.isEmpty) {
+        final googleSignIn = GoogleSignIn(
+          serverClientId: ApiConstants.googleClientId,
+          scopes: const ['email', 'profile'],
+        );
 
-      final account = await googleSignIn.signIn();
-      if (account == null) {
-        throw ApiError(message: 'Đăng nhập Google đã bị hủy');
-      }
-      final auth = await account.authentication;
-      final idToken = auth.idToken;
-      if (idToken == null || idToken.isEmpty) {
-        throw ApiError(message: 'Không lấy được Google ID token');
+        final account = await googleSignIn.signIn();
+        if (account == null) {
+          throw ApiError(message: 'Đăng nhập Google đã bị hủy');
+        }
+        final auth = await account.authentication;
+        tokenToSend = auth.idToken;
+        if (tokenToSend == null || tokenToSend.isEmpty) {
+          throw ApiError(message: 'Không lấy được Google ID token');
+        }
       }
 
+      final finalToken = tokenToSend;
       return request(() async {
         final response = await api.dio.post(
           '${ApiConstants.auth}/google-login',
-          data: {'idToken': idToken},
+          data: {
+            'idToken': finalToken,
+            if (phoneNumber != null && phoneNumber.isNotEmpty)
+              'phoneNumber': phoneNumber,
+          },
         );
-        return _handleAuthResponse(response.data as Map<String, dynamic>);
+        return _handleAuthResponse(
+          response.data as Map<String, dynamic>,
+          finalToken,
+        );
       });
     } on PlatformException catch (e) {
       throw ApiError(
@@ -168,26 +208,55 @@ class AuthService extends GetxService with BaseServiceMixin {
 
   Future<ForgotPasswordResult> forgotPassword(String email) async {
     try {
-      await request(() async {
-        await api.dio.post(
+      final response = await request(() async {
+        return await api.dio.post(
           '${ApiConstants.auth}/forgot-password',
           data: {'email': email.trim()},
         );
       });
-      return const ForgotPasswordResult();
+      final map = response.data as Map<String, dynamic>?;
+      final msg = map?['message'] as String?;
+      return ForgotPasswordResult(message: msg);
     } on ApiError catch (e) {
       if (e.statusCode == 429) {
         return ForgotPasswordResult(
           retryAfterSeconds: e.retryAfterSeconds ?? 60,
+          message: e.message,
         );
       }
       rethrow;
     }
   }
 
-  Future<void> resetPassword({
+  Future<String> verifyResetOtp({
     required String email,
     required String code,
+  }) async {
+    return request(() async {
+      final response = await api.dio.post(
+        '${ApiConstants.auth}/verify-reset-otp',
+        data: {
+          'email': email.trim(),
+          'code': code.trim(),
+        },
+      );
+      final map = response.data as Map<String, dynamic>;
+      final data = map['data'] as Map<String, dynamic>?;
+      final token = data?['resetToken'] as String?;
+      if (token == null || token.isEmpty) {
+        throw ApiError(
+          message: map['message'] as String? ??
+              'Mã xác nhận OTP không chính xác hoặc đã hết hạn.',
+        );
+      }
+      return token;
+    });
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    String? code,
+    String? resetToken,
     required String newPassword,
   }) async {
     await request(() async {
@@ -195,7 +264,9 @@ class AuthService extends GetxService with BaseServiceMixin {
         '${ApiConstants.auth}/reset-password',
         data: {
           'email': email,
-          'code': code,
+          if (code != null && code.isNotEmpty) 'code': code,
+          if (resetToken != null && resetToken.isNotEmpty)
+            'resetToken': resetToken,
           'newPassword': newPassword,
         },
       );
@@ -215,12 +286,24 @@ class AuthService extends GetxService with BaseServiceMixin {
     await _storage.clearSession();
   }
 
-  Future<LoginResponse> _handleAuthResponse(Map<String, dynamic> map) async {
+  Future<LoginResponse> _handleAuthResponse(
+    Map<String, dynamic> map, [
+    String? googleIdToken,
+  ]) async {
     final data = map['data'];
     if (data is! Map<String, dynamic>) {
       throw ApiError(message: 'Phản hồi đăng nhập không hợp lệ');
     }
     final loginResponse = LoginResponse.fromJson(data);
+    if (loginResponse.requirePhoneNumber) {
+      return LoginResponse(
+        user: loginResponse.user,
+        token: '',
+        refreshToken: '',
+        requirePhoneNumber: true,
+        idToken: googleIdToken,
+      );
+    }
     final user = _withRoles(loginResponse.user, loginResponse.token);
     if (!user.isCustomer && !user.isStaff) {
       await _revokeRejectedSession(loginResponse.refreshToken);
@@ -239,6 +322,7 @@ class AuthService extends GetxService with BaseServiceMixin {
       user: user,
       token: loginResponse.token,
       refreshToken: loginResponse.refreshToken,
+      requirePhoneNumber: false,
     );
   }
 

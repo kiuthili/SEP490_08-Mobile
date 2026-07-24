@@ -4,12 +4,13 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:get/get.dart' hide Response;
 import '../constants/api_constants.dart';
+import '../controllers/auth_controller.dart';
 import '../models/api_response.dart';
-import '../routes/app_routes.dart';
 import 'storage_service.dart';
 
 class ApiClient {
   late final Dio dio;
+  late final Dio _refreshDio;
   final StorageService _storage = Get.find<StorageService>();
   bool _isRefreshing = false;
 
@@ -22,10 +23,24 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-Tunnel-Skip-AntiPhishing-Page': 'true',
         },
       ),
     );
-    _configureLocalDevCertificates();
+    _refreshDio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Tunnel-Skip-AntiPhishing-Page': 'true',
+        },
+      ),
+    );
+    _configureLocalDevCertificates(dio);
+    _configureLocalDevCertificates(_refreshDio);
 
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -64,8 +79,7 @@ class ApiClient {
                 _isRefreshing = false;
               }
             }
-            await _storage.clearSession();
-            Get.offAllNamed(AppRoutes.login);
+            await _handleSessionExpiredCleanly();
           }
           handler.next(currentError);
         },
@@ -152,8 +166,8 @@ class ApiClient {
     return target;
   }
 
-  void _configureLocalDevCertificates() {
-    dio.httpClientAdapter = IOHttpClientAdapter(
+  void _configureLocalDevCertificates(Dio targetDio) {
+    targetDio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () {
         return HttpClient()
           ..badCertificateCallback = (_, host, port) {
@@ -187,7 +201,7 @@ class ApiClient {
     final refresh = _storage.refreshToken;
     if (refresh == null) return false;
 
-    final response = await dio.post(
+    final response = await _refreshDio.post(
       '${ApiConstants.auth}/refresh-token',
       data: {'refreshToken': refresh},
     );
@@ -201,6 +215,14 @@ class ApiClient {
       refreshToken: inner['refreshToken'] as String,
     );
     return true;
+  }
+
+  Future<void> _handleSessionExpiredCleanly() async {
+    if (Get.isRegistered<AuthController>()) {
+      await Get.find<AuthController>().handleSessionExpiredCleanly();
+    } else {
+      await _storage.clearSession();
+    }
   }
 
   Future<T> get<T>(
@@ -265,6 +287,14 @@ class ApiClient {
   ApiError parseError(DioException e) {
     final status = e.response?.statusCode;
     final data = e.response?.data;
+
+    if (status == 401) {
+      return ApiError(
+        message: ApiError.silent401Message,
+        statusCode: 401,
+        isSilent: true,
+      );
+    }
 
     if (data is String &&
         (data.contains('405 Not Allowed') || data.contains('nginx'))) {

@@ -144,6 +144,8 @@ class _VouchersScreenState extends State<VouchersScreen> {
                     [
                       statusLabel,
                       'Còn ${v.quantity} lượt',
+                      if (v.minOrderAmount != null && v.minOrderAmount! > 0)
+                        'Đơn tối thiểu ${CurrencyFormatter.format(v.minOrderAmount!)}',
                       if (v.tourName != null && v.tourName!.isNotEmpty)
                         v.tourName!,
                       if (v.endDate != null)

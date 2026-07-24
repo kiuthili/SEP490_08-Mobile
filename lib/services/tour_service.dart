@@ -28,6 +28,23 @@ class TourService extends GetxService with BaseServiceMixin {
       return parsePagination(response.data, TourModel.fromJson);
     });
   }
+  Future<List<String>> getSearchSuggestions(String searchTerm, {int pageSize = 5}) async {
+    if (searchTerm.trim().isEmpty) return [];
+    try {
+      final response = await api.dio.get(
+        '${ApiConstants.tours}/search',
+        queryParameters: {
+          'searchTerm': searchTerm,
+          'pageSize': pageSize,
+          'page': 1,
+        },
+      );
+      final pagination = parsePagination(response.data, TourModel.fromJson);
+      return pagination.data.map((t) => t.name).toList();
+    } catch (_) {
+      return [];
+    }
+  }
 
   Future<PaginationModel<TourModel>> searchTours({
     int page = 1,
@@ -129,6 +146,47 @@ class TourService extends GetxService with BaseServiceMixin {
       final response =
           await api.dio.get('${ApiConstants.tourSchedules}/assigned');
       return parseList(response.data, AssignedScheduleModel.fromJson);
+    });
+  }
+
+  Future<PaginationModel<TourModel>> getHotTours({int page = 1, int pageSize = 10}) async {
+    return request(() async {
+      final response = await api.dio.get(
+        '${ApiConstants.tours}/hot',
+        queryParameters: {'page': page, 'pageSize': pageSize},
+      );
+      return parsePagination(response.data, TourModel.fromJson);
+    });
+  }
+
+  Future<PaginationModel<TourModel>> getSaleTours({int page = 1, int pageSize = 10}) async {
+    return request(() async {
+      final response = await api.dio.get(
+        '${ApiConstants.tours}/sale',
+        queryParameters: {'page': page, 'pageSize': pageSize},
+      );
+      return parsePagination(response.data, TourModel.fromJson);
+    });
+  }
+
+  Future<PaginationModel<TourModel>> getUpcomingTours({int page = 1, int pageSize = 10}) async {
+    return request(() async {
+      final response = await api.dio.get(
+        '${ApiConstants.tours}/upcoming',
+        queryParameters: {'page': page, 'pageSize': pageSize},
+      );
+      return parsePagination(response.data, TourModel.fromJson);
+    });
+  }
+
+  Future<List<TourModel>> getToursByRegion(String region, {int pageSize = 12}) async {
+    return request(() async {
+      final response = await api.dio.get(
+        '${ApiConstants.tours}/public/region/$region',
+        queryParameters: {'page': 1, 'pageSize': pageSize},
+      );
+      final pagination = parsePagination(response.data, TourModel.fromJson);
+      return pagination.data;
     });
   }
 }

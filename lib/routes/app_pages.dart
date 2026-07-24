@@ -6,7 +6,11 @@ import '../controllers/tour_controller.dart';
 import '../screens/auth/profile_auth_screens.dart';
 import '../screens/customer/ai_questionnaire_screen.dart';
 import '../screens/customer/ai_recommendations_screen.dart';
+import '../screens/customer/search_suggestion_screen.dart';
+import '../screens/customer/search_result_screen.dart';
+import '../screens/customer/section_tours_screen.dart';
 import '../screens/customer/public_tracking_screen.dart';
+import '../screens/legal/booking_terms_screen.dart';
 import '../screens/legal/privacy_screen.dart';
 import '../screens/legal/terms_screen.dart';
 import '../screens/customer/booking_screen.dart';
@@ -30,6 +34,7 @@ import '../screens/staff/qr_scan_screen.dart';
 import '../screens/tour_detail_screen.dart';
 import '../controllers/user_study_controller.dart';
 import '../screens/customer/user_study_screen.dart';
+import '../screens/customer/footprint_screen.dart';
 import 'app_routes.dart';
 import '../utils/auth_gate.dart';
 
@@ -244,6 +249,10 @@ class AppPages {
     GetPage(name: AppRoutes.terms, page: () => const TermsScreen()),
     GetPage(name: AppRoutes.privacy, page: () => const PrivacyScreen()),
     GetPage(
+      name: AppRoutes.bookingTerms,
+      page: () => const BookingTermsScreen(),
+    ),
+    GetPage(
       name: AppRoutes.publicTrack,
       page: () => const PublicTrackingScreen(),
     ),
@@ -261,6 +270,23 @@ class AppPages {
       name: AppRoutes.profile,
       page: () => const MainShellScreen(),
       binding: MainShellBinding(initialTab: 4),
+      middlewares: _protected,
+    ),
+    GetPage(
+      name: AppRoutes.tourSearch,
+      page: () => const SearchSuggestionScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.searchResult,
+      page: () => const SearchResultScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.sectionTours,
+      page: () => const SectionToursScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.footprint,
+      page: () => const FootprintScreen(),
       middlewares: _protected,
     ),
   ];

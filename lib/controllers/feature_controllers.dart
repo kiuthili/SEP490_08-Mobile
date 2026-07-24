@@ -843,7 +843,7 @@ class BookingController extends GetxController {
     var total = 0;
     for (final t in tickets) {
       final q = ticketQuantities[t.id] ?? 0;
-      total += t.price * q;
+      total += t.effectivePrice * q;
     }
     return total;
   }
@@ -964,7 +964,7 @@ class BookingController extends GetxController {
           BookingPassengerInput(
             tourScheduleTicketId: t.id,
             ticketTypeId: t.ticketTypeId,
-            unitPrice: t.price,
+            unitPrice: t.effectivePrice,
             ticketLabel: ticketTypeName(t.ticketTypeId),
           ),
         );
@@ -1032,7 +1032,7 @@ class BookingController extends GetxController {
       orderDetails.add({
         'tourScheduleTicketId': ticket.id,
         'ticketTypeId': ticket.ticketTypeId,
-        'unitPrice': ticket.price,
+        'unitPrice': ticket.effectivePrice,
         'tickets': entry.value
             .map(
               (p) => {

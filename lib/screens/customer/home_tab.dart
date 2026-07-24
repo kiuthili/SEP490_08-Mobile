@@ -1,26 +1,24 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import '../../controllers/feature_controllers.dart';
-import '../../controllers/shell_controller.dart';
-import '../../controllers/tour_controller.dart';
+import '../../controllers/home_controller.dart';
 import '../../models/tour_model.dart';
 import '../../routes/app_routes.dart';
 import '../../services/catalog_service.dart';
-import '../../services/storage_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
-import '../../theme/shell_layout.dart';
-import '../../utils/currency_formatter.dart';
-import '../../widgets/empty_state_widget.dart';
-import '../../widgets/loading_widget.dart';
-import '../../widgets/scroll_to_top_button.dart';
-import '../../widgets/section_header.dart';
-import '../../widgets/tour_card.dart';
 import '../../utils/auth_gate.dart';
+import '../../utils/currency_formatter.dart';
 
+// ─────────────────────────────────────────────────────────────
+// Home Tab root
+// ─────────────────────────────────────────────────────────────
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
@@ -28,89 +26,33 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _TripType {
-  const _TripType(this.label, this.searchTerm, this.icon, this.color);
-  final String label;
-  final String searchTerm;
-  final IconData icon;
-  final Color color;
-}
-
 class _HomeTabState extends State<HomeTab> {
-  final _controller = Get.find<TourController>();
+  late final HomeController _home;
   final _wishlistController = Get.find<WishlistController>();
   final _notificationController = Get.find<NotificationController>();
-  final _socialController = Get.find<SocialController>();
   final _scrollController = ScrollController();
-  List<BannerModel> _banners = [];
-  bool _showScrollToTop = false;
 
-  static const _tripTypes = [
-    _TripType(
-      'Biển đảo',
-      'Beach',
-      Icons.beach_access_rounded,
-      Color(0xFF0EA5E9),
-    ),
-    _TripType(
-      'Núi rừng',
-      'Mountain',
-      Icons.terrain_rounded,
-      Color(0xFF16A34A),
-    ),
-    _TripType(
-      'Văn hóa',
-      'Culture',
-      Icons.temple_buddhist_rounded,
-      Color(0xFFEB662B),
-    ),
-    _TripType(
-      'Trong ngày',
-      'Day Tour',
-      Icons.wb_sunny_rounded,
-      Color(0xFFF59E0B),
-    ),
-    _TripType(
-      'Ẩm thực',
-      'Food',
-      Icons.restaurant_rounded,
-      Color(0xFFE11D48),
-    ),
-    _TripType(
-      'Phiêu lưu',
-      'Adventure',
-      Icons.hiking_rounded,
-      Color(0xFF7C3AED),
-    ),
-  ];
+  List<BannerModel> _banners = [];
+
+  // Language popup state
+  String _selectedLang = 'vi';
 
   @override
   void initState() {
     super.initState();
+    // Lazily put HomeController if not already registered
+    if (!Get.isRegistered<HomeController>()) {
+      Get.put(HomeController());
+    }
+    _home = Get.find<HomeController>();
+
     Get.find<CatalogService>().getBanners().then((list) {
       if (mounted) setState(() => _banners = list);
     });
-    _scrollController.addListener(_onScroll);
-  }
 
-  void _onScroll() {
-    final showScrollToTop = _scrollController.offset > 520;
-    if (showScrollToTop != _showScrollToTop && mounted) {
-      setState(() => _showScrollToTop = showScrollToTop);
-    }
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 280 &&
-        !_controller.isLoadingMore.value) {
-      _controller.loadMore();
-    }
-  }
-
-  Future<void> _scrollToTop() {
-    return _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 620),
-      curve: Curves.easeOutCubic,
-    );
+    _scrollController.addListener(() {
+      // no-op, reserved for future use
+    });
   }
 
   @override
@@ -119,320 +61,225 @@ class _HomeTabState extends State<HomeTab> {
     super.dispose();
   }
 
-  void _openExplore({String? searchTerm, bool openFilters = false}) =>
-      Get.find<ShellController>().openExplore(
-        searchTerm: searchTerm,
-        openFilters: openFilters,
-      );
+  void _openTour(int id) => Get.toNamed(AppRoutes.tourDetail, arguments: id);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  void _showLanguagePopup() {
+    showModalBottomSheet(
+      context: context,
       backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          DecoratedBox(
-            decoration: const BoxDecoration(gradient: AppColors.pageGradient),
-            child: RefreshIndicator(
-              onRefresh: () => _controller.fetchTours(refresh: true),
-              child: Obx(() {
-                final tours = _controller.tours;
-                final loadingFirst =
-                    _controller.isLoading.value && tours.isEmpty;
-                return CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader()),
-                    SliverToBoxAdapter(child: _buildCategoryStrip()),
-                    if (_banners.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: _BannerCarousel(banners: _banners),
-                        ),
-                      ),
-                    if (loadingFirst)
-                      const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: LoadingWidget(message: 'Đang tải tour...'),
-                      )
-                    else if (tours.isEmpty)
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: EmptyStateWidget(
-                          title: 'Chưa có tour nào',
-                          subtitle: 'Kéo xuống để tải lại',
-                          onRetry: () => _controller.fetchTours(refresh: true),
-                        ),
-                      )
-                    else ...[
-                      SliverToBoxAdapter(
-                        child: SectionHeader(
-                          title: 'Tour nổi bật',
-                          subtitle: 'Những hành trình đang được yêu thích nhất',
-                          actionLabel: 'Xem tất cả',
-                          onAction: _openExplore,
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                        ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: _FeaturedRow(
-                          tours: tours.take(6).toList(),
-                          onTap: _openTour,
-                        ),
-                      ),
-                      const SliverToBoxAdapter(
-                        child: SectionHeader(
-                          title: 'Hành trình dành cho bạn',
-                          subtitle: 'Chọn một chuyến đi và bắt đầu khám phá',
-                          padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          0,
-                          16,
-                          ShellLayout.bottomInset(context),
-                        ),
-                        sliver: SliverList.separated(
-                          itemCount: tours.length +
-                              (_controller.isLoadingMore.value ? 1 : 0),
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 14),
-                          itemBuilder: (context, index) {
-                            if (index >= tours.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child:
-                                    Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            final tour = tours[index];
-                            final inWishlist = _wishlistController.containsTour(
-                              tour.id,
-                            );
-                            return TourCard(
-                              tour: tour,
-                              isInWishlist: inWishlist,
-                              wishlistBusy: _wishlistController.isProcessing(
-                                tour.id,
-                              ),
-                              onWishlistTap: () =>
-                                  _wishlistController.toggleWishlist(
-                                tour.id,
-                                isInWishlist: inWishlist,
-                              ),
-                              onTap: () => _openTour(tour.id),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ],
-                );
-              }),
-            ),
-          ),
-          ScrollToTopButton(
-            visible: _showScrollToTop,
-            onTap: _scrollToTop,
-          ),
-        ],
+      builder: (_) => _LanguageBottomSheet(
+        selected: _selectedLang,
+        onSelect: (lang) {
+          setState(() => _selectedLang = lang);
+          Navigator.pop(context);
+        },
       ),
     );
   }
 
-  void _openTour(int id) => Get.toNamed(AppRoutes.tourDetail, arguments: id);
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
 
-  Widget _buildHeader() {
-    final user = Get.find<StorageService>().user;
-    final name = user?.fullName ?? 'Khách';
-    final topInset = MediaQuery.paddingOf(context).top;
-    return Container(
-      margin: EdgeInsets.fromLTRB(16, topInset + 10, 16, 4),
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-      decoration: BoxDecoration(
-        gradient: AppColors.homeHeroGradient,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brand.withValues(alpha: 0.26),
-            blurRadius: 30,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Stack(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Stack(
         children: [
-          Positioned(
-            right: -34,
-            top: -44,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
+          // ── Scrollable content ──
+          RefreshIndicator(
+            onRefresh: _home.refresh,
+            color: AppColors.brand,
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Space below fixed header — no extra gap so hero connects seamlessly
+                SliverToBoxAdapter(
+                  child: SizedBox(height: topPadding + _kHeaderHeight),
+                ),
+
+                // ── Hero section ──
+                SliverToBoxAdapter(
+                  child: _HeroSection(onSearchTap: () => Get.toNamed(AppRoutes.tourSearch)),
+                ),
+
+                // Banner carousel
+                if (_banners.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _BannerCarousel(banners: _banners),
+                  ),
+
+                // ── Tour Hot section ──
+                SliverToBoxAdapter(
+                  child: Obx(() => _HomeSectionRow(
+                        title: 'Tour nổi bật',
+                        onViewAll: () => Get.toNamed(
+                          AppRoutes.sectionTours,
+                          arguments: {'title': 'Tour nổi bật', 'type': 'hot'},
+                        ),
+                        isLoading: _home.isLoadingHot.value,
+                        tours: _home.hotTours,
+                        badgeLabel: 'Nổi bật',
+                        badgeColor: AppColors.accent,
+                        onTap: _openTour,
+                        wishlistController: _wishlistController,
+                      )),
+                ),
+
+                // ── Tour Sale section ──
+                SliverToBoxAdapter(
+                  child: Obx(() => _HomeSectionRow(
+                        title: 'Ưu đãi giờ chót',
+                        onViewAll: () => Get.toNamed(
+                          AppRoutes.sectionTours,
+                          arguments: {'title': 'Ưu đãi giờ chót', 'type': 'sale'},
+                        ),
+                        isLoading: _home.isLoadingSale.value,
+                        tours: _home.saleTours,
+                        badgeLabel: 'Giờ chót',
+                        badgeColor: const Color(0xFFE53935),
+                        showSalePrice: true,
+                        onTap: _openTour,
+                        wishlistController: _wishlistController,
+                      )),
+                ),
+
+                // ── Tour Upcoming section ──
+                SliverToBoxAdapter(
+                  child: Obx(() => _HomeSectionRow(
+                        title: 'Sắp khởi hành',
+                        onViewAll: () => Get.toNamed(
+                          AppRoutes.sectionTours,
+                          arguments: {'title': 'Sắp khởi hành', 'type': 'upcoming'},
+                        ),
+                        isLoading: _home.isLoadingUpcoming.value,
+                        tours: _home.upcomingTours,
+                        badgeLabel: 'Sắp đi',
+                        badgeColor: const Color(0xFF43A047),
+                        onTap: _openTour,
+                        wishlistController: _wishlistController,
+                      )),
+                ),
+
+                // ── Region section ──
+                SliverToBoxAdapter(child: _RegionSection(home: _home, onTap: _openTour)),
+
+                SliverToBoxAdapter(
+                  child: const SizedBox(height: 20),
+                ),
+              ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Xin chào,',
-                          style: AppTextStyles.textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (user != null) ...[
-                    Obx(() {
-                      final unreadChatCount = _socialController.unreadChatCount;
-                      return Badge(
-                        label: Text(
-                          unreadChatCount > 99
-                              ? '99+'
-                              : unreadChatCount.toString(),
-                        ),
-                        isLabelVisible: unreadChatCount > 0,
-                        backgroundColor: AppColors.error,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        largeSize: 18,
-                        child: _CircleIconButton(
-                          icon: Icons.forum_outlined,
-                          onTap: () => Get.toNamed(AppRoutes.chatInbox),
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.white.withValues(alpha: 0.12),
-                        ),
-                      );
-                    }),
-                    const SizedBox(width: 10),
-                  ],
-                  // Trong _buildHeader của HomeTab
-                  Obx(() {
-                    final unreadCount = _notificationController.unreadCount;
-                    return Badge(
-                      label: Text(unreadCount.toString()),
-                      isLabelVisible: unreadCount > 0,
-                      backgroundColor: AppColors.error,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      largeSize: 18,
-                      child: _CircleIconButton(
-                        icon: Icons.notifications_none_rounded,
-                        onTap: () {
-                          if (AuthGate.requireLogin(
-                            route: AppRoutes.notifications,
-                          )) {
-                            Get.toNamed(AppRoutes.notifications);
-                          }
-                        },
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.white.withValues(alpha: 0.12),
-                      ),
-                    );
-                  }),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => Get.find<ShellController>().changeTab(4),
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.white,
-                        backgroundImage: user?.avatarUrl != null
-                            ? CachedNetworkImageProvider(user!.avatarUrl!)
-                            : null,
-                        child: user?.avatarUrl == null
-                            ? const Icon(
-                                Icons.person_rounded,
-                                color: AppColors.brand,
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              Text(
-                'Đi đâu cũng được,\nmiễn là thật đáng nhớ.',
-                style: AppTextStyles.textTheme.headlineLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  height: 1.12,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Khám phá những chuyến đi được chọn lọc cho riêng bạn.',
-                style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.navy.withValues(alpha: 0.2),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
+
+          // ── Fixed sticky header ──
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _StickyHeader(
+              topPadding: topPadding,
+              selectedLang: _selectedLang,
+              onSearchTap: () => Get.toNamed(AppRoutes.tourSearch),
+              onNotificationTap: () {
+                if (AuthGate.requireLogin(route: AppRoutes.notifications)) {
+                  Get.toNamed(AppRoutes.notifications);
+                }
+              },
+              onLanguageTap: _showLanguagePopup,
+              notificationController: _notificationController,
+            ),
+          ),
+
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────
+const double _kHeaderHeight = 56.0;
+
+// ─────────────────────────────────────────────────────────────
+// Sticky Header
+// ─────────────────────────────────────────────────────────────
+class _StickyHeader extends StatelessWidget {
+  const _StickyHeader({
+    required this.topPadding,
+    required this.selectedLang,
+    required this.onSearchTap,
+    required this.onNotificationTap,
+    required this.onLanguageTap,
+    required this.notificationController,
+  });
+
+  final double topPadding;
+  final String selectedLang;
+  final VoidCallback onSearchTap;
+  final VoidCallback onNotificationTap;
+  final VoidCallback onLanguageTap;
+  final NotificationController notificationController;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          color: AppColors.brand.withValues(alpha: 0.94),
+          child: SafeArea(
+            bottom: false,
+            child: SizedBox(
+              height: _kHeaderHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   children: [
+                    // Language / Logo button
+                    GestureDetector(
+                      onTap: onLanguageTap,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            selectedLang == 'vi' ? '🇻🇳' : '🇺🇸',
+                            style: const TextStyle(fontSize: 22),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // Search bar
                     Expanded(
-                      child: InkWell(
-                        onTap: _openExplore,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: GestureDetector(
+                        onTap: onSearchTap,
+                        child: Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
                           child: Row(
                             children: [
-                              const Icon(
+                              const SizedBox(width: 12),
+                              Icon(
                                 Icons.search_rounded,
-                                color: AppColors.brand,
+                                size: 20,
+                                color: AppColors.brand.withValues(alpha: 0.7),
                               ),
-                              const SizedBox(width: 11),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Tìm tour, điểm đến...',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  'Tìm kiếm...',
                                   style: AppTextStyles.textTheme.bodyMedium
-                                      ?.copyWith(
-                                    color: AppColors.textTertiary,
-                                  ),
+                                      ?.copyWith(color: AppColors.textTertiary),
                                 ),
                               ),
                             ],
@@ -440,344 +287,687 @@ class _HomeTabState extends State<HomeTab> {
                         ),
                       ),
                     ),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _openExplore(openFilters: true),
-                        customBorder: const CircleBorder(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          margin: const EdgeInsets.only(right: 6),
-                          decoration: const BoxDecoration(
-                            gradient: AppColors.brandGradient,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.tune_rounded,
-                            color: Colors.white,
-                            size: 20,
+                    const SizedBox(width: 10),
+
+                    // Notification bell
+                    Obx(() {
+                      final unread = notificationController.unreadCount;
+                      return Badge(
+                        label: Text(unread > 99 ? '99+' : unread.toString()),
+                        isLabelVisible: unread > 0,
+                        backgroundColor: const Color(0xFFE53935),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        largeSize: 16,
+                        child: GestureDetector(
+                          onTap: onNotificationTap,
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
                         ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Home Section Row  (title + horizontal ListView of TourCards)
+// ─────────────────────────────────────────────────────────────
+class _HomeSectionRow extends StatelessWidget {
+  const _HomeSectionRow({
+    required this.title,
+    required this.isLoading,
+    required this.tours,
+    required this.onViewAll,
+    required this.onTap,
+    required this.wishlistController,
+    this.badgeLabel,
+    this.badgeColor,
+    this.showSalePrice = false,
+  });
+
+  final String title;
+  final bool isLoading;
+  final List<TourModel> tours;
+  final VoidCallback onViewAll;
+  final void Function(int id) onTap;
+  final WishlistController wishlistController;
+  final String? badgeLabel;
+  final Color? badgeColor;
+  final bool showSalePrice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 22, 12, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.brand,
+                    fontSize: 17,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: onViewAll,
+                child: Row(
+                  children: [
+                    Text(
+                      'Xem tất cả',
+                      style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                        color: AppColors.brand,
+                        fontWeight: FontWeight.w600,
                       ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: AppColors.brand,
                     ),
                   ],
                 ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryStrip() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 22),
-      child: SizedBox(
-        height: 112,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: _tripTypes.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (context, index) {
-            final t = _tripTypes[index];
-            return GestureDetector(
-              onTap: () => _openExplore(searchTerm: t.searchTerm),
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                width: 84,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: t.color.withValues(alpha: 0.14)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.navy.withValues(alpha: 0.05),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            t.color.withValues(alpha: 0.2),
-                            t.color.withValues(alpha: 0.08),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Icon(t.icon, color: t.color, size: 27),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      t.label,
-                      maxLines: 1,
-                      style: AppTextStyles.textTheme.labelMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         ),
-      ),
+
+        // Content
+        if (isLoading)
+          const SizedBox(
+            height: 230,
+            child: Center(
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
+            ),
+          )
+        else if (tours.isEmpty)
+          const SizedBox(
+            height: 80,
+            child: Center(
+              child: Text(
+                'Chưa có tour nào',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 285,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: tours.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final tour = tours[index];
+                final inWishlist = wishlistController.containsTour(tour.id);
+                return _TourCard(
+                  tour: tour,
+                  badgeLabel: badgeLabel,
+                  badgeColor: badgeColor,
+                  showSalePrice: showSalePrice,
+                  isInWishlist: inWishlist,
+                  onTap: () => onTap(tour.id),
+                  onWishlistTap: () => wishlistController.toggleWishlist(
+                    tour.id,
+                    isInWishlist: inWishlist,
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
 
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({
-    required this.icon,
+// ─────────────────────────────────────────────────────────────
+// Tour Card  (Viettravel style)
+// ─────────────────────────────────────────────────────────────
+class _TourCard extends StatelessWidget {
+  const _TourCard({
+    required this.tour,
+    required this.isInWishlist,
     required this.onTap,
-    this.foregroundColor = AppColors.textPrimary,
-    this.backgroundColor = AppColors.surface,
+    required this.onWishlistTap,
+    this.badgeLabel,
+    this.badgeColor,
+    this.showSalePrice = false,
   });
-  final IconData icon;
+
+  final TourModel tour;
+  final bool isInWishlist;
   final VoidCallback onTap;
-  final Color foregroundColor;
-  final Color backgroundColor;
+  final VoidCallback onWishlistTap;
+  final String? badgeLabel;
+  final Color? badgeColor;
+  final bool showSalePrice;
 
   @override
   Widget build(BuildContext context) {
+    final hasDeparture = tour.nextDeparture != null;
+    final depStr = hasDeparture
+        ? DateFormat('dd/MM/yyyy').format(tour.nextDeparture!)
+        : null;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44,
-        height: 44,
+        width: 230,
         decoration: BoxDecoration(
-          color: backgroundColor,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-        ),
-        child: Icon(icon, color: foregroundColor, size: 22),
-      ),
-    );
-  }
-}
-
-class _FeaturedRow extends StatelessWidget {
-  const _FeaturedRow({required this.tours, required this.onTap});
-  final List<TourModel> tours;
-  final void Function(int id) onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 270,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: tours.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (context, index) {
-          final tour = tours[index];
-          return _FeaturedCard(tour: tour, onTap: () => onTap(tour.id));
-        },
-      ),
-    );
-  }
-}
-
-class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.tour, required this.onTap});
-  final TourModel tour;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 278,
-        child: ClipRRect(
+          color: Colors.white,
           borderRadius: AppRadius.card,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (tour.imageUrl != null && tour.imageUrl!.isNotEmpty)
-                CachedNetworkImage(
-                  imageUrl: tour.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) =>
-                      const ColoredBox(color: AppColors.brandLight),
-                )
-              else
-                const ColoredBox(color: AppColors.brandLight),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x1A05073C),
-                      Colors.transparent,
-                      Color(0xF205073C),
-                    ],
-                    stops: [0, 0.4, 1.0],
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.navy.withValues(alpha: 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Image ──
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  child: SizedBox(
+                    height: 138,
+                    width: double.infinity,
+                    child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: tour.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) =>
+                                const ColoredBox(color: AppColors.brandLight),
+                          )
+                        : const ColoredBox(color: AppColors.brandLight),
                   ),
                 ),
-              ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accent.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                // Badge label top-left
+                if (badgeLabel != null && badgeColor != null)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.local_fire_department_rounded,
-                        size: 14,
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Nổi bật',
-                        style: TextStyle(
+                      child: Text(
+                        badgeLabel!,
+                        style: const TextStyle(
                           color: Colors.white,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          fontSize: 12,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              if (tour.averageStar != null)
+                // Wishlist button top-right
                 Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 14,
-                          color: Color(0xFFFFB800),
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          tour.averageStar!.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.navy,
-                          ),
-                        ),
-                      ],
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: onWishlistTap,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isInWishlist ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        color: isInWishlist ? const Color(0xFFE53935) : AppColors.textSecondary,
+                        size: 16,
+                      ),
                     ),
                   ),
                 ),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16,
+              ],
+            ),
+
+            // ── Info ──
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Name
                     Text(
                       tour.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        height: 1.2,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                        height: 1.3,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.place_rounded,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            tour.locationLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
+
+                    // Location
+                    if (tour.city != null || tour.country != null)
+                      Row(
+                        children: [
+                          const Icon(Icons.place_rounded, size: 12, color: AppColors.brand),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              tour.locationLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.brand,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (tour.startingPrice != null) ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.16),
-                          ),
-                        ),
-                        child: Text(
-                          'Từ ${CurrencyFormatter.format(tour.startingPrice!)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
+                        ],
+                      ),
+                    const Spacer(),
+
+                    // Departure date
+                    if (depStr != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 5),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded,
+                                size: 11, color: AppColors.textSecondary),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Khởi hành: $depStr',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+
+                    // Price row
+                    if (tour.startingPrice != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Gạch giá gốc nếu có khuyến mãi
+                          if (tour.originalPrice != null)
+                            Text(
+                              CurrencyFormatter.format(tour.originalPrice!),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: AppColors.textSecondary,
+                              ),
+                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text(
+                                'Từ ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                CurrencyFormatter.format(tour.startingPrice!),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFE53935),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    else
+                      const Text(
+                        'Liên hệ để biết giá',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// Region Section  (tabs + horizontal tour list)
+// ─────────────────────────────────────────────────────────────
+class _RegionSection extends StatelessWidget {
+  const _RegionSection({required this.home, required this.onTap});
+  final HomeController home;
+  final void Function(int id) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final selected = home.selectedRegionIndex.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 22, 12, 12),
+            child: Text(
+              'Điểm đến yêu thích',
+              style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.brand,
+                fontSize: 17,
+              ),
+            ),
+          ),
+
+          // Tabs
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: HomeController.regions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final isSelected = selected == index;
+                return GestureDetector(
+                  onTap: () => home.selectRegion(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.brand : Colors.white,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: isSelected ? AppColors.brand : AppColors.border,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.brand.withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Text(
+                      HomeController.regions[index].$1,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Tour cards
+          if (home.isLoadingRegion.value)
+            const SizedBox(
+              height: 170,
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
+              ),
+            )
+          else if (home.regionTours.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 30),
+              child: Center(
+                child: Text('Chưa có tour nào', style: TextStyle(color: AppColors.textSecondary)),
+              ),
+            )
+          else
+            SizedBox(
+              height: 285,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: home.regionTours.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final tour = home.regionTours[index];
+                  final wishlist = Get.find<WishlistController>();
+                  final inWishlist = wishlist.containsTour(tour.id);
+                  return _TourCard(
+                    tour: tour,
+                    badgeLabel: null,
+                    badgeColor: null,
+                    isInWishlist: inWishlist,
+                    onTap: () => onTap(tour.id),
+                    onWishlistTap: () => wishlist.toggleWishlist(
+                      tour.id,
+                      isInWishlist: inWishlist,
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      );
+    });
+  }
+}
+
+
+
+// ─────────────────────────────────────────────────────────────
+// Banner Carousel
+// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Hero Section
+// ─────────────────────────────────────────────────────────────
+class _HeroSection extends StatelessWidget {
+  const _HeroSection({required this.onSearchTap});
+  final VoidCallback onSearchTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+      height: 220,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Gradient background — starts from same brand blue as sticky header
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.brand, Color(0xFF003A8C), Color(0xFF05073C)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.55, 1.0],
+              ),
+            ),
+          ),
+
+          // Decorative circles
+          Positioned(
+            right: -40,
+            top: -40,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -30,
+            bottom: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 60,
+            top: 30,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
+              ),
+            ),
+          ),
+
+          // Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Eyebrow tag
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEB662B),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_fire_department_rounded, size: 13, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'Ưu đãi độc quyền App',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Headline
+                const Text(
+                  'Khám phá\nViệt Nam cùng StayHub',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1.18,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Subtitle
+                Text(
+                  'Hàng nghìn tour đang chờ bạn với giá tốt nhất',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // CTA button
+                GestureDetector(
+                  onTap: onSearchTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.explore_outlined, size: 16, color: AppColors.brand),
+                        SizedBox(width: 6),
+                        Text(
+                          'Khám phá ngay',
+                          style: TextStyle(
+                            color: AppColors.brand,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Banner Carousel
+// ─────────────────────────────────────────────────────────────
 class _BannerCarousel extends StatefulWidget {
   const _BannerCarousel({required this.banners});
   final List<BannerModel> banners;
@@ -801,7 +991,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 172,
+          height: 166,
           child: PageView.builder(
             controller: _pageController,
             itemCount: widget.banners.length,
@@ -829,52 +1019,25 @@ class _BannerCarouselState extends State<_BannerCarousel> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0x1105073C),
-                              Color(0xCC05073C),
-                            ],
+                            colors: [Color(0x0005073C), Color(0xAA05073C)],
                           ),
                         ),
                       ),
                       if (b.title != null)
                         Positioned(
-                          left: 18,
-                          right: 18,
-                          bottom: 16,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  b.title!,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 17,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.16),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.22),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: Colors.white,
-                                  size: 19,
-                                ),
-                              ),
-                            ],
+                          left: 16,
+                          right: 16,
+                          bottom: 14,
+                          child: Text(
+                            b.title!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              height: 1.25,
+                            ),
                           ),
                         ),
                     ],
@@ -884,7 +1047,7 @@ class _BannerCarouselState extends State<_BannerCarousel> {
             },
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -901,7 +1064,67 @@ class _BannerCarouselState extends State<_BannerCarousel> {
             ),
           ),
         ),
+        const SizedBox(height: 6),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Language bottom sheet
+// ─────────────────────────────────────────────────────────────
+class _LanguageBottomSheet extends StatelessWidget {
+  const _LanguageBottomSheet({required this.selected, required this.onSelect});
+  final String selected;
+  final void Function(String) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final languages = [
+      ('vi', '🇻🇳', 'Tiếng Việt'),
+      ('en', '🇺🇸', 'English'),
+    ];
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Chọn ngôn ngữ',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...languages.map((lang) => ListTile(
+                  leading: Text(lang.$2, style: const TextStyle(fontSize: 26)),
+                  title: Text(lang.$3,
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
+                  trailing: selected == lang.$1
+                      ? const Icon(Icons.check_circle_rounded, color: AppColors.brand)
+                      : null,
+                  onTap: () => onSelect(lang.$1),
+                )),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 }

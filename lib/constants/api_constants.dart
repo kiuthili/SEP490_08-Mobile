@@ -17,7 +17,8 @@ class ApiConstants {
       return 'https://jpg6krl7-7010.asse.devtunnels.ms';
     }
 
-    return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+    // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+    return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
@@ -66,7 +67,7 @@ class ApiConstants {
   static const tourScheduleStaffs = '/api/TourScheduleStaffs';
   static const aiEvaluation = '/api/ai/evaluation';
 
-  /// Mapbox Access Token & Tile Template (đồng bộ với Frontend Web)
+  /// Mapbox Access Token & Tile Template (Đồng bộ với Frontend Web)
   static const mapboxAccessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
     defaultValue:

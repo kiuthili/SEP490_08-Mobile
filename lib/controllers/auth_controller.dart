@@ -11,7 +11,10 @@ import '../services/storage_service.dart';
 import '../services/push_notification_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/auth_gate.dart';
+import '../widgets/auth_widgets.dart';
 import 'feature_controllers.dart';
+import 'shell_controller.dart';
+import 'notification_controller.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
@@ -60,23 +63,60 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> register({
+  Future<ForgotPasswordResult?> sendRegisterOtp({
+    required String email,
+    required String fullName,
+  }) async {
+    isLoading.value = true;
+    try {
+      final result = await _authService.sendRegisterOtp(
+        email: email,
+        fullName: fullName,
+      );
+      if (result.retryAfterSeconds != null) {
+        SnackbarHelper.error(
+          result.message ??
+              'Vui lòng đợi ${result.retryAfterSeconds} giây trước khi gửi lại mã.',
+        );
+      } else {
+        SnackbarHelper.success(
+          result.message ?? 'Mã xác nhận đăng ký đã được gửi đến email của bạn.',
+        );
+      }
+      return result;
+    } on ApiError catch (e) {
+      if (e.message == 'FullNameCannotContainSpecialCharacters') {
+        SnackbarHelper.error('Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
+      } else if (e.message == 'PhoneNumberExists') {
+        SnackbarHelper.error('Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
+      } else {
+        SnackbarHelper.error(e.message);
+      }
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> register({
     required String fullName,
     required String email,
     required String phoneNumber,
     required String password,
     required String confirmPassword,
+    required String otpCode,
   }) async {
     if (fullName.trim().isEmpty ||
         email.trim().isEmpty ||
         phoneNumber.trim().isEmpty ||
-        password.isEmpty) {
+        password.isEmpty ||
+        otpCode.trim().isEmpty) {
       SnackbarHelper.error('Vui lòng điền đầy đủ thông tin');
-      return;
+      return false;
     }
     if (password != confirmPassword) {
       SnackbarHelper.error('Mật khẩu xác nhận không khớp');
-      return;
+      return false;
     }
     isLoading.value = true;
     try {
@@ -86,15 +126,26 @@ class AuthController extends GetxController {
           password: password,
           fullName: fullName.trim(),
           phoneNumber: phoneNumber.trim(),
-          gender: selectedGender.value,
-          dateOfBirth:
-              '${dateOfBirth.value.year}-${dateOfBirth.value.month.toString().padLeft(2, '0')}-${dateOfBirth.value.day.toString().padLeft(2, '0')}',
+          otpCode: otpCode.trim(),
         ),
       );
       SnackbarHelper.success('Đăng ký thành công. Vui lòng đăng nhập.');
       Get.offAllNamed(AppRoutes.login, arguments: Get.arguments);
+      return true;
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'FullNameCannotContainSpecialCharacters') {
+        SnackbarHelper.error('Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
+      } else if (e.message == 'PhoneNumberExists') {
+        SnackbarHelper.error('Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
+      } else if (e.message == 'InvalidOrExpiredOtp' ||
+          e.message.toLowerCase().contains('invalid') ||
+          e.message.toLowerCase().contains('expired') ||
+          e.message.toLowerCase().contains('otp')) {
+        SnackbarHelper.error('Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+      } else {
+        SnackbarHelper.error(e.message);
+      }
+      return false;
     } finally {
       isLoading.value = false;
     }
@@ -141,16 +192,43 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     if (Get.isRegistered<SignalRService>()) {
-      await Get.find<SignalRService>().disconnectChat();
-      await Get.find<SignalRService>().disconnectFriendship();
-      await Get.find<SignalRService>().disconnectGlobalChat();
+      await Get.find<SignalRService>().disconnectAll();
     }
     if (Get.isRegistered<SocialController>()) {
       Get.find<SocialController>().clearSocialState();
     }
+    if (Get.isRegistered<NotificationController>()) {
+      Get.find<NotificationController>().notifications.clear();
+    }
+    if (Get.isRegistered<WishlistController>()) {
+      Get.find<WishlistController>().items.clear();
+    }
     await _authService.logout();
     currentUser.value = null;
     Get.offAllNamed(AppRoutes.home);
+  }
+
+  Future<void> handleSessionExpiredCleanly() async {
+    if (Get.isRegistered<SignalRService>()) {
+      await Get.find<SignalRService>().disconnectAll();
+    }
+    if (Get.isRegistered<SocialController>()) {
+      Get.find<SocialController>().clearSocialState();
+    }
+    if (Get.isRegistered<NotificationController>()) {
+      Get.find<NotificationController>().notifications.clear();
+    }
+    if (Get.isRegistered<WishlistController>()) {
+      Get.find<WishlistController>().items.clear();
+    }
+    await _storage.clearSession();
+    currentUser.value = null;
+    if (Get.isRegistered<ShellController>()) {
+      final shell = Get.find<ShellController>();
+      if (shell.selectedIndex.value >= 2 || shell.isStaff) {
+        shell.selectedIndex.value = 0;
+      }
+    }
   }
 
   Future<void> _syncPushTokenAfterLogin() async {
@@ -167,6 +245,14 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       final response = await _authService.googleLogin();
+      if (response.requirePhoneNumber) {
+        isLoading.value = false;
+        _showGooglePhoneBottomSheet(
+          idToken: response.idToken ?? '',
+          user: response.user,
+        );
+        return;
+      }
       currentUser.value = response.user;
       SnackbarHelper.success('Đăng nhập Google thành công');
       await _syncPushTokenAfterLogin();
@@ -182,6 +268,70 @@ class AuthController extends GetxController {
       SnackbarHelper.error(e.message);
     } catch (_) {
       SnackbarHelper.error('Không thể đăng nhập Google. Vui lòng thử lại.');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void _showGooglePhoneBottomSheet({
+    required String idToken,
+    required UserModel user,
+  }) {
+    Get.bottomSheet(
+      GooglePhoneBottomSheet(
+        user: user,
+        onSubmit: (phone) => _confirmGooglePhoneNumber(
+          idToken: idToken,
+          phoneNumber: phone,
+        ),
+        onCancel: () {
+          Get.back();
+          SnackbarHelper.info('Đã hủy đăng ký tài khoản mới bằng Google.');
+        },
+      ),
+      isScrollControlled: true,
+      ignoreSafeArea: false,
+    );
+  }
+
+  Future<void> _confirmGooglePhoneNumber({
+    required String idToken,
+    required String phoneNumber,
+  }) async {
+    if (Get.isBottomSheetOpen == true) {
+      Get.back();
+    }
+    isLoading.value = true;
+    try {
+      final response = await _authService.googleLogin(
+        idToken: idToken,
+        phoneNumber: phoneNumber,
+      );
+      currentUser.value = response.user;
+      SnackbarHelper.success('Đăng nhập Google thành công');
+      await _syncPushTokenAfterLogin();
+      if (response.user.requirePasswordChange) {
+        Get.offAllNamed(AppRoutes.changePassword);
+      } else {
+        final destination = Get.arguments;
+        AuthGate.completeLogin(
+          destination is LoginDestination ? destination : null,
+        );
+      }
+    } on ApiError catch (e) {
+      if (e.message == 'PhoneNumberExists') {
+        SnackbarHelper.error(
+          'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.',
+        );
+      } else if (e.message == 'PhoneNumberMax15Chars') {
+        SnackbarHelper.error('Số điện thoại tối đa 15 chữ số.');
+      } else {
+        SnackbarHelper.error(e.message);
+      }
+    } catch (_) {
+      SnackbarHelper.error(
+        'Không thể hoàn tất đăng ký Google. Vui lòng thử lại.',
+      );
     } finally {
       isLoading.value = false;
     }

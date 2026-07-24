@@ -90,6 +90,9 @@ class SocialMapController extends GetxController {
   final showRoute = true.obs;
   final showFootprints = false.obs;
   final showHeatmap = false.obs;
+  
+  final heatmapType = 'all'.obs; // 'all', 'online', 'moments'
+  final heatmapRadius = 30.0.obs; // Similar to web radius
 
   // ======================= 1) LIVE LOCATION =======================
   final liveLocations = <LiveLocationModel>[].obs;
@@ -218,6 +221,7 @@ class SocialMapController extends GetxController {
   final routeDays = <RouteDayModel>[].obs;
   final RxnInt selectedDay = RxnInt();
   final routePoints = <RoutePointModel>[].obs;
+  final drivingRouteLatLngs = <LatLng>[].obs;
   final isRouteLoading = false.obs;
   final List<RoutePointModel> _allItineraryPoints = [];
 
@@ -281,8 +285,11 @@ class SocialMapController extends GetxController {
       if (eligibleSchedules.isNotEmpty) {
         await selectSchedule(eligibleSchedules.first.scheduleId);
       } else {
-        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí.
-        await _loadFriendsLive();
+        // Không có tour: vẫn hiện bạn bè đang chia sẻ vị trí và tải heatmap/timeline toàn cầu.
+        await Future.wait([
+          _loadFriendsLive(),
+          loadMapMoments(null),
+        ]);
         _fitToLiveLocations();
       }
       _startFriendsPolling();
@@ -545,7 +552,7 @@ class SocialMapController extends GetxController {
       routeDays.assignAll(sorted);
 
       if (sorted.isNotEmpty) {
-        selectDay(sorted.first.dayNumber);
+        await selectDay(sorted.first.dayNumber);
       }
     } catch (_) {
       // tour chưa có lộ trình -> bỏ qua, không chặn các lớp khác
@@ -555,14 +562,31 @@ class SocialMapController extends GetxController {
   }
 
   /// Lọc các điểm của 1 ngày (đồng bộ, không gọi mạng lại).
-  void selectDay(int dayNumber) {
+  Future<void> selectDay(int dayNumber) async {
     selectedDay.value = dayNumber;
     final pts = _allItineraryPoints
         .where((p) => p.dayNumber == dayNumber)
         .toList()
       ..sort((a, b) => a.order.compareTo(b.order));
     routePoints.assignAll(pts);
-    _fitToRoute();
+    
+    // Fetch actual Mapbox driving route
+    final waypoints = routeLatLngs;
+    if (waypoints.isNotEmpty) {
+      try {
+        isRouteLoading.value = true;
+        final actualRoute = await _service.getDrivingRoute(waypoints);
+        drivingRouteLatLngs.assignAll(actualRoute.isNotEmpty ? actualRoute : waypoints);
+      } catch (e) {
+        drivingRouteLatLngs.assignAll(waypoints); // Fallback to straight lines
+      } finally {
+        isRouteLoading.value = false;
+      }
+    } else {
+      drivingRouteLatLngs.clear();
+    }
+    
+    fitToRoute();
   }
 
   // ======================= 4) FOOTPRINTS ("CÀO MAP") =======================
@@ -734,20 +758,25 @@ class SocialMapController extends GetxController {
   /// Gộp mọi toạ độ đang có thành điểm heatmap (fallback khi chưa có API).
   List<HeatPointModel> _buildHeatmapFromClientData() {
     final pts = <HeatPointModel>[];
-    for (final m in mapMoments) {
-      if (m.lat != null && m.lng != null) {
-        pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+    
+    if (heatmapType.value == 'all' || heatmapType.value == 'moments') {
+      for (final m in mapMoments) {
+        if (m.lat != null && m.lng != null) pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+      }
+      for (final f in footprints) {
+        pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
       }
     }
-    for (final f in footprints) {
-      pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
+    
+    if (heatmapType.value == 'all' || heatmapType.value == 'online') {
+      for (final l in liveLocations) {
+        pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
+      }
+      for (final t in liveTrail) {
+        pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
+      }
     }
-    for (final l in liveLocations) {
-      pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
-    }
-    for (final t in liveTrail) {
-      pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
-    }
+    
     return pts;
   }
 
@@ -797,7 +826,7 @@ class SocialMapController extends GetxController {
     _fitCamera(pts);
   }
 
-  void _fitToRoute() => _fitCamera(routeLatLngs);
+  void fitToRoute() => _fitCamera(routeLatLngs);
 
   void _safeMove(LatLng center, double zoom) {
     if (!isMapReady.value) return;

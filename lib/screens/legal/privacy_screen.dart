@@ -12,8 +12,16 @@ class PrivacyScreen extends StatelessWidget {
       title: 'Chính sách quyền riêng tư',
       lastUpdated: privacySectionsViLastUpdated,
       sections: privacySectionsVi,
-      relatedRoute: AppRoutes.terms,
-      relatedLabel: 'Xem Điều khoản dịch vụ',
+      relatedDocuments: const [
+        {
+          'label': 'Xem Điều khoản dịch vụ',
+          'route': AppRoutes.terms,
+        },
+        {
+          'label': 'Xem Quy định đặt tour & Hủy vé',
+          'route': AppRoutes.bookingTerms,
+        },
+      ],
     );
   }
 }

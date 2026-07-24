@@ -7,6 +7,7 @@ import '../../models/social_models.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/shell_layout.dart';
+import '../../widgets/comment_bottom_sheet.dart';
 import '../../widgets/moment_card.dart';
 import '../../utils/snackbar_helper.dart';
 import 'friend_management_panel.dart';
@@ -45,6 +46,11 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Add Moment',
+          icon: const Icon(Icons.camera_alt_outlined),
+          onPressed: () => Get.toNamed(AppRoutes.shareMoment),
+        ),
         title: const Text('Social'),
         actions: [
           IconButton(
@@ -66,14 +72,6 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
             Tab(text: 'Friends'),
             Tab(text: 'Moments'),
           ],
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 72),
-        child: FloatingActionButton.extended(
-          onPressed: () => Get.toNamed(AppRoutes.shareMoment),
-          icon: const Icon(Icons.add_a_photo),
-          label: const Text('Moment'),
         ),
       ),
       body: TabBarView(
@@ -100,14 +98,14 @@ class _MomentsPanel extends StatefulWidget {
 }
 
 class _MomentsPanelState extends State<_MomentsPanel> {
-  final _scrollController = ScrollController();
+  final _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
     widget.social.loadFeed(refresh: true);
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    _pageController.addListener(() {
+      if (_pageController.position.pixels >= _pageController.position.maxScrollExtent - 200) {
         widget.social.loadMoreFeed();
       }
     });
@@ -197,7 +195,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -223,9 +221,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
           );
         }
 
-        return ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16).copyWith(bottom: ShellLayout.bottomInset(context)),
+        return PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
           itemCount: widget.social.moments.length + (widget.social.isMomentsLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == widget.social.moments.length) {
@@ -237,7 +235,13 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               currentUserId: widget.social.currentUserId,
               onDelete: widget.social.deleteMoment,
               onLike: (isLike) => widget.social.reactMoment(m.id, isLike),
-              onComment: () => Get.toNamed(AppRoutes.momentDetail, arguments: m),
+              onComment: () {
+                Get.bottomSheet(
+                  CommentBottomSheet(moment: m),
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                );
+              },
               onReport: (id) => _showReportDialog(context, 'Moment', id, widget.social),
               onShare: () => _shareMoment(m),
             );

@@ -1,13 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
-import '../../constants/api_constants.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/shell_layout.dart';
+import '../../constants/api_constants.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
 
@@ -17,23 +18,21 @@ class StaffCustomersTab extends GetView<StaffController> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('Khách hàng & Vị trí'),
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Khách tour'),
-              Tab(text: 'Vị trí live'),
-              Tab(text: 'Bản đồ'),
+              Tab(text: 'Danh sách khách'),
+              Tab(text: 'Bản đồ vị trí'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
             _CustomersTab(controller: controller),
-            _LiveLocationsTab(controller: controller),
             _MapTab(controller: controller),
           ],
         ),
@@ -138,237 +137,128 @@ class _CustomerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = (customer.attendeeName as String).trim().isNotEmpty
-        ? (customer.attendeeName as String).trim()[0].toUpperCase()
-        : '?';
+    final name = (customer.displayName as String?)?.trim() ?? 'Khách';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final phone = customer.phoneNumber as String?;
+    final gender = customer.genderLabel as String?;
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header: avatar + name + ticket + status ─────────
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppColors.brandLight,
-                  child: Text(
-                    initial,
-                    style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                      color: AppColors.brandDeep,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Name + ticket pill
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        customer.displayName as String,
-                        style: AppTextStyles.textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      _TicketPill(ticketId: customer.ticketId as int),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Info grid ────────────────────────────────────────
-          Divider(height: 1, color: AppColors.border),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-            child: _InfoGrid(customer: customer),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Info grid (2-col) ─────────────────────────────────────────────────────────
-
-class _InfoGrid extends StatelessWidget {
-  const _InfoGrid({required this.customer});
-  final dynamic customer;
-
-  @override
-  Widget build(BuildContext context) {
-    final cells = <_InfoCellData>[];
-
-    cells.add(_InfoCellData(
-      icon: Icons.badge_rounded,
-      label: 'CCCD / Hộ chiếu',
-      value: (customer.idCard as String?) ?? '—',
-      fullWidth: true,
-    ));
-
-    if ((customer.phoneNumber as String?)?.isNotEmpty ?? false) {
-      cells.add(_InfoCellData(
-        icon: Icons.phone_rounded,
-        label: 'SĐT',
-        value: customer.phoneNumber as String,
-      ));
-    }
-
-    if ((customer.dateOfBirth as String?)?.isNotEmpty ?? false) {
-      cells.add(_InfoCellData(
-        icon: Icons.cake_rounded,
-        label: 'Ngày sinh',
-        value: customer.dateOfBirth as String,
-      ));
-    }
-
-    final genderLabel = customer.genderLabel as String? ?? '';
-    if (genderLabel.isNotEmpty) {
-      cells.add(_InfoCellData(
-        icon: Icons.person_rounded,
-        label: 'Giới tính',
-        value: genderLabel,
-      ));
-    }
-
-    if ((customer.nationality as String?)?.isNotEmpty ?? false) {
-      cells.add(_InfoCellData(
-        icon: Icons.flag_rounded,
-        label: 'Quốc tịch',
-        value: customer.nationality as String,
-        fullWidth: true,
-      ));
-    }
-
-    // Build 2-column grid manually
-    final rows = <Widget>[];
-    int i = 0;
-    while (i < cells.length) {
-      final cell = cells[i];
-      if (cell.fullWidth) {
-        rows.add(_InfoCell(data: cell));
-        i++;
-      } else if (i + 1 < cells.length && !cells[i + 1].fullWidth) {
-        rows.add(Row(
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          leading: CircleAvatar(
+            radius: 24,
+            backgroundColor: AppColors.brandLight,
+            child: Text(
+              initial,
+              style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                color: AppColors.brandDeep,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          title: Text(
+            name,
+            style: AppTextStyles.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                _SmallPill(
+                  icon: Icons.confirmation_number_rounded,
+                  label: '#${customer.ticketId}',
+                  color: AppColors.brand,
+                  bgColor: AppColors.brandLight,
+                ),
+                if (gender != null && gender.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  _SmallPill(
+                    icon: Icons.person_rounded,
+                    label: gender,
+                    color: AppColors.textSecondary,
+                    bgColor: AppColors.surfaceGrouped,
+                  ),
+                ]
+              ],
+            ),
+          ),
           children: [
-            Expanded(child: _InfoCell(data: cells[i])),
-            const SizedBox(width: 12),
-            Expanded(child: _InfoCell(data: cells[i + 1])),
-          ],
-        ));
-        i += 2;
-      } else {
-        rows.add(Row(
-          children: [
-            Expanded(child: _InfoCell(data: cell)),
-            const Expanded(child: SizedBox()),
-          ],
-        ));
-        i++;
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: rows
-          .map((r) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: r,
-      ))
-          .toList(),
-    );
-  }
-}
-
-class _InfoCellData {
-  const _InfoCellData({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.fullWidth = false,
-  });
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool fullWidth;
-}
-
-class _InfoCell extends StatelessWidget {
-  const _InfoCell({required this.data});
-  final _InfoCellData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(data.icon, size: 13, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Text(
-              data.label,
-              style: AppTextStyles.textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceGrouped,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Column(
+                children: [
+                  if (phone != null && phone.isNotEmpty)
+                    _InfoRow(icon: Icons.phone_rounded, label: 'SĐT', value: phone),
+                  _InfoRow(
+                    icon: Icons.badge_rounded, 
+                    label: 'CCCD/Passport', 
+                    value: (customer.idCard as String?)?.isNotEmpty == true ? customer.idCard! : '—'
+                  ),
+                  if (customer.dateOfBirth != null && (customer.dateOfBirth as String).isNotEmpty)
+                    _InfoRow(icon: Icons.cake_rounded, label: 'Ngày sinh', value: customer.dateOfBirth as String),
+                  if (customer.nationality != null && (customer.nationality as String).isNotEmpty)
+                    _InfoRow(icon: Icons.flag_rounded, label: 'Quốc tịch', value: customer.nationality as String, isLast: true),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 2),
-        Text(
-          data.value,
-          style: AppTextStyles.textTheme.bodySmall?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+      ),
     );
   }
 }
 
-// ── Ticket pill ───────────────────────────────────────────────────────────────
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
 
-class _TicketPill extends StatelessWidget {
-  const _TicketPill({required this.ticketId});
-  final int ticketId;
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.brandLight,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
-      ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.confirmation_number_rounded,
-              size: 12, color: AppColors.brand),
-          const SizedBox(width: 4),
+          Icon(icon, size: 16, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
           Text(
-            'Vé #$ticketId',
-            style: AppTextStyles.textTheme.labelSmall?.copyWith(
-              color: AppColors.brandDeep,
-              fontWeight: FontWeight.w600,
+            '$label:',
+            style: AppTextStyles.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.right,
             ),
           ),
         ],
@@ -377,181 +267,252 @@ class _TicketPill extends StatelessWidget {
   }
 }
 
-// ── Live locations tab ────────────────────────────────────────────────────────
+class _SmallPill extends StatelessWidget {
+  const _SmallPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.bgColor,
+  });
 
-class _LiveLocationsTab extends StatelessWidget {
-  const _LiveLocationsTab({required this.controller});
-  final StaffController controller;
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color bgColor;
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      if (controller.liveLocations.isEmpty) {
-        return const EmptyStateWidget(
-          title: 'Chưa có vị trí',
-          subtitle: 'Khách chưa chia sẻ vị trí',
-        );
-      }
-      return ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32).copyWith(
-          bottom: ShellLayout.bottomInset(context),
-        ),
-        itemCount: controller.liveLocations.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final loc = controller.liveLocations[index];
-          return Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: AppRadius.card,
-              border: Border.all(color: AppColors.border, width: 0.5),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFEBEB),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: const Icon(
-                    Icons.location_on_rounded,
-                    color: Colors.red,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        loc.fullName ?? 'User #${loc.userId}',
-                        style: AppTextStyles.textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.my_location_rounded,
-                              size: 13, color: AppColors.textSecondary),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${loc.latitude.toStringAsFixed(5)}, '
-                                '${loc.longitude.toStringAsFixed(5)}',
-                            style: AppTextStyles.textTheme.bodySmall
-                                ?.copyWith(color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                      if (loc.updatedAt != null) ...[
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Icon(Icons.access_time_rounded,
-                                size: 13, color: AppColors.textSecondary),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Cập nhật ${_timeAgo(loc.updatedAt!)}',
-                              style: AppTextStyles.textTheme.labelSmall
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    });
-  }
-
-  String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inSeconds < 60) return 'vừa xong';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
-    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
-    return '${diff.inDays} ngày trước';
+          ),
+        ],
+      ),
+    );
   }
 }
 
 // ── Map tab ───────────────────────────────────────────────────────────────────
 
-class _MapTab extends StatelessWidget {
+class _MapTab extends StatefulWidget {
   const _MapTab({required this.controller});
   final StaffController controller;
 
   @override
+  State<_MapTab> createState() => _MapTabState();
+}
+
+class _MapTabState extends State<_MapTab> {
+  final MapController _mapController = MapController();
+
+  static String get _tileUrl =>
+      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
+      '?access_token=${ApiConstants.mapboxAccessToken}';
+
+  @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.liveLocations.isEmpty) {
-        return const EmptyStateWidget(
-          title: 'Chưa có dữ liệu vị trí',
-          subtitle: 'Khách chưa chia sẻ vị trí',
-        );
-      }
-      final locs = controller.liveLocations;
-      final center = LatLng(locs.first.latitude, locs.first.longitude);
+      final locs = widget.controller.liveLocations;
+      final centerLng = locs.isNotEmpty ? locs.first.longitude : 108.206230;
+      final centerLat = locs.isNotEmpty ? locs.first.latitude : 16.047079;
+
       return LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxHeight < 1 || constraints.maxWidth < 1) {
             return const SizedBox.shrink();
           }
           return FlutterMap(
-            options: MapOptions(initialCenter: center, initialZoom: 13),
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: LatLng(centerLat, centerLng),
+              initialZoom: 14,
+            ),
             children: [
               TileLayer(
-                urlTemplate: ApiConstants.mapboxTileUrl,
-                additionalOptions: const {
-                  'accessToken': ApiConstants.mapboxAccessToken,
-                },
-                userAgentPackageName: 'com.stayhub.mobile',
-                maxZoom: 19,
-                tileSize: 256,
-                zoomOffset: -1,
+                urlTemplate: _tileUrl,
+                userAgentPackageName: 'com.stayhub.stayhub_mobile',
+                maxZoom: 18,
               ),
               MarkerLayer(
-                markers: locs.map((loc) {
-                  return Marker(
-                    point: LatLng(loc.latitude, loc.longitude),
-                    width: 120,
-                    height: 60,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(6),
-                            border:
-                            Border.all(color: AppColors.border, width: 0.5),
-                          ),
-                          child: Text(
-                            loc.fullName ?? '#${loc.userId}',
-                            style: const TextStyle(
-                                fontSize: 11, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Icon(Icons.location_on,
-                            color: Colors.red, size: 28),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                markers: locs
+                    .map((loc) => Marker(
+                          point: LatLng(loc.latitude, loc.longitude),
+                          width: 70,
+                          height: 80,
+                          child: _LiveLocationMarker(location: loc),
+                        ))
+                    .toList(),
               ),
             ],
           );
         },
       );
     });
+  }
+}
+
+class _LiveLocationMarker extends StatefulWidget {
+  const _LiveLocationMarker({required this.location});
+  final dynamic location; 
+
+  @override
+  State<_LiveLocationMarker> createState() => _LiveLocationMarkerState();
+}
+
+class _LiveLocationMarkerState extends State<_LiveLocationMarker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String? get _avatar {
+    try {
+      final v = widget.location.avatarUrl;
+      if (v is String && v.isNotEmpty) return v;
+    } catch (_) {}
+    return null;
+  }
+
+  String get _name {
+    final n = widget.location.fullName as String?;
+    if (n != null && n.isNotEmpty) return n;
+    return '#${widget.location.userId}';
+  }
+
+  bool get _isStaff {
+    try {
+      return widget.location.role.toLowerCase() == 'staff';
+    } catch (_) {}
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = _avatar;
+    final isStaff = _isStaff;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isStaff)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+            margin: const EdgeInsets.only(bottom: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF059669),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF34D399), width: 1),
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 2),
+              ],
+            ),
+            child: const Text(
+              'STAFF',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        SizedBox(
+          width: 50,
+          height: 50,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, __) {
+                  final t = _ctrl.value;
+                  return Container(
+                    width: 24 + 26 * t,
+                    height: 24 + 26 * t,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: (isStaff ? const Color(0xFF10B981) : AppColors.brand)
+                          .withValues(alpha: (1 - t) * 0.35),
+                    ),
+                  );
+                },
+              ),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isStaff ? const Color(0xFF10B981) : AppColors.brand,
+                  border: Border.all(
+                    color: isStaff ? const Color(0xFF10B981) : Colors.white,
+                    width: 2.5,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black38, blurRadius: 4),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: avatar != null
+                    ? CachedNetworkImage(
+                        imageUrl: avatar,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => const Icon(
+                          Icons.person,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.person, size: 18, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.70),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            _name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
