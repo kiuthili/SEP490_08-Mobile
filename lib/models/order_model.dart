@@ -6,6 +6,7 @@ class OrderModel {
   final int ticketCount;
   final int totalAmount;
   final int? discountValue;
+  final int? promotionDiscountValue;
   final String? voucherCode;
   final int finalAmount;
   final String? note;
@@ -24,6 +25,7 @@ class OrderModel {
     required this.ticketCount,
     required this.totalAmount,
     this.discountValue,
+    this.promotionDiscountValue,
     this.voucherCode,
     required this.finalAmount,
     this.note,
@@ -53,6 +55,7 @@ class OrderModel {
       ticketCount: json['ticketCount'] as int? ?? tickets.length,
       totalAmount: (json['totalAmount'] as num?)?.toInt() ?? 0,
       discountValue: (json['discountValue'] as num?)?.toInt(),
+      promotionDiscountValue: (json['promotionDiscountValue'] as num?)?.toInt(),
       voucherCode: json['voucherCode'] as String?,
       finalAmount: (json['finalAmount'] as num?)?.toInt() ?? 0,
       note: json['note'] as String?,
@@ -88,6 +91,7 @@ class OrderDetailModel {
   final int quantity;
   final int unitPrice;
   final int totalPrice;
+  final int? promotionDiscountValue;
   final List<TicketModel> tickets;
 
   OrderDetailModel({
@@ -98,6 +102,7 @@ class OrderDetailModel {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.promotionDiscountValue,
     this.tickets = const [],
   });
 
@@ -115,6 +120,7 @@ class OrderDetailModel {
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
       unitPrice: (json['unitPrice'] as num?)?.toInt() ?? 0,
       totalPrice: (json['totalPrice'] as num?)?.toInt() ?? 0,
+      promotionDiscountValue: (json['promotionDiscountValue'] as num?)?.toInt(),
       tickets: _readMapList(json['tickets'])
           .map(
             (ticket) => TicketModel.fromJson(

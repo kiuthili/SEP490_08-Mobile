@@ -431,12 +431,7 @@ class _HomeSectionRow extends StatelessWidget {
                   badgeLabel: badgeLabel,
                   badgeColor: badgeColor,
                   showSalePrice: showSalePrice,
-                  isInWishlist: inWishlist,
                   onTap: () => onTap(tour.id),
-                  onWishlistTap: () => wishlistController.toggleWishlist(
-                    tour.id,
-                    isInWishlist: inWishlist,
-                  ),
                 );
               },
             ),
@@ -452,18 +447,14 @@ class _HomeSectionRow extends StatelessWidget {
 class _TourCard extends StatelessWidget {
   const _TourCard({
     required this.tour,
-    required this.isInWishlist,
     required this.onTap,
-    required this.onWishlistTap,
     this.badgeLabel,
     this.badgeColor,
     this.showSalePrice = false,
   });
 
   final TourModel tour;
-  final bool isInWishlist;
   final VoidCallback onTap;
-  final VoidCallback onWishlistTap;
   final String? badgeLabel;
   final Color? badgeColor;
   final bool showSalePrice;
@@ -532,27 +523,6 @@ class _TourCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                // Wishlist button top-right
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: onWishlistTap,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.88),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isInWishlist ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        color: isInWishlist ? const Color(0xFFE53935) : AppColors.textSecondary,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
 
@@ -782,12 +752,7 @@ class _RegionSection extends StatelessWidget {
                     tour: tour,
                     badgeLabel: null,
                     badgeColor: null,
-                    isInWishlist: inWishlist,
                     onTap: () => onTap(tour.id),
-                    onWishlistTap: () => wishlist.toggleWishlist(
-                      tour.id,
-                      isInWishlist: inWishlist,
-                    ),
                   );
                 },
               ),

@@ -11,18 +11,12 @@ import '../utils/date_formatter.dart';
 class TourCard extends StatelessWidget {
   final TourModel tour;
   final VoidCallback onTap;
-  final bool? isInWishlist;
-  final bool wishlistBusy;
-  final VoidCallback? onWishlistTap;
   final String? heroTagPrefix;
 
   const TourCard({
     super.key,
     required this.tour,
     required this.onTap,
-    this.isInWishlist,
-    this.wishlistBusy = false,
-    this.onWishlistTap,
     this.heroTagPrefix,
   });
 
@@ -109,43 +103,6 @@ class TourCard extends StatelessWidget {
                             style: AppTextStyles.textTheme.labelMedium?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (isInWishlist != null && onWishlistTap != null)
-                      Positioned(
-                        top: 52,
-                        right: 12,
-                        child: Material(
-                          color: Colors.white.withValues(alpha: 0.94),
-                          shape: const CircleBorder(),
-                          elevation: 2,
-                          child: SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              tooltip: isInWishlist!
-                                  ? 'Xóa khỏi wishlist'
-                                  : 'Thêm vào wishlist',
-                              icon: wishlistBusy
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Icon(
-                                      isInWishlist!
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: isInWishlist!
-                                          ? AppColors.error
-                                          : AppColors.textSecondary,
-                                    ),
-                              onPressed: wishlistBusy ? null : onWishlistTap,
                             ),
                           ),
                         ),

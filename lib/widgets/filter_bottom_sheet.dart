@@ -21,17 +21,6 @@ class FilterBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -42,7 +31,8 @@ class FilterBottomSheet extends StatelessWidget {
                 Text(
                   'Bộ lọc',
                   style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.navy,
                   ),
                 ),
                 GestureDetector(
@@ -92,7 +82,7 @@ class FilterBottomSheet extends StatelessWidget {
 
           // Footer
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 26),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(top: BorderSide(color: Colors.grey[200]!)),
@@ -107,11 +97,12 @@ class FilterBottomSheet extends StatelessWidget {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Color(0xFFE5E7EB)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Xóa lọc'),
+                    child: const Text('Xóa lọc', style: TextStyle(color: AppColors.textPrimary)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -127,10 +118,10 @@ class FilterBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('Áp dụng'),
+                    child: const Text('Áp dụng', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -144,9 +135,7 @@ class FilterBottomSheet extends StatelessWidget {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: AppTextStyles.textTheme.labelLarge?.copyWith(
-        color: AppColors.textPrimary,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy, fontSize: 13),
     );
   }
 
@@ -161,18 +150,25 @@ class FilterBottomSheet extends StatelessWidget {
           color: AppColors.textPrimary,
         ),
         decoration: InputDecoration(
-          hintStyle: AppTextStyles.textTheme.bodySmall,
+          hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          filled: true,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
           ),
         ),
         hint: const Text('Chọn tỉnh/thành phố'),
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
         items: controller.provinces.map((city) {
           return DropdownMenuItem(
             value: city,
@@ -194,18 +190,25 @@ class FilterBottomSheet extends StatelessWidget {
           color: AppColors.textPrimary,
         ),
         decoration: InputDecoration(
-          hintStyle: AppTextStyles.textTheme.bodySmall,
+          hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          filled: true,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
           ),
         ),
         hint: const Text('Tất cả danh mục'),
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
         items: controller.categories.map((cat) {
           return DropdownMenuItem<int>(
             value: cat.id,
@@ -258,7 +261,8 @@ class FilterBottomSheet extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFE5E7EB)),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(

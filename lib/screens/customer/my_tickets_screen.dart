@@ -161,9 +161,16 @@ class OrderTicketsPanel extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         ...tickets.map((t) {
-          final checkedIn =
-              t.checkInStatus?.toLowerCase().contains('checked') == true ||
-                  t.checkInStatus?.toLowerCase().contains('đã') == true;
+          final statusStr = t.checkInStatus?.toLowerCase() ?? '';
+          Color statusColor = AppColors.textSecondary;
+          if (statusStr.contains('checked') || statusStr.contains('đã')) {
+            statusColor = AppColors.success;
+          } else if (statusStr.contains('pending') || statusStr.contains('chờ')) {
+            statusColor = Colors.orange;
+          } else if (statusStr.contains('cancel') || statusStr.contains('hủy')) {
+            statusColor = AppColors.error;
+          }
+
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             clipBehavior: Clip.antiAlias,
@@ -215,17 +222,13 @@ class OrderTicketsPanel extends StatelessWidget {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: checkedIn
-                              ? AppColors.success.withValues(alpha: 0.12)
-                              : Colors.white,
+                          color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           t.checkInStatus ?? 'Chưa check-in',
                           style: TextStyle(
-                            color: checkedIn
-                                ? AppColors.success
-                                : AppColors.textSecondary,
+                            color: statusColor,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),

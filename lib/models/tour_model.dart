@@ -17,6 +17,7 @@ class TourModel {
   final int? originalPrice;   // raw price before discount (null if no discount)
   final double? discountPercentage; // percentage discount if applicable
   final DateTime? nextDeparture;
+  final String? transportationType;
 
   TourModel({
     required this.id,
@@ -34,6 +35,7 @@ class TourModel {
     this.originalPrice,
     this.discountPercentage,
     this.nextDeparture,
+    this.transportationType,
   });
 
   factory TourModel.fromJson(Map<String, dynamic> json) {
@@ -128,6 +130,7 @@ class TourModel {
       originalPrice: originalPrice,
       discountPercentage: discountPercentage,
       nextDeparture: nextDeparture,
+      transportationType: json['transportationType'] as String?,
     );
   }
 
@@ -279,6 +282,9 @@ class ScheduleTicketModel {
   final int availableQuantity;
   final bool? isActive;
   final PromotionModel? promotion;
+  final String? ticketTypeName;
+  final int? minAge;
+  final int? maxAge;
 
   ScheduleTicketModel({
     required this.id,
@@ -289,6 +295,9 @@ class ScheduleTicketModel {
     required this.availableQuantity,
     this.isActive,
     this.promotion,
+    this.ticketTypeName,
+    this.minAge,
+    this.maxAge,
   });
 
   int get effectivePrice {
@@ -330,6 +339,40 @@ class ScheduleTicketModel {
         JsonUtils.pick(json, ['availableQuantity', 'AvailableQuantity']),
       ),
       isActive: JsonUtils.readBool(json['isActive']),
+      ticketTypeName: () {
+        final t = JsonUtils.pick(json, ['ticketType', 'TicketType']);
+        if (t is Map<String, dynamic>) {
+          final name = JsonUtils.readString(JsonUtils.pick(t, ['name', 'Name']));
+          if (name == null || name.isEmpty) return null;
+          
+          final min = JsonUtils.readInt(JsonUtils.pick(t, ['minAge', 'MinAge']));
+          final max = JsonUtils.readInt(JsonUtils.pick(t, ['maxAge', 'MaxAge']));
+          
+          if (min > 0 && max > 0 && max < 99) {
+            return '$name ($min - $max tuổi)';
+          } else if (max > 0 && max < 99) {
+            return '$name (dưới $max tuổi)';
+          } else if (min > 0) {
+            return '$name (từ $min tuổi)';
+          }
+          return name;
+        }
+        return null;
+      }(),
+      minAge: () {
+        final t = JsonUtils.pick(json, ['ticketType', 'TicketType']);
+        if (t is Map<String, dynamic>) {
+          return JsonUtils.readInt(JsonUtils.pick(t, ['minAge', 'MinAge']));
+        }
+        return null;
+      }(),
+      maxAge: () {
+        final t = JsonUtils.pick(json, ['ticketType', 'TicketType']);
+        if (t is Map<String, dynamic>) {
+          return JsonUtils.readInt(JsonUtils.pick(t, ['maxAge', 'MaxAge']));
+        }
+        return null;
+      }(),
       promotion: () {
         final p = JsonUtils.pick(json, ['promotion', 'Promotion']);
         if (p is Map<String, dynamic>) {

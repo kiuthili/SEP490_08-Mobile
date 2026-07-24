@@ -22,6 +22,7 @@ import '../screens/customer/my_tickets_screen.dart';
 import '../screens/customer/order_detail_screen.dart';
 import '../screens/customer/payment_screen.dart';
 import '../screens/customer/share_moment_screen.dart';
+import '../screens/customer/new_message_screen.dart';
 import '../screens/customer/social_detail_screens.dart';
 import '../screens/customer/social_map_screen.dart';
 import '../screens/customer/vouchers_screen.dart';
@@ -174,6 +175,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.chatRoom,
       page: () => const ChatRoomScreen(),
+      middlewares: _protected,
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<SocialController>()) {
+          Get.lazyPut<SocialController>(() => SocialController());
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.newMessage,
+      page: () => const NewMessageScreen(),
       middlewares: _protected,
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<SocialController>()) {

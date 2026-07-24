@@ -12,10 +12,12 @@ class AppScreen extends StatelessWidget {
   const AppScreen({
     super.key,
     this.title,
+    this.titleWidget,
     required this.body,
     this.actions,
     this.bottom,
     this.bottomBar,
+    this.bottomNavigationBar,
     this.floatingActionButton,
     this.centerTitle = true,
     this.leading,
@@ -23,10 +25,12 @@ class AppScreen extends StatelessWidget {
   });
 
   final String? title;
+  final Widget? titleWidget;
   final Widget body;
   final List<Widget>? actions;
   final PreferredSizeWidget? bottom;
   final Widget? bottomBar;
+  final Widget? bottomNavigationBar;
   final Widget? floatingActionButton;
   final bool centerTitle;
   final Widget? leading;
@@ -39,26 +43,28 @@ class AppScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasBar =
-        title != null || (actions != null && actions!.isNotEmpty) || bottom != null;
+        title != null || titleWidget != null || (actions != null && actions!.isNotEmpty) || bottom != null;
 
     return PageScaffold(
       extendBody: extendBody,
       appBar: hasBar
           ? AppBar(
-              title: title != null
+              title: titleWidget ?? (title != null
                   ? Text(
                       title!,
                       style: AppTextStyles.textTheme.titleLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     )
-                  : null,
+                  : null),
               centerTitle: centerTitle,
               actions: actions,
               bottom: bottom,
               leading: leading,
             )
           : null,
-      bottomNavigationBar:
-          bottomBar != null ? IosStickyBottomBar(child: bottomBar!) : null,
+      bottomNavigationBar: bottomNavigationBar ??
+          (bottomBar != null ? IosStickyBottomBar(child: bottomBar!) : null),
       floatingActionButton: floatingActionButton,
       body: body,
     );
