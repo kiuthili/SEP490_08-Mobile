@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
+import '../../controllers/shell_controller.dart';
 import '../../models/social_models.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
@@ -55,7 +56,7 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
         actions: [
           IconButton(
             tooltip: 'Social Map',
-            onPressed: () => Get.toNamed(AppRoutes.socialMap),
+            onPressed: () => Get.find<ShellController>().changeTab(0),
             icon: const Icon(Icons.map_outlined),
           ),
           IconButton(

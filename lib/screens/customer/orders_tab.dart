@@ -25,7 +25,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
   final OrderController controller = Get.find<OrderController>();
 
   static const _filters = <String, String>{
+    '': 'Tất cả',
+    'Pending': 'Chờ thanh toán',
     'Paid': 'Đã thanh toán',
+    'Completed': 'Hoàn thành',
     'Cancelled': 'Đã hủy',
     'Request to Cancelled': 'Yêu cầu hủy',
   };
@@ -37,14 +40,20 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
     super.initState();
     _tabController = TabController(length: _filters.length, vsync: this);
     
-    // Ensure initial status filter is valid for the tabs
-    if (!_filters.containsKey(controller.statusFilter.value)) {
-      // Must use addPostFrameCallback because we cannot trigger a refresh during init
+    final initialStatus = Get.arguments as String?;
+    if (initialStatus != null && _filters.containsKey(initialStatus)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        controller.setStatusFilter(_filters.keys.first);
+        controller.setStatusFilter(initialStatus);
       });
+      _tabController.index = _filters.keys.toList().indexOf(initialStatus);
     } else {
-      _tabController.index = _filters.keys.toList().indexOf(controller.statusFilter.value!);
+      if (!_filters.containsKey(controller.statusFilter.value)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.setStatusFilter(_filters.keys.first);
+        });
+      } else {
+        _tabController.index = _filters.keys.toList().indexOf(controller.statusFilter.value!);
+      }
     }
     
     _tabController.addListener(() {
@@ -74,7 +83,6 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Đơn đặt tour'),
         actions: [
@@ -87,6 +95,7 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           labelColor: AppColors.brand,
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.brand,

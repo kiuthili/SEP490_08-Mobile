@@ -12,6 +12,8 @@ import '../screens/customer/home_tab.dart';
 import '../screens/customer/orders_tab.dart';
 import '../screens/customer/profile_tab.dart';
 import '../screens/customer/social_tab.dart';
+import '../screens/customer/social_map_screen.dart';
+import '../screens/customer/ai_questionnaire_screen.dart';
 import '../screens/staff/staff_checkin_tab.dart';
 import '../screens/staff/staff_customers_tab.dart';
 import '../screens/staff/staff_schedules_tab.dart';
@@ -26,14 +28,9 @@ class MainShellScreen extends GetView<ShellController> {
 
   static const _customerNav = [
     IosBottomNavItem(
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'Trang chủ',
-    ),
-    IosBottomNavItem(
-      icon: Icons.travel_explore_outlined,
-      selectedIcon: Icons.travel_explore_rounded,
-      label: 'Khám phá',
+      icon: Icons.map_outlined,
+      selectedIcon: Icons.map_rounded,
+      label: 'Bản đồ',
     ),
     IosBottomNavItem(
       icon: Icons.people_outline_rounded,
@@ -41,14 +38,19 @@ class MainShellScreen extends GetView<ShellController> {
       label: 'Xã hội',
     ),
     IosBottomNavItem(
-      icon: Icons.receipt_long_outlined,
-      selectedIcon: Icons.receipt_long_rounded,
-      label: 'Đặt tour',
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home_rounded,
+      label: 'Trang chủ',
+    ),
+    IosBottomNavItem(
+      icon: Icons.auto_awesome_outlined,
+      selectedIcon: Icons.auto_awesome_rounded,
+      label: 'AI Guide',
     ),
     IosBottomNavItem(
       icon: Icons.person_outline_rounded,
       selectedIcon: Icons.person_rounded,
-      label: 'Hồ sơ',
+      label: 'Profile',
     ),
   ];
 
@@ -124,10 +126,10 @@ class MainShellScreen extends GetView<ShellController> {
             ]
           : isLoggedIn
               ? const [
-                  HomeTab(),
-                  ExploreTab(),
+                  SocialMapScreen(),
                   SocialTab(),
-                  OrdersTab(),
+                  HomeTab(),
+                  AiQuestionnaireScreen(),
                   ProfileTab(),
                 ]
               : const [
@@ -151,8 +153,7 @@ class MainShellScreen extends GetView<ShellController> {
           index: index.clamp(0, pages.length - 1),
           children: pages,
         ),
-        floatingActionButton:
-            isStaff || !isLoggedIn ? null : const AiFloatingAssistant(),
+        floatingActionButton: null, // Removed AiFloatingAssistant as it is now in navigation bar
         bottomNavigationBar: IosBottomNav(
           items: navItems,
           selectedIndex: index,

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
@@ -61,49 +62,119 @@ class _WishlistScreenState extends State<WishlistScreen> {
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       physics: physics,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: _controller.items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = _controller.items[index];
-        return IosSurfaceCard(
-          margin: EdgeInsets.zero,
-          padding: EdgeInsets.zero,
-          child: ListTile(
+        final tour = item.tour;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
             onTap: () => Get.toNamed(
               AppRoutes.tourDetail,
               arguments: item.tourId,
             ),
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: item.tour.imageUrl != null &&
-                      item.tour.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      item.tour.imageUrl!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.favorite_rounded,
-                        size: 32,
-                      ),
-                    )
-                  : const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Icon(Icons.favorite_rounded),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: tour.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => const ColoredBox(
+                            color: Color(0xFFF0F0F0),
+                            child: Icon(Icons.image_outlined, color: Colors.grey),
+                          ),
+                        )
+                      : const ColoredBox(
+                          color: Color(0xFFF0F0F0),
+                          child: Icon(Icons.image_outlined, color: Colors.grey),
+                        ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tour.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        if (tour.city != null)
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on, size: 14, color: Colors.black54),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  tour.city!,
+                                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.star_rounded, color: Color(0xFFFFB800), size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  tour.averageStar?.toStringAsFixed(1) ?? 'N/A',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            InkWell(
+                              onTap: () => _controller.toggleWishlist(
+                                item.tourId,
+                                isInWishlist: true,
+                              ),
+                              child: const Padding(
+                                padding: EdgeInsets.all(4),
+                                child: Icon(Icons.favorite_rounded, color: Colors.red, size: 24),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-            ),
-            title: Text(item.tour.name),
-            subtitle: Text(item.tour.city ?? ''),
-            trailing: IconButton(
-              icon: const Icon(Icons.favorite_rounded, color: Colors.red),
-              onPressed: () => _controller.toggleWishlist(
-                item.tourId,
-                isInWishlist: true,
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
         );

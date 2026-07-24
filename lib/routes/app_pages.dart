@@ -19,6 +19,7 @@ import '../screens/customer/my_reviews_screen.dart';
 import '../screens/customer/request_cancellation_screen.dart';
 import '../screens/customer/notifications_screen.dart';
 import '../screens/customer/my_tickets_screen.dart';
+import '../screens/customer/orders_tab.dart';
 import '../screens/customer/order_detail_screen.dart';
 import '../screens/customer/payment_screen.dart';
 import '../screens/customer/share_moment_screen.dart';
@@ -75,6 +76,16 @@ class AppPages {
       binding: BindingsBuilder(() {
         if (!Get.isRegistered<BookingController>()) {
           Get.lazyPut<BookingController>(() => BookingController());
+        }
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.orders,
+      page: () => const OrdersTab(),
+      middlewares: _protected,
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<OrderController>()) {
+          Get.lazyPut<OrderController>(() => OrderController());
         }
       }),
     ),

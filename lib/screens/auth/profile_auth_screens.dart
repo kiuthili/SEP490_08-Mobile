@@ -115,83 +115,172 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
+  Widget _buildRow({
+    required BuildContext context,
+    required String label,
+    Widget? trailing,
+    String? value,
+    VoidCallback? onTap,
+    bool isAction = false,
+    bool showBorder = true,
+    Color? valueColor,
+  }) {
+    final textTheme = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: showBorder ? const Border(bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1)) : null,
+        ),
+        child: Row(
+          children: [
+            Text(label, style: textTheme.bodyMedium?.copyWith(color: Colors.black87)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: trailing ?? (value != null ? Text(
+                value,
+                textAlign: TextAlign.right,
+                style: textTheme.bodyMedium?.copyWith(color: valueColor ?? Colors.black87),
+              ) : const SizedBox()),
+            ),
+            if (isAction) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.black38),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(List<Widget> children) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser.value;
-    return AppScreen(
-      title: 'Cập nhật hồ sơ',
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              IosSurfaceCard(
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _pickAvatar,
-                      child: CircleAvatar(
-                        radius: 48,
-                        backgroundColor: AppColors.brandLight,
-                        backgroundImage: _avatarImage(user),
-                        child: _avatarImage(user) == null
-                            ? const Icon(Icons.camera_alt_rounded, size: 32)
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text('Chạm để đổi ảnh đại diện'),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? '',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
+    final textTheme = Theme.of(context).textTheme;
+    
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: Text('Sửa hồ sơ', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400)),
+        centerTitle: true,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        actions: [
+          _loading 
+            ? const Center(child: Padding(padding: EdgeInsets.only(right: 16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
+            : TextButton(
+                onPressed: _submit,
+                child: Text('Lưu', style: textTheme.titleMedium?.copyWith(color: AppColors.brand)),
               ),
-              const SizedBox(height: 16),
-              IosSurfaceCard(
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      controller: _nameController,
-                      label: 'Họ và tên',
-                      prefixIcon: Icons.person_outline_rounded,
-                      validator: Validators.fullName,
-                      maxLength: 100,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Email',
-                      prefixIcon: Icons.mail_outline_rounded,
-                      keyboardType: TextInputType.emailAddress,
-                      enabled: false,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _phoneController,
-                      label: 'Số điện thoại',
-                      prefixIcon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) return null;
-                        return Validators.phone(value);
-                      },
-                      maxLength: 12,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: _gender,
-                      decoration: const InputDecoration(
-                        labelText: 'Giới tính',
-                        prefixIcon: Icon(Icons.people_outline_rounded),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          children: [
+            _buildSection(
+              [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _pickAvatar,
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: _avatarImage(user),
+                          child: _avatarImage(user) == null
+                              ? const Icon(Icons.person, color: AppColors.brand, size: 40)
+                              : null,
+                        ),
                       ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: _pickAvatar,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.edit_square, size: 16, color: AppColors.brand),
+                            const SizedBox(width: 6),
+                            Text('Sửa', style: textTheme.bodyMedium?.copyWith(color: AppColors.brand)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            _buildSection(
+              [
+                _buildRow(
+                  context: context,
+                  label: 'Tên',
+                  showBorder: true,
+                  isAction: true,
+                  trailing: TextFormField(
+                    controller: _nameController,
+                    textAlign: TextAlign.right,
+                    style: textTheme.bodyMedium?.copyWith(color: Colors.black87),
+                    decoration: const InputDecoration(
+                      hintText: 'Thiết lập ngay', 
+                      hintStyle: TextStyle(color: Colors.black38),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                      filled: false,
+                    ),
+                    validator: Validators.fullName,
+                  ),
+                ),
+                _buildRow(
+                  context: context,
+                  label: 'Tên Đăng Nhập',
+                  value: user?.email ?? '',
+                  valueColor: Colors.black54,
+                  showBorder: false,
+                  isAction: true,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            _buildSection(
+              [
+                _buildRow(
+                  context: context,
+                  label: 'Giới tính',
+                  showBorder: true,
+                  trailing: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _gender,
+                      isDense: true,
+                      alignment: Alignment.centerRight,
+                      icon: const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.black38),
+                      style: textTheme.bodyMedium?.copyWith(color: Colors.black87),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Nam')),
                         DropdownMenuItem(value: 'Female', child: Text('Nữ')),
@@ -199,44 +288,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ],
                       onChanged: (value) => setState(() => _gender = value),
                     ),
-                    const SizedBox(height: 16),
-                    InkWell(
-                      onTap: _pickBirthDate,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Ngày sinh',
-                          prefixIcon: Icon(Icons.calendar_today_outlined),
-                          suffixIcon: Icon(Icons.chevron_right_rounded),
-                        ),
-                        child: Text(
-                          _dateOfBirth == null
-                              ? 'Chưa cập nhật'
-                              : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
-                        ),
-                      ),
-                    ),
-                    if (user?.provider?.isNotEmpty == true) ...[
-                      const SizedBox(height: 16),
-                      InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Phương thức đăng nhập',
-                          prefixIcon: Icon(Icons.verified_user_outlined),
-                        ),
-                        child: Text(user!.provider!),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              CustomButton(
-                label: 'Lưu thay đổi',
-                isLoading: _loading,
-                onPressed: _submit,
-              ),
-            ],
-          ),
+                _buildRow(
+                  context: context,
+                  label: 'Ngày sinh',
+                  value: _dateOfBirth == null ? 'Thiết lập ngay' : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
+                  valueColor: _dateOfBirth == null ? AppColors.brand : Colors.black87,
+                  isAction: true,
+                  showBorder: false,
+                  onTap: _pickBirthDate,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            _buildSection(
+              [
+                _buildRow(
+                  context: context,
+                  label: 'Số điện thoại',
+                  showBorder: true,
+                  isAction: true,
+                  trailing: TextFormField(
+                    controller: _phoneController,
+                    textAlign: TextAlign.right,
+                    style: textTheme.bodyMedium?.copyWith(color: Colors.black87),
+                    decoration: const InputDecoration(
+                      hintText: 'Thiết lập ngay',
+                      hintStyle: TextStyle(color: Colors.black38),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                      filled: false,
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return null;
+                      return Validators.phone(value);
+                    },
+                  ),
+                ),
+                _buildRow(
+                  context: context,
+                  label: 'Email',
+                  value: user?.email ?? 'Thiết lập ngay',
+                  valueColor: (user?.email?.isEmpty ?? true) ? AppColors.brand : Colors.black87,
+                  isAction: true,
+                  showBorder: true,
+                ),
+                _buildRow(
+                  context: context,
+                  label: 'Đổi mật khẩu',
+                  value: '********',
+                  isAction: true,
+                  showBorder: false,
+                  onTap: () => Get.toNamed(AppRoutes.changePassword),
+                ),
+              ],
+            ),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );

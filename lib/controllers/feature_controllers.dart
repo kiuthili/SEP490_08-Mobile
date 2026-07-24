@@ -56,7 +56,7 @@ class OrderController extends GetxController {
       final result = await _service.getMyOrders(
         userId: userId,
         page: _page,
-        status: statusFilter.value,
+        status: (statusFilter.value != null && statusFilter.value!.isNotEmpty) ? statusFilter.value : null,
       );
       if (refresh) {
         orders.assignAll(result.data);
