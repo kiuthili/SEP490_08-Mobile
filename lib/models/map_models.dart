@@ -20,17 +20,20 @@ class RouteDayModel {
   });
 
   factory RouteDayModel.fromJson(Map<String, dynamic> json) => RouteDayModel(
-    dayNumber: JsonUtils.readInt(
-      JsonUtils.pick(json, ['dayNumber', 'DayNumber', 'day', 'Day']),
-    ),
-    title: JsonUtils.readString(
-      JsonUtils.pick(json, ['title', 'Title', 'name', 'Name']),
-    ) ??
-        'Ngày ${JsonUtils.readInt(JsonUtils.pick(json, ['dayNumber', 'day']))}',
-    date: JsonUtils.readDateTime(
-      JsonUtils.pick(json, ['date', 'Date', 'visitDate']),
-    ),
-  );
+        dayNumber: JsonUtils.readInt(
+          JsonUtils.pick(json, ['dayNumber', 'DayNumber', 'day', 'Day']),
+        ),
+        title: JsonUtils.readString(
+              JsonUtils.pick(json, ['title', 'Title', 'name', 'Name']),
+            ) ??
+            'Ngày ${JsonUtils.readInt(JsonUtils.pick(json, [
+                  'dayNumber',
+                  'day'
+                ]))}',
+        date: JsonUtils.readDateTime(
+          JsonUtils.pick(json, ['date', 'Date', 'visitDate']),
+        ),
+      );
 }
 
 /// Một điểm đến trên lộ trình (đã có toạ độ để vẽ Polyline).
@@ -64,27 +67,38 @@ class RoutePointModel {
           ),
         ),
         name: JsonUtils.readString(
-          JsonUtils.pick(json, [
-            'name', 'Name',
-            'locationName', 'LocationName',
-            'title', 'Title',
-            'place',
-          ]),
-        ) ??
+              JsonUtils.pick(json, [
+                'name',
+                'Name',
+                'locationName',
+                'LocationName',
+                'title',
+                'Title',
+                'place',
+              ]),
+            ) ??
             '',
         lat: JsonUtils.readDouble(
-          JsonUtils.pick(json, [
-            'locationLat', 'LocationLat',
-            'lat', 'Lat', 'latitude', 'Latitude',
-          ]),
-        ) ??
+              JsonUtils.pick(json, [
+                'locationLat',
+                'LocationLat',
+                'lat',
+                'Lat',
+                'latitude',
+                'Latitude',
+              ]),
+            ) ??
             0,
         lng: JsonUtils.readDouble(
-          JsonUtils.pick(json, [
-            'locationLng', 'LocationLng',
-            'lng', 'Lng', 'longitude', 'Longitude',
-          ]),
-        ) ??
+              JsonUtils.pick(json, [
+                'locationLng',
+                'LocationLng',
+                'lng',
+                'Lng',
+                'longitude',
+                'Longitude',
+              ]),
+            ) ??
             0,
         arrivalTime: JsonUtils.readDateTime(
           JsonUtils.pick(json, ['arrivalTime', 'ArrivalTime', 'time']),
@@ -107,17 +121,17 @@ class HeatPointModel {
   });
 
   factory HeatPointModel.fromJson(Map<String, dynamic> json) => HeatPointModel(
-    lat: JsonUtils.readDouble(
-      JsonUtils.pick(json, ['lat', 'Lat', 'latitude']),
-    ) ??
-        0,
-    lng: JsonUtils.readDouble(
-      JsonUtils.pick(json, ['lng', 'Lng', 'longitude']),
-    ) ??
-        0,
-    weight: JsonUtils.readDouble(
-      JsonUtils.pick(json, ['weight', 'Weight', 'count', 'intensity']),
-    ) ??
-        1,
-  );
+        lat: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['lat', 'Lat', 'latitude']),
+            ) ??
+            0,
+        lng: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['lng', 'Lng', 'longitude']),
+            ) ??
+            0,
+        weight: JsonUtils.readDouble(
+              JsonUtils.pick(json, ['weight', 'Weight', 'count', 'intensity']),
+            ) ??
+            1,
+      );
 }

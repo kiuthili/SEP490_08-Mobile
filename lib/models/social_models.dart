@@ -68,11 +68,12 @@ class MomentModel {
 
     String? pickName() {
       return _asString(json['fullName'] ??
-          json['FullName'] ??
-          json['userName'] ??
-          json['UserName']) ??
+              json['FullName'] ??
+              json['userName'] ??
+              json['UserName']) ??
           (userMap != null
-              ? _asString(userMap['fullName'] ?? userMap['FullName'] ?? userMap['name'])
+              ? _asString(
+                  userMap['fullName'] ?? userMap['FullName'] ?? userMap['name'])
               : null);
     }
 
@@ -116,9 +117,10 @@ class MomentModel {
       isLikedByMe: pickLiked(),
       comments: ((json['comments'] ?? json['Comments']) is List)
           ? ((json['comments'] ?? json['Comments']) as List)
-          .whereType<Map>()
-          .map((e) => SocialCommentModel.fromJson(Map<String, dynamic>.from(e)))
-          .toList()
+              .whereType<Map>()
+              .map((e) =>
+                  SocialCommentModel.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
           : const [],
     );
   }
@@ -232,26 +234,30 @@ class SocialCommentModel {
           json['UserId'] ??
           (userMap != null ? (userMap['id'] ?? userMap['Id']) : null)),
       userName: str(json['fullName'] ??
-          json['userName'] ??
-          json['customerName'] ??
-          json['FullName']) ??
-          (userMap != null ? str(userMap['fullName'] ?? userMap['name']) : null),
+              json['userName'] ??
+              json['customerName'] ??
+              json['FullName']) ??
+          (userMap != null
+              ? str(userMap['fullName'] ?? userMap['name'])
+              : null),
       avatarUrl: str(json['avatarUrl'] ?? json['AvatarUrl']) ??
-          (userMap != null ? str(userMap['avatarUrl'] ?? userMap['AvatarUrl']) : null),
+          (userMap != null
+              ? str(userMap['avatarUrl'] ?? userMap['AvatarUrl'])
+              : null),
       // Backend/web dùng 'text'; bản cũ dùng 'comment'/'content'.
       comment: str(json['text'] ??
-          json['comment'] ??
-          json['Comment'] ??
-          json['content']) ??
+              json['comment'] ??
+              json['Comment'] ??
+              json['content']) ??
           '',
       timestamp: DateTime.tryParse(
-        (json['createdAt'] ??
-            json['CreatedAt'] ??
-            json['timestamp'] ??
-            json['Timestamp'] ??
-            '')
-            .toString(),
-      )?.toLocal() ??
+            (json['createdAt'] ??
+                    json['CreatedAt'] ??
+                    json['timestamp'] ??
+                    json['Timestamp'] ??
+                    '')
+                .toString(),
+          )?.toLocal() ??
           DateTime.now(),
     );
   }
@@ -274,4 +280,3 @@ class FootprintDto {
     );
   }
 }
-

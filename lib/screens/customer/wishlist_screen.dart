@@ -7,6 +7,8 @@ import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -73,7 +75,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -100,7 +102,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                           fit: BoxFit.cover,
                           errorWidget: (_, __, ___) => const ColoredBox(
                             color: Color(0xFFF0F0F0),
-                            child: Icon(Icons.image_outlined, color: Colors.grey),
+                            child:
+                                Icon(Icons.image_outlined, color: Colors.grey),
                           ),
                         )
                       : const ColoredBox(
@@ -128,12 +131,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
                         if (tour.city != null)
                           Row(
                             children: [
-                              const Icon(Icons.location_on, size: 14, color: Colors.black54),
+                              const Icon(Icons.location_on,
+                                  size: 14, color: Colors.black54),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   tour.city!,
-                                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Colors.black54),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -146,7 +151,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.star_rounded, color: Color(0xFFFFB800), size: 16),
+                                const Icon(Icons.star_rounded,
+                                    color: Color(0xFFFFB800), size: 16),
                                 const SizedBox(width: 4),
                                 Text(
                                   tour.averageStar?.toStringAsFixed(1) ?? 'N/A',
@@ -165,7 +171,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               ),
                               child: const Padding(
                                 padding: EdgeInsets.all(4),
-                                child: Icon(Icons.favorite_rounded, color: Colors.red, size: 24),
+                                child: Icon(Icons.favorite_rounded,
+                                    color: AppColors.error, size: 24),
                               ),
                             ),
                           ],

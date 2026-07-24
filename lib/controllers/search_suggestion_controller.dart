@@ -46,7 +46,7 @@ class SearchSuggestionController extends GetxController {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    
+
     if (query.trim().isEmpty) {
       suggestions.clear();
       isLoadingSuggestions.value = false;

@@ -105,9 +105,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
             counterText: '',
             prefixIcon: widget.prefixIcon != null
                 ? Align(
-                    alignment: isMultiline
-                        ? Alignment.topCenter
-                        : Alignment.center,
+                    alignment:
+                        isMultiline ? Alignment.topCenter : Alignment.center,
                     child: Padding(
                       padding: EdgeInsets.only(top: isMultiline ? 16 : 0),
                       child: Icon(widget.prefixIcon, size: 20),

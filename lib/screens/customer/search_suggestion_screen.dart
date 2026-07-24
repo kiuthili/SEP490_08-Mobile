@@ -17,7 +17,7 @@ class SearchSuggestionScreen extends StatefulWidget {
 
 class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
   final _controller = Get.put(SearchSuggestionController());
-  
+
   @override
   void initState() {
     super.initState();
@@ -34,11 +34,11 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
       appBar: _buildAppBar(),
       body: Obx(() {
         final query = _controller.searchTerm.value.trim();
-        
+
         if (query.isNotEmpty) {
           return _buildSuggestionsList();
         }
-        
+
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
@@ -75,7 +75,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
         child: Row(
           children: [
             const SizedBox(width: 12),
-            Icon(Icons.search_rounded, size: 20, color: AppColors.brand.withValues(alpha: 0.7)),
+            Icon(Icons.search_rounded,
+                size: 20, color: AppColors.brand.withValues(alpha: 0.7)),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -101,7 +102,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
             ),
             Obx(() => _controller.searchTerm.value.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textSecondary),
+                    icon: const Icon(Icons.close_rounded,
+                        size: 18, color: AppColors.textSecondary),
                     onPressed: () {
                       _controller.searchController.clear();
                       _controller.focusNode.requestFocus();
@@ -122,7 +124,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20),
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
+          child:
+              CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand),
         ),
       );
     }
@@ -134,7 +137,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off_rounded, size: 48, color: AppColors.textTertiary),
+              Icon(Icons.search_off_rounded,
+                  size: 48, color: AppColors.textTertiary),
               const SizedBox(height: 16),
               Text(
                 'Không tìm thấy kết quả nào',
@@ -151,7 +155,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
       itemBuilder: (context, index) {
         final suggestion = _controller.suggestions[index];
         return ListTile(
-          leading: const Icon(Icons.search_rounded, color: AppColors.textTertiary),
+          leading:
+              const Icon(Icons.search_rounded, color: AppColors.textTertiary),
           title: Text(suggestion, style: const TextStyle(fontSize: 15)),
           onTap: () => _controller.onSearchSubmit(suggestion),
         );
@@ -167,13 +172,14 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              const Icon(Icons.local_fire_department_rounded, size: 20, color: Color(0xFF0068E0)),
+              const Icon(Icons.local_fire_department_rounded,
+                  size: 20, color: AppColors.brand),
               const SizedBox(width: 8),
               Text(
                 'XU HƯỚNG TÌM KIẾM NỔI BẬT',
                 style: AppTextStyles.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0068E0),
+                  color: AppColors.brand,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -184,7 +190,9 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
         if (_controller.isLoadingTrending.value)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand)),
+            child: Center(
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.brand)),
           )
         else
           Padding(
@@ -196,10 +204,11 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                 return GestureDetector(
                   onTap: () => _controller.onSearchSubmit(province),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF0F2F5),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: Text(
                       province,
@@ -226,7 +235,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              const Icon(Icons.travel_explore_rounded, size: 20, color: Color(0xFF0068E0)),
+              const Icon(Icons.travel_explore_rounded,
+                  size: 20, color: AppColors.brand),
               const SizedBox(width: 8),
               Text(
                 'Tour xem nhiều nhất',
@@ -242,7 +252,9 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
         if (_controller.isLoadingHotTours.value)
           const Padding(
             padding: EdgeInsets.all(20),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand)),
+            child: Center(
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.brand)),
           )
         else
           SizedBox(
@@ -255,19 +267,21 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
               itemBuilder: (context, index) {
                 final tour = _controller.hotTours[index];
                 return GestureDetector(
-                  onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id),
+                  onTap: () =>
+                      Get.toNamed(AppRoutes.tourDetail, arguments: tour.id),
                   child: Container(
                     width: 160,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(7)),
                           child: SizedBox(
                             height: 90,
                             width: double.infinity,
@@ -275,7 +289,9 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                                 ? CachedNetworkImage(
                                     imageUrl: tour.imageUrl!,
                                     fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) => const ColoredBox(color: AppColors.brandLight),
+                                    errorWidget: (_, __, ___) =>
+                                        const ColoredBox(
+                                            color: AppColors.brandLight),
                                   )
                                 : const ColoredBox(color: AppColors.brandLight),
                           ),
@@ -299,11 +315,16 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                                 const Spacer(),
                                 if (tour.startingPrice != null)
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Giá từ', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                                      const Text('Giá từ',
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              color: AppColors.textSecondary)),
                                       Text(
-                                        CurrencyFormatter.format(tour.startingPrice!),
+                                        CurrencyFormatter.format(
+                                            tour.startingPrice!),
                                         style: const TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,

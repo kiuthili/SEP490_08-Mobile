@@ -43,4 +43,3 @@ class AppRoutes {
   static const String searchResult = '/search-result';
   static const String footprint = '/footprint';
 }
-

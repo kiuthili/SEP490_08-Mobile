@@ -11,6 +11,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 enum _InboxFilter { all, direct, group }
 
@@ -21,7 +22,8 @@ class ChatInboxScreen extends StatefulWidget {
   State<ChatInboxScreen> createState() => _ChatInboxScreenState();
 }
 
-class _ChatInboxScreenState extends State<ChatInboxScreen> with SingleTickerProviderStateMixin {
+class _ChatInboxScreenState extends State<ChatInboxScreen>
+    with SingleTickerProviderStateMixin {
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
   late final TabController _tabController;
@@ -127,9 +129,10 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> with SingleTickerProv
                       hintText: 'Tìm kiếm...',
                       filled: true,
                       fillColor: AppColors.surfaceGrouped,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         borderSide: BorderSide.none,
                       ),
                       prefixIcon: const Icon(Icons.search_rounded),
@@ -154,8 +157,10 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> with SingleTickerProv
                   unselectedLabelColor: AppColors.textSecondary,
                   indicatorColor: AppColors.brand,
                   indicatorWeight: 3,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 13),
+                  unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w500, fontSize: 13),
                   tabs: const [
                     Tab(text: 'Tất cả'),
                     Tab(text: 'Tin nhắn riêng'),
@@ -205,7 +210,6 @@ class _ChatInboxScreenState extends State<ChatInboxScreen> with SingleTickerProv
   }
 }
 
-
 class _ConversationCard extends StatelessWidget {
   const _ConversationCard({required this.room, required this.onTap});
 
@@ -220,22 +224,23 @@ class _ConversationCard extends StatelessWidget {
             ? 'Nhóm tour #${room.scheduleId ?? room.id}'
             : 'Cuộc trò chuyện #${room.id}';
     final hasUnread = room.unreadCount > 0;
-    
+
     final previewStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: hasUnread ? AppColors.textPrimary : AppColors.textSecondary,
           fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w400,
           fontSize: 13,
         );
-        
+
     final titleStyle = AppTextStyles.textTheme.titleSmall?.copyWith(
-      fontWeight: hasUnread || room.isPinned ? FontWeight.w800 : FontWeight.w600,
+      fontWeight:
+          hasUnread || room.isPinned ? FontWeight.w800 : FontWeight.w600,
       color: hasUnread ? AppColors.textPrimary : AppColors.textPrimary,
       fontSize: 15,
     );
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(
@@ -264,14 +269,15 @@ class _ConversationCard extends StatelessWidget {
                       if (room.lastMessageAt != null)
                         Text(
                           _messageTime(room.lastMessageAt!),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: hasUnread
-                                    ? AppColors.textPrimary
-                                    : AppColors.textSecondary,
-                                fontWeight: hasUnread
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: hasUnread
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
+                                    fontWeight: hasUnread
+                                        ? FontWeight.w700
+                                        : FontWeight.w400,
+                                  ),
                         ),
                     ],
                   ),
@@ -348,7 +354,6 @@ class _ConversationCard extends StatelessWidget {
     return DateFormat('dd/MM').format(local);
   }
 }
-
 
 class _ChatAvatar extends StatelessWidget {
   const _ChatAvatar({

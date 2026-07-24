@@ -21,8 +21,8 @@ class NotificationModel {
     return NotificationModel(
       id: JsonUtils.readInt(json['id']),
       title: JsonUtils.readString(
-        JsonUtils.pick(json, ['title', 'subject']),
-      ) ??
+            JsonUtils.pick(json, ['title', 'subject']),
+          ) ??
           '',
       message: JsonUtils.readString(
         JsonUtils.pick(json, ['message', 'content']),

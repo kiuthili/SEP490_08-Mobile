@@ -25,8 +25,10 @@ class NotificationsScreen extends GetView<NotificationController> {
                 onRefresh: controller.fetchNotifications,
                 color: AppColors.brand,
                 child: Obx(() {
-                  if (controller.isLoading.value && controller.notifications.isEmpty) {
-                    return const Center(child: LoadingWidget(message: 'Đang tải...'));
+                  if (controller.isLoading.value &&
+                      controller.notifications.isEmpty) {
+                    return const Center(
+                        child: LoadingWidget(message: 'Đang tải...'));
                   }
 
                   if (controller.notifications.isEmpty) {
@@ -48,7 +50,8 @@ class NotificationsScreen extends GetView<NotificationController> {
                       if (index == 0) {
                         return const SectionHeader(
                           title: 'Gần đây',
-                          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+                          padding:
+                              EdgeInsets.symmetric(vertical: 16, horizontal: 4),
                         );
                       }
 
@@ -88,7 +91,8 @@ class NotificationsScreen extends GetView<NotificationController> {
             children: [
               IconButton(
                 onPressed: () => Get.back(),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white, size: 20),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.white.withValues(alpha: 0.1),
                 ),
@@ -171,14 +175,16 @@ class _NotificationCard extends StatelessWidget {
         boxShadow: isRead
             ? []
             : [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
         border: Border.all(
-          color: isRead ? Colors.transparent : AppColors.brand.withValues(alpha: 0.15),
+          color: isRead
+              ? Colors.transparent
+              : AppColors.brand.withValues(alpha: 0.15),
         ),
       ),
       child: ClipRRect(
@@ -197,8 +203,11 @@ class _NotificationCard extends StatelessWidget {
                     clipBehavior: Clip.none,
                     children: [
                       Icon(
-                        isRead ? Icons.notifications_none_rounded : Icons.notifications_active_rounded,
-                        color: isRead ? AppColors.textTertiary : AppColors.brand,
+                        isRead
+                            ? Icons.notifications_none_rounded
+                            : Icons.notifications_active_rounded,
+                        color:
+                            isRead ? AppColors.textTertiary : AppColors.brand,
                         size: 26,
                       ),
                       if (!isRead)
@@ -229,9 +238,11 @@ class _NotificationCard extends StatelessWidget {
                       Text(
                         notification.title,
                         style: TextStyle(
-                          fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                          fontWeight:
+                              isRead ? FontWeight.w600 : FontWeight.w800,
                           fontSize: 15,
-                          color: isRead ? AppColors.textSecondary : AppColors.navy,
+                          color:
+                              isRead ? AppColors.textSecondary : AppColors.navy,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -241,7 +252,9 @@ class _NotificationCard extends StatelessWidget {
                         notification.message ?? '',
                         style: TextStyle(
                           fontSize: 13,
-                          color: isRead ? AppColors.textTertiary : AppColors.textSecondary,
+                          color: isRead
+                              ? AppColors.textTertiary
+                              : AppColors.textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -254,15 +267,18 @@ class _NotificationCard extends StatelessWidget {
                             Icon(
                               Icons.access_time_rounded,
                               size: 13,
-                              color: AppColors.textTertiary.withValues(alpha: 0.8),
+                              color:
+                                  AppColors.textTertiary.withValues(alpha: 0.8),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              DateFormat('HH:mm - dd/MM/yyyy').format(notification.createdAt!),
+                              DateFormat('HH:mm - dd/MM/yyyy')
+                                  .format(notification.createdAt!),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.textTertiary.withValues(alpha: 0.8),
+                                color: AppColors.textTertiary
+                                    .withValues(alpha: 0.8),
                               ),
                             ),
                           ],

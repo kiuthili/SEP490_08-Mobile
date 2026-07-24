@@ -54,8 +54,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                 SizedBox(height: 80),
                 EmptyStateWidget(
                   title: 'Chưa có đánh giá',
-                  subtitle:
-                  'Hoàn thành tour và viết đánh giá từ chi tiết đơn',
+                  subtitle: 'Hoàn thành tour và viết đánh giá từ chi tiết đơn',
                 ),
               ],
             );
@@ -82,7 +81,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                           height: 36,
                           decoration: BoxDecoration(
                             color: AppColors.brandLight,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: const Icon(
                             Icons.map_rounded,
@@ -105,8 +104,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                               if (r.createdAt != null)
                                 Text(
                                   DateFormatter.display(r.createdAt!),
-                                  style:
-                                  AppTextStyles.textTheme.labelSmall
+                                  style: AppTextStyles.textTheme.labelSmall
                                       ?.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
@@ -139,7 +137,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                       children: [
                         ...List.generate(
                           5,
-                              (i) => Icon(
+                          (i) => Icon(
                             i < r.rating
                                 ? Icons.star_rounded
                                 : Icons.star_border_rounded,
@@ -254,19 +252,19 @@ class _ReplyItem extends StatelessWidget {
             child: (reply.userAvatar?.trim().isNotEmpty ?? false)
                 ? null
                 : (reply.userName?.trim().isNotEmpty ?? false)
-                ? Text(
-              reply.userName!.trim()[0].toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            )
-                : const Icon(
-              Icons.support_agent_rounded,
-              color: Colors.white,
-              size: 15,
-            ),
+                    ? Text(
+                        reply.userName!.trim()[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.support_agent_rounded,
+                        color: Colors.white,
+                        size: 15,
+                      ),
           ),
           const SizedBox(width: 10),
           Expanded(

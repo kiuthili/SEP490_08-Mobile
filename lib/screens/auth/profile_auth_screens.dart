@@ -20,6 +20,7 @@ import '../../widgets/auth_widgets.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/ios_grouped.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -131,22 +132,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: showBorder ? const Border(bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1)) : null,
+          border: showBorder
+              ? const Border(
+                  bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1))
+              : null,
         ),
         child: Row(
           children: [
-            Text(label, style: textTheme.bodyMedium?.copyWith(color: Colors.black87)),
+            Text(label,
+                style: textTheme.bodyMedium?.copyWith(color: Colors.black87)),
             const SizedBox(width: 16),
             Expanded(
-              child: trailing ?? (value != null ? Text(
-                value,
-                textAlign: TextAlign.right,
-                style: textTheme.bodyMedium?.copyWith(color: valueColor ?? Colors.black87),
-              ) : const SizedBox()),
+              child: trailing ??
+                  (value != null
+                      ? Text(
+                          value,
+                          textAlign: TextAlign.right,
+                          style: textTheme.bodyMedium
+                              ?.copyWith(color: valueColor ?? Colors.black87),
+                        )
+                      : const SizedBox()),
             ),
             if (isAction) ...[
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.black38),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: Colors.black38),
             ],
           ],
         ),
@@ -159,7 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         children: children,
@@ -171,22 +181,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     final user = _auth.currentUser.value;
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text('Sửa hồ sơ', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400)),
+        title: Text('Sửa hồ sơ',
+            style:
+                textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400)),
         centerTitle: true,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
-          _loading 
-            ? const Center(child: Padding(padding: EdgeInsets.only(right: 16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
-            : TextButton(
-                onPressed: _submit,
-                child: Text('Lưu', style: textTheme.titleMedium?.copyWith(color: AppColors.brand)),
-              ),
+          _loading
+              ? const Center(
+                  child: Padding(
+                      padding: EdgeInsets.only(right: 16),
+                      child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))))
+              : TextButton(
+                  onPressed: _submit,
+                  child: Text('Lưu',
+                      style: textTheme.titleMedium
+                          ?.copyWith(color: AppColors.brand)),
+                ),
         ],
       ),
       body: Form(
@@ -207,7 +227,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           backgroundColor: Colors.transparent,
                           backgroundImage: _avatarImage(user),
                           child: _avatarImage(user) == null
-                              ? const Icon(Icons.person, color: AppColors.brand, size: 40)
+                              ? const Icon(Icons.person,
+                                  color: AppColors.brand, size: 40)
                               : null,
                         ),
                       ),
@@ -217,9 +238,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.edit_square, size: 16, color: AppColors.brand),
+                            const Icon(Icons.edit_square,
+                                size: 16, color: AppColors.brand),
                             const SizedBox(width: 6),
-                            Text('Sửa', style: textTheme.bodyMedium?.copyWith(color: AppColors.brand)),
+                            Text('Sửa',
+                                style: textTheme.bodyMedium
+                                    ?.copyWith(color: AppColors.brand)),
                           ],
                         ),
                       ),
@@ -228,7 +252,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ],
             ),
-            
             const SizedBox(height: 12),
             _buildSection(
               [
@@ -240,9 +263,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   trailing: TextFormField(
                     controller: _nameController,
                     textAlign: TextAlign.right,
-                    style: textTheme.bodyMedium?.copyWith(color: Colors.black87),
+                    style:
+                        textTheme.bodyMedium?.copyWith(color: Colors.black87),
                     decoration: const InputDecoration(
-                      hintText: 'Thiết lập ngay', 
+                      hintText: 'Thiết lập ngay',
                       hintStyle: TextStyle(color: Colors.black38),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -266,7 +290,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
             _buildSection(
               [
@@ -279,8 +302,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       value: _gender,
                       isDense: true,
                       alignment: Alignment.centerRight,
-                      icon: const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.black38),
-                      style: textTheme.bodyMedium?.copyWith(color: Colors.black87),
+                      icon: const Icon(Icons.chevron_right_rounded,
+                          size: 18, color: Colors.black38),
+                      style:
+                          textTheme.bodyMedium?.copyWith(color: Colors.black87),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Nam')),
                         DropdownMenuItem(value: 'Female', child: Text('Nữ')),
@@ -293,15 +318,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _buildRow(
                   context: context,
                   label: 'Ngày sinh',
-                  value: _dateOfBirth == null ? 'Thiết lập ngay' : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
-                  valueColor: _dateOfBirth == null ? AppColors.brand : Colors.black87,
+                  value: _dateOfBirth == null
+                      ? 'Thiết lập ngay'
+                      : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
+                  valueColor:
+                      _dateOfBirth == null ? AppColors.brand : Colors.black87,
                   isAction: true,
                   showBorder: false,
                   onTap: _pickBirthDate,
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
             _buildSection(
               [
@@ -313,7 +340,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   trailing: TextFormField(
                     controller: _phoneController,
                     textAlign: TextAlign.right,
-                    style: textTheme.bodyMedium?.copyWith(color: Colors.black87),
+                    style:
+                        textTheme.bodyMedium?.copyWith(color: Colors.black87),
                     decoration: const InputDecoration(
                       hintText: 'Thiết lập ngay',
                       hintStyle: TextStyle(color: Colors.black38),
@@ -337,7 +365,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   context: context,
                   label: 'Email',
                   value: user?.email ?? 'Thiết lập ngay',
-                  valueColor: (user?.email?.isEmpty ?? true) ? AppColors.brand : Colors.black87,
+                  valueColor: (user?.email?.isEmpty ?? true)
+                      ? AppColors.brand
+                      : Colors.black87,
                   isAction: true,
                   showBorder: true,
                 ),
@@ -399,7 +429,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   decoration: BoxDecoration(
                     color: Colors.amber.shade50,
                     border: Border.all(color: Colors.amber.shade200),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Text(
                     'Bạn cần đổi mật khẩu trước khi tiếp tục sử dụng tài khoản.',
@@ -557,7 +587,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 height: 80,
                 decoration: BoxDecoration(
                   color: AppColors.brandLight,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: const Icon(
                   Icons.lock_reset_rounded,
@@ -687,8 +717,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _startCountdown(seconds);
       if (result.retryAfterSeconds != null) {
         SnackbarHelper.error(
-          result.message ??
-              'Vui lòng đợi $seconds giây trước khi gửi lại mã.',
+          result.message ?? 'Vui lòng đợi $seconds giây trước khi gửi lại mã.',
         );
       } else {
         SnackbarHelper.success(
@@ -726,7 +755,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('invalid') ||
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
-        SnackbarHelper.error('Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+        SnackbarHelper.error(
+            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -759,7 +789,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('invalid') ||
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
-        SnackbarHelper.error('Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+        SnackbarHelper.error(
+            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -807,17 +838,19 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.brandLight,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.info_outline_rounded, color: AppColors.brand, size: 20),
+              Icon(Icons.info_outline_rounded,
+                  color: AppColors.brand, size: 20),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Kiểm tra hộp thư (kể cả thư rác) để lấy mã xác nhận 6 chữ số.',
-                  style: TextStyle(fontSize: 13, color: AppColors.brand, height: 1.4),
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.brand, height: 1.4),
                 ),
               ),
             ],
@@ -862,23 +895,23 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             fillColor: const Color(0xFFF8F9FF),
             contentPadding: const EdgeInsets.symmetric(vertical: 18),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error, width: 1.5),
             ),
           ),
@@ -925,13 +958,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: const Color(0xFFECFDF5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: const Color(0xFFA7F3D0)),
           ),
           child: Row(
             children: [
               const Icon(Icons.check_circle_outline_rounded,
-                  color: Color(0xFF059669), size: 20),
+                  color: AppColors.success, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: RichText(

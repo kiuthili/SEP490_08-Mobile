@@ -37,24 +37,24 @@ class StaffTicketModel {
     return s == 'checkedin' || s == 'checked_in' || s == 'checked';
   }
 
-  factory StaffTicketModel.fromJson(Map<String, dynamic> json) => StaffTicketModel(
-    id: JsonUtils.readInt(json['id']),
-    orderId: JsonUtils.readInt(json['orderId']),
-    orderDetailId: JsonUtils.readInt(json['orderDetailId']),
-    userId: json['userId'] != null
-        ? JsonUtils.readInt(json['userId'])
-        : null,
-    ticketTypeId: JsonUtils.readInt(json['ticketTypeId']),
-    ticketTypeName: JsonUtils.readString(json['ticketTypeName']),
-    attendeeName: JsonUtils.readString(json['attendeeName']) ?? '',
-    idCard: JsonUtils.readString(json['idCard']) ?? '',
-    // DateOnly từ C# serialize thành "yyyy-MM-dd", DateTime.tryParse đọc được
-    dateOfBirth: json['dateOfBirth'] != null
-        ? DateTime.tryParse(json['dateOfBirth'].toString())
-        : null,
-    gender: JsonUtils.readString(json['gender']),
-    nationality: JsonUtils.readString(json['nationality']),
-    qrCode: JsonUtils.readString(json['qrCode']),
-    checkInStatus: JsonUtils.readString(json['checkInStatus']),
-  );
+  factory StaffTicketModel.fromJson(Map<String, dynamic> json) =>
+      StaffTicketModel(
+        id: JsonUtils.readInt(json['id']),
+        orderId: JsonUtils.readInt(json['orderId']),
+        orderDetailId: JsonUtils.readInt(json['orderDetailId']),
+        userId:
+            json['userId'] != null ? JsonUtils.readInt(json['userId']) : null,
+        ticketTypeId: JsonUtils.readInt(json['ticketTypeId']),
+        ticketTypeName: JsonUtils.readString(json['ticketTypeName']),
+        attendeeName: JsonUtils.readString(json['attendeeName']) ?? '',
+        idCard: JsonUtils.readString(json['idCard']) ?? '',
+        // DateOnly từ C# serialize thành "yyyy-MM-dd", DateTime.tryParse đọc được
+        dateOfBirth: json['dateOfBirth'] != null
+            ? DateTime.tryParse(json['dateOfBirth'].toString())
+            : null,
+        gender: JsonUtils.readString(json['gender']),
+        nationality: JsonUtils.readString(json['nationality']),
+        qrCode: JsonUtils.readString(json['qrCode']),
+        checkInStatus: JsonUtils.readString(json['checkInStatus']),
+      );
 }

@@ -126,7 +126,8 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.quiz_outlined, size: 64, color: AppColors.textSecondary),
+              const Icon(Icons.quiz_outlined,
+                  size: 64, color: AppColors.textSecondary),
               const SizedBox(height: 16),
               Text(
                 'Không tìm thấy kịch bản nào',
@@ -151,7 +152,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 side: BorderSide(color: AppColors.border),
               ),
               elevation: 0,
@@ -164,7 +165,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
                   _resetSurvey();
                   _controller.loadComparison(scenario.scenarioId);
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -239,7 +240,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             side: BorderSide(color: AppColors.border),
           ),
           elevation: 0,
@@ -260,21 +261,25 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
                 Row(
                   children: [
                     if (tour.city != null) ...[
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                      const Icon(Icons.location_on_outlined,
+                          size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         tour.city!,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
                       ),
                       const SizedBox(width: 16),
                     ],
-                    const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                    const Icon(Icons.calendar_today_outlined,
+                        size: 14, color: AppColors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
                       tour.durationDays != null && tour.durationDays! > 0
                           ? '${tour.durationDays} ngày'
                           : 'Trong ngày',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -344,7 +349,10 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
         const SizedBox(height: 12),
         const Text(
           'Danh sách A:',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandDeep),
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.brandDeep),
         ),
         const SizedBox(height: 6),
         _LikertSelector(
@@ -356,7 +364,10 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
         const SizedBox(height: 12),
         const Text(
           'Danh sách B:',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandDeep),
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.brandDeep),
         ),
         const SizedBox(height: 6),
         _LikertSelector(
@@ -384,7 +395,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
               const Icon(
                 Icons.check_circle_outline_rounded,
                 size: 64,
-                color: Colors.green,
+                color: AppColors.success,
               ),
               const SizedBox(height: 16),
               const Text(
@@ -556,7 +567,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
             ),
             child: isSubmitting
@@ -597,7 +608,8 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
             ),
             title: const Text('Đang tải...'),
           ),
-          body: const Center(child: Text('Không tìm thấy dữ liệu kịch bản so sánh.')),
+          body: const Center(
+              child: Text('Không tìm thấy dữ liệu kịch bản so sánh.')),
         );
       }
 
@@ -743,14 +755,16 @@ class _LikertSelector extends StatelessWidget {
             Expanded(
               child: Text(
                 minLabel,
-                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 10, color: AppColors.textSecondary),
               ),
             ),
             Expanded(
               child: Text(
                 maxLabel,
                 textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 10, color: AppColors.textSecondary),
               ),
             ),
           ],

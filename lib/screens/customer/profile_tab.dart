@@ -11,7 +11,6 @@ import '../../theme/shell_layout.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/ios_grouped.dart';
-import '../../widgets/ai_floating_assistant.dart';
 import '../../utils/snackbar_helper.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -45,7 +44,11 @@ class _ProfileTabState extends State<ProfileTab> {
         : '?';
 
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 20, left: 16, right: 16),
+      padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 8,
+          bottom: 20,
+          left: 16,
+          right: 16),
       decoration: const BoxDecoration(
         gradient: AppColors.homeHeroGradient,
       ),
@@ -57,7 +60,8 @@ class _ProfileTabState extends State<ProfileTab> {
             children: [
               IconButton(
                 onPressed: () => Get.toNamed(AppRoutes.notifications),
-                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+                icon: const Icon(Icons.notifications_none_rounded,
+                    color: Colors.white),
               ),
               IconButton(
                 onPressed: _openEditProfile,
@@ -82,7 +86,8 @@ class _ProfileTabState extends State<ProfileTab> {
                   child: !hasAvatar
                       ? Text(
                           initial,
-                          style: AppTextStyles.textTheme.headlineSmall?.copyWith(
+                          style:
+                              AppTextStyles.textTheme.headlineSmall?.copyWith(
                             color: AppColors.brandDeep,
                             fontWeight: FontWeight.w800,
                           ),
@@ -111,16 +116,19 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.verified_rounded, size: 14, color: Color(0xFF8FE5B0)),
+                          Icon(Icons.verified_rounded,
+                              size: 14, color: Color(0xFF8FE5B0)),
                           SizedBox(width: 4),
                           Text(
                             'Thành viên StayHub',
@@ -143,10 +151,11 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildIconGridItem(IconData icon, String label, VoidCallback onTap, {Color iconColor = AppColors.brand}) {
+  Widget _buildIconGridItem(IconData icon, String label, VoidCallback onTap,
+      {Color iconColor = AppColors.brand}) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.xs),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -155,14 +164,21 @@ class _ProfileTabState extends State<ProfileTab> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionCard({required String title, required String viewAllText, required VoidCallback onViewAll, required Widget child}) {
+  Widget _buildSectionCard(
+      {required String title,
+      required String viewAllText,
+      required VoidCallback onViewAll,
+      required Widget child}) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -190,9 +206,11 @@ class _ProfileTabState extends State<ProfileTab> {
                     children: [
                       Text(
                         viewAllText,
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary),
                       ),
-                      const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.textSecondary),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 16, color: AppColors.textSecondary),
                     ],
                   ),
                 ),
@@ -205,13 +223,18 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildSupportTile({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildSupportTile(
+      {required IconData icon,
+      required String title,
+      required VoidCallback onTap}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       visualDensity: const VisualDensity(vertical: -2),
       leading: Icon(icon, color: AppColors.brand),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-      trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textSecondary),
+      title: Text(title,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+      trailing: const Icon(Icons.chevron_right_rounded,
+          size: 20, color: AppColors.textSecondary),
       onTap: onTap,
     );
   }
@@ -317,7 +340,13 @@ class _ProfileTabState extends State<ProfileTab> {
             child: _buildIconGridItem(
               Icons.psychology_outlined,
               'Trợ lý\nAI',
-              () => showAiAssistantPanel(context, AiPanelTab.assistant),
+              () {
+                try {
+                  Get.find<ShellController>().changeTab(3);
+                } catch (_) {
+                  Get.toNamed(AppRoutes.aiQuestionnaire);
+                }
+              },
               iconColor: Colors.blue.shade700,
             ),
           ),
@@ -334,7 +363,7 @@ class _ProfileTabState extends State<ProfileTab> {
               Icons.map_outlined,
               'Social\nMap',
               () => Get.find<ShellController>().changeTab(0),
-              iconColor: Colors.green.shade600,
+              iconColor: AppColors.success,
             ),
           ),
           Expanded(
@@ -353,7 +382,8 @@ class _ProfileTabState extends State<ProfileTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8), // Lighter background for Shopee style
+      backgroundColor:
+          const Color(0xFFF5F6F8), // Lighter background for Shopee style
       body: Obx(() {
         final user = _controller.currentUser.value;
         if (user == null) {
@@ -379,33 +409,41 @@ class _ProfileTabState extends State<ProfileTab> {
                     _buildSupportTile(
                       icon: Icons.notifications_active_outlined,
                       title: 'Cài đặt thông báo',
-                      onTap: () => SnackbarHelper.info('Tính năng đang phát triển'),
+                      onTap: () =>
+                          SnackbarHelper.info('Tính năng đang phát triển'),
                     ),
-                    const Divider(height: 1, indent: 40, color: Color(0xFFF0F0F0)),
+                    const Divider(
+                        height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.location_on_outlined,
                       title: 'Cài đặt quyền riêng tư định vị',
-                      onTap: () => SnackbarHelper.info('Tính năng đang phát triển'),
+                      onTap: () =>
+                          SnackbarHelper.info('Tính năng đang phát triển'),
                     ),
-                    const Divider(height: 1, indent: 40, color: Color(0xFFF0F0F0)),
+                    const Divider(
+                        height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.language_rounded,
                       title: 'Cài đặt ngôn ngữ',
-                      onTap: () => SnackbarHelper.info('Tính năng đang phát triển'),
+                      onTap: () =>
+                          SnackbarHelper.info('Tính năng đang phát triển'),
                     ),
-                    const Divider(height: 1, indent: 40, color: Color(0xFFF0F0F0)),
+                    const Divider(
+                        height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.policy_outlined,
                       title: 'Chính sách hoàn hủy',
                       onTap: () => Get.toNamed(AppRoutes.bookingTerms),
                     ),
-                    const Divider(height: 1, indent: 40, color: Color(0xFFF0F0F0)),
+                    const Divider(
+                        height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.description_outlined,
                       title: 'Điều khoản dịch vụ',
                       onTap: () => Get.toNamed(AppRoutes.terms),
                     ),
-                    const Divider(height: 1, indent: 40, color: Color(0xFFF0F0F0)),
+                    const Divider(
+                        height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.privacy_tip_outlined,
                       title: 'Chính sách bảo mật',

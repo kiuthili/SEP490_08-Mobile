@@ -30,5 +30,4 @@ class StaffScheduleService extends GetxService with BaseServiceMixin {
       throw StateError('Unexpected response format for assigned schedules');
     });
   }
-
 }

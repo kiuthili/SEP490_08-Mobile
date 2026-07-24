@@ -17,10 +17,8 @@ import '../screens/customer/ai_questionnaire_screen.dart';
 import '../screens/staff/staff_checkin_tab.dart';
 import '../screens/staff/staff_customers_tab.dart';
 import '../screens/staff/staff_schedules_tab.dart';
-import '../widgets/ai_floating_assistant.dart';
 import '../widgets/ios_bottom_nav.dart';
 import '../widgets/page_scaffold.dart';
-import '../utils/auth_gate.dart';
 import '../utils/auth_gate.dart';
 
 class MainShellScreen extends GetView<ShellController> {
@@ -153,7 +151,8 @@ class MainShellScreen extends GetView<ShellController> {
           index: index.clamp(0, pages.length - 1),
           children: pages,
         ),
-        floatingActionButton: null, // Removed AiFloatingAssistant as it is now in navigation bar
+        floatingActionButton:
+            null, // Removed AiFloatingAssistant as it is now in navigation bar
         bottomNavigationBar: IosBottomNav(
           items: navItems,
           selectedIndex: index,

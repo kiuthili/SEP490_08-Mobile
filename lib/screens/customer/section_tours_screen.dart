@@ -39,7 +39,8 @@ class _SectionToursScreenState extends State<SectionToursScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Light gray background for grid items
+      backgroundColor:
+          AppColors.backgroundSecondary, // Light gray background for grid items
       appBar: AppBar(
         title: Obx(() => Text(
               _controller.title.value,
@@ -107,7 +108,8 @@ class _SectionToursScreenState extends State<SectionToursScreen> {
                       final tour = _controller.tours[index];
                       return SearchResultTourCard(
                         tour: tour,
-                        onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id),
+                        onTap: () => Get.toNamed(AppRoutes.tourDetail,
+                            arguments: tour.id),
                       );
                     },
                     childCount: _controller.tours.length,

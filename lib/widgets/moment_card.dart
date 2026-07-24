@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/social_models.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class MomentCard extends StatelessWidget {
   final MomentModel moment;
@@ -34,10 +35,10 @@ class MomentCard extends StatelessWidget {
         ? moment.fullName!.trim()[0].toUpperCase()
         : '?';
     final hasImage = moment.imageUrl.isNotEmpty;
-    
-    // Nếu là ảnh ngang quá mức, AspectRatio 4/5 sẽ crop center. 
+
+    // Nếu là ảnh ngang quá mức, AspectRatio 4/5 sẽ crop center.
     // Nếu không có ảnh, dùng một gradient nhẹ.
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: isDetail ? 0 : 24),
       clipBehavior: Clip.antiAlias,
@@ -78,7 +79,7 @@ class MomentCard extends StatelessWidget {
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF34C3FF), Color(0xFF0068E0)],
+                    colors: [Color(0xFF34C3FF), AppColors.brand],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -118,10 +119,13 @@ class MomentCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black26, blurRadius: 4)
+                      ],
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: (moment.avatarUrl != null && moment.avatarUrl!.isNotEmpty)
+                    child: (moment.avatarUrl != null &&
+                            moment.avatarUrl!.isNotEmpty)
                         ? CachedNetworkImage(
                             imageUrl: moment.avatarUrl!,
                             fit: BoxFit.cover,
@@ -151,7 +155,9 @@ class MomentCard extends StatelessWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                            shadows: [
+                              Shadow(color: Colors.black45, blurRadius: 4)
+                            ],
                           ),
                         ),
                         Text(
@@ -161,7 +167,9 @@ class MomentCard extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            shadows: const [Shadow(color: Colors.black45, blurRadius: 4)],
+                            shadows: const [
+                              Shadow(color: Colors.black45, blurRadius: 4)
+                            ],
                           ),
                         ),
                       ],
@@ -193,7 +201,9 @@ class MomentCard extends StatelessWidget {
                               fontSize: 15,
                               height: 1.4,
                               fontWeight: FontWeight.w500,
-                              shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                              shadows: [
+                                Shadow(color: Colors.black54, blurRadius: 4)
+                              ],
                             ),
                           )
                         : const SizedBox.shrink(),
@@ -207,8 +217,12 @@ class MomentCard extends StatelessWidget {
                         icon: moment.isLikedByMe
                             ? Icons.favorite_rounded
                             : Icons.favorite_outline_rounded,
-                        iconColor: moment.isLikedByMe ? Colors.redAccent : Colors.white,
-                        label: moment.reactionCount > 0 ? '${moment.reactionCount}' : '',
+                        iconColor: moment.isLikedByMe
+                            ? AppColors.error
+                            : Colors.white,
+                        label: moment.reactionCount > 0
+                            ? '${moment.reactionCount}'
+                            : '',
                         onTap: () => onLike(!moment.isLikedByMe),
                       ),
                       const SizedBox(height: 16),
@@ -276,11 +290,13 @@ class MomentCard extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
       ),
       child: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 28),
+        icon:
+            const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 28),
         onSelected: (val) {
           if (val == 'delete') {
             showDialog(
@@ -289,7 +305,8 @@ class MomentCard extends StatelessWidget {
                 title: const Text('Xóa khoảnh khắc'),
                 content: const Text(
                     'Bạn có chắc chắn muốn xóa khoảnh khắc này không? Thao tác này không thể hoàn tác.'),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg)),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
@@ -300,7 +317,8 @@ class MomentCard extends StatelessWidget {
                       Navigator.pop(dialogContext);
                       onDelete(moment.id);
                     },
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                    style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.error),
                     child: const Text('Xóa'),
                   ),
                 ],

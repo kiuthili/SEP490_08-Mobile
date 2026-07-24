@@ -12,6 +12,8 @@ import '../../widgets/app_screen.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/loading_widget.dart';
+import 'ai_chat_tab.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 const _stepsPerPage = 3;
 
@@ -22,13 +24,71 @@ class AiQuestionnaireScreen extends StatefulWidget {
   State<AiQuestionnaireScreen> createState() => _AiQuestionnaireScreenState();
 }
 
-class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen> {
+class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AppScreen(
-      title: 'Trợ lý AI',
-      body: AiQuestionnaireTab(
-        onCompleted: () => Get.offNamed(AppRoutes.aiRecommendations),
+    return DefaultTabController(
+      length: 2,
+      child: AppScreen(
+        title: 'StayHub AI',
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: AppColors.border,
+          labelColor: AppColors.brand,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicator: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.brand, width: 2.5),
+            ),
+          ),
+          tabs: const [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.chat_bubble_outline, size: 18),
+                  SizedBox(width: 8),
+                  Text('Chatbot'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.assignment_outlined, size: 18),
+                  SizedBox(width: 8),
+                  Text('Tư vấn Form'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            AiChatTab(onSwitchToGuide: () => _tabController.animateTo(1)),
+            AiQuestionnaireTab(
+              onCompleted: () => Get.toNamed(AppRoutes.aiRecommendations),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -288,17 +348,23 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             RichText(
               text: TextSpan(
                 text: field.label,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.textPrimary),
                 children: [
                   if (field.required)
-                    const TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                    const TextSpan(
+                        text: ' *', style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),
             if (field.hint != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(field.hint!, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                child: Text(field.hint!,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary)),
               ),
             const SizedBox(height: 12),
             Wrap(
@@ -314,7 +380,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                     color: on ? AppColors.brand : AppColors.textSecondary,
                     fontWeight: on ? FontWeight.bold : FontWeight.normal,
                   ),
-                  side: BorderSide(color: on ? AppColors.brand : AppColors.border),
+                  side: BorderSide(
+                      color: on ? AppColors.brand : AppColors.border),
                   backgroundColor: AppColors.surfaceGrouped,
                   onSelected: (v) => setState(() {
                     if (v) {
@@ -328,7 +395,11 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             if (err != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(err, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(err,
+                    style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
               ),
           ],
         );
@@ -341,17 +412,23 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             RichText(
               text: TextSpan(
                 text: field.label,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.textPrimary),
                 children: [
                   if (field.required)
-                    const TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                    const TextSpan(
+                        text: ' *', style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),
             if (field.hint != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(field.hint!, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                child: Text(field.hint!,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary)),
               ),
             const SizedBox(height: 12),
             Wrap(
@@ -368,7 +445,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                     color: on ? AppColors.brand : AppColors.textSecondary,
                     fontWeight: on ? FontWeight.bold : FontWeight.normal,
                   ),
-                  side: BorderSide(color: on ? AppColors.brand : AppColors.border),
+                  side: BorderSide(
+                      color: on ? AppColors.brand : AppColors.border),
                   backgroundColor: AppColors.surfaceGrouped,
                   onSelected: (v) => setState(() {
                     final list = List<String>.from(selected);
@@ -386,7 +464,11 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             if (err != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(err, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(err,
+                    style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
               ),
           ],
         );
@@ -402,13 +484,15 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
           ),
         );
       case 'number':
-        if (['adultCount', 'childrenCount', 'elderlyCount'].contains(field.fieldKey)) {
-          final count = int.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
+        if (['adultCount', 'childrenCount', 'elderlyCount']
+            .contains(field.fieldKey)) {
+          final count =
+              int.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
           input = Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: AppColors.border),
             ),
             child: Row(
@@ -416,32 +500,39 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 Expanded(
                   child: Text(
                     field.label,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                 ),
                 Row(
                   children: [
                     IconButton(
                       icon: const Icon(Icons.remove_circle_outline),
-                      color: count > (field.fieldKey == 'adultCount' ? 1 : 0) ? AppColors.brand : AppColors.textSecondary,
-                      onPressed: count > (field.fieldKey == 'adultCount' ? 1 : 0)
-                          ? () => setState(() {
-                                _values[field.fieldKey] = count - 1;
-                                _errors.remove(field.fieldKey);
-                              })
-                          : null,
+                      color: count > (field.fieldKey == 'adultCount' ? 1 : 0)
+                          ? AppColors.brand
+                          : AppColors.textSecondary,
+                      onPressed:
+                          count > (field.fieldKey == 'adultCount' ? 1 : 0)
+                              ? () => setState(() {
+                                    _values[field.fieldKey] = count - 1;
+                                    _errors.remove(field.fieldKey);
+                                  })
+                              : null,
                     ),
                     SizedBox(
                       width: 24,
                       child: Text(
                         '$count',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline),
-                      color: count < 20 ? AppColors.brand : AppColors.textSecondary,
+                      color: count < 20
+                          ? AppColors.brand
+                          : AppColors.textSecondary,
                       onPressed: count < 20
                           ? () => setState(() {
                                 _values[field.fieldKey] = count + 1;
@@ -455,13 +546,16 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             ),
           );
         } else if (field.fieldKey == 'maxBudgetPerPerson') {
-          final numericValue = double.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
-          final displayValue = numericValue > 0 ? NumberFormat('#,###').format(numericValue) : 'Không giới hạn';
+          final numericValue =
+              double.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
+          final displayValue = numericValue > 0
+              ? NumberFormat('#,###').format(numericValue)
+              : 'Không giới hạn';
           input = Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -472,20 +566,29 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   children: [
                     Text(
                       field.label,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.textSecondary),
                     ),
                     Row(
                       children: [
                         Text(
                           displayValue,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.brand),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: AppColors.brand),
                         ),
                         if (numericValue > 0)
                           const Padding(
                             padding: EdgeInsets.only(left: 4),
                             child: Text(
                               'VND',
-                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary),
                             ),
                           ),
                       ],
@@ -508,7 +611,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                     value: numericValue.clamp(0, 20000000).toDouble(),
                     onChanged: (val) {
                       setState(() {
-                        _values[field.fieldKey] = val == 0 ? '' : val.toInt().toString();
+                        _values[field.fieldKey] =
+                            val == 0 ? '' : val.toInt().toString();
                         _errors.remove(field.fieldKey);
                       });
                     },
@@ -518,13 +622,25 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Không giới hạn', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
-                    Text('20,000,000+ VND', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+                    Text('Không giới hạn',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary)),
+                    Text('20,000,000+ VND',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary)),
                   ],
                 ),
                 if (err != null) ...[
                   const SizedBox(height: 8),
-                  Text(err, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(err,
+                      style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
                 ]
               ],
             ),

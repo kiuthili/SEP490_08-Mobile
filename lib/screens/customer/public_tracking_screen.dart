@@ -8,6 +8,8 @@ import '../../services/social_service.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/loading_widget.dart';
 import '../../constants/api_constants.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 /// Theo dõi vị trí công khai qua token (giống web).
 class PublicTrackingScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class PublicTrackingScreen extends StatefulWidget {
 class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
   final _social = Get.find<SocialService>();
   final _signalR = Get.find<SignalRService>();
-  
+
   final MapController _mapController = MapController();
 
   late final String _token;
@@ -107,7 +109,7 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.link_off, size: 56, color: Colors.red.shade300),
+                Icon(Icons.link_off, size: 56, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
                   'Liên kết không hợp lệ hoặc đã hết hạn',
@@ -154,7 +156,7 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
                     height: 50,
                     child: const Icon(
                       Icons.location_on,
-                      color: Colors.red,
+                      color: AppColors.error,
                       size: 40,
                     ),
                   ),
@@ -189,13 +191,13 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(20),
+                          color: AppColors.error.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.circle, size: 8, color: Colors.red),
+                            Icon(Icons.circle, size: 8, color: AppColors.error),
                             SizedBox(width: 4),
                             Text(
                               'LIVE',

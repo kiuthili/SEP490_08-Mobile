@@ -10,6 +10,8 @@ import '../../models/feature_models.dart';
 import '../../services/location_helper.dart';
 import '../../utils/image_helper.dart';
 import '../../utils/snackbar_helper.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 const int _kMaxCaption = 500;
 const Color _kAccentCyan = Color(0xFF00E5FF);
@@ -164,7 +166,8 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   Future<void> _takePicture() async {
     if (_ongoingSchedules.isEmpty) {
-      SnackbarHelper.error('Bạn chỉ có thể chụp Moment cho Tour đã hoặc đang diễn ra.');
+      SnackbarHelper.error(
+          'Bạn chỉ có thể chụp Moment cho Tour đã hoặc đang diễn ra.');
       return;
     }
     final cam = _cameraController;
@@ -184,13 +187,16 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   Future<void> _submitMoment() async {
     if (_ongoingSchedules.isEmpty) {
-      SnackbarHelper.error('Bạn chỉ có thể đăng Moment cho Tour đã hoặc đang diễn ra.');
+      SnackbarHelper.error(
+          'Bạn chỉ có thể đăng Moment cho Tour đã hoặc đang diễn ra.');
       return;
     }
     if (_capturedImage == null) return;
-    
-    if (!await _capturedImage!.exists() || await _capturedImage!.length() == 0) {
-      SnackbarHelper.error('Captured image is invalid or empty. Please recapture.');
+
+    if (!await _capturedImage!.exists() ||
+        await _capturedImage!.length() == 0) {
+      SnackbarHelper.error(
+          'Captured image is invalid or empty. Please recapture.');
       return;
     }
 
@@ -309,7 +315,8 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.15),
                     ),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                    child: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -396,20 +403,22 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     if (_isInitializing) {
       return Container(
         color: Colors.black,
-        child: const Center(child: CircularProgressIndicator(color: Colors.white70)),
+        child: const Center(
+            child: CircularProgressIndicator(color: Colors.white70)),
       );
     }
     final cam = _cameraController;
     if (cam == null || !cam.value.isInitialized) {
       return Container(
-        color: const Color(0xFF111111),
+        color: AppColors.textPrimary,
         child: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.camera_alt_outlined, color: Colors.white30, size: 48),
               SizedBox(height: 12),
-              Text('Camera unavailable', style: TextStyle(color: Colors.white38, fontSize: 13)),
+              Text('Camera unavailable',
+                  style: TextStyle(color: Colors.white38, fontSize: 13)),
             ],
           ),
         ),
@@ -418,7 +427,9 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        var scale = constraints.maxHeight / constraints.maxWidth * cam.value.aspectRatio;
+        var scale = constraints.maxHeight /
+            constraints.maxWidth *
+            cam.value.aspectRatio;
         if (scale < 1) scale = 1 / scale;
         return Transform.scale(
           scale: scale,
@@ -443,18 +454,23 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
               GestureDetector(
                 onTap: _retake,
                 child: Container(
-                  width: 36, height: 36,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.15),
                   ),
-                  child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+                  child: const Icon(Icons.arrow_back_rounded,
+                      color: Colors.white, size: 20),
                 ),
               ),
               const Spacer(),
               const Text(
                 'Preview',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 17),
               ),
               const Spacer(),
               const SizedBox(width: 36),
@@ -478,20 +494,26 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                     errorBuilder: (_, __, ___) => Container(
                       color: Colors.grey.shade900,
                       child: const Center(
-                        child: Icon(Icons.broken_image_rounded, color: Colors.white30, size: 48),
+                        child: Icon(Icons.broken_image_rounded,
+                            color: Colors.white30, size: 48),
                       ),
                     ),
                   ),
 
                   // Caption overlay at bottom of image
                   Positioned(
-                    left: 0, right: 0, bottom: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [Colors.black.withValues(alpha: 0.65), Colors.transparent],
+                          colors: [
+                            Colors.black.withValues(alpha: 0.65),
+                            Colors.transparent
+                          ],
                         ),
                       ),
                       padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
@@ -501,16 +523,20 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                          shadows: [
+                            Shadow(color: Colors.black54, blurRadius: 4)
+                          ],
                         ),
                         maxLines: 2,
                         maxLength: _kMaxCaption,
                         textInputAction: TextInputAction.done,
                         decoration: const InputDecoration(
                           hintText: 'Add a caption...',
-                          hintStyle: TextStyle(color: Colors.white60, fontSize: 15),
+                          hintStyle:
+                              TextStyle(color: Colors.white60, fontSize: 15),
                           border: InputBorder.none,
-                          counterStyle: TextStyle(color: Colors.white54, fontSize: 11),
+                          counterStyle:
+                              TextStyle(color: Colors.white54, fontSize: 11),
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -532,7 +558,8 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: _privacyOptions
-                .where((opt) => opt.value != 'Tour' || (_selectedScheduleId ?? 0) != 0)
+                .where((opt) =>
+                    opt.value != 'Tour' || (_selectedScheduleId ?? 0) != 0)
                 .map((opt) {
               final sel = _privacy == opt.value;
               return Padding(
@@ -544,9 +571,10 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                       color: sel ? _kAccentCyan : Colors.white12,
                       border: Border.all(
                         color: sel ? _kAccentCyan : Colors.white24,
@@ -556,7 +584,9 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(opt.icon, size: 13, color: sel ? Colors.black : Colors.white70),
+                        Icon(opt.icon,
+                            size: 13,
+                            color: sel ? Colors.black : Colors.white70),
                         const SizedBox(width: 5),
                         Text(
                           opt.label,
@@ -588,17 +618,23 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
               style: FilledButton.styleFrom(
                 backgroundColor: _kAccentCyan,
                 foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(32)),
                 elevation: 0,
               ),
               child: _isUploading
                   ? const SizedBox(
-                      width: 22, height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: Colors.black),
                     )
                   : const Text(
                       'Send Moment',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 0.3),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: 0.3),
                     ),
             ),
           ),
@@ -624,7 +660,8 @@ class _LocketShutterButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 78, height: 78,
+        width: 78,
+        height: 78,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: _kAccentCyan, width: 3.5),
@@ -659,7 +696,8 @@ class _BottomIconBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
@@ -684,7 +722,9 @@ class _TourPill extends StatelessWidget {
     if (found.isEmpty) return schedules.first.tourName;
     if (found.first.scheduleId == 0) {
       final tourCount = schedules.length - 1;
-      return tourCount > 0 ? '$tourCount Tour${tourCount > 1 ? 's' : ''}' : 'Personal';
+      return tourCount > 0
+          ? '$tourCount Tour${tourCount > 1 ? 's' : ''}'
+          : 'Personal';
     }
     return found.first.tourName;
   }
@@ -692,8 +732,9 @@ class _TourPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<int>(
-      color: const Color(0xFF1E1E1E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: AppColors.textPrimary,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, 44),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -729,7 +770,8 @@ class _TourPill extends StatelessWidget {
               Icon(
                 s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
                 size: 16,
-                color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
+                color:
+                    s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -738,8 +780,12 @@ class _TourPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white,
-                    fontWeight: s.scheduleId == selectedId ? FontWeight.bold : FontWeight.normal,
+                    color: s.scheduleId == selectedId
+                        ? _kAccentCyan
+                        : Colors.white,
+                    fontWeight: s.scheduleId == selectedId
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 13,
                   ),
                 ),
@@ -769,12 +815,16 @@ class _HistoryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = schedules.where((s) => s.scheduleId == selectedId).firstOrNull?.tourName
-        ?? 'History';
+    final label = schedules
+            .where((s) => s.scheduleId == selectedId)
+            .firstOrNull
+            ?.tourName ??
+        'History';
 
     return PopupMenuButton<int>(
-      color: const Color(0xFF1E1E1E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: AppColors.textPrimary,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, -120),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -801,7 +851,8 @@ class _HistoryPill extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+            const Icon(Icons.keyboard_arrow_down_rounded,
+                color: Colors.white70, size: 16),
           ],
         ),
       ),
@@ -813,7 +864,8 @@ class _HistoryPill extends StatelessWidget {
               Icon(
                 s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
                 size: 16,
-                color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
+                color:
+                    s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -822,8 +874,12 @@ class _HistoryPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: s.scheduleId == selectedId ? _kAccentCyan : Colors.white,
-                    fontWeight: s.scheduleId == selectedId ? FontWeight.bold : FontWeight.normal,
+                    color: s.scheduleId == selectedId
+                        ? _kAccentCyan
+                        : Colors.white,
+                    fontWeight: s.scheduleId == selectedId
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 13,
                   ),
                 ),
@@ -852,20 +908,23 @@ class _PrivacyPill extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   IconData get _icon {
-    final found = _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
+    final found =
+        _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
     return found?.icon ?? Icons.public;
   }
 
   String get _label {
-    final found = _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
+    final found =
+        _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
     return found?.label ?? 'Public';
   }
 
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
-      color: const Color(0xFF1E1E1E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: AppColors.textPrimary,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, -120),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -887,7 +946,8 @@ class _PrivacyPill extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+            const Icon(Icons.keyboard_arrow_down_rounded,
+                color: Colors.white70, size: 16),
           ],
         ),
       ),
@@ -913,8 +973,7 @@ class _PrivacyPill extends StatelessWidget {
                   fontSize: 13,
                 ),
               ),
-              if (isSelected)
-                const Spacer(),
+              if (isSelected) const Spacer(),
               if (isSelected)
                 const Icon(Icons.check_rounded, size: 14, color: _kAccentCyan),
             ],

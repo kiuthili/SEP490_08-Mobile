@@ -89,9 +89,9 @@ class OrderService extends GetxService with BaseServiceMixin {
   }
 
   Future<List<ScheduleCustomerModel>> getScheduleCustomers(
-      int scheduleId, {
-        String? attendeeName,
-      }) async {
+    int scheduleId, {
+    String? attendeeName,
+  }) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.orders}/schedule/$scheduleId/customers',
@@ -118,17 +118,23 @@ class OrderService extends GetxService with BaseServiceMixin {
 
       final response = await api.dio.get(url);
       final rawData = response.data;
-      
+
       // Parse list from paginated or flat data
       List<dynamic> list = [];
       if (rawData is List) {
         list = rawData;
       } else if (rawData is Map) {
-        final dataField = rawData['data'] ?? rawData['Data'] ?? rawData['items'] ?? rawData['Items'];
+        final dataField = rawData['data'] ??
+            rawData['Data'] ??
+            rawData['items'] ??
+            rawData['Items'];
         if (dataField is List) {
           list = dataField;
         } else if (dataField is Map) {
-          final subData = dataField['data'] ?? dataField['Data'] ?? dataField['items'] ?? dataField['Items'];
+          final subData = dataField['data'] ??
+              dataField['Data'] ??
+              dataField['items'] ??
+              dataField['Items'];
           if (subData is List) {
             list = subData;
           }
@@ -143,10 +149,12 @@ class OrderService extends GetxService with BaseServiceMixin {
           .toList();
 
       // Format tour names with departure dates for Manager and Staff:
-      if (user.roles.any((r) => r.toLowerCase() == 'manager' || r.toLowerCase() == 'staff')) {
+      if (user.roles.any(
+          (r) => r.toLowerCase() == 'manager' || r.toLowerCase() == 'staff')) {
         for (var i = 0; i < resultList.length; i++) {
           final item = resultList[i];
-          final dateStr = '${item.departureDate.day.toString().padLeft(2, '0')}/${item.departureDate.month.toString().padLeft(2, '0')}/${item.departureDate.year}';
+          final dateStr =
+              '${item.departureDate.day.toString().padLeft(2, '0')}/${item.departureDate.month.toString().padLeft(2, '0')}/${item.departureDate.year}';
           resultList[i] = EligibleScheduleModel(
             scheduleId: item.scheduleId,
             tourName: '${item.tourName} - $dateStr',
@@ -174,10 +182,10 @@ class OrderService extends GetxService with BaseServiceMixin {
   }
 
   Future<List<StaffTicketModel>> getTicketsBySchedule(
-      int scheduleId, {
-        String? attendeeName,
-        String? checkInStatus,
-      }) async {
+    int scheduleId, {
+    String? attendeeName,
+    String? checkInStatus,
+  }) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tickets}/schedule/$scheduleId',

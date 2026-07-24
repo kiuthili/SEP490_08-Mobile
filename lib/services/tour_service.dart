@@ -28,7 +28,9 @@ class TourService extends GetxService with BaseServiceMixin {
       return parsePagination(response.data, TourModel.fromJson);
     });
   }
-  Future<List<String>> getSearchSuggestions(String searchTerm, {int pageSize = 5}) async {
+
+  Future<List<String>> getSearchSuggestions(String searchTerm,
+      {int pageSize = 5}) async {
     if (searchTerm.trim().isEmpty) return [];
     try {
       final response = await api.dio.get(
@@ -170,7 +172,8 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<PaginationModel<TourModel>> getHotTours({int page = 1, int pageSize = 10}) async {
+  Future<PaginationModel<TourModel>> getHotTours(
+      {int page = 1, int pageSize = 10}) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tours}/hot',
@@ -180,7 +183,8 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<PaginationModel<TourModel>> getSaleTours({int page = 1, int pageSize = 10}) async {
+  Future<PaginationModel<TourModel>> getSaleTours(
+      {int page = 1, int pageSize = 10}) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tours}/sale',
@@ -190,7 +194,8 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<PaginationModel<TourModel>> getUpcomingTours({int page = 1, int pageSize = 10}) async {
+  Future<PaginationModel<TourModel>> getUpcomingTours(
+      {int page = 1, int pageSize = 10}) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tours}/upcoming',
@@ -200,7 +205,8 @@ class TourService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<List<TourModel>> getToursByRegion(String region, {int pageSize = 12}) async {
+  Future<List<TourModel>> getToursByRegion(String region,
+      {int pageSize = 12}) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tours}/public/region/$region',

@@ -21,7 +21,8 @@ class OrdersTab extends StatefulWidget {
   State<OrdersTab> createState() => _OrdersTabState();
 }
 
-class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMixin {
+class _OrdersTabState extends State<OrdersTab>
+    with SingleTickerProviderStateMixin {
   final OrderController controller = Get.find<OrderController>();
 
   static const _filters = <String, String>{
@@ -39,7 +40,7 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _tabController = TabController(length: _filters.length, vsync: this);
-    
+
     final initialStatus = Get.arguments as String?;
     if (initialStatus != null && _filters.containsKey(initialStatus)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,10 +53,11 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
           controller.setStatusFilter(_filters.keys.first);
         });
       } else {
-        _tabController.index = _filters.keys.toList().indexOf(controller.statusFilter.value!);
+        _tabController.index =
+            _filters.keys.toList().indexOf(controller.statusFilter.value!);
       }
     }
-    
+
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         final status = _filters.keys.elementAt(_tabController.index);
@@ -100,8 +102,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.brand,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+          labelStyle:
+              const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          unselectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
           tabs: _filters.values.map((label) => Tab(text: label)).toList(),
         ),
       ),
@@ -273,7 +277,7 @@ class _OrderCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.15),
                             ),
@@ -326,7 +330,8 @@ class _OrderCard extends StatelessWidget {
                                 : DateFormatter.display(departure),
                           ),
                         ),
-                        Container(width: 1, height: 24, color: AppColors.separator),
+                        Container(
+                            width: 1, height: 24, color: AppColors.separator),
                         Expanded(
                           child: _OrderMeta(
                             icon: Icons.confirmation_number_outlined,
@@ -334,7 +339,8 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ),
                         if (_location.isNotEmpty) ...[
-                          Container(width: 1, height: 24, color: AppColors.separator),
+                          Container(
+                              width: 1, height: 24, color: AppColors.separator),
                           Expanded(
                             child: _OrderMeta(
                               icon: Icons.location_on_outlined,
@@ -380,7 +386,7 @@ class _OrderCard extends StatelessWidget {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.brand.withValues(alpha: 0.3),
@@ -525,7 +531,7 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: style.background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'stayhub_logo.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 /// Layout trắng, gọn nhẹ cho Register, ForgotPassword, ResetPassword.
 /// Header nhỏ (back + logo), form bên dưới cuộn tự do.
@@ -36,7 +37,8 @@ class AuthPageLayout extends StatelessWidget {
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(24, topPadding + 16, 24, 24 + bottomPadding),
+          padding:
+              EdgeInsets.fromLTRB(24, topPadding + 16, 24, 24 + bottomPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -45,14 +47,14 @@ class AuthPageLayout extends StatelessWidget {
                 children: [
                   if (showBack)
                     InkWell(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                       onTap: Get.back,
                       child: Container(
                         width: 38,
                         height: 38,
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: const Icon(
                           Icons.arrow_back_ios_new_rounded,

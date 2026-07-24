@@ -71,8 +71,6 @@ Future<void> main() async {
   Get.lazyPut<SocialService>(() => SocialService());
   Get.lazyPut<SocialController>(() => SocialController());
 
-
-
   runApp(const StayHubApp());
   WidgetsBinding.instance.addPostFrameCallback((_) {
     paymentDeepLinks.start();

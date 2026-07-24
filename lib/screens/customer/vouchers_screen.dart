@@ -11,6 +11,7 @@ import '../../widgets/ios_grouped.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/validators.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class VouchersScreen extends StatefulWidget {
   const VouchersScreen({super.key});
@@ -124,7 +125,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
           height: 115,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -138,7 +139,8 @@ class _VouchersScreenState extends State<VouchersScreen> {
               Container(
                 width: 110,
                 decoration: BoxDecoration(
-                  color: isAvailable ? AppColors.brand : const Color(0xFFE0E0E0),
+                  color:
+                      isAvailable ? AppColors.brand : const Color(0xFFE0E0E0),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     bottomLeft: Radius.circular(12),
@@ -199,7 +201,8 @@ class _VouchersScreenState extends State<VouchersScreen> {
                       if (v.minOrderAmount != null && v.minOrderAmount! > 0)
                         Text(
                           'Đơn tối thiểu ${CurrencyFormatter.format(v.minOrderAmount!)}',
-                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black54),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -212,17 +215,23 @@ class _VouchersScreenState extends State<VouchersScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: isAvailable ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
-                                  borderRadius: BorderRadius.circular(4),
+                                  color: isAvailable
+                                      ? const Color(0xFFE8F5E9)
+                                      : const Color(0xFFFFEBEE),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.xs),
                                 ),
                                 child: Text(
                                   statusLabel,
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: isAvailable ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+                                    color: isAvailable
+                                        ? const Color(0xFF2E7D32)
+                                        : const Color(0xFFC62828),
                                   ),
                                 ),
                               ),
@@ -230,7 +239,8 @@ class _VouchersScreenState extends State<VouchersScreen> {
                               if (v.endDate != null)
                                 Text(
                                   'HSD: ${DateFormatter.display(v.endDate)}',
-                                  style: const TextStyle(fontSize: 10, color: Colors.black45),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.black45),
                                 ),
                             ],
                           ),
@@ -238,20 +248,28 @@ class _VouchersScreenState extends State<VouchersScreen> {
                             OutlinedButton(
                               onPressed: () {
                                 if (v.tourId != null && v.tourId! > 0) {
-                                  Get.toNamed(AppRoutes.tourDetail, arguments: v.tourId);
+                                  Get.toNamed(AppRoutes.tourDetail,
+                                      arguments: v.tourId);
                                 } else {
                                   Get.toNamed(AppRoutes.tourSearch);
                                 }
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.brand,
-                                side: const BorderSide(color: AppColors.brand, width: 1),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                side: const BorderSide(
+                                    color: AppColors.brand, width: 1),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 4),
                                 minimumSize: const Size(0, 26),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.lg)),
                               ),
-                              child: const Text('Dùng ngay', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              child: const Text('Dùng ngay',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold)),
                             ),
                         ],
                       ),

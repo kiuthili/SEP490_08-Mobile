@@ -1,298 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get/get.dart';
-import '../controllers/feature_controllers.dart';
-import '../models/ai_models.dart';
-import '../routes/app_routes.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
-import 'ios_grouped.dart';
-import '../screens/customer/ai_questionnaire_screen.dart';
-import '../screens/customer/ai_recommendations_screen.dart';
+import '../../controllers/feature_controllers.dart';
+import '../../models/ai_models.dart';
+import '../../routes/app_routes.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/ios_grouped.dart';
 import 'package:stayhub_mobile/theme/app_radius.dart';
 
-class AiFloatingAssistant extends StatelessWidget {
-  const AiFloatingAssistant({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      heroTag: 'ai-floating-assistant',
-      onPressed: () => showAiAssistantPanel(context),
-      icon: const Icon(Icons.auto_awesome_rounded),
-      label: const Text('AI Guide'),
-      backgroundColor: AppColors.brand,
-      foregroundColor: Colors.white,
-      extendedPadding: const EdgeInsets.symmetric(horizontal: 18),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
-    );
-  }
-}
-
-enum AiPanelTab { guide, assistant }
-
-Future<void> showAiAssistantPanel([
-  BuildContext? context,
-  AiPanelTab initialTab = AiPanelTab.guide,
-]) {
-  final navContext = _navigatorContext(context);
-  if (navContext == null) return Future.value();
-
-  return showModalBottomSheet<void>(
-    context: navContext,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _AiAssistantSheet(initialTab: initialTab),
-  );
-}
-
-BuildContext? _navigatorContext(BuildContext? context) {
-  if (context != null && Navigator.maybeOf(context) != null) {
-    return context;
-  }
-
-  final getContext = Get.context;
-  if (getContext != null && Navigator.maybeOf(getContext) != null) {
-    return getContext;
-  }
-
-  final overlayContext = Get.overlayContext;
-  if (overlayContext != null && Navigator.maybeOf(overlayContext) != null) {
-    return overlayContext;
-  }
-
-  return null;
-}
-
-class _AiAssistantSheet extends StatefulWidget {
-  const _AiAssistantSheet({required this.initialTab});
-
-  final AiPanelTab initialTab;
-
-  @override
-  State<_AiAssistantSheet> createState() => _AiAssistantSheetState();
-}
-
-class _AiAssistantSheetState extends State<_AiAssistantSheet>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: widget.initialTab == AiPanelTab.guide ? 0 : 1,
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final height = MediaQuery.sizeOf(context).height * 0.86;
-    return Container(
-      height: height,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 42,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.separator,
-              borderRadius: BorderRadius.circular(AppRadius.xs),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-            decoration: BoxDecoration(
-              gradient: AppColors.brandGradient,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(19),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'StayHub AI',
-                        style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'AI Guide va AI Assistant',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.86),
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded),
-                  color: Colors.white,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceGrouped,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textSecondary,
-                indicator: BoxDecoration(
-                  color: AppColors.brand,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                tabs: const [
-                  Tab(icon: Icon(Icons.travel_explore), text: 'AI Guide'),
-                  Tab(
-                    icon: Icon(Icons.chat_bubble_outline),
-                    text: 'AI Assistant',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                const _AiGuideTab(),
-                _AiAssistantChatTab(
-                  onSwitchToGuide: () {
-                    _tabController.animateTo(0);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AiGuideTab extends StatefulWidget {
-  const _AiGuideTab();
-
-  @override
-  State<_AiGuideTab> createState() => _AiGuideTabState();
-}
-
-class _AiGuideTabState extends State<_AiGuideTab>
-    with SingleTickerProviderStateMixin {
-  late final TabController _guideController;
-
-  @override
-  void initState() {
-    super.initState();
-    _guideController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _guideController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: SegmentedButton<int>(
-            segments: const [
-              ButtonSegment(
-                value: 0,
-                icon: Icon(Icons.psychology_outlined),
-                label: Text('Khảo sát'),
-              ),
-              ButtonSegment(
-                value: 1,
-                icon: Icon(Icons.auto_awesome_outlined),
-                label: Text('Gợi ý'),
-              ),
-            ],
-            selected: {_guideController.index},
-            onSelectionChanged: (value) {
-              setState(() => _guideController.index = value.first);
-            },
-          ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _guideController,
-            children: [
-              AiQuestionnaireTab(
-                onCompleted: () {
-                  setState(() => _guideController.index = 1);
-                },
-              ),
-              AiRecommendationsTab(
-                onRetake: () {
-                  setState(() => _guideController.index = 0);
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AiAssistantChatTab extends StatefulWidget {
-  const _AiAssistantChatTab({this.onSwitchToGuide});
+class AiChatTab extends StatefulWidget {
+  const AiChatTab({super.key, this.onSwitchToGuide});
 
   final VoidCallback? onSwitchToGuide;
 
   @override
-  State<_AiAssistantChatTab> createState() => _AiAssistantChatTabState();
+  State<AiChatTab> createState() => _AiChatTabState();
 }
 
-class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
+class _AiChatTabState extends State<AiChatTab> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   late final AiController _ai;
@@ -348,7 +74,7 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: const BoxDecoration(
-                color: Color(0x0F0052CC), // brand with opacity
+                color: Color(0x0F0052CC),
                 border: Border(
                   bottom: BorderSide(color: AppColors.border),
                 ),
@@ -543,9 +269,26 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
                   maxLines: 3,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Nhập câu hỏi...',
-                    prefixIcon: Icon(Icons.auto_awesome_outlined),
+                    prefixIcon: const Icon(Icons.auto_awesome_outlined),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      borderSide:
+                          const BorderSide(color: AppColors.brand, width: 1.5),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
                   ),
                 ),
               ),
@@ -553,6 +296,10 @@ class _AiAssistantChatTabState extends State<_AiAssistantChatTab> {
               Obx(
                 () => IconButton.filled(
                   onPressed: _ai.isSendingChat.value ? null : () => _send(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.brand,
+                    foregroundColor: Colors.white,
+                  ),
                   icon: _ai.isSendingChat.value
                       ? const SizedBox(
                           width: 18,
@@ -600,13 +347,27 @@ class _ChatBubble extends StatelessWidget {
                 color: isUser ? AppColors.brand : AppColors.surfaceGrouped,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: Text(
-                message.text,
-                style: TextStyle(
-                  color: isUser ? Colors.white : AppColors.textPrimary,
-                  height: 1.35,
-                ),
-              ),
+              child: isUser
+                  ? Text(
+                      message.text,
+                      style: TextStyle(
+                        color: Colors.white,
+                        height: 1.35,
+                      ),
+                    )
+                  : MarkdownBody(
+                      data: message.text,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(
+                          color: AppColors.textPrimary,
+                          height: 1.45,
+                        ),
+                        strong: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
             ),
           ),
           if (!isUser && response != null) ...[
@@ -624,7 +385,8 @@ class _ChatBubble extends StatelessWidget {
                         subtitle: Text(t.reason ?? t.city ?? ''),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
-                          Navigator.of(context).pop();
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
                           Get.toNamed(AppRoutes.tourDetail,
                               arguments: t.tourId);
                         },

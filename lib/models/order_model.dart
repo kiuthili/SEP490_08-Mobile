@@ -178,8 +178,6 @@ class OrderScheduleInfo {
       );
 }
 
-
-
 class TicketModel {
   final int id;
   final int? orderId;

@@ -14,6 +14,7 @@ import '../../widgets/custom_text_field.dart';
 import 'package:flutter/services.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
 import '../../widgets/ios_grouped.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class StaffCheckInTab extends StatefulWidget {
   const StaffCheckInTab({super.key});
@@ -41,8 +42,7 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _lineAnimation =
-        Tween<double>(begin: 0, end: 1).animate(_lineController);
+    _lineAnimation = Tween<double>(begin: 0, end: 1).animate(_lineController);
   }
 
   @override
@@ -90,7 +90,8 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -163,15 +164,13 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
             padding: const EdgeInsets.all(24).copyWith(bottom: 0),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-
-
                 // Camera Scanner
                 Container(
                   height: 280,
                   width: double.infinity,
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     color: Colors.black,
                     boxShadow: [
                       BoxShadow(
@@ -223,7 +222,8 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
                         Container(
                           color: Colors.black45,
                           child: const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
                           ),
                         ),
                     ],
@@ -270,7 +270,6 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
               ]),
             ),
           ),
-
           Obx(() {
             if (_staff.isLoadingTickets.value) {
               return const SliverFillRemaining(
@@ -290,13 +289,15 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
               );
             }
             return SliverPadding(
-              padding: EdgeInsets.only(bottom: ShellLayout.bottomInset(context) + 24),
+              padding: EdgeInsets.only(
+                  bottom: ShellLayout.bottomInset(context) + 24),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final t = _staff.tickets[index];
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 24),
                       leading: Icon(
                         t.isCheckedIn
                             ? Icons.check_circle_rounded
@@ -337,7 +338,8 @@ void _showQrDialog(BuildContext context, StaffTicketModel t) {
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
       title: Text(t.attendeeName),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -400,12 +402,10 @@ class _OverlayPainter extends CustomPainter {
     final paint = Paint()..color = Colors.black.withValues(alpha: 0.6);
 
     // Vẽ 4 vùng tối xung quanh khung
-    canvas.drawRect(
-        Rect.fromLTRB(0, 0, size.width, rect.top), paint);
+    canvas.drawRect(Rect.fromLTRB(0, 0, size.width, rect.top), paint);
     canvas.drawRect(
         Rect.fromLTRB(0, rect.bottom, size.width, size.height), paint);
-    canvas.drawRect(
-        Rect.fromLTRB(0, rect.top, rect.left, rect.bottom), paint);
+    canvas.drawRect(Rect.fromLTRB(0, rect.top, rect.left, rect.bottom), paint);
     canvas.drawRect(
         Rect.fromLTRB(rect.right, rect.top, size.width, rect.bottom), paint);
   }
@@ -432,29 +432,45 @@ class _CornerMarkers extends StatelessWidget {
           top: 0,
           left: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: false, flipV: false),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: false,
+              flipV: false),
         ),
         const Positioned(
           top: 0,
           right: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: true, flipV: false),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: true,
+              flipV: false),
         ),
         const Positioned(
           bottom: 0,
           left: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: false, flipV: true),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: false,
+              flipV: true),
         ),
         const Positioned(
           bottom: 0,
           right: 0,
           child: _Corner(
-              color: color, t: thickness, l: length, r: r,
-              flipH: true, flipV: true),
+              color: color,
+              t: thickness,
+              l: length,
+              r: r,
+              flipH: true,
+              flipV: true),
         ),
       ],
     );
@@ -493,9 +509,7 @@ class _Corner extends StatelessWidget {
 
 class _CornerPainter extends CustomPainter {
   const _CornerPainter(
-      {required this.color,
-        required this.thickness,
-        required this.radius});
+      {required this.color, required this.thickness, required this.radius});
 
   final Color color;
   final double thickness, radius;
