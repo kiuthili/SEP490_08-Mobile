@@ -192,7 +192,6 @@ class SocialMapController extends GetxController {
   Timer? _footprintsTimer;
   StreamSubscription<Position>? _positionStreamSubscription;
   Position? _latestPosition;
-  Position? _lastPingedPosition;
   // Ping vị trí của tôi: 5s/lần để tracking liên tục thời gian thực.
   static const _pingInterval = Duration(seconds: 5);
   // Poll vị trí bạn bè: 10s/lần (đồng bộ tốc độ với bản web).
@@ -332,7 +331,6 @@ class SocialMapController extends GetxController {
     }
     return null;
   }
-
   // ======================= SCHEDULE SELECTION =======================
   Future<void> selectSchedule(int scheduleId) async {
     if (selectedScheduleId.value == scheduleId && liveLocations.isNotEmpty) {
@@ -345,15 +343,26 @@ class SocialMapController extends GetxController {
     routePoints.clear();
     _allItineraryPoints.clear();
     selectedDay.value = null;
+    drivingRouteLatLngs.clear();
 
     try {
-      await Future.wait([
-        _loadScheduleLive(scheduleId),
-        _loadFriendsLive(),
-        loadMapMoments(scheduleId),
-        _loadItineraries(scheduleId),
-      ]);
-      await _connectRealtime(scheduleId);
+      if (scheduleId > 0) {
+        await Future.wait([
+          _loadScheduleLive(scheduleId),
+          _loadFriendsLive(),
+          loadMapMoments(scheduleId),
+          _loadItineraries(scheduleId),
+        ]);
+        await _connectRealtime(scheduleId);
+      } else {
+        // All Trips: Clear schedule-specific live locations, load friends and all moments
+        liveLocations.clear();
+        await Future.wait([
+          _loadFriendsLive(),
+          loadMapMoments(null),
+        ]);
+        await _signalR.disconnectTracking();
+      }
       _fitToLiveLocations();
       // Nếu heatmap đang bật, nạp lại theo schedule mới.
       if (showHeatmap.value) {
@@ -489,7 +498,6 @@ class SocialMapController extends GetxController {
         lng: pos.longitude,
         scheduleId: selectedScheduleId.value,
       );
-      _lastPingedPosition = pos;
     } catch (_) {}
   }
 
@@ -557,7 +565,7 @@ class SocialMapController extends GetxController {
       routeDays.assignAll(sorted);
 
       if (sorted.isNotEmpty) {
-        await selectDay(sorted.first.dayNumber);
+        await selectDay(null); // Default to Overview (all days route)
       }
     } catch (_) {
       // tour chưa có lộ trình -> bỏ qua, không chặn các lớp khác
@@ -566,13 +574,25 @@ class SocialMapController extends GetxController {
     }
   }
 
-  /// Lọc các điểm của 1 ngày (đồng bộ, không gọi mạng lại).
-  Future<void> selectDay(int dayNumber) async {
+  /// Lọc các điểm của 1 ngày hoặc toàn bộ lộ trình nếu dayNumber là null (Overview).
+  Future<void> selectDay(int? dayNumber) async {
     selectedDay.value = dayNumber;
-    final pts = _allItineraryPoints
-        .where((p) => p.dayNumber == dayNumber)
-        .toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    
+    final List<RoutePointModel> pts;
+    if (dayNumber == null) {
+      // Overview mode: Show all itineraries
+      pts = List<RoutePointModel>.from(_allItineraryPoints);
+    } else {
+      pts = _allItineraryPoints
+          .where((p) => p.dayNumber == dayNumber)
+          .toList();
+    }
+    
+    // Sort chronologically: by day number first, then order sequence
+    pts.sort((a, b) => a.dayNumber == b.dayNumber 
+        ? a.order.compareTo(b.order) 
+        : a.dayNumber.compareTo(b.dayNumber));
+        
     routePoints.assignAll(pts);
 
     // Fetch actual Mapbox driving route
@@ -867,7 +887,7 @@ class SocialMapController extends GetxController {
               })
           .toList();
 
-      final jsonString = JsonEncoder.withIndent('  ').convert(momentsData);
+      final jsonString = const JsonEncoder.withIndent('  ').convert(momentsData);
 
       // 2. Thử lưu vào thư mục Download công cộng của thiết bị Android
       File? savedFile;
