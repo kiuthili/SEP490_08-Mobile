@@ -21,6 +21,12 @@ class ApiConstants {
     return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
   }
 
+  static String get webUrl {
+    const override = String.fromEnvironment('WEB_URL');
+    if (override.isNotEmpty) return override;
+    return 'https://stayhub.vercel.app';
+  }
+
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
   static String get chatHubUrl => '$baseUrl/hubs/chat';
   static String get friendshipHubUrl => '$baseUrl/hubs/friendship';

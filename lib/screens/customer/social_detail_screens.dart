@@ -216,8 +216,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       final token = await _socialService.generateTrackingToken();
       if (token.isNotEmpty) {
         // URL động: dùng ApiConstants.baseUrl để tương thích với tunnel đang chạy.
-        // Khi deploy production thì chỉ cần thay baseUrl trong api_constants.dart.
-        final trackingUrl = '${ApiConstants.baseUrl}/track/$token';
+        // URL động: dùng ApiConstants.webUrl để chia sẻ cùng domain với web frontend.
+        final trackingUrl = '${ApiConstants.webUrl}/track/$token';
         final shareText = '📍 Vị trí hiện tại của tôi: [LocationShare:${jsonEncode({'token': token, 'url': trackingUrl})}]';
         await _socialController.sendChatMessage(roomId, shareText);
         SnackbarHelper.success('Đã chia sẻ vị trí thành công');
@@ -858,7 +858,7 @@ class _MessageBubble extends StatelessWidget {
           // url được lưu trong payload hoặc xây lại từ ApiConstants.baseUrl động
           final String trackingUrl = (data['url'] as String?)?.isNotEmpty == true
               ? data['url'] as String
-              : '${ApiConstants.baseUrl}/track/$token';
+              : '${ApiConstants.webUrl}/track/$token';
           
           return GestureDetector(
             onTap: () {

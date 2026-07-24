@@ -163,7 +163,7 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
   final token = await c.generateShareLink();
   if (token == null) return;
   // Đổi domain cho khớp web của bạn.
-  final url = 'https://stayhub.com/track/$token';
+  final url = '${ApiConstants.webUrl}/track/$token';
   await Get.dialog(
     AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
