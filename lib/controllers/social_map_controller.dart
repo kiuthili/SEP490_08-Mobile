@@ -67,7 +67,7 @@ class SocialMapController extends GetxController {
   final OrderController _orderController;
 
   /// MapController dùng để fit camera / điều khiển zoom.
-  final MapController mapController = MapController();
+  MapController mapController = MapController();
 
   int get currentUserId => _storage.user?.id ?? 0;
 

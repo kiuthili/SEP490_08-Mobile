@@ -41,13 +41,34 @@ import 'package:stayhub_mobile/theme/app_radius.dart';
 const Color _kBrand = AppColors.brand;
 const Color _kBrandDark = Color(0xFF0050B3);
 
-class SocialMapScreen extends StatelessWidget {
+class SocialMapScreen extends StatefulWidget {
   const SocialMapScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final c = Get.put(SocialMapController());
+  State<SocialMapScreen> createState() => _SocialMapScreenState();
+}
 
+class _SocialMapScreenState extends State<SocialMapScreen> {
+  late MapController _mapController;
+  late SocialMapController c;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+    c = Get.put(SocialMapController());
+    c.mapController = _mapController;
+    c.isMapReady.value = false;
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AppScreen(
       title: 'Social Map',
       actions: [
