@@ -1007,11 +1007,11 @@ class BookingController extends GetxController {
           final max = ticketType.maxAge ?? 0;
 
           if (min > 0 && max > 0 && max < 99) {
-            formattedName = '$name (Từ $min - $max tuổi)';
+            formattedName = 'sc_bk_age_range'.trParams({'name': name, 'min': min.toString(), 'max': max.toString()});
           } else if (max > 0 && max < 99) {
-            formattedName = '$name (Dưới $max tuổi)';
+            formattedName = 'sc_bk_age_under'.trParams({'name': name, 'max': max.toString()});
           } else if (min > 0) {
-            formattedName = '$name (Từ $min tuổi trở lên)';
+            formattedName = 'sc_bk_age_over'.trParams({'name': name, 'min': min.toString()});
           }
 
           return MapEntry(id, formattedName);

@@ -120,7 +120,6 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(child: _summaryCard()),
           SliverToBoxAdapter(child: _searchField()),
           SliverToBoxAdapter(child: _viewSelector()),
           Obx(_buildContent),
@@ -130,67 +129,6 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     );
   }
 
-  Widget _summaryCard() {
-    return Obx(
-      () => Container(
-        margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: AppColors.homeHeroGradient,
-          borderRadius: AppRadius.card,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.navy.withValues(alpha: 0.18),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: const Icon(
-                Icons.people_alt_rounded,
-                color: Colors.white,
-                size: 27,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'sc_fm_friends_on_stayhub'.tr,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${social.friends.length} bạn bè • '
-                    '${social.pendingRequests.length} lời mời mới',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.74),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _viewSelector() {
     return Padding(
