@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../models/tour_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_decorations.dart';
@@ -152,7 +153,7 @@ class SearchResultTourCard extends StatelessWidget {
                                     const SizedBox(width: 4),
                                   ],
                                   Text(
-                                    'Từ',
+                                    'from_price'.tr,
                                     style: AppTextStyles.textTheme.labelSmall
                                         ?.copyWith(fontSize: 10),
                                   ),

@@ -268,7 +268,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     final Map<String, List<TourScheduleModel>> schedulesByMonth = {};
     for (final s in futureSchedules) {
       final monthKey =
-          'Tháng ${s.departureDate.month} - ${s.departureDate.year}';
+          'td_month_year'.trParams({'m': s.departureDate.month.toString(), 'y': s.departureDate.year.toString()});
       if (!schedulesByMonth.containsKey(monthKey)) {
         schedulesByMonth[monthKey] = [];
       }
@@ -276,7 +276,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     }
 
     if (schedulesByMonth.isEmpty) {
-      SnackbarHelper.info('Hiện chưa có lịch khởi hành mới');
+      SnackbarHelper.info('td_no_new_schedule'.tr);
       return;
     }
 
@@ -364,7 +364,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Đăng ký nhận tư vấn',
+                              'td_consultation_form'.tr,
                               style:
                                   AppTextStyles.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -390,7 +390,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   TextFormField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      labelText: 'Họ và tên *',
+                      labelText: 'td_full_name'.tr,
                       prefixIcon: const Icon(Icons.person_outline_rounded),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.sm)),
@@ -398,7 +398,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           horizontal: 16, vertical: 14),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Vui lòng nhập họ và tên'
+                        ? 'td_enter_name'.tr
                         : null,
                   ),
                   const SizedBox(height: 14),
@@ -406,7 +406,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
-                      labelText: 'Số điện thoại *',
+                      labelText: 'td_phone'.tr,
                       prefixIcon: const Icon(Icons.phone_outlined),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.sm)),
@@ -414,7 +414,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           horizontal: 16, vertical: 14),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Vui lòng nhập số điện thoại'
+                        ? 'td_enter_phone'.tr
                         : null,
                   ),
                   const SizedBox(height: 14),
@@ -422,7 +422,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'Email *',
+                      labelText: 'td_email'.tr,
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.sm)),
@@ -431,9 +431,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty)
-                        return 'Vui lòng nhập email';
+                        return 'td_enter_email'.tr;
                       if (!GetUtils.isEmail(v.trim()))
-                        return 'Email không hợp lệ';
+                        return 'td_invalid_email'.tr;
                       return null;
                     },
                   ),
@@ -442,9 +442,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     controller: noteController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: 'Ghi chú / Yêu cầu đặc biệt (tùy chọn)',
+                      labelText: 'td_note_optional'.tr,
                       hintText:
-                          'Ví dụ: Cần tư vấn về lịch trình đoàn đông, chính sách giá trẻ em...',
+                          'td_note_hint'.tr,
                       alignLabelWithHint: true,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.sm)),
@@ -455,7 +455,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   const SizedBox(height: 24),
                   Obx(() {
                     return CustomButton(
-                      label: 'Gửi yêu cầu tư vấn',
+                      label: 'td_submit_consultation'.tr,
                       isLoading: isSubmitting.value,
                       onPressed: isSubmitting.value
                           ? null
@@ -489,7 +489,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   void _proceedToBooking(TourModel tour) {
     final schedule = _selectedSchedule;
     if (schedule == null) {
-      SnackbarHelper.error('Vui lòng chọn lịch khởi hành');
+      SnackbarHelper.error('td_please_select_schedule'.tr);
       return;
     }
     final arguments = BookingRouteArgs.fromTourSchedule(
@@ -499,7 +499,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     if (!AuthGate.requireLogin(
       route: AppRoutes.booking,
       arguments: arguments,
-      message: 'Vui lòng đăng nhập trước khi đặt tour',
+      message: 'login_required_book'.tr,
     )) {
       return;
     }
@@ -534,8 +534,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Giá:',
+                Text(
+                  'td_price'.tr,
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 Column(
@@ -557,8 +557,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           minPrice != null
                               ? CurrencyFormatter.format(minPrice)
                               : schedule != null
-                                  ? 'Đang cập nhật'
-                                  : 'Chưa thể đặt',
+                                  ? 'td_updating'.tr
+                                  : 'td_cannot_book'.tr,
                           style: TextStyle(
                             color: minPrice != null
                                 ? AppColors.brand
@@ -568,8 +568,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           ),
                         ),
                         if (minPrice != null)
-                          const Text(
-                            ' /khách',
+                          Text(
+                            'td_per_pax'.tr,
                             style: TextStyle(color: AppColors.textPrimary),
                           ),
                       ],
@@ -603,7 +603,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     ),
                     onPressed: hasSchedules ? _showSchedulePicker : null,
                     child: Text(
-                      'Ngày khác',
+                      'td_other_dates'.tr,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: hasSchedules
@@ -626,8 +626,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     onPressed: schedule != null && _scheduleAvailable(schedule)
                         ? () => _proceedToBooking(tour)
                         : null,
-                    child: const Text(
-                      'Đặt ngay',
+                    child: Text(
+                      'td_book_now'.tr,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -648,7 +648,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     final tourForTitle = _tourController.selectedTour.value;
     final displayTitle = _showTourNameInTitle && tourForTitle != null
         ? tourForTitle.name
-        : 'Chi tiết tour';
+        : 'td_tour_detail'.tr;
 
     return AppScreen(
       title: displayTitle,
@@ -694,19 +694,19 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
 
   Widget _buildBody() {
     if (_tourId == null) {
-      return const Center(child: Text('Không xác định được tour'));
+      return Center(child: Text('td_unknown_tour'.tr));
     }
     if (_tourController.detailLoading.value &&
         _tourController.selectedTour.value == null) {
-      return const LoadingWidget(message: 'Đang tải chi tiết tour...');
+      return LoadingWidget(message: 'td_loading_tour'.tr);
     }
     final tour = _tourController.selectedTour.value;
     if (tour == null || tour.id != _tourId) {
       return EmptyStateWidget(
         icon: Icons.error_outline_rounded,
-        title: 'Không tải được chi tiết tour',
+        title: 'td_cannot_load_tour'.tr,
         subtitle: _tourController.detailError.value ??
-            'Tour không tồn tại hoặc không còn hoạt động',
+            'td_tour_inactive'.tr,
         onRetry: () => _tourController.fetchTourDetail(_tourId!),
       );
     }
@@ -728,10 +728,10 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   indicatorColor: AppColors.brand,
                   indicatorWeight: 3,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                  tabs: const [
-                    Tab(text: 'Tổng quan'),
-                    Tab(text: 'Lịch trình'),
-                    Tab(text: 'Đánh giá'),
+                  tabs: [
+                    Tab(text: 'td_overview'.tr),
+                    Tab(text: 'td_itinerary'.tr),
+                    Tab(text: 'td_reviews'.tr),
                   ],
                 ),
               ),
@@ -748,9 +748,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 children: [
                   _DetailSection(
                     icon: Icons.auto_stories_rounded,
-                    title: 'Giới thiệu',
+                    title: 'td_introduction'.tr,
                     child: HtmlWidget(
-                      tour.description ?? 'Chưa có mô tả',
+                      tour.description ?? 'td_no_desc'.tr,
                       textStyle: AppTextStyles.textTheme.bodyMedium?.copyWith(
                         height: 1.6,
                       ),
@@ -759,7 +759,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   const SizedBox(height: 14),
                   _DetailSection(
                     icon: Icons.verified_rounded,
-                    title: 'Trải nghiệm nổi bật',
+                    title: 'td_highlights'.tr,
                     child: _buildHighlights(),
                   ),
                 ],
@@ -771,10 +771,10 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               child: _itineraryLoading || _itineraries.isNotEmpty
                   ? _DetailSection(
                       icon: Icons.route_rounded,
-                      title: 'Lịch trình chi tiết',
+                      title: 'td_detailed_itinerary'.tr,
                       subtitle: _itineraryLoading
-                          ? 'Đang chuẩn bị hành trình của bạn'
-                          : '${_itineraries.length} hoạt động trong hành trình',
+                          ? 'td_preparing_itinerary'.tr
+                          : 'td_activities_in_journey'.trParams({'count': _itineraries.length.toString()}),
                       trailing: _itineraries.isEmpty
                           ? null
                           : TextButton.icon(
@@ -787,8 +787,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                               ),
                               label: Text(
                                 _allItineraryDaysExpanded
-                                    ? 'Thu gọn'
-                                    : 'Mở tất cả',
+                                    ? 'td_collapse'.tr
+                                    : 'td_expand_all'.tr,
                               ),
                             ),
                       child: _itineraryLoading
@@ -801,7 +801,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                             )
                           : _buildItineraryTimeline(),
                     )
-                  : const Text('Chưa có thông tin lịch trình.'),
+                  : Text('td_no_itinerary_info'.tr),
             ),
             // Tab 3: Đánh giá
             SingleChildScrollView(
@@ -811,13 +811,13 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 children: [
                   _DetailSection(
                     icon: Icons.star_rounded,
-                    title: 'Đánh giá',
+                    title: 'td_reviews'.tr,
                     subtitle: _reviewController.reviews.isEmpty
-                        ? 'Chưa có đánh giá'
-                        : '${_reviewController.reviews.length} đánh giá gần đây',
+                        ? 'td_no_reviews'.tr
+                        : 'td_recent_reviews'.trParams({'count': _reviewController.reviews.length.toString()}),
                     child: _reviewController.reviews.isEmpty
-                        ? const Text(
-                            'Hãy là người đầu tiên chia sẻ trải nghiệm về tour này.',
+                        ? Text(
+                            'td_be_first_review'.tr,
                           )
                         : Column(
                             children: [
@@ -1065,10 +1065,10 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       const SizedBox(height: 4),
                       Text(
                         available
-                            ? '$seats chỗ còn lại'
+                            ? 'td_seats_left'.trParams({'seats': seats.toString()})
                             : schedule.tickets.isEmpty
-                                ? 'Chưa mở bán vé'
-                                : 'Đã hết chỗ',
+                                ? 'td_tickets_not_open'.tr
+                                : 'td_sold_out'.tr,
                         style: AppTextStyles.textTheme.bodySmall?.copyWith(
                           color: available && seats <= 5
                               ? AppColors.accent
@@ -1082,7 +1082,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('Từ', style: AppTextStyles.textTheme.labelSmall),
+                      Text('td_from'.tr, style: AppTextStyles.textTheme.labelSmall),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
@@ -1127,11 +1127,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   }
 
   Widget _buildHighlights() {
-    const highlights = [
-      [Icons.verified_user_rounded, 'Hướng dẫn viên chuyên nghiệp'],
-      [Icons.directions_bus_rounded, 'Phương tiện di chuyển'],
-      [Icons.confirmation_number_rounded, 'Vé tham quan & phí vào cửa'],
-      [Icons.event_repeat_rounded, 'Miễn phí hủy theo chính sách'],
+    final highlights = [
+      [Icons.verified_user_rounded, 'td_pro_guide'.tr],
+      [Icons.directions_bus_rounded, 'td_transportation'.tr],
+      [Icons.confirmation_number_rounded, 'td_entrance_fees'.tr],
+      [Icons.event_repeat_rounded, 'td_free_cancellation'.tr],
     ];
     return Column(
       children: [
@@ -1277,7 +1277,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Ngày $day',
+                            'td_day_index'.trParams({'day': day.toString()}),
                             style: AppTextStyles.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -1285,8 +1285,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           const SizedBox(height: 2),
                           Text(
                             heritageCount > 0
-                                ? '${activities.length} hoạt động • $heritageCount điểm di sản'
-                                : '${activities.length} hoạt động',
+                                ? 'td_activities_heritages'.trParams({'a': activities.length.toString(), 'h': heritageCount.toString()})
+                                : 'td_activities_count'.trParams({'count': activities.length.toString()}),
                             style: AppTextStyles.textTheme.bodySmall,
                           ),
                         ],
@@ -1379,7 +1379,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(existing != null ? 'Sửa đánh giá' : 'Viết đánh giá'),
+        title: Text(existing != null ? 'td_edit_review'.tr : 'td_write_review'.tr),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -1398,7 +1398,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               ),
               TextField(
                 controller: commentController,
-                decoration: const InputDecoration(hintText: 'Nhận xét...'),
+                decoration: InputDecoration(hintText: 'td_comment'.tr),
                 maxLines: 3,
               ),
             ],
@@ -1407,7 +1407,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text('td_cancel'.tr),
           ),
           FilledButton(
             onPressed: () async {
@@ -1419,7 +1419,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               );
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Gửi'),
+            child: Text('td_send'.tr),
           ),
         ],
       ),
@@ -1480,7 +1480,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                '$totalCount đánh giá',
+                'td_reviews_count'.trParams({'count': totalCount.toString()}),
                 style: AppTextStyles.textTheme.labelSmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -1553,7 +1553,7 @@ class _ItineraryActivityCard extends StatelessWidget {
         ? heritage!.name.trim()
         : itinerary.title?.trim().isNotEmpty == true
             ? itinerary.title!.trim()
-            : 'Hoạt động trong ngày';
+            : 'td_daily_activities'.tr;
     final description = heritage?.description?.trim().isNotEmpty == true
         ? heritage!.description!.trim()
         : itinerary.description?.trim();
@@ -1683,7 +1683,7 @@ class _ItineraryActivityCard extends StatelessWidget {
                               child: _HeritageBadge(
                                 label: heritage.type?.trim().isNotEmpty == true
                                     ? heritage.type!.trim()
-                                    : 'Điểm di sản',
+                                    : 'td_heritage_sites'.tr,
                               ),
                             ),
                           Text(
@@ -1749,7 +1749,7 @@ class _ItineraryActivityCard extends StatelessWidget {
                                   heritage?.sourceName?.trim().isNotEmpty ==
                                           true
                                       ? heritage!.sourceName!.trim()
-                                      : 'Nguồn tham khảo',
+                                      : 'td_references'.tr,
                               uri: sourceUri,
                             ),
                           ],
@@ -1788,7 +1788,7 @@ class _ItineraryActivityCard extends StatelessWidget {
                                       const SizedBox(width: 5),
                                       Expanded(
                                         child: Text(
-                                          'Xem trên bản đồ',
+                                          'td_view_on_map'.tr,
                                           style: AppTextStyles
                                               .textTheme.labelSmall
                                               ?.copyWith(
@@ -1874,7 +1874,7 @@ class _HeritageSourceLink extends StatelessWidget {
     }
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở liên kết nguồn')),
+        SnackBar(content: Text('td_cannot_open_link'.tr)),
       );
     }
   }
@@ -2131,7 +2131,7 @@ class _ReviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        review.customerName ?? 'Người dùng',
+                        review.customerName ?? 'td_user'.tr,
                         style: AppTextStyles.textTheme.titleSmall,
                       ),
                       const SizedBox(height: 4),
@@ -2198,7 +2198,7 @@ class _ReviewCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Phản hồi từ ban tổ chức',
+                          'td_org_reply'.tr,
                           style: AppTextStyles.textTheme.labelMedium?.copyWith(
                             color: AppColors.brand,
                             fontWeight: FontWeight.w700,
@@ -2417,7 +2417,7 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Chọn ngày khởi hành',
+                  'td_select_departure_date'.tr,
                   style: AppTextStyles.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2528,7 +2528,7 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                   children: [
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Đi: ${DateFormatter.display(schedule.departureDate)}',
+                                      'td_depart_date'.trParams({'date': DateFormatter.display(schedule.departureDate)}),
                                       style: AppTextStyles.textTheme.labelMedium
                                           ?.copyWith(
                                         fontWeight: FontWeight.bold,
@@ -2541,7 +2541,7 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                   children: [
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Về: ${DateFormatter.display(schedule.returnDate)}',
+                                      'td_return_date'.trParams({'date': DateFormatter.display(schedule.returnDate)}),
                                       style: AppTextStyles.textTheme.labelMedium
                                           ?.copyWith(
                                         color: AppColors.textSecondary,
@@ -2553,10 +2553,10 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                             ),
                           ),
                           if (isSelected)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
-                                'Đang chọn',
+                                'td_selecting'.tr,
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.brand),
@@ -2576,7 +2576,7 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                 minimumSize: Size.zero,
                               ),
                               onPressed: () => widget.onSelect(schedule),
-                              child: const Text('Chọn'),
+                              child: Text('td_select'.tr),
                             ),
                         ],
                       ),
@@ -2585,8 +2585,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                         child: Divider(height: 1),
                       ),
                       // Tickets list
-                      const Text(
-                        'Chi tiết các loại vé:',
+                      Text(
+                        'td_ticket_details'.tr,
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 13),
                       ),
@@ -2598,10 +2598,10 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                         final typeName = t.ticketTypeName ??
                             _ticketTypeNames[t.ticketTypeId] ??
                             (t.ticketTypeId == 1
-                                ? 'Người lớn'
+                                ? 'td_adult'.tr
                                 : t.ticketTypeId == 2
-                                    ? 'Trẻ em'
-                                    : 'Vé loại ${t.ticketTypeId}');
+                                    ? 'td_child'.tr
+                                    : 'td_ticket_type_id'.trParams({'id': t.ticketTypeId.toString()}));
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 6),
@@ -2640,7 +2640,7 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                             BorderRadius.circular(AppRadius.xs),
                                       ),
                                       child: Text(
-                                        'Còn ${t.availableQuantity}',
+                                        'td_remaining_seats'.trParams({'count': t.availableQuantity.toString()}),
                                         style: const TextStyle(
                                           fontSize: 10,
                                           color: AppColors.accent,
@@ -2650,10 +2650,10 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                     ),
                                   ],
                                   if (isSoldOut)
-                                    const Padding(
-                                      padding: EdgeInsets.only(left: 8),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8),
                                       child: Text(
-                                        '(Hết vé)',
+                                        'td_out_of_ticket'.tr,
                                         style: TextStyle(
                                             fontSize: 12,
                                             color: AppColors.textSecondary),
@@ -2689,8 +2689,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                         );
                       }),
                       if (schedule.tickets.isEmpty)
-                        const Text(
-                          'Chưa có thông tin vé.',
+                        Text(
+                          'td_no_ticket_info'.tr,
                           style: TextStyle(
                               color: AppColors.textSecondary, fontSize: 13),
                         ),

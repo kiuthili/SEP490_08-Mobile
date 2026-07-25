@@ -25,13 +25,11 @@ class _OrdersTabState extends State<OrdersTab>
     with SingleTickerProviderStateMixin {
   final OrderController controller = Get.find<OrderController>();
 
-  static const _filters = <String, String>{
-    '': 'Tất cả',
-    'Pending': 'Chờ thanh toán',
-    'Paid': 'Đã thanh toán',
-    'Completed': 'Hoàn thành',
-    'Cancelled': 'Đã hủy',
-    'Request to Cancelled': 'Yêu cầu hủy',
+  static Map<String, String> get _filters => {
+    '': 'pt_all'.tr,
+    'Paid': 'pt_paid'.tr,
+    'Cancelled': 'pt_cancelled'.tr,
+    'Request to Cancelled': 'pt_cancel_req'.tr,
   };
 
   late final TabController _tabController;
@@ -86,10 +84,10 @@ class _OrdersTabState extends State<OrdersTab>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đơn đặt tour'),
+        title: Text('ot_tour_orders'.tr),
         actions: [
           IconButton(
-            tooltip: 'Làm mới',
+            tooltip: 'ot_refresh'.tr,
             onPressed: () => controller.fetchOrders(refresh: true),
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -98,6 +96,7 @@ class _OrdersTabState extends State<OrdersTab>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          tabAlignment: TabAlignment.center,
           labelColor: AppColors.brand,
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.brand,
@@ -127,7 +126,7 @@ class _OrdersTabState extends State<OrdersTab>
 
   Widget _buildOrderList(BuildContext context) {
     if (controller.isLoading.value && controller.orders.isEmpty) {
-      return const LoadingWidget(message: 'Đang tải đơn đặt tour...');
+      return LoadingWidget(message: 'ot_loading_orders'.tr);
     }
 
     if (controller.orders.isEmpty) {
@@ -137,11 +136,11 @@ class _OrdersTabState extends State<OrdersTab>
         children: [
           EmptyStateWidget(
             title: controller.statusFilter.value == null
-                ? 'Chưa có đơn đặt tour'
-                : 'Không có đơn phù hợp',
+                ? 'ot_no_orders'.tr
+                : 'ot_no_matching_orders'.tr,
             subtitle: controller.statusFilter.value == null
-                ? 'Những chuyến đi bạn đặt sẽ xuất hiện tại đây'
-                : 'Thử chọn một trạng thái khác để xem thêm đơn',
+                ? 'ot_orders_appear_here'.tr
+                : 'ot_try_other_status'.tr,
           ),
         ],
       );
@@ -298,7 +297,7 @@ class _OrderCard extends StatelessWidget {
                         right: 14,
                         bottom: 12,
                         child: Text(
-                          order.tour?.name ?? 'Đơn đặt tour #${order.id}',
+                          order.tour?.name ?? 'ot_order_id'.trParams({'id': order.id.toString()}),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -326,7 +325,7 @@ class _OrderCard extends StatelessWidget {
                           child: _OrderMeta(
                             icon: Icons.calendar_month_rounded,
                             label: departure == null
-                                ? 'Chưa có lịch'
+                                ? 'ot_no_schedule'.tr
                                 : DateFormatter.display(departure),
                           ),
                         ),
@@ -335,7 +334,7 @@ class _OrderCard extends StatelessWidget {
                         Expanded(
                           child: _OrderMeta(
                             icon: Icons.confirmation_number_outlined,
-                            label: '$_quantity vé',
+                            label: 'ot_tickets_count'.trParams({'count': _quantity.toString()}),
                           ),
                         ),
                         if (_location.isNotEmpty) ...[
@@ -361,7 +360,7 @@ class _OrderCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Tổng thanh toán',
+                                'ot_total_payment'.tr,
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                               const SizedBox(height: 2),
@@ -475,43 +474,43 @@ class _OrderStatusStyle {
   factory _OrderStatusStyle.from(String? status) {
     switch (status) {
       case 'Pending':
-        return const _OrderStatusStyle(
-          label: 'Chờ thanh toán',
+        return _OrderStatusStyle(
+          label: 'od_status_pending'.tr,
           icon: Icons.schedule_rounded,
           foreground: AppColors.accent,
           background: AppColors.accentLight,
         );
       case 'Paid':
-        return const _OrderStatusStyle(
-          label: 'Đã thanh toán',
+        return _OrderStatusStyle(
+          label: 'pt_paid'.tr,
           icon: Icons.verified_rounded,
           foreground: AppColors.brand,
           background: AppColors.brandLight,
         );
       case 'Completed':
-        return const _OrderStatusStyle(
-          label: 'Hoàn thành',
+        return _OrderStatusStyle(
+          label: 'od_status_completed'.tr,
           icon: Icons.task_alt_rounded,
           foreground: Color(0xFF15803D),
           background: Color(0xFFE8F8EF),
         );
       case 'Cancelled':
-        return const _OrderStatusStyle(
-          label: 'Đã hủy',
+        return _OrderStatusStyle(
+          label: 'pt_cancelled'.tr,
           icon: Icons.cancel_rounded,
           foreground: AppColors.error,
           background: Color(0xFFFEE2E2),
         );
       case 'Request to Cancelled':
-        return const _OrderStatusStyle(
-          label: 'Yêu cầu hủy',
+        return _OrderStatusStyle(
+          label: 'pt_cancel_req'.tr,
           icon: Icons.pending_actions_rounded,
           foreground: Color(0xFFC2410C),
           background: Color(0xFFFFF7ED),
         );
       default:
         return _OrderStatusStyle(
-          label: status ?? 'Không xác định',
+          label: status ?? 'od_status_unknown'.tr,
           icon: Icons.info_outline_rounded,
           foreground: AppColors.textSecondary,
           background: AppColors.surfaceGrouped,

@@ -256,13 +256,13 @@ class AiController extends GetxController {
       recommendationDetail.value = result;
       recommendations.assignAll(result.recommendedTours);
       summary.value = result.summary.isEmpty ? null : result.summary;
-      SnackbarHelper.success('Đã tạo gợi ý tour phù hợp');
+      SnackbarHelper.success('ai_msg_success'.tr);
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
     } catch (e) {
-      SnackbarHelper.error('Lỗi parse data: $e');
+      SnackbarHelper.error('ai_msg_err_parse'.trParams({'err': e.toString()}));
       return false;
     } finally {
       questionnaireSubmitting.value = false;
@@ -279,11 +279,11 @@ class AiController extends GetxController {
   Future<void> sendChatMessage(String message) async {
     final text = message.trim();
     if (text.length < 2) {
-      SnackbarHelper.error('Tin nhắn phải có ít nhất 2 ký tự');
+      SnackbarHelper.error('ai_msg_err_min_length'.tr);
       return;
     }
     if (text.length > 2000) {
-      SnackbarHelper.error('Tin nhắn tối đa 2000 ký tự');
+      SnackbarHelper.error('ai_msg_err_max_length'.tr);
       return;
     }
 
@@ -1007,11 +1007,11 @@ class BookingController extends GetxController {
           final max = ticketType.maxAge ?? 0;
 
           if (min > 0 && max > 0 && max < 99) {
-            formattedName = '$name (Từ $min - $max tuổi)';
+            formattedName = 'sc_bk_age_range'.trParams({'name': name, 'min': min.toString(), 'max': max.toString()});
           } else if (max > 0 && max < 99) {
-            formattedName = '$name (Dưới $max tuổi)';
+            formattedName = 'sc_bk_age_under'.trParams({'name': name, 'max': max.toString()});
           } else if (min > 0) {
-            formattedName = '$name (Từ $min tuổi trở lên)';
+            formattedName = 'sc_bk_age_over'.trParams({'name': name, 'min': min.toString()});
           }
 
           return MapEntry(id, formattedName);

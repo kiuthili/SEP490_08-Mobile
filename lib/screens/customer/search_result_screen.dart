@@ -70,7 +70,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                 Expanded(
                   child: Text(
                     _controller.currentSearchTerm.isEmpty
-                        ? 'Tìm kiếm tour...'
+                        ? 'search_tour_hint'.tr
                         : _controller.currentSearchTerm,
                     style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                       color: AppColors.textTertiary,
@@ -109,7 +109,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Obx(() => Text(
-                      '${_controller.tours.length} kết quả',
+                      'search_results_count'.trParams({'count': _controller.tours.length.toString()}),
                       style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -131,18 +131,18 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
-                        items: const [
-                          DropdownMenuItem(value: '', child: Text('Đề xuất')),
+                        items: [
+                          DropdownMenuItem(value: '', child: Text('sort_recommended'.tr)),
                           DropdownMenuItem(
                               value: 'price_asc',
-                              child: Text('Giá: Thấp đến Cao')),
+                              child: Text('sort_price_asc'.tr)),
                           DropdownMenuItem(
                               value: 'price_desc',
-                              child: Text('Giá: Cao đến Thấp')),
+                              child: Text('sort_price_desc'.tr)),
                           DropdownMenuItem(
-                              value: 'date_desc', child: Text('Mới nhất')),
+                              value: 'date_desc', child: Text('sort_newest'.tr)),
                           DropdownMenuItem(
-                              value: 'date_asc', child: Text('Cũ nhất')),
+                              value: 'date_asc', child: Text('sort_oldest'.tr)),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -176,7 +176,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                           size: 64, color: AppColors.textTertiary),
                       const SizedBox(height: 16),
                       Text(
-                        'Không tìm thấy tour nào',
+                        'no_tours_found'.tr,
                         style: AppTextStyles.textTheme.titleMedium?.copyWith(
                           color: AppColors.textSecondary,
                         ),

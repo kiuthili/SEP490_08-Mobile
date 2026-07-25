@@ -95,17 +95,17 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Hủy kết bạn'),
-        content: Text('Bạn có chắc muốn hủy kết bạn với ${friend.fullName}?'),
+        title: Text('sc_fm_unfriend_title'.tr),
+        content: Text('sc_fm_unfriend_desc'.trParams({'name': friend.fullName})),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Không'),
+            child: Text('sc_fm_no'.tr),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Hủy kết bạn'),
+            child: Text('sc_fm_unfriend_title'.tr),
           ),
         ],
       ),
@@ -120,7 +120,6 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(child: _summaryCard()),
           SliverToBoxAdapter(child: _searchField()),
           SliverToBoxAdapter(child: _viewSelector()),
           Obx(_buildContent),
@@ -130,67 +129,6 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     );
   }
 
-  Widget _summaryCard() {
-    return Obx(
-      () => Container(
-        margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: AppColors.homeHeroGradient,
-          borderRadius: AppRadius.card,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.navy.withValues(alpha: 0.18),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: const Icon(
-                Icons.people_alt_rounded,
-                color: Colors.white,
-                size: 27,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Bạn bè trên StayHub',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${social.friends.length} bạn bè • '
-                    '${social.pendingRequests.length} lời mời mới',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.74),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _viewSelector() {
     return Padding(
@@ -202,23 +140,23 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
             children: [
               _buildFilterChip(
                 _FriendView.friends,
-                'Bạn bè',
+                'sc_fm_tab_friends'.tr,
                 Icons.people_outline_rounded,
               ),
               const SizedBox(width: 8),
               _buildFilterChip(
                 _FriendView.requests,
                 social.pendingRequests.isEmpty
-                    ? 'Lời mời nhận'
-                    : 'Lời mời nhận (${social.pendingRequests.length})',
+                    ? 'sc_fm_tab_requests'.tr
+                    : 'sc_fm_tab_requests_count'.trParams({'count': social.pendingRequests.length.toString()}),
                 Icons.person_add_alt_1_rounded,
               ),
               const SizedBox(width: 8),
               _buildFilterChip(
                 _FriendView.sent,
                 social.sentRequests.isEmpty
-                    ? 'Đã gửi'
-                    : 'Đã gửi (${social.sentRequests.length})',
+                    ? 'sc_fm_tab_sent'.tr
+                    : 'sc_fm_tab_sent_count'.trParams({'count': social.sentRequests.length.toString()}),
                 Icons.outbox_rounded,
               ),
             ],
@@ -268,7 +206,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         onChanged: _onSearchChanged,
         onSubmitted: _submitSearch,
         decoration: InputDecoration(
-          hintText: 'Tìm theo tên hoặc email...',
+          hintText: 'sc_fm_search_hint'.tr,
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: widget.searchController.text.isEmpty
               ? null
@@ -288,37 +226,37 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     switch (_view) {
       case _FriendView.friends:
         if (social.isFriendsLoading.value && social.friends.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
-            child: LoadingWidget(message: 'Đang tải danh sách bạn bè...'),
+            child: LoadingWidget(message: 'sc_fm_load_friends'.tr),
           );
         }
         if (social.friends.isEmpty) {
           return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
-              title: 'Chưa có bạn bè',
-              subtitle: 'Tìm người dùng và gửi lời mời để kết nối.',
+              title: 'sc_fm_empty_friends_title'.tr,
+              subtitle: 'sc_fm_empty_friends_desc'.tr,
               icon: Icons.people_outline_rounded,
               onRetry: () => setState(() => _view = _FriendView.search),
-              retryLabel: 'Tìm bạn bè',
+              retryLabel: 'sc_fm_btn_find_friends'.tr,
             ),
           );
         }
         return _listSliver(social.friends.map(_friendCard).toList());
       case _FriendView.requests:
         if (social.isRequestsLoading.value && social.pendingRequests.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
-            child: LoadingWidget(message: 'Đang tải lời mời kết bạn...'),
+            child: LoadingWidget(message: 'sc_fm_load_requests'.tr),
           );
         }
         if (social.pendingRequests.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
-              title: 'Không có lời mời mới',
-              subtitle: 'Các lời mời kết bạn nhận được sẽ xuất hiện tại đây.',
+              title: 'sc_fm_empty_req_title'.tr,
+              subtitle: 'sc_fm_empty_req_desc'.tr,
               icon: Icons.mark_email_read_outlined,
             ),
           );
@@ -328,17 +266,17 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         );
       case _FriendView.sent:
         if (social.isRequestsLoading.value && social.sentRequests.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
-            child: LoadingWidget(message: 'Đang tải yêu cầu đã gửi...'),
+            child: LoadingWidget(message: 'sc_fm_load_sent'.tr),
           );
         }
         if (social.sentRequests.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
-              title: 'Chưa gửi yêu cầu nào',
-              subtitle: 'Các lời mời kết bạn đã gửi đi sẽ xuất hiện tại đây.',
+              title: 'sc_fm_empty_sent_title'.tr,
+              subtitle: 'sc_fm_empty_sent_desc'.tr,
               icon: Icons.outbox_rounded,
             ),
           );
@@ -348,17 +286,17 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         );
       case _FriendView.search:
         if (social.isSearchingUsers.value) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
-            child: LoadingWidget(message: 'Đang tìm người dùng...'),
+            child: LoadingWidget(message: 'sc_fm_load_search'.tr),
           );
         }
         if (_submittedQuery.isEmpty) {
-          return const SliverFillRemaining(
+          return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
-              title: 'Tìm bạn bè trên StayHub',
-              subtitle: 'Nhập tên hoặc email để bắt đầu tìm kiếm.',
+              title: 'sc_fm_search_title'.tr,
+              subtitle: 'sc_fm_search_desc'.tr,
               icon: Icons.person_search_rounded,
             ),
           );
@@ -367,8 +305,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           return SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
-              title: 'Không tìm thấy người dùng',
-              subtitle: 'Không có kết quả phù hợp với “$_submittedQuery”.',
+              title: 'sc_fm_no_user_title'.tr,
+              subtitle: 'sc_fm_no_user_desc'.trParams({'query': _submittedQuery}),
               icon: Icons.search_off_rounded,
             ),
           );
@@ -395,12 +333,12 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         social.processingUserIds.contains(friend.userId);
     return _PersonCard(
       name: friend.fullName,
-      subtitle: 'Bạn bè trên StayHub',
+      subtitle: 'sc_fm_friends_on_stayhub'.tr,
       avatarUrl: friend.avatarUrl,
       onTap: () => Get.toNamed(AppRoutes.userProfile, arguments: friend.userId),
       actions: [
         IconButton.filled(
-          tooltip: 'Nhắn tin',
+          tooltip: 'sc_fm_btn_message'.tr,
           style: IconButton.styleFrom(
             backgroundColor: AppColors.brand,
             foregroundColor: Colors.white,
@@ -421,7 +359,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           onSelected: (value) {
             if (value == 'unfriend') _confirmUnfriend(friend);
           },
-          itemBuilder: (_) => const [
+          itemBuilder: (_) => [
             PopupMenuItem(
               value: 'unfriend',
               child: Row(
@@ -431,7 +369,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     color: AppColors.error,
                   ),
                   SizedBox(width: 10),
-                  Text('Hủy kết bạn'),
+                  Text('sc_fm_unfriend_title'.tr),
                 ],
               ),
             ),
@@ -445,10 +383,10 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
   Widget _requestCard(FriendRequestModel request) {
     final busy = social.processingRequestIds.contains(request.id);
     final date = request.createdAt == null
-        ? 'Lời mời kết bạn'
-        : 'Gửi ngày ${DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())}';
+        ? 'sc_fm_friend_request'.tr
+        : 'sc_fm_sent_date'.trParams({'date': DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())});
     return _PersonCard(
-      name: request.senderName ?? 'Người dùng #${request.senderId}',
+      name: request.senderName ?? 'sc_fm_user_id'.trParams({'id': request.senderId.toString()}),
       subtitle: date,
       avatarUrl: request.senderAvatarUrl,
       onTap: () =>
@@ -458,11 +396,11 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           style: _primaryButtonStyle(),
           onPressed:
               busy ? null : () => social.respondRequest(request.id, true),
-          child: const Text('Chấp nhận'),
+          child: Text('sc_fm_btn_accept'.tr),
         ),
         const SizedBox(width: 8),
         IconButton.outlined(
-          tooltip: 'Từ chối',
+          tooltip: 'sc_fm_btn_decline'.tr,
           style: IconButton.styleFrom(
             foregroundColor: AppColors.brand,
             side: const BorderSide(color: AppColors.brand),
@@ -480,17 +418,17 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     final busy = social.processingFriendshipIds.contains(request.id) ||
         social.processingUserIds.contains(request.receiverId);
     final date = request.createdAt == null
-        ? 'Đã gửi lời mời'
-        : 'Gửi ngày ${DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())}';
+        ? 'sc_fm_req_sent'.tr
+        : 'sc_fm_sent_date'.trParams({'date': DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())});
     return _PersonCard(
-      name: request.senderName ?? 'Người dùng #${request.receiverId}',
+      name: request.senderName ?? 'sc_fm_user_id'.trParams({'id': request.receiverId.toString()}),
       subtitle: date,
       avatarUrl: request.senderAvatarUrl,
       onTap: () =>
           Get.toNamed(AppRoutes.userProfile, arguments: request.receiverId),
       actions: [
         IconButton.outlined(
-          tooltip: 'Thu hồi yêu cầu',
+          tooltip: 'sc_fm_revoke_title'.tr,
           style: IconButton.styleFrom(
             foregroundColor: AppColors.error,
             side: const BorderSide(color: AppColors.error),
@@ -501,19 +439,19 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (dialogContext) => AlertDialog(
-                      title: const Text('Thu hồi yêu cầu'),
+                      title: Text('sc_fm_revoke_title'.tr),
                       content: Text(
-                          'Bạn có chắc muốn thu hồi yêu cầu kết bạn gửi đến ${request.senderName}?'),
+                          'sc_fm_revoke_desc'.trParams({'name': request.senderName ?? ''})),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext, false),
-                          child: const Text('Không'),
+                          child: Text('sc_fm_no'.tr),
                         ),
                         FilledButton(
                           onPressed: () => Navigator.pop(dialogContext, true),
                           style: FilledButton.styleFrom(
                               backgroundColor: AppColors.error),
-                          child: const Text('Thu hồi'),
+                          child: Text('sc_fm_btn_revoke'.tr),
                         ),
                       ],
                     ),
@@ -537,13 +475,13 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     final busy = social.processingUserIds.contains(user.id);
     return _PersonCard(
       name: user.fullName,
-      subtitle: user.email ?? 'Người dùng StayHub',
+      subtitle: user.email ?? 'sc_fm_stayhub_user'.tr,
       avatarUrl: user.avatarUrl,
       onTap: () => Get.toNamed(AppRoutes.userProfile, arguments: user.id),
       actions: [
         if (isFriend)
           IconButton.filled(
-            tooltip: 'Nhắn tin',
+            tooltip: 'sc_fm_btn_message'.tr,
             style: IconButton.styleFrom(
               backgroundColor: AppColors.brand,
               foregroundColor: Colors.white,
@@ -559,7 +497,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           OutlinedButton(
             style: _secondaryButtonStyle(),
             onPressed: () => setState(() => _view = _FriendView.requests),
-            child: const Text('Xem lời mời'),
+            child: Text('sc_fm_btn_view_req'.tr),
           )
         else
           FilledButton.icon(
@@ -568,7 +506,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                 busy || sent ? null : () => social.sendFriendRequest(user.id),
             icon:
                 Icon(sent ? Icons.schedule_rounded : Icons.person_add_rounded),
-            label: Text(sent ? 'Đã gửi' : 'Kết bạn'),
+            label: Text(sent ? sent ? 'sc_fm_btn_sent'.tr : 'sc_fm_btn_add_friend'.tr : 'sc_fm_btn_add_friend'.tr),
           ),
       ],
       busy: busy,
@@ -632,7 +570,7 @@ class _PersonCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name.isEmpty ? 'Người dùng StayHub' : name,
+                      name.isEmpty ? 'sc_fm_stayhub_user'.tr : name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

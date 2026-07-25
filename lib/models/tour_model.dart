@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import '../utils/json_utils.dart';
 import 'ai_models.dart';
 
@@ -355,11 +356,11 @@ class ScheduleTicketModel {
               JsonUtils.readInt(JsonUtils.pick(t, ['maxAge', 'MaxAge']));
 
           if (min > 0 && max > 0 && max < 99) {
-            return '$name ($min - $max tuổi)';
+            return 'sc_bk_age_range_lc'.trParams({'name': name, 'min': min.toString(), 'max': max.toString()});
           } else if (max > 0 && max < 99) {
-            return '$name (dưới $max tuổi)';
+            return 'sc_bk_age_under_lc'.trParams({'name': name, 'max': max.toString()});
           } else if (min > 0) {
-            return '$name (từ $min tuổi)';
+            return 'sc_bk_age_over_lc'.trParams({'name': name, 'min': min.toString()});
           }
           return name;
         }

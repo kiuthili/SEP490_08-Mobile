@@ -76,7 +76,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
           try {
             await _socialController.updateComment(editingId, text);
           } catch (e) {
-            SnackbarHelper.error('Failed to update comment');
+            SnackbarHelper.error('sc_cmt_err_update'.tr);
             return;
           }
         }
@@ -113,7 +113,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
             _moment = _moment.copyWith(comments: _comments);
           });
         } else {
-          SnackbarHelper.error('Failed to post comment. Please try again.');
+          SnackbarHelper.error('sc_cmt_err_post'.tr);
           return;
         }
       }
@@ -146,27 +146,27 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(
-                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
+                  '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(
-                          labelText: 'Reason for reporting'),
-                      items: const [
+                      decoration: InputDecoration(
+                          labelText: 'sc_report_reason'.tr),
+                      items: [
                         DropdownMenuItem(
-                            value: 'Spam', child: Text('Spam / Advertisement')),
+                            value: 'Spam', child: Text('sc_report_spam'.tr)),
                         DropdownMenuItem(
-                            value: 'Hate Speech', child: Text('Hate Speech')),
+                            value: 'sc_report_hate'.tr, child: Text('sc_report_hate'.tr)),
                         DropdownMenuItem(
                             value: 'Harassment',
-                            child: Text('Harassment / Threats')),
+                            child: Text('sc_report_harassment'.tr)),
                         DropdownMenuItem(
-                            value: 'Violence', child: Text('Violence / Gore')),
+                            value: 'Violence', child: Text('sc_report_violence'.tr)),
                         DropdownMenuItem(
-                            value: 'Other', child: Text('Other reason')),
+                            value: 'Other', child: Text('sc_report_other'.tr)),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -177,9 +177,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: detailsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Details (Optional)',
-                        hintText: 'Enter violation details...',
+                      decoration: InputDecoration(
+                        labelText: 'sc_report_details'.tr,
+                        hintText: 'sc_report_details_hint'.tr,
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
@@ -190,7 +190,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
               actions: [
                 TextButton(
                   onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text('sc_report_cancel'.tr),
                 ),
                 FilledButton(
                   onPressed: isSending
@@ -217,7 +217,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Submit Report'),
+                      : Text('sc_report_submit'.tr),
                 ),
               ],
             );
@@ -309,7 +309,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Text(
-                          'Comments (${_comments.length})',
+                          'sc_cmt_title'.trParams({'count': _comments.length.toString()}),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -318,12 +318,12 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                       ),
                     ),
                     if (_comments.isEmpty)
-                      const SliverToBoxAdapter(
+                      SliverToBoxAdapter(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Center(
                             child: Text(
-                              'No comments yet. Be the first to comment!',
+                              'sc_cmt_empty'.tr,
                               style: TextStyle(color: AppColors.textTertiary),
                             ),
                           ),
@@ -365,24 +365,24 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                 }
                               },
                               itemBuilder: (_) => [
-                                if (c.userId == _currentUserId) ...const [
+                                if (c.userId == _currentUserId) ...[
                                   PopupMenuItem(
-                                      value: 'edit', child: Text('Edit')),
+                                      value: 'edit', child: Text('sc_menu_edit'.tr)),
                                   PopupMenuItem(
                                     value: 'delete',
-                                    child: Text('Delete',
+                                    child: Text('sc_btn_delete'.tr,
                                         style:
                                             TextStyle(color: AppColors.error)),
                                   ),
                                 ],
                                 if (c.userId != _currentUserId)
-                                  const PopupMenuItem(
+                                  PopupMenuItem(
                                     value: 'report',
                                     child: Row(
                                       children: [
                                         Icon(Icons.flag_outlined, size: 20),
                                         SizedBox(width: 8),
-                                        Text('Report Violation'),
+                                        Text('sc_menu_report'.tr),
                                       ],
                                     ),
                                   ),
@@ -436,8 +436,8 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                           onSubmitted: (_) => _submitComment(),
                           decoration: InputDecoration(
                             hintText: _editingCommentId != null
-                                ? 'Edit comment...'
-                                : 'Add a comment...',
+                                ? 'sc_cmt_edit_hint'.tr
+                                : 'sc_cmt_add_hint'.tr,
                             border: InputBorder.none,
                             hintStyle: const TextStyle(color: Colors.black54),
                           ),

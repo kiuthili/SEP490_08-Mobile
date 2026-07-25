@@ -34,7 +34,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Đánh giá của tôi',
+      title: 'mr_title'.tr,
       body: RefreshIndicator(
         onRefresh: _controller.fetchMyReviews,
         child: Obx(() {
@@ -50,11 +50,11 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
           if (_controller.myReviews.isEmpty) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
+              children: [
                 SizedBox(height: 80),
                 EmptyStateWidget(
-                  title: 'Chưa có đánh giá',
-                  subtitle: 'Hoàn thành tour và viết đánh giá từ chi tiết đơn',
+                  title: 'mr_empty_title'.tr,
+                  subtitle: 'mr_empty_desc'.tr,
                 ),
               ],
             );
@@ -63,7 +63,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             itemCount: _controller.myReviews.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => SizedBox(height: 10),
             itemBuilder: (context, index) {
               final r = _controller.myReviews[index];
               return IosSurfaceCard(
@@ -89,7 +89,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                             color: AppColors.brand,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,14 +122,14 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                             AppRoutes.tourDetail,
                             arguments: r.tourId,
                           ),
-                          child: const Text('Xem tour'),
+                          child: Text('mr_view_tour'.tr),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     const Divider(height: 1),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // ── Rating + comment ────────────────────────
                     Row(
@@ -145,7 +145,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                             color: const Color(0xFFFFB800),
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           '${r.rating}/5',
                           style: AppTextStyles.textTheme.labelMedium?.copyWith(
@@ -155,7 +155,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                       ],
                     ),
                     if (r.comment != null && r.comment!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         r.comment!,
                         style: AppTextStyles.textTheme.bodyMedium?.copyWith(
@@ -167,7 +167,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
 
                     // ── Replies ─────────────────────────────────
                     if (r.replies.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _RepliesBlock(replies: r.replies),
                     ],
                   ],
@@ -208,9 +208,9 @@ class _RepliesBlock extends StatelessWidget {
               children: [
                 const Icon(Icons.forum_rounded,
                     size: 14, color: AppColors.brand),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
-                  'Phản hồi từ ban tổ chức',
+                  'mr_organizer_reply'.tr,
                   style: AppTextStyles.textTheme.labelMedium?.copyWith(
                     color: AppColors.brand,
                     fontWeight: FontWeight.w700,
@@ -266,7 +266,7 @@ class _ReplyItem extends StatelessWidget {
                         size: 15,
                       ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +291,7 @@ class _ReplyItem extends StatelessWidget {
                   ],
                 ),
                 if (reply.content?.trim().isNotEmpty ?? false) ...[
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     reply.content!,
                     style: AppTextStyles.textTheme.bodySmall?.copyWith(

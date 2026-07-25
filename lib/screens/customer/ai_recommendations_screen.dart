@@ -19,15 +19,15 @@ class AiRecommendationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Gợi ý AI',
+      title: 'ai_recommendations_title'.tr,
       actions: [
         IconButton(
-          tooltip: 'Khảo sát A/B (User Study)',
+          tooltip: 'ai_user_study_tooltip'.tr,
           icon: const Icon(Icons.rate_review_outlined),
           onPressed: () => Get.toNamed(AppRoutes.userStudy),
         ),
         IconButton(
-          tooltip: 'Làm lại khảo sát',
+          tooltip: 'ai_retake_tooltip'.tr,
           icon: const Icon(Icons.psychology_outlined),
           onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),
         ),
@@ -62,9 +62,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       if (ai.isLoading.value && ai.recommendations.isEmpty) {
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 120),
-            LoadingWidget(message: 'Đang tải gợi ý...'),
+          children: [
+            const SizedBox(height: 120),
+            LoadingWidget(message: 'ai_loading_recommendations'.tr),
           ],
         );
       }
@@ -74,9 +74,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
           children: [
             const SizedBox(height: 80),
             EmptyStateWidget(
-              title: 'Chưa có gợi ý',
-              subtitle: 'Hoàn thành khảo sát AI để nhận danh sách tour phù hợp',
-              retryLabel: 'Bắt đầu khảo sát',
+              title: 'ai_no_recommendations'.tr,
+              subtitle: 'ai_no_recommendations_subtitle'.tr,
+              retryLabel: 'ai_start_questionnaire'.tr,
               onRetry: widget.onRetake ??
                   () => Get.toNamed(AppRoutes.aiQuestionnaire),
             ),
@@ -92,19 +92,19 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
           children: [
             Container(
               color: AppColors.surface,
-              child: const TabBar(
+              child: TabBar(
                 indicatorColor: AppColors.brand,
                 labelColor: AppColors.brand,
                 unselectedLabelColor: AppColors.textSecondary,
                 indicatorSize: TabBarIndicatorSize.tab,
                 tabs: [
                   Tab(
-                    icon: Icon(Icons.tour_rounded),
-                    text: 'Tour gợi ý',
+                    icon: const Icon(Icons.tour_rounded),
+                    text: 'ai_tab_tours'.tr,
                   ),
                   Tab(
-                    icon: Icon(Icons.menu_book_rounded),
-                    text: 'Cẩm nang du lịch',
+                    icon: const Icon(Icons.menu_book_rounded),
+                    text: 'ai_tab_guide'.tr,
                   ),
                 ],
               ),
@@ -164,8 +164,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
               child: Row(
                 children: [
                   ChoiceChip(
-                    label: Text(
-                        'Tất cả (${exactTours.length + nearbyTours.length})'),
+                    label: Text('ai_filter_all'.trParams({'count': '${exactTours.length + nearbyTours.length}'})),
                     selected: _tourFilter == 'all',
                     onSelected: (val) {
                       if (val) setState(() => _tourFilter = 'all');
@@ -173,7 +172,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                   ),
                   const SizedBox(width: 8),
                   ChoiceChip(
-                    label: Text('Đúng ngày (${exactTours.length})'),
+                    label: Text('ai_filter_exact'.trParams({'count': '${exactTours.length}'})),
                     selected: _tourFilter == 'exact',
                     onSelected: (val) {
                       if (val) setState(() => _tourFilter = 'exact');
@@ -182,7 +181,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                   if (hasNearby) ...[
                     const SizedBox(width: 8),
                     ChoiceChip(
-                      label: Text('Lịch gần (${nearbyTours.length})'),
+                      label: Text('ai_filter_nearby'.trParams({'count': '${nearbyTours.length}'})),
                       selected: _tourFilter == 'nearby',
                       onSelected: (val) {
                         if (val) setState(() => _tourFilter = 'nearby');
@@ -199,19 +198,19 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10, top: 4),
                 child: Text(
-                  'Tour đúng lịch trình',
+                  'ai_exact_tours'.tr,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
               ),
             if (exactTours.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'Không có tour đúng lịch trình phù hợp.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    'ai_no_exact_tours'.tr,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               )
@@ -228,19 +227,19 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
-                  'Tour lịch gần phù hợp',
+                  'ai_nearby_tours'.tr,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
               ),
             if (nearbyTours.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'Không có tour lịch gần phù hợp.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    'ai_no_nearby_tours'.tr,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               )

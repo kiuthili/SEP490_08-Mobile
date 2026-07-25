@@ -18,10 +18,10 @@ class HomeController extends GetxController {
   final isLoadingRegion = false.obs;
 
   // Region tabs: (display label, API key)
-  static const regions = [
-    ('Miền Bắc', 'north'),
-    ('Miền Trung', 'central'),
-    ('Miền Nam', 'south'),
+  static List<(String, String)> get regions => [
+    ('region_north'.tr, 'north'),
+    ('region_central'.tr, 'central'),
+    ('region_south'.tr, 'south'),
   ];
   final selectedRegionIndex = 0.obs;
 
