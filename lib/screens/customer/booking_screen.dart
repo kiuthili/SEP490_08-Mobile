@@ -71,7 +71,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final args = parseBookingArgs(Get.arguments);
     if (args == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        SnackbarHelper.error('Vui lòng chọn lịch khởi hành trước khi đặt tour');
+        SnackbarHelper.error('sc_bk_select_schedule'.tr);
         Get.back();
       });
       return;
@@ -166,16 +166,16 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _submit() async {
     if (_booking.totalPassengers == 0) {
-      SnackbarHelper.error('Chọn ít nhất một vé');
+      SnackbarHelper.error('sc_bk_select_ticket'.tr);
       return;
     }
     final allFilled = _passengers.every((p) => p.isFilled);
     if (!allFilled) {
-      SnackbarHelper.error('Vui lòng điền đầy đủ thông tin hành khách');
+      SnackbarHelper.error('sc_bk_fill_passenger_info'.tr);
       return;
     }
     if (!_agreedToTerms) {
-      SnackbarHelper.error('Vui lòng đồng ý với Quy định đặt tour & Hủy vé');
+      SnackbarHelper.error('sc_bk_agree_terms'.tr);
       return;
     }
 
@@ -199,16 +199,16 @@ class _BookingScreenState extends State<BookingScreen> {
       final minAge = ticket.minAge ?? 0;
       final maxAge = ticket.maxAge ?? 0;
       final name = p.nameController.text.trim();
-      final type = ticket.ticketTypeName ?? 'loại vé này';
+      final type = ticket.ticketTypeName ?? 'sc_bk_this_ticket'.tr;
 
       if (minAge > 0 && age < minAge) {
         SnackbarHelper.error(
-            'Hành khách ${i + 1} ($name) chưa đủ $minAge tuổi để mua $type');
+            'sc_bk_age_too_young'.trParams({'num': (i + 1).toString(), 'name': name, 'minAge': minAge.toString(), 'type': type}));
         return;
       }
       if (maxAge > 0 && age > maxAge) {
         SnackbarHelper.error(
-            'Hành khách ${i + 1} ($name) vượt quá $maxAge tuổi, không thể mua $type');
+            'sc_bk_age_too_old'.trParams({'num': (i + 1).toString(), 'name': name, 'maxAge': maxAge.toString(), 'type': type}));
         return;
       }
     }
@@ -253,9 +253,9 @@ class _BookingScreenState extends State<BookingScreen> {
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      helpText: 'CHỌN NGÀY SINH',
-      cancelText: 'Hủy',
-      confirmText: 'Chọn',
+      helpText: 'sc_bk_select_dob'.tr,
+      cancelText: 'sc_bk_cancel'.tr,
+      confirmText: 'sc_bk_select'.tr,
     );
     if (picked != null) {
       passenger.dobController.text = DateFormat('yyyy-MM-dd').format(picked);
@@ -281,7 +281,7 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
     if (_booking.subtotal <= 0) {
-      SnackbarHelper.error('Chọn vé trước khi áp dụng voucher');
+      SnackbarHelper.error('sc_bk_select_ticket_first'.tr);
       return;
     }
 
@@ -307,15 +307,15 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_initDone) {
-      return const AppScreen(
-        title: 'Đặt tour',
-        body: LoadingWidget(message: 'Đang tải thông tin đặt tour...'),
+      return AppScreen(
+        title: 'sc_bk_book_tour'.tr,
+        body: LoadingWidget(message: 'sc_bk_loading_info'.tr),
       );
     }
 
     if (_initFailed || _booking.activeTickets.isEmpty) {
       return AppScreen(
-        title: 'Đặt tour',
+        title: 'sc_bk_book_tour'.tr,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -324,15 +324,15 @@ class _BookingScreenState extends State<BookingScreen> {
               children: [
                 const Icon(Icons.event_busy,
                     size: 48, color: AppColors.textSecondary),
-                const SizedBox(height: 12),
-                const Text(
-                  'Lịch này chưa có vé bán',
+                SizedBox(height: 12),
+                Text(
+                  'sc_bk_no_tickets'.tr,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 16),
                 CustomButton(
-                  label: 'Quay lại tour',
+                  label: 'sc_bk_back_to_tour'.tr,
                   onPressed: () => Get.back(),
                 ),
               ],
@@ -345,7 +345,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final schedule = _booking.selectedSchedule.value!;
 
     return AppScreen(
-      title: 'Đặt tour',
+      title: 'sc_bk_book_tour'.tr,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -375,8 +375,8 @@ class _BookingScreenState extends State<BookingScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Tổng tiền:',
+                        Text(
+                          'sc_bk_total_price'.tr,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
@@ -410,8 +410,8 @@ class _BookingScreenState extends State<BookingScreen> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
-                              'Đặt ngay',
+                          : Text(
+                              'sc_bk_book_now'.tr,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -444,7 +444,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
               // --- Section label: Chọn vé ---
               Text(
-                'Loại vé',
+                'sc_bk_ticket_type'.tr,
                 style: AppTextStyles.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: AppColors.navy,
@@ -513,9 +513,9 @@ class _BookingScreenState extends State<BookingScreen> {
               if (_booking.totalPassengers > 0) ...[
                 const SizedBox(height: 20),
                 _buildSectionLabel(
-                  'Thông tin hành khách',
+                  'sc_bk_passenger_info'.tr,
                   subtitle:
-                      '${_booking.totalPassengers} người • dùng để xuất vé điện tử',
+                      _booking.totalPassengers.toString() + ' ' + 'sc_bk_people_ebill'.tr,
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -592,7 +592,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                             p.isFilled
                                                 ? p.nameController.text
                                                     .toUpperCase()
-                                                : 'Hành khách ${i + 1}',
+                                                : 'sc_bk_passenger_num'.trParams({'num': (i + 1).toString()}),
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
@@ -605,7 +605,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                           Text(
                                             p.isFilled
                                                 ? '${p.slot.ticketLabel} • ${p.idCardController.text}'
-                                                : 'Chạm để điền thông tin',
+                                                : 'sc_bk_tap_to_fill'.tr,
                                             style: const TextStyle(
                                               fontSize: 12,
                                               color: AppColors.textSecondary,
@@ -635,7 +635,7 @@ class _BookingScreenState extends State<BookingScreen> {
               // --- Ghi chú ---
               const SizedBox(height: 20),
               Text(
-                'Ghi chú',
+                'sc_bk_note'.tr,
                 style: AppTextStyles.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: AppColors.navy,
@@ -646,7 +646,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 controller: _noteController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Nhập ghi chú cho đơn hàng (tuỳ chọn)...',
+                  hintText: 'sc_bk_note_hint'.tr,
                   hintStyle: const TextStyle(
                       color: AppColors.textSecondary, fontSize: 14),
                   filled: true,
@@ -670,7 +670,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
               // --- Phương thức thanh toán ---
               const SizedBox(height: 20),
-              _buildSectionLabel('Phương thức thanh toán'),
+              _buildSectionLabel('sc_bk_payment_method'.tr),
               const SizedBox(height: 10),
               /* MoMo Temporarily disabled
               SegmentedButton<PaymentProvider>(...);
@@ -709,18 +709,18 @@ class _BookingScreenState extends State<BookingScreen> {
                               color: AppColors.brand),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Thanh toán qua VNPay',
+                                'sc_bk_vnpay'.tr,
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                               SizedBox(height: 2),
                               Text(
-                                'Hỗ trợ thẻ nội địa & quốc tế',
+                                'sc_bk_vnpay_desc'.tr,
                                 style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 12),
@@ -782,8 +782,8 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Tóm tắt đơn hàng',
+            Text(
+              'sc_bk_order_summary'.tr,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -820,9 +820,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 children: [
                   const Icon(Icons.people_outline,
                       color: Color(0xFF0055A5), size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'KHÁCH HÀNG',
+                  SizedBox(width: 8),
+                  Text(
+                    'sc_bk_customer_caps'.tr,
                     style: TextStyle(
                       color: Color(0xFF0055A5),
                       fontWeight: FontWeight.bold,
@@ -895,9 +895,9 @@ class _BookingScreenState extends State<BookingScreen> {
             const Icon(Icons.local_offer_outlined,
                 size: 20, color: Colors.black54),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Mã giảm giá',
+                'sc_bk_discount_code'.tr,
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
             ),
@@ -912,8 +912,8 @@ class _BookingScreenState extends State<BookingScreen> {
                   )
                 : Row(
                     children: [
-                      const Text(
-                        'Thêm mã giảm giá',
+                      Text(
+                        'sc_bk_add_discount'.tr,
                         style: TextStyle(
                           color: Color(0xFF0055A5),
                           fontWeight: FontWeight.w600,
@@ -960,17 +960,17 @@ class _BookingScreenState extends State<BookingScreen> {
                 style: const TextStyle(
                     color: Colors.black87, fontSize: 13, height: 1.4),
                 children: [
-                  const TextSpan(text: 'Tôi đồng ý với '),
+                  TextSpan(text: 'sc_bk_i_agree_with'.tr),
                   TextSpan(
-                    text: 'Chính sách',
+                    text: 'sc_bk_policy'.tr,
                     style: const TextStyle(
                         color: Color(0xFF0055A5), fontWeight: FontWeight.bold),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () => Get.toNamed(AppRoutes.bookingTerms),
                   ),
-                  const TextSpan(text: ' bảo vệ dữ liệu cá nhân và '),
+                  TextSpan(text: 'sc_bk_data_protection_and'.tr),
                   TextSpan(
-                    text: 'các điều khoản.',
+                    text: 'sc_bk_terms'.tr,
                     style: const TextStyle(
                         color: Color(0xFF0055A5), fontWeight: FontWeight.bold),
                     recognizer: TapGestureRecognizer()
@@ -1006,7 +1006,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Mã giảm giá',
+                      'sc_bk_discount_code'.tr,
                       style: AppTextStyles.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: AppColors.navy,
@@ -1021,7 +1021,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 16),
               if (saved.isNotEmpty) ...[
-                Text('Voucher của bạn',
+                Text('sc_bk_your_voucher'.tr,
                     style: Theme.of(context)
                         .textTheme
                         .labelMedium
@@ -1052,8 +1052,8 @@ class _BookingScreenState extends State<BookingScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Nhập mã voucher',
+                  Text(
+                    'sc_bk_enter_voucher'.tr,
                     style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppColors.navy,
@@ -1064,7 +1064,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     controller: _voucherCodeController,
                     textCapitalization: TextCapitalization.characters,
                     decoration: _popupInputDecoration(
-                      hint: 'Ví dụ: SUMMER2024',
+                      hint: 'sc_bk_voucher_example'.tr,
                       prefixIcon: Icons.confirmation_number_outlined,
                     ),
                     onFieldSubmitted: (_) {
@@ -1096,7 +1096,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Áp dụng',
+                      : Text('sc_bk_apply'.tr,
                           style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -1364,7 +1364,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
@@ -1374,7 +1374,7 @@ class _CheckoutSummaryCard extends StatelessWidget {
                   ),
                   SizedBox(width: 5),
                   Text(
-                    'Lịch đã chọn',
+                    'sc_bk_selected_schedule'.tr,
                     style: TextStyle(
                       color: AppColors.navy,
                       fontSize: 12,
@@ -1582,7 +1582,7 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Hành khách ${widget.passengerIndex + 1}',
+                        'sc_bk_passenger_num'.trParams({'num': (widget.passengerIndex + 1).toString()}),
                         style: AppTextStyles.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: AppColors.navy,
@@ -1604,16 +1604,16 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                 const SizedBox(height: 24),
                 _buildPopupTextField(
                   controller: widget.form.nameController,
-                  label: 'Họ và tên',
-                  hint: 'Nhập họ tên hành khách',
+                  label: 'sc_bk_full_name'.tr,
+                  hint: 'sc_bk_enter_name'.tr,
                   prefixIcon: Icons.person_outline_rounded,
                   validator: Validators.fullName,
                 ),
                 const SizedBox(height: 16),
                 _buildPopupTextField(
                   controller: widget.form.idCardController,
-                  label: 'CMND/CCCD/Hộ chiếu',
-                  hint: 'Nhập số giấy tờ tuỳ thân',
+                  label: 'sc_bk_id_card'.tr,
+                  hint: 'sc_bk_enter_id'.tr,
                   prefixIcon: Icons.badge_outlined,
                   keyboardType: TextInputType.text,
                   maxLength: 20,
@@ -1627,18 +1627,18 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                       flex: 3,
                       child: _buildPopupTextField(
                         controller: widget.form.dobController,
-                        label: 'Ngày sinh',
+                        label: 'sc_bk_dob'.tr,
                         hint: 'YYYY-MM-DD',
                         prefixIcon: Icons.cake_outlined,
                         readOnly: true,
                         onTap: widget.onPickDate,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Bắt buộc';
+                            return 'sc_bk_required'.tr;
                           }
                           final d = DateTime.tryParse(v.trim());
-                          if (d == null) return 'Sai Đ/dạng';
-                          if (d.isAfter(DateTime.now())) return 'Lỗi';
+                          if (d == null) return 'sc_bk_invalid_format'.tr;
+                          if (d.isAfter(DateTime.now())) return 'sc_bk_error'.tr;
                           return null;
                         },
                       ),
@@ -1649,8 +1649,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Giới tính',
+                          Text(
+                            'sc_bk_gender'.tr,
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.navy,
@@ -1663,20 +1663,20 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                                 color: AppColors.textSecondary),
                             decoration: _popupInputDecoration(
                               prefixIcon: Icons.wc_rounded,
-                              hint: 'Chọn',
+                              hint: 'sc_bk_select'.tr,
                             ),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                   value: 'Male',
                                   child: Text('Nam',
                                       style: TextStyle(fontSize: 14))),
                               DropdownMenuItem(
                                   value: 'Female',
-                                  child: Text('Nữ',
+                                  child: Text('sc_bk_female'.tr,
                                       style: TextStyle(fontSize: 14))),
                               DropdownMenuItem(
                                   value: 'Other',
-                                  child: Text('Khác',
+                                  child: Text('sc_bk_other_gender'.tr,
                                       style: TextStyle(fontSize: 14))),
                             ],
                             onChanged: (v) {
@@ -1694,8 +1694,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Quốc tịch',
+                    Text(
+                      'sc_bk_nationality'.tr,
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: AppColors.navy,
@@ -1722,7 +1722,7 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                                 color: AppColors.textSecondary),
                             decoration: _popupInputDecoration(
                               prefixIcon: Icons.flag_outlined,
-                              hint: 'Chọn quốc gia',
+                              hint: 'sc_bk_select_country'.tr,
                             ),
                             items: _countries
                                 .map((c) => DropdownMenuItem(
@@ -1737,7 +1737,7 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                               }
                             },
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Bắt buộc';
+                              if (v == null || v.isEmpty) return 'sc_bk_required'.tr;
                               return null;
                             },
                           ),
@@ -1759,8 +1759,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                       Navigator.pop(context);
                     }
                   },
-                  child: const Text(
-                    'Lưu thông tin',
+                  child: Text(
+                    'sc_bk_save_info'.tr,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),

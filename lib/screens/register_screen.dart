@@ -73,8 +73,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_sendingOtp || _auth.isLoading.value) return;
     if (!_acceptedTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng đồng ý điều khoản trước khi đăng ký'),
+        SnackBar(
+          content: Text('agree_terms_required'.tr),
         ),
       );
       return;
@@ -89,28 +89,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (!fullNameRegex.hasMatch(fullName)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content:
-              Text('Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng'),
+              Text('fullname_invalid'.tr),
         ),
       );
       return;
     }
     if (phone.length > 15) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Số điện thoại tối đa 15 chữ số')),
+        SnackBar(content: Text('phone_max_length'.tr)),
       );
       return;
     }
     if (!RegExp(r'^[0-9+()\- ]{8,15}$').hasMatch(phone)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Định dạng số điện thoại không hợp lệ')),
+        SnackBar(content: Text('phone_invalid'.tr)),
       );
       return;
     }
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mật khẩu không khớp!')),
+        SnackBar(content: Text('password_mismatch'.tr)),
       );
       return;
     }
@@ -155,7 +155,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_auth.isLoading.value) return;
     if (_otpController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập mã xác minh')),
+        SnackBar(content: Text('otp_required'.tr)),
       );
       return;
     }
@@ -173,11 +173,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return AuthPageLayout(
       showBack: true,
-      headerSubtitle: 'YOUR JOURNEY · YOUR VALUE',
-      title: _step == _RegisterStep.info ? 'Tạo tài khoản 🎉' : 'Xác nhận OTP',
+      headerSubtitle: 'app_tagline'.tr,
+      title: _step == _RegisterStep.info ? 'register_title_info'.tr : 'register_title_otp'.tr,
       subtitle: _step == _RegisterStep.info
-          ? 'Điền thông tin bên dưới để tham gia StayHub.'
-          : 'Mã xác nhận 6 chữ số đã được gửi đến email của bạn.',
+          ? 'register_subtitle_info'.tr
+          : 'register_subtitle_otp'.tr,
       footer: _step == _RegisterStep.info ? _LoginFooter() : null,
       body: Form(
         key: _formKey,
@@ -194,8 +194,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         AuthInputField(
           controller: _fullNameController,
-          label: 'Họ và tên',
-          hint: 'Nhập họ và tên đầy đủ',
+          label: 'fullname_label'.tr,
+          hint: 'fullname_hint'.tr,
           icon: Icons.person_outline_rounded,
           textInputAction: TextInputAction.next,
           validator: Validators.fullName,
@@ -203,8 +203,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 14),
         AuthInputField(
           controller: _emailController,
-          label: 'Email',
-          hint: 'Nhập địa chỉ email',
+          label: 'email_label'.tr,
+          hint: 'email_hint'.tr,
           icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
@@ -215,8 +215,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 14),
         AuthInputField(
           controller: _passwordController,
-          label: 'Mật khẩu',
-          hint: 'Tối thiểu 8 ký tự, chữ hoa, số và ký tự đặc biệt',
+          label: 'password_label'.tr,
+          hint: 'password_register_hint'.tr,
           icon: Icons.lock_outline_rounded,
           obscureText: true,
           textInputAction: TextInputAction.next,
@@ -225,8 +225,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 14),
         AuthInputField(
           controller: _confirmPasswordController,
-          label: 'Xác nhận mật khẩu',
-          hint: 'Nhập lại mật khẩu',
+          label: 'confirm_password_label'.tr,
+          hint: 'confirm_password_hint'.tr,
           icon: Icons.lock_reset_rounded,
           obscureText: true,
           textInputAction: TextInputAction.done,
@@ -244,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         // ── Send OTP button ─────────────────────────────
         AuthPrimaryButton(
-          label: _sendingOtp ? 'Đang gửi mã xác nhận...' : 'Tiếp tục',
+          label: _sendingOtp ? 'sending_otp'.tr : 'continue'.tr,
           isLoading: _sendingOtp || _auth.isLoading.value,
           onPressed: _sendOtp,
         ),
@@ -257,7 +257,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'Hoặc',
+                'or'.tr,
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
             ),
@@ -269,7 +269,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // ── Google register ─────────────────────────────
         Obx(
           () => AuthGoogleButton(
-            label: 'Đăng ký với Google',
+            label: 'register_with_google'.tr,
             isLoading: _sendingOtp || _auth.isLoading.value,
             onPressed: _auth.loginWithGoogle,
           ),
@@ -285,7 +285,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // ── Email (disabled) ────────────────────────────
         AuthInputField(
           controller: _emailController,
-          label: 'Email',
+          label: 'email_label'.tr,
           hint: '',
           icon: Icons.mail_outline_rounded,
           enabled: false,
@@ -300,15 +300,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline_rounded,
+              const Icon(Icons.info_outline_rounded,
                   color: AppColors.brand, size: 20),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Kiểm tra hộp thư (kể cả thư rác) để lấy mã xác nhận 6 chữ số.',
-                  style: TextStyle(
+                  'check_email_spam'.tr,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.brand,
                     height: 1.4,
@@ -321,9 +321,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 20),
 
         // ── OTP input ───────────────────────────────────
-        const Text(
-          'Mã xác minh OTP',
-          style: TextStyle(
+        Text(
+          'otp_code'.tr,
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -392,10 +392,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             child: Text(
               _sendingOtp
-                  ? 'Đang gửi lại...'
+                  ? 'resending_code'.tr
                   : _countdown > 0
-                      ? 'Gửi lại mã sau ${_countdown}s'
-                      : 'Gửi lại mã OTP',
+                      ? '${'resend_code_later'.tr} ${_countdown}s'
+                      : 'resend_code'.tr,
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
@@ -406,8 +406,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Obx(
           () => AuthPrimaryButton(
             label: _auth.isLoading.value
-                ? 'Đang hoàn tất đăng ký...'
-                : 'Hoàn tất đăng ký',
+                ? 'completing_register'.tr
+                : 'complete_register'.tr,
             isLoading: _auth.isLoading.value,
             onPressed: _completeRegister,
           ),
@@ -418,7 +418,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextButton.icon(
           onPressed: () => setState(() => _step = _RegisterStep.info),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
-          label: const Text('Quay lại chỉnh sửa thông tin'),
+          label: Text('back_to_edit_info'.tr),
           style: TextButton.styleFrom(
             foregroundColor: AppColors.textSecondary,
             textStyle: const TextStyle(
@@ -444,9 +444,9 @@ class _PhoneInputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Số điện thoại',
-          style: TextStyle(
+        Text(
+          'phone_label'.tr,
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -467,7 +467,7 @@ class _PhoneInputField extends StatelessWidget {
           cursorColor: AppColors.brand,
           decoration: InputDecoration(
             counterText: '',
-            hintText: 'Nhập số điện thoại',
+            hintText: 'phone_hint'.tr,
             hintStyle: TextStyle(fontSize: 15, color: Colors.grey.shade400),
             prefixIcon: Icon(Icons.phone_outlined,
                 size: 20, color: Colors.grey.shade400),
@@ -534,30 +534,30 @@ class _TermsCheckbox extends StatelessWidget {
         Expanded(
           child: Wrap(
             children: [
-              const Text(
-                'Tôi đồng ý với ',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              Text(
+                'agree_to'.tr,
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.terms),
-                child: const Text(
-                  'Điều khoản dịch vụ',
-                  style: TextStyle(
+                child: Text(
+                  'terms_of_service'.tr,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.brand,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const Text(
-                ' và ',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              Text(
+                'and'.tr,
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.privacy),
-                child: const Text(
-                  'Chính sách bảo mật',
-                  style: TextStyle(
+                child: Text(
+                  'privacy_policy'.tr,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.brand,
                     fontWeight: FontWeight.w600,
@@ -608,9 +608,9 @@ class _LoginFooter extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Đã có tài khoản StayHub?',
-                        style: TextStyle(
+                      Text(
+                        'have_account_stayhub'.tr,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -618,7 +618,7 @@ class _LoginFooter extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Đăng nhập ngay để tiếp tục',
+                        'login_now_continue'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade600,
@@ -642,9 +642,9 @@ class _LoginFooter extends StatelessWidget {
                 side: const BorderSide(color: AppColors.brand, width: 1.2),
               ),
             ),
-            child: const Text(
-              'Đăng nhập',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            child: Text(
+              'login_btn'.tr,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
         ],

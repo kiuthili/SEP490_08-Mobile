@@ -25,9 +25,15 @@ class ShellController extends GetxController {
   }
 
   void changeTab(int index) {
-    if (!AuthGate.isAuthenticated && index >= 2) {
-      AuthGate.requireLogin(shellTab: index);
-      return;
+    if (!AuthGate.isAuthenticated) {
+      if (index == 1) {
+        Get.toNamed('/tour-search'); // AppRoutes.tourSearch
+        return;
+      }
+      if (index >= 2) {
+        AuthGate.requireLogin(shellTab: index);
+        return;
+      }
     }
     selectedIndex.value = index;
     if (!isStaff || !Get.isRegistered<StaffController>()) return;

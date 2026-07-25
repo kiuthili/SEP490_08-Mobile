@@ -27,17 +27,17 @@ class NotificationsScreen extends GetView<NotificationController> {
                 child: Obx(() {
                   if (controller.isLoading.value &&
                       controller.notifications.isEmpty) {
-                    return const Center(
-                        child: LoadingWidget(message: 'Đang tải...'));
+                    return Center(
+                        child: LoadingWidget(message: 'nt_loading'.tr));
                   }
 
                   if (controller.notifications.isEmpty) {
                     return ListView(
-                      children: const [
+                      children: [
                         SizedBox(height: 100),
                         EmptyStateWidget(
-                          title: 'Thông báo trống',
-                          subtitle: 'Chúng tôi sẽ báo cho bạn khi có tin mới',
+                          title: 'nt_empty_title'.tr,
+                          subtitle: 'nt_empty_desc'.tr,
                         ),
                       ],
                     );
@@ -48,8 +48,8 @@ class NotificationsScreen extends GetView<NotificationController> {
                     itemCount: controller.notifications.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        return const SectionHeader(
-                          title: 'Gần đây',
+                        return SectionHeader(
+                          title: 'nt_recent'.tr,
                           padding:
                               EdgeInsets.symmetric(vertical: 16, horizontal: 4),
                         );
@@ -97,9 +97,9 @@ class NotificationsScreen extends GetView<NotificationController> {
                   backgroundColor: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Thông báo',
+                  'nt_title'.tr,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,

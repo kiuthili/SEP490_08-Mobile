@@ -83,7 +83,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                 controller: _controller.searchController,
                 focusNode: _controller.focusNode,
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm...',
+                  hintText: 'search_hint'.tr,
                   hintStyle: AppTextStyles.textTheme.bodyMedium?.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -141,7 +141,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   size: 48, color: AppColors.textTertiary),
               const SizedBox(height: 16),
               Text(
-                'Không tìm thấy kết quả nào',
+                'no_search_results'.tr,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
@@ -176,7 +176,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   size: 20, color: AppColors.brand),
               const SizedBox(width: 8),
               Text(
-                'XU HƯỚNG TÌM KIẾM NỔI BẬT',
+                'trending_searches'.tr,
                 style: AppTextStyles.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.brand,
@@ -239,7 +239,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   size: 20, color: AppColors.brand),
               const SizedBox(width: 8),
               Text(
-                'Tour xem nhiều nhất',
+                'most_viewed_tours'.tr,
                 style: AppTextStyles.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -318,7 +318,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Giá từ',
+                                      Text('price_from'.tr,
                                           style: TextStyle(
                                               fontSize: 10,
                                               color: AppColors.textSecondary)),

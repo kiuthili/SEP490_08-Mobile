@@ -36,7 +36,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
     try {
       _tickets = await _service.getMyTickets();
     } catch (e) {
-      Get.snackbar('Lỗi', e.toString());
+      Get.snackbar('mt_error'.tr, e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -45,18 +45,18 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Vé của tôi',
+      title: 'mt_my_tickets'.tr,
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
             ? const LoadingWidget()
             : _tickets.isEmpty
                 ? ListView(
-                    children: const [
+                    children: [
                       SizedBox(height: 80),
                       EmptyStateWidget(
-                        title: 'Chưa có vé',
-                        subtitle: 'Đặt tour và thanh toán để nhận vé QR',
+                        title: 'mt_no_tickets'.tr,
+                        subtitle: 'mt_book_to_get_qr'.tr,
                       ),
                     ],
                   )
@@ -73,7 +73,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                           leading: const Icon(Icons.confirmation_number),
                           title: Text(t.attendeeName),
                           subtitle: Text(
-                            '${t.checkInStatus ?? 'Chưa check-in'} • CMND: ${t.idCard}',
+                            '${t.checkInStatus ?? 'mt_not_checked_in'.tr} • CMND: ${t.idCard}',
                           ),
                           children: [
                             if (t.qrCode != null && t.qrCode!.isNotEmpty)
@@ -86,9 +86,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                                 ),
                               )
                             else
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.all(16),
-                                child: Text('QR chưa được cấp'),
+                                child: Text('mt_qr_not_issued'.tr),
                               ),
                           ],
                         ),
@@ -102,19 +102,28 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
 
 /// Vé theo một đơn hàng (dùng trong order detail).
 class OrderTicketsPanel extends StatelessWidget {
+  final List<TicketModel> tickets;
+  final Map<int, String> ticketTypeNames;
+
   const OrderTicketsPanel({
     super.key,
     required this.tickets,
-    this.ticketTypeNames = const {},
+    required this.ticketTypeNames,
   });
 
-  final List<TicketModel> tickets;
-  final Map<int, String> ticketTypeNames;
+  String _getTranslatedStatus(String? status) {
+    if (status == null || status.isEmpty) return 'mt_not_checked_in'.tr;
+    final s = status.toLowerCase();
+    if (s == 'pending') return 'tk_pending'.tr;
+    if (s == 'checkedin') return 'tk_checkedin'.tr;
+    if (s == 'cancelled') return 'pt_cancelled'.tr;
+    return status;
+  }
 
   String _ticketTypeName(int ticketTypeId) {
     final name = ticketTypeNames[ticketTypeId]?.trim();
     if (name != null && name.isNotEmpty) return name;
-    return 'Loại vé #$ticketTypeId';
+    return 'od_ticket_type'.trParams({'id': ticketTypeId.toString()});
   }
 
   @override
@@ -146,12 +155,12 @@ class OrderTicketsPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Vé & QR check-in',
+                    'mt_tickets_qr_checkin'.tr,
                     style: AppTextStyles.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${tickets.length} vé điện tử sẵn sàng sử dụng',
+                    'mt_tickets_ready'.trParams({'count': tickets.length.toString()}),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -163,13 +172,13 @@ class OrderTicketsPanel extends StatelessWidget {
         ...tickets.map((t) {
           final statusStr = t.checkInStatus?.toLowerCase() ?? '';
           Color statusColor = AppColors.textSecondary;
-          if (statusStr.contains('checked') || statusStr.contains('đã')) {
+          if (statusStr.contains('checked') || statusStr.contains('mt_already'.tr)) {
             statusColor = AppColors.success;
           } else if (statusStr.contains('pending') ||
-              statusStr.contains('chờ')) {
+              statusStr.contains('mt_wait'.tr)) {
             statusColor = Colors.orange;
           } else if (statusStr.contains('cancel') ||
-              statusStr.contains('hủy')) {
+              statusStr.contains('pt_cancelled'.tr)) {
             statusColor = AppColors.error;
           }
 
@@ -228,7 +237,7 @@ class OrderTicketsPanel extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
-                          t.checkInStatus ?? 'Chưa check-in',
+                          _getTranslatedStatus(t.checkInStatus),
                           style: TextStyle(
                             color: statusColor,
                             fontSize: 10,
@@ -287,7 +296,7 @@ class OrderTicketsPanel extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Đưa mã này cho nhân viên khi check-in',
+                              'mt_show_code_to_staff'.tr,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
@@ -300,11 +309,11 @@ class OrderTicketsPanel extends StatelessWidget {
                               onPressed: () {
                                 Clipboard.setData(
                                     ClipboardData(text: t.qrCode!));
-                                SnackbarHelper.success('Đã sao chép mã QR');
+                                SnackbarHelper.success('mt_qr_copied'.tr);
                               },
                               icon:
                                   const Icon(Icons.copy_all_rounded, size: 16),
-                              label: const Text('Sao chép mã'),
+                              label: Text('mt_copy_code'.tr),
                             )
                           ],
                         ),
@@ -323,7 +332,7 @@ class OrderTicketsPanel extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'QR đang được hệ thống khởi tạo',
+                          'mt_qr_generating'.tr,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],

@@ -40,7 +40,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Voucher của tôi',
+      title: 'vc_my_vouchers'.tr,
       body: Column(
         children: [
           Padding(
@@ -50,8 +50,8 @@ class _VouchersScreenState extends State<VouchersScreen> {
                 Expanded(
                   child: TextField(
                     controller: _codeController,
-                    decoration: const InputDecoration(
-                      hintText: 'Nhập mã voucher',
+                    decoration: InputDecoration(
+                      hintText: 'vc_enter_code'.tr,
                       prefixIcon: Icon(Icons.local_offer_outlined),
                     ),
                     onSubmitted: (_) => _save(),
@@ -67,7 +67,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Lưu'),
+                        : Text('vc_save'.tr),
                   ),
                 ),
               ],
@@ -90,9 +90,9 @@ class _VouchersScreenState extends State<VouchersScreen> {
     if (_controller.isLoading.value && _controller.vouchers.isEmpty) {
       return ListView(
         physics: physics,
-        children: const [
+        children: [
           SizedBox(height: 120),
-          LoadingWidget(message: 'Đang tải voucher...'),
+          LoadingWidget(message: 'vc_loading_vouchers'.tr),
         ],
       );
     }
@@ -100,11 +100,11 @@ class _VouchersScreenState extends State<VouchersScreen> {
     if (_controller.vouchers.isEmpty) {
       return ListView(
         physics: physics,
-        children: const [
+        children: [
           SizedBox(height: 80),
           EmptyStateWidget(
-            title: 'Chưa có voucher',
-            subtitle: 'Lưu mã voucher để dùng khi đặt tour',
+            title: 'vc_no_vouchers'.tr,
+            subtitle: 'vc_save_to_use'.tr,
           ),
         ],
       );
@@ -200,7 +200,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
                       const SizedBox(height: 4),
                       if (v.minOrderAmount != null && v.minOrderAmount! > 0)
                         Text(
-                          'Đơn tối thiểu ${CurrencyFormatter.format(v.minOrderAmount!)}',
+                          'vc_min_order'.trParams({'amount': CurrencyFormatter.format(v.minOrderAmount!)}),
                           style: const TextStyle(
                               fontSize: 12, color: Colors.black54),
                           maxLines: 1,
@@ -266,7 +266,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
                                     borderRadius:
                                         BorderRadius.circular(AppRadius.lg)),
                               ),
-                              child: const Text('Dùng ngay',
+                              child: Text('vc_use_now'.tr,
                                   style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold)),
@@ -287,11 +287,11 @@ class _VouchersScreenState extends State<VouchersScreen> {
   String _discountText(VoucherModel voucher) {
     final value = voucher.discountValue ?? 0;
     final type = voucher.discountType?.toLowerCase() ?? '';
-    if (type.contains('percent')) return 'Giảm $value%';
+    if (type.contains('percent')) return 'vc_discount_percent'.trParams({'val': value.toString()});
     if (value >= 1000) {
-      return 'Giảm ${(value / 1000).toStringAsFixed(0)}K';
+      return 'vc_discount_k'.trParams({'val': (value / 1000).toStringAsFixed(0)});
     }
-    return 'Giảm ${CurrencyFormatter.format(value)}';
+    return 'vc_discount_amount'.trParams({'val': CurrencyFormatter.format(value)});
   }
 
   String _statusLabel(String? userStatus, String? voucherStatus) {
@@ -299,10 +299,10 @@ class _VouchersScreenState extends State<VouchersScreen> {
             ?.toLowerCase() ??
         '';
     return switch (status) {
-      'available' || 'active' => 'Có thể dùng',
-      'used' => 'Đã dùng',
-      'expired' => 'Hết hạn',
-      'inactive' => 'Tạm ngưng',
+      'available' || 'active' => 'vc_status_active'.tr,
+      'used' => 'vc_status_used'.tr,
+      'expired' => 'vc_status_expired'.tr,
+      'inactive' => 'vc_status_inactive'.tr,
       _ => 'Voucher',
     };
   }
