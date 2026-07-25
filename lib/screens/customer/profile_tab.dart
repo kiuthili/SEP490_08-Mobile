@@ -10,8 +10,9 @@ import '../../theme/app_radius.dart';
 import '../../theme/shell_layout.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/ios_grouped.dart';
 import '../../utils/snackbar_helper.dart';
+import '../../services/system_setting_service.dart';
+import '../../widgets/stayhub_logo.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -63,9 +64,41 @@ class _ProfileTabState extends State<ProfileTab> {
                 icon: const Icon(Icons.notifications_none_rounded,
                     color: Colors.white),
               ),
-              IconButton(
-                onPressed: _openEditProfile,
+              PopupMenuButton<String>(
                 icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _openEditProfile();
+                  } else if (value == 'password') {
+                    Get.toNamed(AppRoutes.changePassword);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
+                        SizedBox(width: 8),
+                        Text('Sửa hồ sơ', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'password',
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textPrimary),
+                        SizedBox(width: 8),
+                        Text('Đổi mật khẩu', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -461,10 +494,48 @@ class _ProfileTabState extends State<ProfileTab> {
                   onPressed: _controller.logout,
                 ),
               ),
+              const SizedBox(height: 32),
+              _buildCompanyInfo(),
+              const SizedBox(height: 16),
             ],
           ),
         );
       }),
     );
+  }
+
+  Widget _buildCompanyInfo() {
+    return Obx(() {
+      final service = Get.isRegistered<SystemSettingService>() 
+          ? Get.find<SystemSettingService>() 
+          : null;
+          
+      final _ = service?.isLoading.value;
+      
+      final name = service?.getSettingSync('CompanyName') ?? 'Công ty TNHH StayHub';
+      final address = service?.getSettingSync('CompanyAddress') ?? '';
+      final phone = service?.getSettingSync('CompanyPhone') ?? '';
+      final email = service?.getSettingSync('CompanyEmail') ?? '';
+      
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const StayHubLogo(variant: StayHubLogoVariant.full, iconSize: 32),
+          const SizedBox(height: 12),
+          Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          if (address.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 32, right: 32),
+              child: Text(address, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
+            ),
+          const SizedBox(height: 4),
+          if (phone.isNotEmpty || email.isNotEmpty)
+            Text('${phone.isNotEmpty ? "Hotline: $phone" : ""}${phone.isNotEmpty && email.isNotEmpty ? " • " : ""}${email.isNotEmpty ? "Email: $email" : ""}', 
+                 textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 16),
+          Text('Phiên bản 1.0.0', style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withValues(alpha: 0.5))),
+        ],
+      );
+    });
   }
 }

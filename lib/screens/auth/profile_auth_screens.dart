@@ -365,19 +365,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   context: context,
                   label: 'Email',
                   value: user?.email ?? 'Thiết lập ngay',
-                  valueColor: (user?.email?.isEmpty ?? true)
+                  valueColor: (user?.email.isEmpty ?? true)
                       ? AppColors.brand
                       : Colors.black87,
                   isAction: true,
-                  showBorder: true,
-                ),
-                _buildRow(
-                  context: context,
-                  label: 'Đổi mật khẩu',
-                  value: '********',
-                  isAction: true,
                   showBorder: false,
-                  onTap: () => Get.toNamed(AppRoutes.changePassword),
                 ),
               ],
             ),
