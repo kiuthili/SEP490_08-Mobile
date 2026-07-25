@@ -12,6 +12,7 @@ class BookingTermsScreen extends StatelessWidget {
       title: 'Quy định đặt tour & Hủy vé',
       lastUpdated: bookingTermsSectionsViLastUpdated,
       sections: bookingTermsSectionsVi,
+      settingKey: 'RefundRegulations',
       relatedDocuments: const [
         {
           'label': 'Xem Điều khoản dịch vụ',
