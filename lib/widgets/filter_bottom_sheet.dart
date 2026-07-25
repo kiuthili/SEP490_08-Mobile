@@ -30,7 +30,7 @@ class FilterBottomSheet extends StatelessWidget {
               children: [
                 const SizedBox(width: 24), // Balance
                 Text(
-                  'Bộ lọc',
+                  'filter'.tr,
                   style: AppTextStyles.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                     color: AppColors.navy,
@@ -53,23 +53,23 @@ class FilterBottomSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('Điểm đến'),
+                  _buildSectionTitle('filter_destination'.tr),
                   const SizedBox(height: 8),
                   _buildCityDropdown(controller),
                   const SizedBox(height: 16),
-                  _buildSectionTitle('Ngày đi - Ngày về'),
+                  _buildSectionTitle('filter_date_range'.tr),
                   const SizedBox(height: 8),
                   _buildDateRangePicker(context, controller),
                   const SizedBox(height: 16),
-                  _buildSectionTitle('Danh mục'),
+                  _buildSectionTitle('filter_category'.tr),
                   const SizedBox(height: 8),
                   _buildCategoryDropdown(controller),
                   const SizedBox(height: 16),
-                  _buildSectionTitle('Mức giá'),
+                  _buildSectionTitle('filter_price'.tr),
                   const SizedBox(height: 8),
                   _buildPriceSlider(controller),
                   const SizedBox(height: 16),
-                  _buildSectionTitle('Thời lượng (ngày)'),
+                  _buildSectionTitle('filter_duration'.tr),
                   const SizedBox(height: 8),
                   _buildDurationSlider(controller),
                   const SizedBox(height: 16),
@@ -101,8 +101,8 @@ class FilterBottomSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
-                    child: const Text('Xóa lọc',
-                        style: TextStyle(color: AppColors.textPrimary)),
+                    child: Text('filter_clear'.tr,
+                        style: const TextStyle(color: AppColors.textPrimary)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -121,8 +121,8 @@ class FilterBottomSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
-                    child: const Text('Áp dụng',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text('filter_apply'.tr,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -171,7 +171,7 @@ class FilterBottomSheet extends StatelessWidget {
             borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
           ),
         ),
-        hint: const Text('Chọn tỉnh/thành phố'),
+        hint: Text('filter_select_city'.tr),
         icon: const Icon(Icons.keyboard_arrow_down_rounded,
             color: AppColors.textSecondary),
         items: controller.provinces.map((city) {
@@ -214,7 +214,7 @@ class FilterBottomSheet extends StatelessWidget {
             borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
           ),
         ),
-        hint: const Text('Tất cả danh mục'),
+        hint: Text('filter_all_categories'.tr),
         icon: const Icon(Icons.keyboard_arrow_down_rounded,
             color: AppColors.textSecondary),
         items: controller.categories.map((cat) {
@@ -235,10 +235,10 @@ class FilterBottomSheet extends StatelessWidget {
     return Obx(() {
       final start = controller.startDate.value;
       final end = controller.endDate.value;
-      String displayText = 'Chọn ngày đi - về';
+      String displayText = 'filter_select_date_range'.tr;
 
       if (start.isNotEmpty && end.isNotEmpty) {
-        displayText = '$start đến $end';
+        displayText = '$start ${'to'.tr} $end';
       }
 
       return InkWell(
@@ -309,7 +309,7 @@ class FilterBottomSheet extends StatelessWidget {
             children: [
               Text(formatCurrency.format(minP),
                   style: AppTextStyles.textTheme.bodySmall),
-              Text(maxP >= 100000000 ? 'Tối đa' : formatCurrency.format(maxP),
+              Text(maxP >= 100000000 ? 'filter_max'.tr : formatCurrency.format(maxP),
                   style: AppTextStyles.textTheme.bodySmall),
             ],
           ),
@@ -339,9 +339,9 @@ class FilterBottomSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(val == 0 ? 'Bất kỳ' : 'Lên đến ${val.round()} ngày',
+              Text(val == 0 ? 'filter_any'.tr : 'filter_up_to_days'.trParams({'days': val.round().toString()}),
                   style: AppTextStyles.textTheme.bodySmall),
-              Text('30 ngày', style: AppTextStyles.textTheme.bodySmall),
+              Text('filter_days'.trParams({'days': '30'}), style: AppTextStyles.textTheme.bodySmall),
             ],
           ),
           Slider(

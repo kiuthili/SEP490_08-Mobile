@@ -40,6 +40,7 @@ class _HomeTabState extends State<HomeTab> {
   @override
   void initState() {
     super.initState();
+    _selectedLang = Get.locale?.languageCode ?? 'vi';
     // Lazily put HomeController if not already registered
     if (!Get.isRegistered<HomeController>()) {
       Get.put(HomeController());
@@ -71,6 +72,11 @@ class _HomeTabState extends State<HomeTab> {
         selected: _selectedLang,
         onSelect: (lang) {
           setState(() => _selectedLang = lang);
+          if (lang == 'vi') {
+            Get.updateLocale(const Locale('vi', 'VN'));
+          } else {
+            Get.updateLocale(const Locale('en', 'US'));
+          }
           Navigator.pop(context);
         },
       ),
@@ -113,14 +119,14 @@ class _HomeTabState extends State<HomeTab> {
                 // ── Tour Hot section ──
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
-                        title: 'Tour nổi bật',
+                        title: 'hot_tours'.tr,
                         onViewAll: () => Get.toNamed(
                           AppRoutes.sectionTours,
-                          arguments: {'title': 'Tour nổi bật', 'type': 'hot'},
+                          arguments: {'title': 'hot_tours'.tr, 'type': 'hot'},
                         ),
                         isLoading: _home.isLoadingHot.value,
                         tours: _home.hotTours,
-                        badgeLabel: 'Nổi bật',
+                        badgeLabel: 'hot_badge'.tr,
                         badgeColor: AppColors.accent,
                         onTap: _openTour,
                         wishlistController: _wishlistController,
@@ -130,17 +136,17 @@ class _HomeTabState extends State<HomeTab> {
                 // ── Tour Sale section ──
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
-                        title: 'Ưu đãi giờ chót',
+                        title: 'last_minute_deals'.tr,
                         onViewAll: () => Get.toNamed(
                           AppRoutes.sectionTours,
                           arguments: {
-                            'title': 'Ưu đãi giờ chót',
+                            'title': 'last_minute_deals'.tr,
                             'type': 'sale'
                           },
                         ),
                         isLoading: _home.isLoadingSale.value,
                         tours: _home.saleTours,
-                        badgeLabel: 'Giờ chót',
+                        badgeLabel: 'last_minute_badge'.tr,
                         badgeColor: const Color(0xFFE53935),
                         showSalePrice: true,
                         onTap: _openTour,
@@ -151,17 +157,17 @@ class _HomeTabState extends State<HomeTab> {
                 // ── Tour Upcoming section ──
                 SliverToBoxAdapter(
                   child: Obx(() => _HomeSectionRow(
-                        title: 'Sắp khởi hành',
+                        title: 'upcoming_tours'.tr,
                         onViewAll: () => Get.toNamed(
                           AppRoutes.sectionTours,
                           arguments: {
-                            'title': 'Sắp khởi hành',
+                            'title': 'upcoming_tours'.tr,
                             'type': 'upcoming'
                           },
                         ),
                         isLoading: _home.isLoadingUpcoming.value,
                         tours: _home.upcomingTours,
-                        badgeLabel: 'Sắp đi',
+                        badgeLabel: 'upcoming_badge'.tr,
                         badgeColor: const Color(0xFF43A047),
                         onTap: _openTour,
                         wishlistController: _wishlistController,
@@ -284,7 +290,7 @@ class _StickyHeader extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Tìm kiếm...',
+                                  'search_hint'.tr,
                                   style: AppTextStyles.textTheme.bodyMedium
                                       ?.copyWith(color: AppColors.textTertiary),
                                 ),
@@ -385,7 +391,7 @@ class _HomeSectionRow extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      'Xem tất cả',
+                      'view_all'.tr,
                       style: AppTextStyles.textTheme.bodySmall?.copyWith(
                         color: AppColors.brand,
                         fontWeight: FontWeight.w600,
@@ -414,12 +420,12 @@ class _HomeSectionRow extends StatelessWidget {
             ),
           )
         else if (tours.isEmpty)
-          const SizedBox(
+          SizedBox(
             height: 80,
             child: Center(
               child: Text(
-                'Chưa có tour nào',
-                style: TextStyle(color: AppColors.textSecondary),
+                'no_tours_yet'.tr,
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ),
           )
@@ -590,7 +596,7 @@ class _TourCard extends StatelessWidget {
                                 size: 11, color: AppColors.textSecondary),
                             const SizedBox(width: 3),
                             Text(
-                              'Khởi hành: $depStr',
+                              'departure_date'.trParams({'date': depStr}),
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
@@ -619,8 +625,8 @@ class _TourCard extends StatelessWidget {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text(
-                                'Từ ',
+                              Text(
+                                'from_price'.tr,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: AppColors.textSecondary,
@@ -639,8 +645,8 @@ class _TourCard extends StatelessWidget {
                         ],
                       )
                     else
-                      const Text(
-                        'Liên hệ để biết giá',
+                      Text(
+                        'contact_for_price'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
@@ -677,7 +683,7 @@ class _RegionSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 22, 12, 12),
             child: Text(
-              'Điểm đến yêu thích',
+              'favorite_destinations'.tr,
               style: AppTextStyles.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.brand,
@@ -744,11 +750,11 @@ class _RegionSection extends StatelessWidget {
               ),
             )
           else if (home.regionTours.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 30),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
               child: Center(
-                child: Text('Chưa có tour nào',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                child: Text('no_tours_yet'.tr,
+                    style: const TextStyle(color: AppColors.textSecondary)),
               ),
             )
           else
@@ -861,15 +867,15 @@ class _HeroSection extends StatelessWidget {
                     color: const Color(0xFFEB662B),
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.local_fire_department_rounded,
+                      const Icon(Icons.local_fire_department_rounded,
                           size: 13, color: Colors.white),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
-                        'Ưu đãi độc quyền App',
-                        style: TextStyle(
+                        'app_exclusive'.tr,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -881,8 +887,8 @@ class _HeroSection extends StatelessWidget {
                 const SizedBox(height: 14),
 
                 // Headline
-                const Text(
-                  'Khám phá\nViệt Nam cùng StayHub',
+                Text(
+                  'discover_vn'.tr,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -895,7 +901,7 @@ class _HeroSection extends StatelessWidget {
 
                 // Subtitle
                 Text(
-                  'Hàng nghìn tour đang chờ bạn với giá tốt nhất',
+                  'thousands_tours'.tr,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 13,
@@ -920,15 +926,15 @@ class _HeroSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.explore_outlined,
+                        const Icon(Icons.explore_outlined,
                             size: 16, color: AppColors.brand),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          'Khám phá ngay',
-                          style: TextStyle(
+                          'explore_now'.tr,
+                          style: const TextStyle(
                             color: AppColors.brand,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
@@ -1085,8 +1091,8 @@ class _LanguageBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Chọn ngôn ngữ',
+            Text(
+              'choose_language'.tr,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

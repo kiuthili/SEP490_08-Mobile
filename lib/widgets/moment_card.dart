@@ -388,14 +388,14 @@ class _MomentCardState extends State<MomentCard>
                         const SizedBox(height: 16),
                         _buildSolidActionButton(
                           icon: Icons.chat_bubble_rounded,
-                          label: 'Bình luận',
+                          label: 'sc_btn_comment'.tr,
                           onTap: widget.onComment ?? () {},
                         ),
                         if (widget.onShare != null) ...[
                           const SizedBox(height: 16),
                           _buildSolidActionButton(
                             icon: Icons.send_rounded,
-                            label: 'Chia sẻ',
+                            label: 'sc_btn_share'.tr,
                             onTap: widget.onShare!,
                           ),
                         ],
@@ -463,15 +463,15 @@ class _MomentCardState extends State<MomentCard>
             showDialog(
               context: context,
               builder: (dialogContext) => AlertDialog(
-                title: const Text('Xóa khoảnh khắc'),
-                content: const Text(
-                    'Bạn có chắc chắn muốn xóa khoảnh khắc này không? Thao tác này không thể hoàn tác.'),
+                title: Text('sc_del_moment_title'.tr),
+                content: Text(
+                    'sc_del_moment_desc'.tr),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.lg)),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Không'),
+                    child: Text('sc_btn_no'.tr),
                   ),
                   FilledButton(
                     onPressed: () {
@@ -480,7 +480,7 @@ class _MomentCardState extends State<MomentCard>
                     },
                     style: FilledButton.styleFrom(
                         backgroundColor: AppColors.error),
-                    child: const Text('Xóa'),
+                    child: Text('sc_btn_delete'.tr),
                   ),
                 ],
               ),
@@ -490,25 +490,25 @@ class _MomentCardState extends State<MomentCard>
         },
         itemBuilder: (_) => [
           if (widget.moment.userId == widget.currentUserId)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
                   Icon(Icons.delete_outline, color: AppColors.error, size: 20),
                   SizedBox(width: 8),
-                  Text('Xóa bài', style: TextStyle(color: AppColors.error)),
+                  Text('sc_menu_delete'.tr, style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),
           if (widget.moment.userId != widget.currentUserId &&
               widget.onReport != null)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'report',
               child: Row(
                 children: [
                   Icon(Icons.flag_outlined, color: Colors.black87, size: 20),
                   SizedBox(width: 8),
-                  Text('Báo cáo vi phạm'),
+                  Text('sc_menu_report'.tr),
                 ],
               ),
             ),

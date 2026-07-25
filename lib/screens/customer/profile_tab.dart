@@ -126,12 +126,12 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.verified_rounded,
+                        children: [
+                          const Icon(Icons.verified_rounded,
                               size: 14, color: Color(0xFF8FE5B0)),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
-                            'Thành viên StayHub',
+                            'pt_member'.tr,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -241,8 +241,8 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildMyBookings() {
     return _buildSectionCard(
-      title: 'Đơn đặt tour của tôi',
-      viewAllText: 'Xem lịch sử',
+      title: 'pt_my_orders'.tr,
+      viewAllText: 'pt_view_history'.tr,
       onViewAll: () => Get.toNamed(AppRoutes.orders, arguments: ''),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -250,30 +250,30 @@ class _ProfileTabState extends State<ProfileTab> {
         children: [
           Expanded(
             child: _buildIconGridItem(
-              Icons.account_balance_wallet_outlined,
-              'Chờ\nthanh toán',
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Pending'),
+              Icons.receipt_long_outlined,
+              'pt_all'.tr,
+              () => Get.toNamed(AppRoutes.orders, arguments: ''),
             ),
           ),
           Expanded(
             child: _buildIconGridItem(
               Icons.check_circle_outline_rounded,
-              'Đã\nxác nhận',
+              'pt_paid'.tr,
               () => Get.toNamed(AppRoutes.orders, arguments: 'Paid'),
             ),
           ),
           Expanded(
             child: _buildIconGridItem(
-              Icons.flight_takeoff_rounded,
-              'Hoàn thành',
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Completed'),
+              Icons.cancel_outlined,
+              'pt_cancelled'.tr,
+              () => Get.toNamed(AppRoutes.orders, arguments: 'Cancelled'),
             ),
           ),
           Expanded(
             child: _buildIconGridItem(
-              Icons.cancel_outlined,
-              'Đã hủy',
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Cancelled'),
+              Icons.assignment_return_outlined,
+              'pt_cancel_req'.tr,
+              () => Get.toNamed(AppRoutes.orders, arguments: 'Request to Cancelled'),
             ),
           ),
         ],
@@ -283,7 +283,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildMyUtilities() {
     return _buildSectionCard(
-      title: 'Tiện ích & Ưu đãi',
+      title: 'pt_utilities_offers'.tr,
       viewAllText: '',
       onViewAll: () {},
       child: Row(
@@ -293,7 +293,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.local_offer_outlined,
-              'Ví\nVoucher',
+              'pt_wallet_voucher'.tr,
               () => Get.toNamed(AppRoutes.vouchers),
               iconColor: Colors.deepOrange,
             ),
@@ -309,7 +309,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.confirmation_number_outlined,
-              'Vé & QR',
+              'pt_ticket_qr'.tr,
               () => Get.toNamed(AppRoutes.myTickets),
               iconColor: Colors.purple,
             ),
@@ -317,7 +317,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.star_outline_rounded,
-              'Đánh giá',
+              'pt_reviews'.tr,
               () => Get.toNamed(AppRoutes.myReviews),
               iconColor: Colors.amber.shade700,
             ),
@@ -329,7 +329,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildCommunityAndExplore() {
     return _buildSectionCard(
-      title: 'Cộng đồng & Khám phá',
+      title: 'pt_community_explore'.tr,
       viewAllText: '',
       onViewAll: () {},
       child: Row(
@@ -339,7 +339,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.psychology_outlined,
-              'Trợ lý\nAI',
+              'pt_ai_assistant'.tr,
               () {
                 try {
                   Get.find<ShellController>().changeTab(3);
@@ -353,7 +353,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.people_outline_rounded,
-              'Bạn bè',
+              'pt_friends'.tr,
               () => Get.find<ShellController>().changeTab(2),
               iconColor: Colors.teal,
             ),
@@ -369,7 +369,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.chat_bubble_outline_rounded,
-              'Tin nhắn',
+              'pt_messages'.tr,
               () => Get.toNamed(AppRoutes.chatInbox),
               iconColor: Colors.indigo,
             ),
@@ -401,52 +401,52 @@ class _ProfileTabState extends State<ProfileTab> {
               _buildMyUtilities(),
               _buildCommunityAndExplore(),
               _buildSectionCard(
-                title: 'Hỗ trợ & Khác',
+                title: 'pt_support_others'.tr,
                 viewAllText: '',
                 onViewAll: () {},
                 child: Column(
                   children: [
                     _buildSupportTile(
                       icon: Icons.notifications_active_outlined,
-                      title: 'Cài đặt thông báo',
+                      title: 'pt_notif_settings'.tr,
                       onTap: () =>
-                          SnackbarHelper.info('Tính năng đang phát triển'),
+                          SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.location_on_outlined,
-                      title: 'Cài đặt quyền riêng tư định vị',
+                      title: 'pt_privacy_location'.tr,
                       onTap: () =>
-                          SnackbarHelper.info('Tính năng đang phát triển'),
+                          SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.language_rounded,
-                      title: 'Cài đặt ngôn ngữ',
+                      title: 'pt_language_settings'.tr,
                       onTap: () =>
-                          SnackbarHelper.info('Tính năng đang phát triển'),
+                          SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.policy_outlined,
-                      title: 'Chính sách hoàn hủy',
+                      title: 'pt_refund_policy'.tr,
                       onTap: () => Get.toNamed(AppRoutes.bookingTerms),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.description_outlined,
-                      title: 'Điều khoản dịch vụ',
+                      title: 'pt_terms'.tr,
                       onTap: () => Get.toNamed(AppRoutes.terms),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.privacy_tip_outlined,
-                      title: 'Chính sách bảo mật',
+                      title: 'pt_privacy_policy'.tr,
                       onTap: () => Get.toNamed(AppRoutes.privacy),
                     ),
                   ],
@@ -456,7 +456,7 @@ class _ProfileTabState extends State<ProfileTab> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: CustomButton(
-                  label: 'Đăng xuất',
+                  label: 'pt_logout'.tr,
                   outlined: true,
                   onPressed: _controller.logout,
                 ),

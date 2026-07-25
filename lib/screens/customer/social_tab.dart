@@ -51,23 +51,23 @@ class _SocialTabState extends State<SocialTab>
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Add Moment',
+          tooltip: 'sc_tooltip_add_moment'.tr,
           icon: const Icon(Icons.camera_alt_outlined),
           onPressed: () => Get.toNamed(AppRoutes.shareMoment),
         ),
-        title: const Text('Social'),
+        title: Text('sc_title'.tr),
         actions: [
           IconButton(
-            tooltip: 'Social Map',
+            tooltip: 'sc_tooltip_map'.tr,
             onPressed: () => Get.find<ShellController>().changeTab(0),
             icon: const Icon(Icons.map_outlined),
           ),
           IconButton(
-            tooltip: 'Messages',
+            tooltip: 'sc_tooltip_messages'.tr,
             onPressed: () => Get.toNamed(AppRoutes.chatInbox),
             icon: const Icon(Icons.forum_outlined),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -90,10 +90,10 @@ class _SocialTabState extends State<SocialTab>
                 labelColor: Colors.white,
                 unselectedLabelColor: AppColors.textSecondary,
                 splashBorderRadius: BorderRadius.circular(AppRadius.lg),
-                tabs: const [
-                  Tab(text: 'Lướt'),
-                  Tab(text: 'Bạn bè'),
-                  Tab(text: 'Cá nhân'),
+                tabs: [
+                  Tab(text: 'sc_tab_feed'.tr),
+                  Tab(text: 'sc_tab_friends'.tr),
+                  Tab(text: 'sc_tab_profile'.tr),
                 ],
               ),
             ),
@@ -142,7 +142,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
   void _shareMoment(MomentModel moment) {
     final rooms = widget.social.chatRooms;
     if (rooms.isEmpty) {
-      SnackbarHelper.error('No conversation found to share.');
+      SnackbarHelper.error('sc_share_no_conv'.tr);
       return;
     }
 
@@ -160,8 +160,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Send to',
+                Text(
+                  'sc_share_send_to'.tr,
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -173,7 +173,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -183,7 +183,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                   final roomName =
                       (room.name != null && room.name!.trim().isNotEmpty)
                           ? room.name!
-                          : 'Conversation';
+                          : 'sc_share_conversation'.tr;
 
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -204,7 +204,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
-                      room.isGroup ? 'Tour Group' : 'Direct Chat',
+                      room.isGroup ? 'sc_share_tour_group'.tr : 'sc_share_direct_chat'.tr,
                       style: const TextStyle(
                           fontSize: 11, color: AppColors.textTertiary),
                     ),
@@ -219,7 +219,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           })}]';
 
                       await widget.social.sendChatMessage(room.id, shareText);
-                      SnackbarHelper.success('Moment shared successfully');
+                      SnackbarHelper.success('sc_share_success'.tr);
                     },
                   );
                 },
@@ -255,9 +255,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
 
         if (widget.social.moments.isEmpty) {
           return ListView(
-            children: const [
+            children: [
               SizedBox(height: 120),
-              Center(child: Text('No moments yet. Share your journey!')),
+              Center(child: Text('sc_moment_empty'.tr)),
             ],
           );
         }
@@ -269,7 +269,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               (widget.social.isMomentsLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == widget.social.moments.length) {
-              return const Padding(
+              return Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(child: CircularProgressIndicator()));
             }
@@ -309,27 +309,27 @@ class _MomentsPanelState extends State<_MomentsPanel> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: Text(
-                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
+                  '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(
-                          labelText: 'Reason for reporting'),
-                      items: const [
+                      decoration: InputDecoration(
+                          labelText: 'sc_report_reason'.tr),
+                      items: [
                         DropdownMenuItem(
-                            value: 'Spam', child: Text('Spam / Advertisement')),
+                            value: 'Spam', child: Text('sc_report_spam'.tr)),
                         DropdownMenuItem(
-                            value: 'Hate Speech', child: Text('Hate Speech')),
+                            value: 'sc_report_hate'.tr, child: Text('sc_report_hate'.tr)),
                         DropdownMenuItem(
                             value: 'Harassment',
-                            child: Text('Harassment / Threats')),
+                            child: Text('sc_report_harassment'.tr)),
                         DropdownMenuItem(
-                            value: 'Violence', child: Text('Violence / Gore')),
+                            value: 'Violence', child: Text('sc_report_violence'.tr)),
                         DropdownMenuItem(
-                            value: 'Other', child: Text('Other reason')),
+                            value: 'Other', child: Text('sc_report_other'.tr)),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -337,12 +337,12 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                         }
                       },
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextField(
                       controller: detailsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Details (Optional)',
-                        hintText: 'Enter violation details...',
+                      decoration: InputDecoration(
+                        labelText: 'sc_report_details'.tr,
+                        hintText: 'sc_report_details_hint'.tr,
                         alignLabelWithHint: true,
                       ),
                       maxLines: 3,
@@ -353,7 +353,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               actions: [
                 TextButton(
                   onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text('sc_report_cancel'.tr),
                 ),
                 FilledButton(
                   onPressed: isSending
@@ -374,13 +374,13 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           }
                         },
                   child: isSending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Submit Report'),
+                      : Text('sc_report_submit'.tr),
                 ),
               ],
             );

@@ -256,13 +256,13 @@ class AiController extends GetxController {
       recommendationDetail.value = result;
       recommendations.assignAll(result.recommendedTours);
       summary.value = result.summary.isEmpty ? null : result.summary;
-      SnackbarHelper.success('Đã tạo gợi ý tour phù hợp');
+      SnackbarHelper.success('ai_msg_success'.tr);
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
     } catch (e) {
-      SnackbarHelper.error('Lỗi parse data: $e');
+      SnackbarHelper.error('ai_msg_err_parse'.trParams({'err': e.toString()}));
       return false;
     } finally {
       questionnaireSubmitting.value = false;
@@ -279,11 +279,11 @@ class AiController extends GetxController {
   Future<void> sendChatMessage(String message) async {
     final text = message.trim();
     if (text.length < 2) {
-      SnackbarHelper.error('Tin nhắn phải có ít nhất 2 ký tự');
+      SnackbarHelper.error('ai_msg_err_min_length'.tr);
       return;
     }
     if (text.length > 2000) {
-      SnackbarHelper.error('Tin nhắn tối đa 2000 ký tự');
+      SnackbarHelper.error('ai_msg_err_max_length'.tr);
       return;
     }
 

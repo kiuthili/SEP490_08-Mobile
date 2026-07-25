@@ -24,11 +24,11 @@ class _AiChatTabState extends State<AiChatTab> {
   late final AiController _ai;
   Worker? _messagesWorker;
 
-  static const _suggestions = [
-    'Trợ lý AI làm được gì?',
-    'Cách đặt tour trên StayHub?',
-    'Voucher dùng như thế nào?',
-    'Gợi ý tour Đà Nẵng cho gia đình',
+  final _suggestions = [
+    'ai_sug_1'.tr,
+    'ai_sug_2'.tr,
+    'ai_sug_3'.tr,
+    'ai_sug_4'.tr,
   ];
 
   @override
@@ -87,10 +87,10 @@ class _AiChatTabState extends State<AiChatTab> {
                     size: 14,
                   ),
                   const SizedBox(width: 6),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Bạn có thể chuyển sang điền Form bất cứ lúc nào để có đề xuất ngay.',
-                      style: TextStyle(
+                      'ai_chat_prompt'.tr,
+                      style: const TextStyle(
                         fontSize: 10.5,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
@@ -99,9 +99,9 @@ class _AiChatTabState extends State<AiChatTab> {
                   ),
                   GestureDetector(
                     onTap: widget.onSwitchToGuide,
-                    child: const Text(
-                      'Mở Form →',
-                      style: TextStyle(
+                    child: Text(
+                      'ai_open_form'.tr,
+                      style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.brand,
                         fontWeight: FontWeight.bold,
@@ -129,13 +129,13 @@ class _AiChatTabState extends State<AiChatTab> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Hỏi StayHub AI',
+                    'ai_ask_stayhub'.tr,
                     textAlign: TextAlign.center,
                     style: AppTextStyles.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Mình có thể hỗ trợ đặt tour, voucher, thanh toán, gợi ý điểm đến và câu hỏi về nền tảng.',
+                    'ai_chat_subtitle'.tr,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
@@ -177,7 +177,7 @@ class _AiChatTabState extends State<AiChatTab> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Nhận đề xuất nhanh',
+                                'ai_quick_recommendations'.tr,
                                 style: AppTextStyles.textTheme.titleSmall
                                     ?.copyWith(
                                   fontWeight: FontWeight.bold,
@@ -186,9 +186,9 @@ class _AiChatTabState extends State<AiChatTab> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Điền Form khảo sát ngắn (100% miễn phí, không tốn tài nguyên chat, trả kết quả tức thì).',
-                            style: TextStyle(
+                          Text(
+                            'ai_quick_recommendations_desc'.tr,
+                            style: const TextStyle(
                               fontSize: 11,
                               color: AppColors.textSecondary,
                               height: 1.3,
@@ -209,9 +209,9 @@ class _AiChatTabState extends State<AiChatTab> {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 10),
                               ),
-                              child: const Text(
-                                'Chuyển sang điền Form khảo sát',
-                                style: TextStyle(
+                              child: Text(
+                                'ai_switch_to_form'.tr,
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -270,7 +270,7 @@ class _AiChatTabState extends State<AiChatTab> {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
                   decoration: InputDecoration(
-                    hintText: 'Nhập câu hỏi...',
+                    hintText: 'ai_input_hint'.tr,
                     prefixIcon: const Icon(Icons.auto_awesome_outlined),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
