@@ -34,10 +34,10 @@ class AuthGate {
     String? route,
     dynamic arguments,
     int? shellTab,
-    String message = 'Vui lòng đăng nhập để sử dụng chức năng này',
+    String? message,
   }) {
     if (isAuthenticated) return true;
-    SnackbarHelper.info(message);
+    SnackbarHelper.info(message ?? 'login_required'.tr);
     Get.toNamed(
       AppRoutes.login,
       arguments: LoginDestination(

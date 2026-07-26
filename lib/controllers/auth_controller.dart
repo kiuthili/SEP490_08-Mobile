@@ -37,7 +37,7 @@ class AuthController extends GetxController {
   }) async {
     final trimmedEmail = email.trim();
     if (trimmedEmail.isEmpty || password.isEmpty) {
-      SnackbarHelper.error('Vui lòng nhập email và mật khẩu');
+      SnackbarHelper.error('err_email_pass_req'.tr);
       return;
     }
     isLoading.value = true;
@@ -46,7 +46,7 @@ class AuthController extends GetxController {
         LoginRequest(email: trimmedEmail, password: password),
       );
       currentUser.value = response.user;
-      SnackbarHelper.success('Đăng nhập thành công');
+      SnackbarHelper.success('login_success'.tr);
       await _syncPushTokenAfterLogin();
       if (response.user.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);
@@ -75,23 +75,19 @@ class AuthController extends GetxController {
       );
       if (result.retryAfterSeconds != null) {
         SnackbarHelper.error(
-          result.message ??
-              'Vui lòng đợi ${result.retryAfterSeconds} giây trước khi gửi lại mã.',
+          result.message ?? 'wait_retry_otp'.trParams({'seconds': result.retryAfterSeconds.toString()}),
         );
       } else {
         SnackbarHelper.success(
-          result.message ??
-              'Mã xác nhận đăng ký đã được gửi đến email của bạn.',
+          result.message ?? 'otp_sent_email'.tr,
         );
       }
       return result;
     } on ApiError catch (e) {
       if (e.message == 'FullNameCannotContainSpecialCharacters') {
-        SnackbarHelper.error(
-            'Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
+        SnackbarHelper.error('err_name_special'.tr);
       } else if (e.message == 'PhoneNumberExists') {
-        SnackbarHelper.error(
-            'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
+        SnackbarHelper.error('err_phone_exists'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -114,11 +110,11 @@ class AuthController extends GetxController {
         phoneNumber.trim().isEmpty ||
         password.isEmpty ||
         otpCode.trim().isEmpty) {
-      SnackbarHelper.error('Vui lòng điền đầy đủ thông tin');
+      SnackbarHelper.error('err_fill_all'.tr);
       return false;
     }
     if (password != confirmPassword) {
-      SnackbarHelper.error('Mật khẩu xác nhận không khớp');
+      SnackbarHelper.error('err_pass_unmatch'.tr);
       return false;
     }
     isLoading.value = true;
@@ -132,22 +128,19 @@ class AuthController extends GetxController {
           otpCode: otpCode.trim(),
         ),
       );
-      SnackbarHelper.success('Đăng ký thành công. Vui lòng đăng nhập.');
+      SnackbarHelper.success('register_success'.tr);
       Get.offAllNamed(AppRoutes.login, arguments: Get.arguments);
       return true;
     } on ApiError catch (e) {
       if (e.message == 'FullNameCannotContainSpecialCharacters') {
-        SnackbarHelper.error(
-            'Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng');
+        SnackbarHelper.error('err_name_special'.tr);
       } else if (e.message == 'PhoneNumberExists') {
-        SnackbarHelper.error(
-            'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.');
+        SnackbarHelper.error('err_phone_exists'.tr);
       } else if (e.message == 'InvalidOrExpiredOtp' ||
           e.message.toLowerCase().contains('invalid') ||
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
-        SnackbarHelper.error(
-            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+        SnackbarHelper.error('err_otp_invalid'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -260,7 +253,7 @@ class AuthController extends GetxController {
         return;
       }
       currentUser.value = response.user;
-      SnackbarHelper.success('Đăng nhập Google thành công');
+      SnackbarHelper.success('google_login_success'.tr);
       await _syncPushTokenAfterLogin();
       if (response.user.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);
@@ -273,7 +266,7 @@ class AuthController extends GetxController {
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (_) {
-      SnackbarHelper.error('Không thể đăng nhập Google. Vui lòng thử lại.');
+      SnackbarHelper.error('err_google_login'.tr);
     } finally {
       isLoading.value = false;
     }
@@ -292,7 +285,7 @@ class AuthController extends GetxController {
         ),
         onCancel: () {
           Get.back();
-          SnackbarHelper.info('Đã hủy đăng ký tài khoản mới bằng Google.');
+          SnackbarHelper.info('info_google_cancel'.tr);
         },
       ),
       isScrollControlled: true,
@@ -314,7 +307,7 @@ class AuthController extends GetxController {
         phoneNumber: phoneNumber,
       );
       currentUser.value = response.user;
-      SnackbarHelper.success('Đăng nhập Google thành công');
+      SnackbarHelper.success('google_login_success'.tr);
       await _syncPushTokenAfterLogin();
       if (response.user.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);
@@ -326,18 +319,14 @@ class AuthController extends GetxController {
       }
     } on ApiError catch (e) {
       if (e.message == 'PhoneNumberExists') {
-        SnackbarHelper.error(
-          'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.',
-        );
+        SnackbarHelper.error('err_phone_exists'.tr);
       } else if (e.message == 'PhoneNumberMax15Chars') {
-        SnackbarHelper.error('Số điện thoại tối đa 15 chữ số.');
+        SnackbarHelper.error('err_phone_length'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
     } catch (_) {
-      SnackbarHelper.error(
-        'Không thể hoàn tất đăng ký Google. Vui lòng thử lại.',
-      );
+      SnackbarHelper.error('err_google_complete'.tr);
     } finally {
       isLoading.value = false;
     }

@@ -95,13 +95,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             : DateFormat('yyyy-MM-dd').format(_dateOfBirth!),
         avatarPath: _avatarFile?.path,
       );
-      SnackbarHelper.success('Cập nhật hồ sơ thành công');
+      SnackbarHelper.success('profile_updated_success'.tr);
       Get.offAllNamed(AppRoutes.profile);
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } catch (_) {
       SnackbarHelper.error(
-        'Không cập nhật được hồ sơ. Vui lòng thử lại.',
+        'profile_update_failed'.tr,
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -186,7 +186,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: AppColors.backgroundSecondary,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text('Sửa hồ sơ',
+        title: Text('edit_profile'.tr,
             style:
                 textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400)),
         centerTitle: true,
@@ -203,7 +203,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2))))
               : TextButton(
                   onPressed: _submit,
-                  child: Text('Lưu',
+                  child: Text('save'.tr,
                       style: textTheme.titleMedium
                           ?.copyWith(color: AppColors.brand)),
                 ),
@@ -241,7 +241,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             const Icon(Icons.edit_square,
                                 size: 16, color: AppColors.brand),
                             const SizedBox(width: 6),
-                            Text('Sửa',
+                            Text('edit'.tr,
                                 style: textTheme.bodyMedium
                                     ?.copyWith(color: AppColors.brand)),
                           ],
@@ -257,7 +257,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               [
                 _buildRow(
                   context: context,
-                  label: 'Tên',
+                  label: 'name'.tr,
                   showBorder: true,
                   isAction: true,
                   trailing: TextFormField(
@@ -265,8 +265,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     textAlign: TextAlign.right,
                     style:
                         textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                    decoration: const InputDecoration(
-                      hintText: 'Thiết lập ngay',
+                    decoration: InputDecoration(
+                      hintText: 'set_now'.tr,
                       hintStyle: TextStyle(color: Colors.black38),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -282,7 +282,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 _buildRow(
                   context: context,
-                  label: 'Tên Đăng Nhập',
+                  label: 'username'.tr,
                   value: user?.email ?? '',
                   valueColor: Colors.black54,
                   showBorder: false,
@@ -295,7 +295,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               [
                 _buildRow(
                   context: context,
-                  label: 'Giới tính',
+                  label: 'gender'.tr,
                   showBorder: true,
                   trailing: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -306,10 +306,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           size: 18, color: Colors.black38),
                       style:
                           textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                      items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('Nam')),
-                        DropdownMenuItem(value: 'Female', child: Text('Nữ')),
-                        DropdownMenuItem(value: 'Other', child: Text('Khác')),
+                      items: [
+                        DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
+                        DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
+                        DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
                       ],
                       onChanged: (value) => setState(() => _gender = value),
                     ),
@@ -317,9 +317,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 _buildRow(
                   context: context,
-                  label: 'Ngày sinh',
+                  label: 'date_of_birth'.tr,
                   value: _dateOfBirth == null
-                      ? 'Thiết lập ngay'
+                      ? 'set_now'.tr
                       : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
                   valueColor:
                       _dateOfBirth == null ? AppColors.brand : Colors.black87,
@@ -334,7 +334,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               [
                 _buildRow(
                   context: context,
-                  label: 'Số điện thoại',
+                  label: 'phone_number'.tr,
                   showBorder: true,
                   isAction: true,
                   trailing: TextFormField(
@@ -342,8 +342,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     textAlign: TextAlign.right,
                     style:
                         textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                    decoration: const InputDecoration(
-                      hintText: 'Thiết lập ngay',
+                    decoration: InputDecoration(
+                      hintText: 'set_now'.tr,
                       hintStyle: TextStyle(color: Colors.black38),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -364,20 +364,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _buildRow(
                   context: context,
                   label: 'Email',
-                  value: user?.email ?? 'Thiết lập ngay',
+                  value: user?.email ?? 'set_now'.tr,
                   valueColor: (user?.email?.isEmpty ?? true)
                       ? AppColors.brand
                       : Colors.black87,
                   isAction: true,
                   showBorder: true,
-                ),
-                _buildRow(
-                  context: context,
-                  label: 'Đổi mật khẩu',
-                  value: '********',
-                  isAction: true,
-                  showBorder: false,
-                  onTap: () => Get.toNamed(AppRoutes.changePassword),
                 ),
               ],
             ),
@@ -415,7 +407,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final user = Get.find<AuthController>().currentUser.value;
     return AppScreen(
-      title: 'Đổi mật khẩu',
+      title: 'change_password'.tr,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Form(
@@ -431,8 +423,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     border: Border.all(color: Colors.amber.shade200),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: const Text(
-                    'Bạn cần đổi mật khẩu trước khi tiếp tục sử dụng tài khoản.',
+                  child: Text(
+                    'require_password_change'.tr,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -442,18 +434,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   children: [
                     CustomTextField(
                       controller: _oldController,
-                      label: 'Mật khẩu cũ',
+                      label: 'current_password'.tr,
                       obscureText: true,
                       prefixIcon: Icons.lock_outline_rounded,
                       validator: (v) => Validators.requiredField(
                         v,
-                        label: 'Mật khẩu cũ',
+                        label: 'current_password'.tr,
                       ),
                     ),
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _newController,
-                      label: 'Mật khẩu mới',
+                      label: 'new_password'.tr,
                       obscureText: true,
                       prefixIcon: Icons.lock_reset_rounded,
                       validator: Validators.strongPassword,
@@ -461,7 +453,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _confirmController,
-                      label: 'Xác nhận mật khẩu mới',
+                      label: 'confirm_new_password'.tr,
                       obscureText: true,
                       prefixIcon: Icons.lock_reset_rounded,
                       validator: (v) =>
@@ -472,7 +464,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 24),
               CustomButton(
-                label: 'Đổi mật khẩu',
+                label: 'change_password'.tr,
                 isLoading: _loading,
                 onPressed: () async {
                   if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -482,7 +474,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       oldPassword: _oldController.text,
                       newPassword: _newController.text,
                     );
-                    SnackbarHelper.success('Đổi mật khẩu thành công');
+                    SnackbarHelper.success('change_password_success'.tr);
                     _oldController.clear();
                     _newController.clear();
                     _confirmController.clear();
@@ -552,13 +544,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _startCountdown(result.retryAfterSeconds!);
         SnackbarHelper.error(
           result.message ??
-              'Vui lòng đợi ${result.retryAfterSeconds} giây trước khi gửi lại mã.',
+              '${'please_wait'.tr} ${result.retryAfterSeconds}s',
         );
         return;
       }
       _startCountdown();
       SnackbarHelper.success(
-        result.message ?? 'Nếu email đã đăng ký, mã xác nhận đã được gửi.',
+        result.message ?? 'if_email_registered'.tr,
       );
       Get.offNamed(AppRoutes.resetPassword, arguments: email);
     } on ApiError catch (e) {
@@ -573,8 +565,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return AuthPageLayout(
       showBack: true,
       headerSubtitle: 'YOUR JOURNEY · YOUR VALUE',
-      title: 'Quên mật khẩu 🔑',
-      subtitle: 'Nhập email của bạn để nhận mã xác nhận đặt lại mật khẩu.',
+      title: '${'forgot_password_title'.tr} 🔑',
+      subtitle: 'forgot_password_subtitle'.tr,
       body: Form(
         key: _formKey,
         child: Column(
@@ -600,8 +592,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
             AuthInputField(
               controller: _emailController,
-              label: 'Địa chỉ Email',
-              hint: 'Nhập địa chỉ email đã đăng ký',
+              label: 'email_address_label'.tr,
+              hint: 'email_address_hint'.tr,
               icon: Icons.mail_outline_rounded,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
@@ -611,8 +603,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
             AuthPrimaryButton(
               label: _countdown > 0
-                  ? 'Vui lòng đợi ${_countdown}s...'
-                  : (_loading ? 'Đang gửi...' : 'Gửi mã xác nhận'),
+                  ? '${'please_wait'.tr} ${_countdown}s...'
+                  : (_loading ? 'sending'.tr : 'send_recovery_code'.tr),
               isLoading: _loading,
               onPressed: _countdown > 0 ? null : _submit,
             ),
@@ -622,7 +614,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             TextButton.icon(
               onPressed: Get.back,
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
-              label: const Text('Quay lại đăng nhập'),
+              label: Text('back_to_login'.tr),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 textStyle: const TextStyle(
@@ -717,11 +709,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _startCountdown(seconds);
       if (result.retryAfterSeconds != null) {
         SnackbarHelper.error(
-          result.message ?? 'Vui lòng đợi $seconds giây trước khi gửi lại mã.',
+          result.message ?? '${'please_wait'.tr} $seconds s',
         );
       } else {
         SnackbarHelper.success(
-          result.message ?? 'Nếu email đã đăng ký, mã xác nhận đã được gửi.',
+          result.message ?? 'if_email_registered'.tr,
         );
       }
     } on ApiError catch (e) {
@@ -741,7 +733,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         code: _codeController.text.trim(),
       );
       SnackbarHelper.success(
-        'Xác nhận OTP thành công! Bạn có thể đặt lại mật khẩu mới.',
+        'verify_otp_success'.tr,
       );
       if (mounted) {
         setState(() {
@@ -756,14 +748,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
         SnackbarHelper.error(
-            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+            'otp_invalid_or_expired'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
       if (mounted) setState(() => _verifyingOtp = false);
     } catch (e) {
       SnackbarHelper.error(
-        'Mã xác nhận OTP không chính xác hoặc đã hết hạn.',
+        'otp_invalid_or_expired'.tr,
       );
       if (mounted) setState(() => _verifyingOtp = false);
     }
@@ -772,7 +764,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Future<void> _submitReset() async {
     if (_loading || !(_formKey.currentState?.validate() ?? false)) return;
     if (_passwordController.text != _confirmPasswordController.text) {
-      SnackbarHelper.error('Mật khẩu không khớp!');
+      SnackbarHelper.error('password_mismatch'.tr);
       return;
     }
     setState(() => _loading = true);
@@ -782,7 +774,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         resetToken: _resetToken,
         newPassword: _passwordController.text,
       );
-      SnackbarHelper.success('Đặt lại mật khẩu thành công');
+      SnackbarHelper.success('reset_password_success'.tr);
       Get.offAllNamed(AppRoutes.login);
     } on ApiError catch (e) {
       if (e.message == 'InvalidOrExpiredOtp' ||
@@ -790,7 +782,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
         SnackbarHelper.error(
-            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+            'otp_invalid_or_expired'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -805,11 +797,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       showBack: true,
       headerSubtitle: 'YOUR JOURNEY · YOUR VALUE',
       title: _step == _ResetPasswordStep.verifyOtp
-          ? 'Nhập mã OTP 📩'
-          : 'Mật khẩu mới 🔐',
+          ? '${'enter_otp_title'.tr} 📩'
+          : '${'new_password_title'.tr} 🔐',
       subtitle: _step == _ResetPasswordStep.verifyOtp
-          ? 'Nhập mã 6 chữ số đã gửi đến email của bạn.'
-          : 'Mã OTP đã xác thực. Hãy tạo mật khẩu mới cho tài khoản.',
+          ? 'enter_6_digit_sent'.tr
+          : 'otp_verified_create_password'.tr,
       body: Form(
         key: _formKey,
         child: _step == _ResetPasswordStep.verifyOtp
@@ -826,7 +818,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         // ── Email (disabled) ────────────────────────────
         AuthInputField(
           controller: _emailController,
-          label: 'Email',
+          label: 'email_label'.tr,
           hint: '',
           icon: Icons.mail_outline_rounded,
           enabled: false,
@@ -841,14 +833,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline_rounded,
+              const Icon(Icons.info_outline_rounded,
                   color: AppColors.brand, size: 20),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Kiểm tra hộp thư (kể cả thư rác) để lấy mã xác nhận 6 chữ số.',
+                  'check_email_spam'.tr,
                   style: TextStyle(
                       fontSize: 13, color: AppColors.brand, height: 1.4),
                 ),
@@ -859,8 +851,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 20),
 
         // ── OTP input large ─────────────────────────────
-        const Text(
-          'Mã xác minh OTP',
+        Text(
+          'otp_code'.tr,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -930,10 +922,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             ),
             child: Text(
               _resending
-                  ? 'Đang gửi lại...'
+                  ? 'resending_code'.tr
                   : _countdown > 0
-                      ? 'Gửi lại mã sau ${_countdown}s'
-                      : 'Gửi lại mã OTP',
+                      ? '${'resend_code_later'.tr} ${_countdown}s'
+                      : 'resend_code'.tr,
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
@@ -941,7 +933,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 20),
 
         AuthPrimaryButton(
-          label: _verifyingOtp ? 'Đang xác nhận...' : 'Xác nhận OTP',
+          label: _verifyingOtp ? 'verifying'.tr : 'verify_otp'.tr,
           isLoading: _verifyingOtp,
           onPressed: _verifyingOtp ? null : _verifyOtp,
         ),
@@ -972,7 +964,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     style: const TextStyle(
                         color: Color(0xFF065F46), fontSize: 13, height: 1.4),
                     children: [
-                      const TextSpan(text: 'Đã xác thực OTP cho email '),
+                      TextSpan(text: 'otp_verified_for_email'.tr),
                       TextSpan(
                         text: _email,
                         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -988,8 +980,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
         AuthInputField(
           controller: _passwordController,
-          label: 'Mật khẩu mới',
-          hint: 'Tối thiểu 8 ký tự, chữ hoa, số và ký tự đặc biệt',
+          label: 'new_password'.tr,
+          hint: 'password_register_hint'.tr,
           icon: Icons.lock_outline_rounded,
           obscureText: true,
           textInputAction: TextInputAction.next,
@@ -999,8 +991,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
         AuthInputField(
           controller: _confirmPasswordController,
-          label: 'Xác nhận mật khẩu mới',
-          hint: 'Nhập lại mật khẩu',
+          label: 'confirm_new_password'.tr,
+          hint: 'confirm_password_hint'.tr,
           icon: Icons.lock_reset_rounded,
           obscureText: true,
           textInputAction: TextInputAction.done,
@@ -1010,7 +1002,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 24),
 
         AuthPrimaryButton(
-          label: _loading ? 'Đang đặt lại...' : 'Đặt lại mật khẩu',
+          label: _loading ? 'resetting'.tr : 'reset_password'.tr,
           isLoading: _loading,
           onPressed: _loading ? null : _submitReset,
         ),

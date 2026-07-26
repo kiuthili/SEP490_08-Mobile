@@ -100,10 +100,10 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Tin nhắn',
+      title: 'sc_ib_title'.tr,
       actions: [
         IconButton(
-          tooltip: 'Tin nhắn mới',
+          tooltip: 'sc_ib_new_message'.tr,
           onPressed: _showNewMessageSheet,
           icon: const Icon(Icons.edit_square),
         ),
@@ -114,7 +114,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
         child: Obx(() {
           final rooms = _visibleRooms;
           if (_social.isChatLoading.value && _social.chatRooms.isEmpty) {
-            return const LoadingWidget(message: 'Đang tải cuộc trò chuyện...');
+            return LoadingWidget(message: 'sc_ib_loading_chats'.tr);
           }
           return CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -126,7 +126,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                     controller: _searchController,
                     onChanged: (value) => setState(() => _query = value),
                     decoration: InputDecoration(
-                      hintText: 'Tìm kiếm...',
+                      hintText: 'sc_ib_search'.tr,
                       filled: true,
                       fillColor: AppColors.surfaceGrouped,
                       contentPadding: const EdgeInsets.symmetric(
@@ -161,10 +161,10 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                       fontWeight: FontWeight.w700, fontSize: 13),
                   unselectedLabelStyle: const TextStyle(
                       fontWeight: FontWeight.w500, fontSize: 13),
-                  tabs: const [
-                    Tab(text: 'Tất cả'),
-                    Tab(text: 'Tin nhắn riêng'),
-                    Tab(text: 'Nhóm tour'),
+                  tabs: [
+                    Tab(text: 'sc_ib_tab_all'.tr),
+                    Tab(text: 'sc_ib_tab_direct'.tr),
+                    Tab(text: 'sc_ib_tab_group'.tr),
                   ],
                 ),
               ),
@@ -173,18 +173,18 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                   hasScrollBody: false,
                   child: EmptyStateWidget(
                     title: _query.isNotEmpty
-                        ? 'Không tìm thấy cuộc trò chuyện'
+                        ? 'sc_ib_empty_search_title'.tr
                         : _filter == _InboxFilter.group
-                            ? 'Chưa có nhóm tour'
-                            : 'Chưa có tin nhắn',
+                            ? 'sc_ib_empty_group_title'.tr
+                            : 'sc_ib_empty_direct_title'.tr,
                     subtitle: _filter == _InboxFilter.group
-                        ? 'Sau khi thanh toán tour, nhóm chat lịch trình sẽ xuất hiện tại đây.'
-                        : 'Nhấn biểu tượng soạn tin để trò chuyện với bạn bè.',
+                        ? 'sc_ib_empty_group_desc'.tr
+                        : 'sc_ib_empty_direct_desc'.tr,
                     icon: _filter == _InboxFilter.group
                         ? Icons.groups_2_outlined
                         : Icons.forum_outlined,
                     onRetry: _social.fetchChatRooms,
-                    retryLabel: 'Làm mới',
+                    retryLabel: 'sc_ib_retry'.tr,
                   ),
                 )
               else
@@ -221,8 +221,8 @@ class _ConversationCard extends StatelessWidget {
     final title = room.name?.trim().isNotEmpty == true
         ? room.name!
         : room.isGroup
-            ? 'Nhóm tour #${room.scheduleId ?? room.id}'
-            : 'Cuộc trò chuyện #${room.id}';
+            ? 'sc_ib_tour_group_id'.trParams({'id': (room.scheduleId ?? room.id).toString()})
+            : 'sc_ib_chat_id'.trParams({'id': room.id.toString()});
     final hasUnread = room.unreadCount > 0;
 
     final previewStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -297,8 +297,8 @@ class _ConversationCard extends StatelessWidget {
                           room.lastMessage?.trim().isNotEmpty == true
                               ? room.lastMessage!
                               : room.isGroup
-                                  ? 'Nhóm trò chuyện theo lịch tour'
-                                  : 'Bắt đầu cuộc trò chuyện',
+                                  ? 'sc_ib_tour_group_desc'.tr
+                                  : 'sc_ib_start_chat'.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: previewStyle,

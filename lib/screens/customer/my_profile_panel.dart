@@ -43,7 +43,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
         _myMoments = await _socialService.getUserMoments(user.id);
       }
     } catch (_) {
-      SnackbarHelper.error('Không thể tải dữ liệu khoảnh khắc');
+      SnackbarHelper.error('sc_mp_err_load_moments'.tr);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -54,7 +54,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
     return Obx(() {
       final user = _auth.currentUser.value;
       if (user == null) {
-        return const Center(child: Text('Chưa đăng nhập'));
+        return Center(child: Text('sc_mp_not_logged_in'.tr));
       }
       return RefreshIndicator(
         color: AppColors.brand,
@@ -74,11 +74,11 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                   height: 0.5, thickness: 0.5, color: AppColors.separator),
             ),
             if (_loading)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 hasScrollBody: false,
                 child: Padding(
                   padding: EdgeInsets.all(60),
-                  child: LoadingWidget(message: 'Đang tải khoảnh khắc...'),
+                  child: LoadingWidget(message: 'sc_mp_loading_moments'.tr),
                 ),
               )
             else if (_myMoments.isEmpty)
@@ -126,7 +126,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_myMoments.length.toString(), 'Bài viết'),
+                        _buildStat(_myMoments.length.toString(), 'sc_mp_posts'.tr),
                         Container(
                           width: 1,
                           height: 28,
@@ -134,7 +134,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                         ),
                         _buildStat(
                           _socialController.friends.length.toString(),
-                          'Bạn bè',
+                          'sc_mp_friends'.tr,
                         ),
                       ],
                     ),
@@ -145,7 +145,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           ),
           const SizedBox(height: 14),
           Text(
-            user.fullName.isEmpty ? 'StayHub User' : user.fullName,
+            user.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : user.fullName,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -265,8 +265,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  'Chỉnh sửa hồ sơ',
+                child: Text(
+                  'sc_mp_edit_profile'.tr,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -400,8 +400,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Chưa có bài viết nào',
+        Text(
+          'sc_mp_empty_posts_title'.tr,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
@@ -409,16 +409,16 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Khi bạn chia sẻ ảnh, chúng\nsẽ hiển thị trên trang cá nhân.',
+        Text(
+          'sc_mp_empty_posts_desc'.tr,
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         const SizedBox(height: 20),
         GestureDetector(
           onTap: () => Get.toNamed(AppRoutes.shareMoment),
-          child: const Text(
-            'Chia sẻ ảnh đầu tiên',
+          child: Text(
+            'sc_mp_share_first'.tr,
             style: TextStyle(
               color: AppColors.brand,
               fontWeight: FontWeight.w700,
@@ -492,8 +492,8 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        title: const Text(
-          'Bài viết',
+        title: Text(
+          'sc_mp_posts'.tr,
           style: TextStyle(
               color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18),
         ),
@@ -585,7 +585,7 @@ class _FeedItem extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    moment.fullName ?? 'StayHub User',
+                    moment.fullName ?? 'sc_mp_stayhub_user'.tr,
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
@@ -648,7 +648,7 @@ class _FeedItem extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
-                '${moment.reactionCount} lượt thích',
+                'sc_mp_likes_count'.trParams({'count': moment.reactionCount.toString()}),
                 style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w700,
@@ -678,7 +678,7 @@ class _FeedItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
             child: Text(
-              'Xem tất cả bình luận', // Can be refined later with real date formatting if needed
+              'sc_mp_view_all_comments'.tr, // Can be refined later with real date formatting if needed
               style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
           ),
@@ -707,13 +707,13 @@ class _FeedItem extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('Xóa bài viết',
+              title: Text('sc_mp_delete_post'.tr,
                   style: TextStyle(color: AppColors.error)),
               onTap: onDelete,
             ),
             ListTile(
               leading: const Icon(Icons.cancel_outlined, color: Colors.black87),
-              title: const Text('Hủy', style: TextStyle(color: Colors.black87)),
+              title: Text('sc_mp_cancel'.tr, style: TextStyle(color: Colors.black87)),
               onTap: () => Navigator.pop(context),
             ),
             const SizedBox(height: 8),

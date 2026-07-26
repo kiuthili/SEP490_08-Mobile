@@ -48,13 +48,13 @@ class ReviewController extends GetxController {
     if (!AuthGate.requireLogin(
       route: AppRoutes.tourDetail,
       arguments: tourId,
-      message: 'Vui lòng đăng nhập để đánh giá tour',
+      message: 'login_required_review'.tr,
     )) {
       return false;
     }
     final customerId = Get.find<StorageService>().user?.id;
     if (customerId == null) {
-      SnackbarHelper.error('Vui lòng đăng nhập để đánh giá');
+      SnackbarHelper.error('login_required_review'.tr);
       return false;
     }
     if (existingReviewId != null &&

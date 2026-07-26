@@ -30,7 +30,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Tour yêu thích',
+      title: 'wl_title'.tr,
       body: RefreshIndicator(
         onRefresh: _controller.fetchWishlist,
         child: Obx(() => _buildBody()),
@@ -44,9 +44,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
     if (_controller.isLoading.value && _controller.items.isEmpty) {
       return ListView(
         physics: physics,
-        children: const [
+        children: [
           SizedBox(height: 120),
-          LoadingWidget(message: 'Đang tải wishlist...'),
+          LoadingWidget(message: 'wl_loading'.tr),
         ],
       );
     }
@@ -54,11 +54,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
     if (_controller.items.isEmpty) {
       return ListView(
         physics: physics,
-        children: const [
+        children: [
           SizedBox(height: 80),
           EmptyStateWidget(
-            title: 'Chưa có tour yêu thích',
-            subtitle: 'Nhấn ♥ ở chi tiết tour để lưu',
+            title: 'wl_empty_title'.tr,
+            subtitle: 'wl_empty_desc'.tr,
           ),
         ],
       );
@@ -127,13 +127,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         if (tour.city != null)
                           Row(
                             children: [
                               const Icon(Icons.location_on,
                                   size: 14, color: Colors.black54),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   tour.city!,
@@ -145,7 +145,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               ),
                             ],
                           ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -153,7 +153,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               children: [
                                 const Icon(Icons.star_rounded,
                                     color: Color(0xFFFFB800), size: 16),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                                 Text(
                                   tour.averageStar?.toStringAsFixed(1) ?? 'N/A',
                                   style: const TextStyle(
@@ -169,7 +169,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                 item.tourId,
                                 isInWishlist: true,
                               ),
-                              child: const Padding(
+                              child: Padding(
                                 padding: EdgeInsets.all(4),
                                 child: Icon(Icons.favorite_rounded,
                                     color: AppColors.error, size: 24),

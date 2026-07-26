@@ -52,7 +52,7 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Tin nhắn mới',
+      title: 'sc_nm_title'.tr,
       body: Column(
         children: [
           Padding(
@@ -61,7 +61,7 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
               decoration: InputDecoration(
-                hintText: 'Tìm kiếm bạn bè theo tên hoặc email...',
+                hintText: 'sc_nm_search_hint'.tr,
                 filled: true,
                 fillColor: AppColors.surfaceGrouped,
                 contentPadding:
@@ -86,22 +86,22 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
           Expanded(
             child: Obx(() {
               if (_social.isLoading.value && _social.friends.isEmpty) {
-                return const LoadingWidget(
-                    message: 'Đang tải danh sách bạn bè...');
+                return LoadingWidget(
+                    message: 'sc_nm_loading'.tr);
               }
               if (_social.friends.isEmpty) {
-                return const EmptyStateWidget(
-                  title: 'Chưa có bạn bè',
-                  subtitle: 'Kết bạn trước để gửi tin nhắn riêng',
+                return EmptyStateWidget(
+                  title: 'sc_nm_empty_friends_title'.tr,
+                  subtitle: 'sc_nm_empty_friends_desc'.tr,
                   icon: Icons.person_add_alt_1_rounded,
                 );
               }
 
               final friends = _filteredFriends;
               if (friends.isEmpty) {
-                return const EmptyStateWidget(
-                  title: 'Không tìm thấy bạn bè',
-                  subtitle: 'Thử tìm kiếm với từ khóa khác',
+                return EmptyStateWidget(
+                  title: 'sc_nm_empty_search_title'.tr,
+                  subtitle: 'sc_nm_empty_search_desc'.tr,
                   icon: Icons.search_off_rounded,
                 );
               }
@@ -175,7 +175,7 @@ class _FriendListTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    friend.email ?? 'Bạn bè trên StayHub',
+                    friend.email ?? 'sc_nm_stayhub_friend'.tr,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: 13,

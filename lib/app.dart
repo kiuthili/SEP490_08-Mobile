@@ -4,6 +4,7 @@ import 'constants/app_constants.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'theme/app_theme.dart';
+import 'utils/app_translations.dart';
 
 class StayHubApp extends StatelessWidget {
   const StayHubApp({super.key});
@@ -19,6 +20,9 @@ class StayHubApp extends StatelessWidget {
       transitionDuration: const Duration(milliseconds: 280),
       initialRoute: AppRoutes.splash,
       getPages: AppPages.routes,
+      translations: AppTranslations(),
+      locale: const Locale('en', 'US'), // Default to English as requested
+      fallbackLocale: const Locale('en', 'US'),
     );
   }
 }

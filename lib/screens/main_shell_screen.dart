@@ -24,88 +24,88 @@ import '../utils/auth_gate.dart';
 class MainShellScreen extends GetView<ShellController> {
   const MainShellScreen({super.key});
 
-  static const _customerNav = [
+  static List<IosBottomNavItem> get _customerNav => [
     IosBottomNavItem(
       icon: Icons.map_outlined,
       selectedIcon: Icons.map_rounded,
-      label: 'Bản đồ',
+      label: 'nav_map'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.people_outline_rounded,
       selectedIcon: Icons.people_rounded,
-      label: 'Xã hội',
+      label: 'nav_social'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
-      label: 'Trang chủ',
+      label: 'nav_home'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.auto_awesome_outlined,
       selectedIcon: Icons.auto_awesome_rounded,
-      label: 'AI Guide',
+      label: 'nav_ai_guide'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.person_outline_rounded,
       selectedIcon: Icons.person_rounded,
-      label: 'Profile',
+      label: 'nav_profile'.tr,
     ),
   ];
 
-  static const _guestNav = [
+  static List<IosBottomNavItem> get _guestNav => [
     IosBottomNavItem(
       icon: Icons.home_outlined,
       selectedIcon: Icons.home_rounded,
-      label: 'Trang chủ',
+      label: 'nav_home'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.travel_explore_outlined,
       selectedIcon: Icons.travel_explore_rounded,
-      label: 'Khám phá',
+      label: 'nav_explore'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.people_outline_rounded,
       selectedIcon: Icons.people_rounded,
-      label: 'Xã hội',
+      label: 'nav_social'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.receipt_long_outlined,
       selectedIcon: Icons.receipt_long_rounded,
-      label: 'Đặt tour',
+      label: 'nav_book_tour'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.login_rounded,
       selectedIcon: Icons.login_rounded,
-      label: 'Đăng nhập',
+      label: 'nav_login'.tr,
     ),
   ];
 
-  static const _staffNav = [
+  static List<IosBottomNavItem> get _staffNav => [
     IosBottomNavItem(
       icon: Icons.calendar_month_outlined,
       selectedIcon: Icons.calendar_month_rounded,
-      label: 'Lịch',
+      label: 'nav_schedule'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.confirmation_number_outlined,
       selectedIcon: Icons.confirmation_number_rounded,
-      label: 'Vé',
+      label: 'nav_tickets'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.qr_code_scanner_outlined,
       selectedIcon: Icons.qr_code_scanner_rounded,
-      label: 'Check-in',
+      label: 'nav_checkin'.tr,
       isProminent: true,
     ),
     IosBottomNavItem(
       icon: Icons.groups_outlined,
       selectedIcon: Icons.groups_rounded,
-      label: 'Khách',
+      label: 'nav_guests'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.person_outline_rounded,
       selectedIcon: Icons.person_rounded,
-      label: 'Hồ sơ',
+      label: 'nav_profile'.tr,
     ),
   ];
 

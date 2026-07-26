@@ -50,7 +50,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   var _historySkip = 0;
   static const _pageSize = 40;
   int? _roomId;
-  String _roomTitle = 'Tin nhắn';
+  String _roomTitle = 'sc_sds_chat'.tr;
   bool _isGroup = false;
   String? _avatarUrl;
   int? _scheduleId;
@@ -132,7 +132,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         await _socialController.fetchChatRooms();
         final enriched = _socialController.chatRooms
             .firstWhereOrNull((r) => r.id == room.id);
-        _roomTitle = enriched?.name ?? room.name ?? 'Tin nhắn riêng';
+        _roomTitle = enriched?.name ?? room.name ?? 'sc_sds_direct_message'.tr;
         _avatarUrl = enriched?.avatarUrl ?? room.avatarUrl;
       }
 
@@ -165,7 +165,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         });
         _scrollToBottom(jump: true);
       } else {
-        _error = 'Không xác định được cuộc trò chuyện';
+        _error = 'sc_sds_chat_not_found'.tr;
       }
     } catch (e) {
       _error = e.toString();
@@ -219,17 +219,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         // Khi deploy production thì chỉ cần thay baseUrl trong api_constants.dart.
         final trackingUrl = '${ApiConstants.baseUrl}/track/$token';
         final shareText =
-            '📍 Vị trí hiện tại của tôi: [LocationShare:${jsonEncode({
+            'sc_sds_live_location_prefix'.tr + '[LocationShare:${jsonEncode({
               'token': token,
               'url': trackingUrl
             })}]';
         await _socialController.sendChatMessage(roomId, shareText);
-        SnackbarHelper.success('Đã chia sẻ vị trí thành công');
+        SnackbarHelper.success('sc_sds_location_shared'.tr);
       } else {
-        SnackbarHelper.error('Không thể chia sẻ vị trí lúc này.');
+        SnackbarHelper.error('sc_sds_location_share_failed'.tr);
       }
     } catch (_) {
-      SnackbarHelper.error('Lỗi khi chia sẻ vị trí.');
+      SnackbarHelper.error('sc_sds_location_share_error'.tr);
     } finally {
       setState(() => _sending = false);
     }
@@ -265,7 +265,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _messageController.selection = TextSelection.collapsed(
         offset: _messageController.text.length,
       );
-      SnackbarHelper.error('Không gửi được tin nhắn. ${e.toString()}');
+      SnackbarHelper.error('sc_sds_failed_send_message_prefix'.tr + e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -333,7 +333,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  _isGroup ? 'Nhóm trò chuyện tour' : 'Đang hoạt động',
+                  _isGroup ? 'sc_sds_tour_group_chat'.tr : 'sc_sds_active_now'.tr,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -358,14 +358,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 Get.back();
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'leave',
                 child: Row(
                   children: [
                     Icon(Icons.logout_rounded, color: AppColors.error),
                     SizedBox(width: 10),
-                    Text('Rời nhóm'),
+                    Text('sc_sds_leave_group'.tr),
                   ],
                 ),
               ),
@@ -375,7 +375,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           const SizedBox(width: 8),
       ],
       body: _loading
-          ? const LoadingWidget(message: 'Đang kết nối cuộc trò chuyện...')
+          ? LoadingWidget(message: 'sc_sds_connecting_chat'.tr)
           : _error != null
               ? _ChatError(message: _error!, onRetry: _initRoom)
               : Column(
@@ -548,13 +548,13 @@ class _GroupScheduleCard extends StatelessWidget {
                               color: AppColors.brand,
                               borderRadius: BorderRadius.circular(99),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.groups_2_rounded,
                                     size: 12, color: Colors.white),
                                 SizedBox(width: 4),
-                                Text('NHÓM TOUR',
+                                Text('sc_sds_tour_group_caps'.tr,
                                     style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 9,
@@ -591,7 +591,7 @@ class _GroupScheduleCard extends StatelessWidget {
                       else if (schedule != null)
                         _ScheduleMetadata(schedule: schedule!)
                       else
-                        Text('Không có thông tin lịch khởi hành',
+                        Text('sc_sds_no_schedule_info'.tr,
                             style: Theme.of(context).textTheme.labelSmall),
                     ],
                   ),
@@ -667,8 +667,8 @@ class _ScheduleMetadata extends StatelessWidget {
         _ScheduleMetaLine(
           icon: Icons.location_on_rounded,
           text: location?.trim().isNotEmpty == true
-              ? '$location • $days ngày'
-              : '$days ngày',
+              ? '$location • $days ' + 'sc_sds_days'.tr
+              : days.toString() + 'sc_sds_days'.tr,
         ),
       ],
     );
@@ -703,14 +703,14 @@ class _ScheduleLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2)),
         SizedBox(width: 8),
-        Text('Đang tải thông tin lịch...',
+        Text('sc_sds_loading_schedule'.tr,
             style: TextStyle(
                 fontSize: 11,
                 color: AppColors.textSecondary,
@@ -729,7 +729,7 @@ class _ScheduleLoadError extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-            child: Text('Chưa tải được lịch khởi hành',
+            child: Text('sc_sds_failed_load_schedule'.tr,
                 style: Theme.of(context)
                     .textTheme
                     .labelSmall
@@ -737,9 +737,9 @@ class _ScheduleLoadError extends StatelessWidget {
         InkWell(
           onTap: onRetry,
           borderRadius: BorderRadius.circular(99),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            child: Text('Thử lại',
+            child: Text('sc_sds_retry'.tr,
                 style: TextStyle(
                     color: AppColors.brand,
                     fontSize: 11,
@@ -778,14 +778,14 @@ class _EmptyConversation extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(isGroup ? 'Chào cả đoàn nào!' : 'Bắt đầu cuộc trò chuyện',
+            Text(isGroup ? 'sc_sds_hello_group'.tr : 'sc_sds_start_chat'.tr,
                 style: AppTextStyles.textTheme.titleMedium,
                 textAlign: TextAlign.center),
             const SizedBox(height: 7),
             Text(
               isGroup
-                  ? 'Trao đổi lịch trình và kết nối với những người cùng chuyến đi.'
-                  : 'Gửi một lời chào để bắt đầu nhắn tin trên StayHub.',
+                  ? 'sc_sds_group_chat_desc'.tr
+                  : 'sc_sds_direct_chat_desc'.tr,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -803,18 +803,18 @@ class _DateDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = date == null
-        ? 'Tin nhắn'
+        ? 'sc_sds_chat'.tr
         : DateFormat('dd/MM/yyyy').format(date!.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          const Expanded(child: Divider()),
+          Expanded(child: Divider()),
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child:
                   Text(label, style: Theme.of(context).textTheme.labelSmall)),
-          const Expanded(child: Divider()),
+          Expanded(child: Divider()),
         ],
       ),
     );
@@ -881,7 +881,7 @@ class _MessageBubble extends StatelessWidget {
                                 : AppColors.brand),
                         const SizedBox(width: 6),
                         Text(
-                          'KHOẢNH KHẮC',
+                          'sc_sds_moment_caps'.tr,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
@@ -980,7 +980,7 @@ class _MessageBubble extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'VỊ TRÍ TRỰC TIẾP',
+                        'sc_sds_live_location_caps'.tr,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -991,7 +991,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Bấm để theo dõi lộ trình di chuyển trực tuyến của tôi.',
+                    'sc_sds_track_location_desc'.tr,
                     style: TextStyle(
                       fontSize: 11,
                       color: isMe ? Colors.white70 : AppColors.textSecondary,
@@ -1006,8 +1006,8 @@ class _MessageBubble extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'Xem vị trí',
+                    child: Text(
+                      'sc_sds_view_location'.tr,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1246,7 +1246,7 @@ class _MessageComposer extends StatelessWidget {
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
-                hintText: 'Nhập tin nhắn...',
+                hintText: 'sc_sds_input_message'.tr,
                 filled: true,
                 fillColor: AppColors.surfaceGrouped,
                 contentPadding:
@@ -1320,7 +1320,7 @@ class _ChatError extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Không kết nối được chat',
+              'sc_sds_failed_connect_chat'.tr,
               style: AppTextStyles.textTheme.titleMedium,
             ),
             const SizedBox(height: 7),
@@ -1335,7 +1335,7 @@ class _ChatError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
+              label: Text('sc_sds_retry'.tr),
             ),
           ],
         ),
@@ -1943,7 +1943,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ]);
       }
     } catch (_) {
-      SnackbarHelper.error('Không thể tải hồ sơ người dùng');
+      SnackbarHelper.error('sc_sds_failed_load_profile'.tr);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1976,11 +1976,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final user = _user;
     return AppScreen(
-      title: user?.fullName.isNotEmpty == true ? user!.fullName : 'Hồ sơ',
+      title: user?.fullName.isNotEmpty == true ? user!.fullName : 'sc_sds_profile'.tr,
       body: _loading
           ? const LoadingWidget()
           : user == null
-              ? const Center(child: Text('Không tìm thấy'))
+              ? Center(child: Text('sc_sds_not_found'.tr))
               : RefreshIndicator(
                   color: AppColors.brand,
                   onRefresh: _load,
@@ -2003,12 +2003,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             color: AppColors.separator),
                       ),
                       if (_momentsLoading)
-                        const SliverFillRemaining(
+                        SliverFillRemaining(
                           hasScrollBody: false,
                           child: Padding(
                             padding: EdgeInsets.all(60),
                             child:
-                                LoadingWidget(message: 'Đang tải bài viết...'),
+                                LoadingWidget(message: 'sc_sds_loading_posts'.tr),
                           ),
                         )
                       else if (_moments.isEmpty)
@@ -2058,12 +2058,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_moments.length.toString(), 'Bài viết'),
+                        _buildStat(_moments.length.toString(), 'sc_sds_posts'.tr),
                         Container(
                             width: 1, height: 28, color: AppColors.separator),
                         _buildStat(
-                          isFriend ? 'Bạn bè' : 'Thành viên',
-                          'Quan hệ',
+                          isFriend ? 'sc_sds_friends'.tr : 'sc_sds_member'.tr,
+                          'sc_sds_relationship'.tr,
                         ),
                       ],
                     ),
@@ -2182,7 +2182,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       VoidCallback? friendAction;
 
       if (isFriend) {
-        friendLabel = 'Bạn bè';
+        friendLabel = 'sc_sds_friends'.tr;
         friendIcon = Icons.people_rounded;
         friendBg = AppColors.brandLight;
         friendFg = AppColors.brand;
@@ -2190,14 +2190,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       } else if (hasIncoming) {
         final req = _socialController.pendingRequests
             .firstWhere((r) => r.senderId == user.id);
-        friendLabel = 'Chấp nhận';
+        friendLabel = 'sc_sds_accept'.tr;
         friendIcon = Icons.person_add_alt_1_rounded;
         friendBg = AppColors.brand;
         friendFg = Colors.white;
         friendAction =
             busy ? null : () => _socialController.respondRequest(req.id, true);
       } else {
-        friendLabel = sent ? 'Đã gửi' : 'Kết bạn';
+        friendLabel = sent ? 'sc_sds_sent'.tr : 'sc_sds_add_friend'.tr;
         friendIcon = sent ? Icons.schedule_rounded : Icons.person_add_rounded;
         friendBg = AppColors.brand;
         friendFg = Colors.white;
@@ -2253,14 +2253,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     border: Border.all(color: AppColors.separator, width: 1),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.chat_bubble_outline_rounded,
                           size: 15, color: AppColors.textPrimary),
                       SizedBox(width: 6),
                       Text(
-                        'Nhắn tin',
+                        'sc_sds_message_action'.tr,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -2354,14 +2354,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildEmptyMoments() {
-    return const Column(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(Icons.photo_library_outlined,
             size: 56, color: AppColors.textTertiary),
         SizedBox(height: 16),
         Text(
-          'Chưa có bài viết nào',
+          'sc_sds_no_posts_yet'.tr,
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -2428,7 +2428,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   color: Colors.white.withValues(alpha: 0.14),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -2488,7 +2488,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 children: [
                   Text(
                     user.fullName.isEmpty
-                        ? 'Người dùng StayHub'
+                        ? 'sc_sds_stayhub_user'.tr
                         : user.fullName,
                     textAlign: TextAlign.center,
                     style: AppTextStyles.textTheme.headlineMedium?.copyWith(
@@ -2540,7 +2540,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isFriend ? 'Bạn bè' : 'Thành viên StayHub',
+                            isFriend ? 'sc_sds_friends'.tr : 'sc_sds_stayhub_member'.tr,
                             style: TextStyle(
                               color: isFriend
                                   ? AppColors.brand
@@ -2596,7 +2596,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         relationshipButton = FilledButton.icon(
           onPressed: null,
           icon: const Icon(Icons.people_rounded),
-          label: const Text('Đã là bạn bè'),
+          label: Text('sc_sds_already_friends'.tr),
           style: FilledButton.styleFrom(
             disabledBackgroundColor: AppColors.brandLight,
             disabledForegroundColor: AppColors.brand,
@@ -2610,7 +2610,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ? null
               : () => _socialController.respondRequest(request.id, true),
           icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text('Chấp nhận'),
+          label: Text('sc_sds_accept'.tr),
           style: _profilePrimaryButtonStyle(),
         );
       } else {
@@ -2621,7 +2621,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           icon: Icon(
             sent ? Icons.schedule_rounded : Icons.person_add_rounded,
           ),
-          label: Text(sent ? 'Đã gửi lời mời' : 'Kết bạn'),
+          label: Text(sent ? 'sc_sds_request_sent'.tr : 'sc_sds_add_friend'.tr),
           style: _profilePrimaryButtonStyle(),
         );
       }
@@ -2631,7 +2631,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           final chatButton = OutlinedButton.icon(
             onPressed: busy ? null : _openChat,
             icon: const Icon(Icons.chat_bubble_outline_rounded),
-            label: const Text('Nhắn tin'),
+            label: Text('sc_sds_message_action'.tr),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.brand,
               side: const BorderSide(color: AppColors.brand),
@@ -2671,7 +2671,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Widget _buildProfileInformation(UserSearchModel user) {
     final joinedAt = user.createdAt == null
-        ? 'Chưa cập nhật'
+        ? 'sc_sds_not_updated'.tr
         : DateFormat('MM/yyyy').format(user.createdAt!.toLocal());
     return IosSurfaceCard(
       padding: EdgeInsets.zero,
@@ -2697,7 +2697,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
                 const SizedBox(width: 11),
                 Text(
-                  'Thông tin cá nhân',
+                  'sc_sds_personal_info'.tr,
                   style: AppTextStyles.textTheme.titleMedium,
                 ),
               ],
@@ -2706,22 +2706,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           const Divider(height: 1),
           _profileInfoRow(
             icon: Icons.person_outline_rounded,
-            label: 'Họ và tên',
+            label: 'sc_sds_full_name'.tr,
             value: user.fullName,
           ),
           _profileInfoRow(
             icon: Icons.people_outline_rounded,
-            label: 'Giới tính',
+            label: 'sc_sds_gender'.tr,
             value: user.gender,
           ),
           _profileInfoRow(
             icon: Icons.cake_outlined,
-            label: 'Ngày sinh',
+            label: 'sc_sds_dob'.tr,
             value: user.dateOfBirth,
           ),
           _profileInfoRow(
             icon: Icons.calendar_month_outlined,
-            label: 'Tham gia từ',
+            label: 'sc_sds_joined_since'.tr,
             value: joinedAt,
             showDivider: false,
           ),
@@ -2737,7 +2737,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     bool showDivider = true,
   }) {
     final displayValue =
-        value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa cập nhật';
+        value?.trim().isNotEmpty == true ? value!.trim() : 'sc_sds_not_updated'.tr;
     return Column(
       children: [
         Padding(
@@ -2834,8 +2834,8 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        title: const Text(
-          'Bài viết',
+        title: Text(
+          'sc_sds_posts'.tr,
           style: TextStyle(
               color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18),
         ),
@@ -2967,7 +2967,7 @@ class _OtherFeedItem extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
-                '${moment.reactionCount} lượt thích',
+                moment.reactionCount.toString() + ' ' + 'sc_sds_likes'.tr,
                 style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.w700,
@@ -2993,7 +2993,7 @@ class _OtherFeedItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
             child: Text(
-              'Xem tất cả bình luận',
+              'sc_sds_view_all_comments'.tr,
               style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
           ),
