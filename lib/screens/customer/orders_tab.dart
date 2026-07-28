@@ -29,7 +29,7 @@ class _OrdersTabState extends State<OrdersTab>
     '': 'pt_all'.tr,
     'Paid': 'pt_paid'.tr,
     'Cancelled': 'pt_cancelled'.tr,
-    'Request to Cancelled': 'pt_cancel_req'.tr,
+    'Request to cancel': 'pt_cancel_req'.tr,
   };
 
   late final TabController _tabController;
@@ -501,7 +501,7 @@ class _OrderStatusStyle {
           foreground: AppColors.error,
           background: Color(0xFFFEE2E2),
         );
-      case 'Request to Cancelled':
+      case 'Request to cancel':
         return _OrderStatusStyle(
           label: 'pt_cancel_req'.tr,
           icon: Icons.pending_actions_rounded,
