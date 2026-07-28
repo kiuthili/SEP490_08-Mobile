@@ -32,7 +32,6 @@ class _HomeTabState extends State<HomeTab> {
   final _notificationController = Get.find<NotificationController>();
   final _scrollController = ScrollController();
 
-  List<BannerModel> _banners = [];
 
   // Language popup state
   String _selectedLang = 'vi';
@@ -47,9 +46,6 @@ class _HomeTabState extends State<HomeTab> {
     }
     _home = Get.find<HomeController>();
 
-    Get.find<CatalogService>().getBanners().then((list) {
-      if (mounted) setState(() => _banners = list);
-    });
 
     _scrollController.addListener(() {
       // no-op, reserved for future use
@@ -110,11 +106,6 @@ class _HomeTabState extends State<HomeTab> {
                       onSearchTap: () => Get.toNamed(AppRoutes.tourSearch)),
                 ),
 
-                // Banner carousel
-                if (_banners.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: _BannerCarousel(banners: _banners),
-                  ),
 
                 // ── Tour Hot section ──
                 SliverToBoxAdapter(
@@ -953,110 +944,6 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Banner Carousel
-// ─────────────────────────────────────────────────────────────
-class _BannerCarousel extends StatefulWidget {
-  const _BannerCarousel({required this.banners});
-  final List<BannerModel> banners;
-
-  @override
-  State<_BannerCarousel> createState() => _BannerCarouselState();
-}
-
-class _BannerCarouselState extends State<_BannerCarousel> {
-  final _pageController = PageController(viewportFraction: 0.9);
-  int _current = 0;
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 166,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: widget.banners.length,
-            onPageChanged: (i) => setState(() => _current = i),
-            itemBuilder: (context, index) {
-              final b = widget.banners[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: ClipRRect(
-                  borderRadius: AppRadius.card,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (b.imageUrl != null)
-                        CachedNetworkImage(
-                          imageUrl: b.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) =>
-                              const ColoredBox(color: AppColors.brandLight),
-                        )
-                      else
-                        const ColoredBox(color: AppColors.brandLight),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0x0005073C), Color(0xAA05073C)],
-                          ),
-                        ),
-                      ),
-                      if (b.title != null)
-                        Positioned(
-                          left: 16,
-                          right: 16,
-                          bottom: 14,
-                          child: Text(
-                            b.title!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              height: 1.25,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            widget.banners.length,
-            (i) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: i == _current ? 18 : 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: i == _current ? AppColors.brand : AppColors.border,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-      ],
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Language bottom sheet

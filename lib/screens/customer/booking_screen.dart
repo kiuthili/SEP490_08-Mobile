@@ -1668,7 +1668,7 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                             items: [
                               DropdownMenuItem(
                                   value: 'Male',
-                                  child: Text('Nam',
+                                  child: Text('sc_bk_male'.tr,
                                       style: TextStyle(fontSize: 14))),
                               DropdownMenuItem(
                                   value: 'Female',

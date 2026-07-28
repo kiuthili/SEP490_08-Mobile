@@ -9,24 +9,24 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      return 'https://028xpj74-7010.asse.devtunnels.ms';
+      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
 //      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
       // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
-      return 'https://028xpj74-7010.asse.devtunnels.ms';
+      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
     }
 
-//      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-      return 'https://028xpj74-7010.asse.devtunnels.ms';
-
-    }
-
-   // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-    return 'https://028xpj74-7010.asse.devtunnels.ms';
+      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+     // return 'https://028xpj74-7010.asse.devtunnels.ms';
+// return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+   // return 'https://028xpj74-7010.asse.devtunnels.ms';
     // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
-  }
+    }
+
+
+
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
   static String get chatHubUrl => '$baseUrl/hubs/chat';
@@ -85,3 +85,4 @@ class ApiConstants {
   static const mapboxTileUrl =
       'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}';
 }
+
