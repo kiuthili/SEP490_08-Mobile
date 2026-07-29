@@ -67,6 +67,7 @@ Future<void> main() async {
   Get.put(SignalRService(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(HomeController(), permanent: true);
+  Get.put(AiController(), permanent: true);
   Get.put(AiTrendService(), permanent: true);
   Get.put(StaffScheduleService(), permanent: true);
   Get.lazyPut<SocialService>(() => SocialService());

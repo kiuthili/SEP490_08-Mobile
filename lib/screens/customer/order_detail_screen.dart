@@ -415,7 +415,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.brand,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                   ),
                   child: Text('od_understood'.tr),
                 ),
@@ -481,7 +481,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       onPressed: () => Navigator.pop(sheetContext, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                       ),
                       child: Text('od_later'.tr),
                     ),
@@ -493,7 +493,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.brand,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
                       ),
                       child: Text('od_continue'.tr),
                     ),
