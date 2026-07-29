@@ -11,6 +11,7 @@ import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
 import '../../models/social_models.dart'; // Đã thêm
 import '../../models/tour_model.dart';
+import '../../widgets/comment_bottom_sheet.dart';
 import '../../routes/app_routes.dart';
 import '../../services/signalr_service.dart';
 import '../../services/social_service.dart';
@@ -1353,16 +1354,9 @@ class MomentDetailScreen extends StatefulWidget {
 
 class _MomentDetailScreenState extends State<MomentDetailScreen> {
   final _socialController = Get.find<SocialController>();
-  final _storage = Get.find<StorageService>();
-  final _commentController = TextEditingController();
-  final FocusNode _commentFocusNode = FocusNode();
-
   MomentModel? _moment;
-  List<SocialCommentModel> _comments = [];
   bool _loading = true;
-  bool _sendingComment = false;
   String? _error;
-  int? _editingCommentId;
 
   @override
   void initState() {
@@ -1379,8 +1373,6 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     return null;
   }
 
-  /// Backend KHÔNG có GET /moments/{id} và GET comments => lấy moment + comments
-  /// trực tiếp từ feed (đã chứa comments inline), tránh gọi endpoint 404.
   Future<void> _loadMoment() async {
     setState(() {
       _loading = true;
@@ -1401,8 +1393,11 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     }
 
     try {
-      // Ưu tiên lấy từ feed; nếu chưa có thì gọi API lấy trực tiếp theo ID.
       moment = _findInFeed(momentId) ?? moment;
+      if (moment == null) {
+        final userMoments = await Get.find<SocialService>().getUserMoments(_currentUserId);
+        moment = userMoments.firstWhereOrNull((m) => m.id == momentId);
+      }
       if (moment == null) {
         moment = await _socialController.getMomentById(momentId);
       }
@@ -1412,7 +1407,6 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
       } else {
         setState(() {
           _moment = moment;
-          _comments = List<SocialCommentModel>.from(moment!.comments);
         });
       }
     } catch (e) {
@@ -1422,87 +1416,22 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     }
   }
 
-  void _editComment(SocialCommentModel c) {
-    setState(() {
-      _editingCommentId = c.id;
-      _commentController.text = c.comment;
-    });
-    _commentFocusNode.requestFocus();
-  }
-
-  String get _myName {
-    try {
-      final dynamic u =
-          _storage.user; // truy cập động: không phụ thuộc field cụ thể
-      final dynamic n = u?.fullName;
-      if (n is String && n.trim().isNotEmpty) return n;
-    } catch (_) {}
-    return 'You';
-  }
-
-  Future<void> _submitComment() async {
-    final text = _commentController.text.trim();
-    if (text.isEmpty || _moment == null) return;
-
-    setState(() => _sendingComment = true);
-    try {
-      if (_editingCommentId != null) {
-        final editingId = _editingCommentId!;
-        if (editingId > 0) {
-          await _socialController.updateComment(editingId, text);
-        }
-        // Cập nhật ngay trên UI (không có GET comments để reload).
-        setState(() {
-          _comments = _comments
-              .map((c) => c.id == editingId
-                  ? SocialCommentModel(
-                      id: c.id,
-                      momentId: c.momentId,
-                      userId: c.userId,
-                      userName: c.userName,
-                      avatarUrl: c.avatarUrl,
-                      comment: text,
-                      timestamp: c.timestamp,
-                    )
-                  : c)
-              .toList();
-          _editingCommentId = null;
-        });
-      } else {
-        // commentMoment() tra ve bool (thanh cong/that bai). Tu dung comment tai cho
-        // tu thong tin user hien tai de hien thi ngay (id am = chua dong bo server).
-        final ok = await _socialController.commentMoment(_moment!.id, text);
-        if (ok != null) {
-          final added = SocialCommentModel(
-            id: -DateTime.now().millisecondsSinceEpoch,
-            momentId: _moment!.id,
-            userId: _currentUserId,
-            userName: _myName,
-            avatarUrl: _storage.user?.avatarUrl,
-            comment: text,
-            timestamp: DateTime.now(),
-          );
-          setState(() {
-            _comments = [..._comments, added];
-            _moment = _moment!.copyWith(comments: _comments);
-          });
+  void _showCommentBottomSheet(BuildContext context, MomentModel moment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentBottomSheet(
+        moment: moment,
+      ),
+    ).then((_) {
+      if (mounted) {
+        final updated = _findInFeed(moment.id);
+        if (updated != null) {
+          setState(() => _moment = updated);
         }
       }
-      _commentController.clear();
-      if (mounted) FocusScope.of(context).unfocus();
-    } finally {
-      if (mounted) setState(() => _sendingComment = false);
-    }
-  }
-
-  Future<void> _deleteComment(SocialCommentModel c) async {
-    // id<=0 là comment lạc quan chưa biết id server => chỉ xóa cục bộ.
-    if (c.id > 0) {
-      await _socialController.deleteComment(c.id);
-    }
-    if (mounted) {
-      setState(() => _comments.removeWhere((x) => x.id == c.id));
-    }
+    });
   }
 
   void _shareMoment(MomentModel moment) {
@@ -1601,201 +1530,99 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
 
   @override
   void dispose() {
-    _commentController.dispose();
-    _commentFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AppScreen(
-      title: 'Moment Details',
+    return Scaffold(
+      backgroundColor: Colors.black,
       body: _loading
-          ? const LoadingWidget(message: 'Loading moment...')
+          ? const Center(child: CircularProgressIndicator(color: AppColors.brand))
           : _error != null || _moment == null
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error ??
-                          'Moment does not exist or has been deleted'),
+                      Text(
+                        _error ?? 'Moment does not exist or has been deleted',
+                        style: const TextStyle(color: Colors.white),
+                      ),
                       const SizedBox(height: 16),
                       FilledButton(
                           onPressed: _loadMoment, child: const Text('Retry')),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('Go Back', style: TextStyle(color: Colors.white70)),
+                      )
                     ],
                   ),
                 )
-              : RefreshIndicator(
-                  onRefresh: _loadMoment,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          children: [
-                            MomentCard(
-                              moment: _moment!,
-                              currentUserId: _currentUserId,
-                              onDelete: (id) async {
-                                await _socialController.deleteMoment(id);
-                                Get.back();
-                              },
-                              onShare: () => _shareMoment(_moment!),
-                              onLike: (isLike) async {
-                                // Bỏ qua nếu trạng thái không đổi (chống đếm sai).
-                                if (_moment!.isLikedByMe == isLike) return;
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    MomentCard(
+                      moment: _moment!,
+                      currentUserId: _currentUserId,
+                      isDetail: true,
+                      onDelete: (id) async {
+                        await _socialController.deleteMoment(id);
+                        Get.back();
+                      },
+                      onShare: () {
+                        if (_moment != null) {
+                          _shareMoment(_moment!);
+                        }
+                      },
+                      onLike: (isLike) async {
+                        if (_moment == null) return;
+                        if (_moment!.isLikedByMe == isLike) return;
 
-                                // Cập nhật lạc quan NGAY trên màn chi tiết, kể cả khi
-                                // moment không nằm trong feed đã nạp (idx < 0 ở controller).
-                                final newCount =
-                                    (_moment!.reactionCount + (isLike ? 1 : -1))
-                                        .clamp(0, 1 << 30)
-                                        .toInt();
-                                setState(() {
-                                  _moment = _moment!.copyWith(
-                                    isLikedByMe: isLike,
-                                    reactionCount: newCount,
-                                  );
-                                });
+                        final newCount =
+                            (_moment!.reactionCount + (isLike ? 1 : -1))
+                                .clamp(0, 1 << 30)
+                                .toInt();
+                        setState(() {
+                          _moment = _moment!.copyWith(
+                            isLikedByMe: isLike,
+                            reactionCount: newCount,
+                          );
+                        });
 
-                                await _socialController.reactMoment(
-                                    _moment!.id, isLike);
+                        await _socialController.reactMoment(
+                            _moment!.id, isLike);
 
-                                // Nếu moment có trong feed, đồng bộ lại cho khớp controller.
-                                final updated = _findInFeed(_moment!.id);
-                                if (updated != null && mounted) {
-                                  setState(() => _moment = updated);
-                                }
-                              },
-                              onReport: (id) => _showReportDialog(
-                                  context, 'Moment', id, _socialController),
-                              isDetail: true,
-                            ),
-                            const Divider(),
-                            Text('Comments (${_comments.length})',
-                                style: Theme.of(context).textTheme.titleMedium),
-                            const SizedBox(height: 12),
-                            if (_comments.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 12),
-                                child: Text(
-                                  'No comments yet. Be the first to comment!',
-                                  style:
-                                      TextStyle(color: AppColors.textTertiary),
-                                ),
-                              ),
-                            ..._comments.map((c) => ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: CircleAvatar(
-                                    backgroundColor: AppColors.brandLight,
-                                    backgroundImage: (c.avatarUrl != null &&
-                                            c.avatarUrl!.isNotEmpty)
-                                        ? CachedNetworkImageProvider(
-                                            c.avatarUrl!)
-                                        : null,
-                                    child: (c.avatarUrl == null ||
-                                            c.avatarUrl!.isEmpty)
-                                        ? const Icon(Icons.person,
-                                            size: 20, color: AppColors.brand)
-                                        : null,
-                                  ),
-                                  title: Text(c.userName ?? 'User',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13)),
-                                  subtitle: Text(c.comment),
-                                  trailing: PopupMenuButton<String>(
-                                    onSelected: (val) async {
-                                      if (val == 'edit') {
-                                        _editComment(c);
-                                      } else if (val == 'delete') {
-                                        await _deleteComment(c);
-                                      } else if (val == 'report') {
-                                        _showReportDialog(context, 'Comment',
-                                            c.id, _socialController);
-                                      }
-                                    },
-                                    itemBuilder: (_) => [
-                                      if (c.userId == _currentUserId) ...const [
-                                        PopupMenuItem(
-                                            value: 'edit', child: Text('Edit')),
-                                        PopupMenuItem(
-                                            value: 'delete',
-                                            child: Text('Delete',
-                                                style: TextStyle(
-                                                    color: AppColors.error))),
-                                      ],
-                                      if (c.userId != _currentUserId)
-                                        const PopupMenuItem(
-                                            value: 'report',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.flag_outlined,
-                                                    size: 20),
-                                                SizedBox(width: 8),
-                                                Text('Report Violation'),
-                                              ],
-                                            )),
-                                    ],
-                                  ),
-                                )),
-                          ],
+                        final updated = _findInFeed(_moment!.id);
+                        if (updated != null && mounted) {
+                          setState(() => _moment = updated);
+                        }
+                      },
+                      onReport: (id) => _showReportDialog(
+                          context, 'Moment', id, _socialController),
+                      onComment: () {
+                        if (_moment != null) {
+                          _showCommentBottomSheet(context, _moment!);
+                        }
+                      },
+                    ),
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 8,
+                      left: 16,
+                      child: SafeArea(
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black45,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Get.back(),
+                          ),
                         ),
                       ),
-                      Container(
-                        padding: EdgeInsets.fromLTRB(16, 8, 16,
-                            MediaQuery.paddingOf(context).bottom + 8),
-                        decoration: const BoxDecoration(
-                            color: AppColors.surfaceElevated,
-                            border: Border(
-                                top: BorderSide(color: AppColors.separator))),
-                        child: Row(
-                          children: [
-                            if (_editingCommentId != null)
-                              IconButton(
-                                  icon: const Icon(Icons.close,
-                                      color: AppColors.error),
-                                  onPressed: () {
-                                    setState(() {
-                                      _editingCommentId = null;
-                                      _commentController.clear();
-                                      FocusScope.of(context).unfocus();
-                                    });
-                                  }),
-                            Expanded(
-                              child: TextField(
-                                  controller: _commentController,
-                                  focusNode: _commentFocusNode,
-                                  textInputAction: TextInputAction.send,
-                                  onSubmitted: (_) => _submitComment(),
-                                  decoration: InputDecoration(
-                                      hintText: _editingCommentId != null
-                                          ? 'Edit comment...'
-                                          : 'Add a comment...',
-                                      border: InputBorder.none)),
-                            ),
-                            _sendingComment
-                                ? const Padding(
-                                    padding: EdgeInsets.all(12),
-                                    child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2)))
-                                : IconButton(
-                                    icon: const Icon(Icons.send,
-                                        color: AppColors.brand),
-                                    onPressed: _submitComment),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
     );
   }
-
   void _showReportDialog(BuildContext context, String contentType, int targetId,
       SocialController social) {
     String selectedReason = 'Spam';
@@ -3002,3 +2829,4 @@ class _OtherFeedItem extends StatelessWidget {
     );
   }
 }
+      

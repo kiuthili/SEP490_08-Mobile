@@ -12,7 +12,9 @@ class SnackbarHelper {
 
   static void error(String message) {
     if (message == ApiError.silent401Message ||
-        message.toLowerCase() == 'unauthorized') {
+        message == ApiError.silentTimeoutMessage ||
+        message.toLowerCase() == 'unauthorized' ||
+        message.toLowerCase().contains('timeout')) {
       return;
     }
     _show(message, AppColors.error);
