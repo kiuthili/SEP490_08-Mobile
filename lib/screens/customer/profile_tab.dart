@@ -79,23 +79,23 @@ class _ProfileTabState extends State<ProfileTab> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
-                        Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
-                        SizedBox(width: 8),
-                        Text('Sửa hồ sơ', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                        const Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
+                        const SizedBox(width: 8),
+                        Text('edit_profile'.tr, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'password',
                     child: Row(
                       children: [
-                        Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textPrimary),
-                        SizedBox(width: 8),
-                        Text('Đổi mật khẩu', style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                        const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textPrimary),
+                        const SizedBox(width: 8),
+                        Text('change_password'.tr, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -335,7 +335,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.favorite_border_rounded,
-              'Wishlist',
+              'wl_title'.tr,
               () => Get.toNamed(AppRoutes.wishlist),
               iconColor: Colors.pink,
             ),
@@ -528,7 +528,7 @@ class _ProfileTabState extends State<ProfileTab> {
           
       final _ = service?.isLoading.value;
       
-      final name = service?.getSettingSync('CompanyName') ?? 'Công ty TNHH StayHub';
+      final name = service?.getSettingSync('CompanyName') ?? 'pt_company_name'.tr;
       final address = service?.getSettingSync('CompanyAddress') ?? '';
       final phone = service?.getSettingSync('CompanyPhone') ?? '';
       final email = service?.getSettingSync('CompanyEmail') ?? '';
@@ -549,7 +549,7 @@ class _ProfileTabState extends State<ProfileTab> {
             Text('${phone.isNotEmpty ? "Hotline: $phone" : ""}${phone.isNotEmpty && email.isNotEmpty ? " • " : ""}${email.isNotEmpty ? "Email: $email" : ""}', 
                  textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(height: 16),
-          Text('Phiên bản 1.0.0', style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withValues(alpha: 0.5))),
+          Text('${'pt_version'.tr} 1.0.0', style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withValues(alpha: 0.5))),
         ],
       );
     });

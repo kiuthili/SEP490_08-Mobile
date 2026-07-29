@@ -370,30 +370,76 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         fontSize: 13, color: AppColors.textSecondary)),
               ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: field.options.map((o) {
-                final on = selectedValue == o.value;
-                return ChoiceChip(
-                  label: Text(o.label),
-                  selected: on,
-                  selectedColor: AppColors.brandLight,
-                  labelStyle: TextStyle(
-                    color: on ? AppColors.brand : AppColors.textSecondary,
-                    fontWeight: on ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  side: BorderSide(
-                      color: on ? AppColors.brand : AppColors.border),
-                  backgroundColor: AppColors.surfaceGrouped,
-                  onSelected: (v) => setState(() {
-                    if (v) {
-                      _values[field.fieldKey] = o.value;
-                      _errors.remove(field.fieldKey);
-                    }
-                  }),
+            Builder(
+              builder: (context) {
+                final queryKey = 'search_query_${field.fieldKey}';
+                final query = _values[queryKey] as String? ?? '';
+                final showSearch = field.options.length > 8;
+                final filteredOptions = showSearch
+                    ? field.options
+                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .toList()
+                    : field.options;
+
+                final optionsList = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: filteredOptions.map((o) {
+                    final on = selectedValue == o.value;
+                    return ChoiceChip(
+                      label: Text(o.label),
+                      selected: on,
+                      selectedColor: AppColors.brandLight,
+                      labelStyle: TextStyle(
+                        color: on ? AppColors.brand : AppColors.textSecondary,
+                        fontWeight: on ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      side: BorderSide(
+                          color: on ? AppColors.brand : AppColors.border),
+                      backgroundColor: AppColors.surfaceGrouped,
+                      onSelected: (v) => setState(() {
+                        if (v) {
+                          _values[field.fieldKey] = o.value;
+                          _errors.remove(field.fieldKey);
+                        }
+                      }),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showSearch) ...[
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm địa điểm...',
+                          prefixIcon: const Icon(Icons.search, size: 16),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        onChanged: (val) => setState(() {
+                          _values[queryKey] = val;
+                        }),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    showSearch
+                        ? Container(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: optionsList,
+                            ),
+                          )
+                        : optionsList,
+                  ],
+                );
+              },
             ),
             if (err != null)
               Padding(
@@ -434,35 +480,81 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         fontSize: 13, color: AppColors.textSecondary)),
               ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: field.options.map((o) {
-                final on = selected.contains(o.value);
-                return FilterChip(
-                  label: Text(o.label),
-                  selected: on,
-                  selectedColor: AppColors.brandLight,
-                  checkmarkColor: AppColors.brand,
-                  labelStyle: TextStyle(
-                    color: on ? AppColors.brand : AppColors.textSecondary,
-                    fontWeight: on ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  side: BorderSide(
-                      color: on ? AppColors.brand : AppColors.border),
-                  backgroundColor: AppColors.surfaceGrouped,
-                  onSelected: (v) => setState(() {
-                    final list = List<String>.from(selected);
-                    if (v) {
-                      list.add(o.value);
-                    } else {
-                      list.remove(o.value);
-                    }
-                    _values[field.fieldKey] = list;
-                    _errors.remove(field.fieldKey);
-                  }),
+            Builder(
+              builder: (context) {
+                final queryKey = 'search_query_${field.fieldKey}';
+                final query = _values[queryKey] as String? ?? '';
+                final showSearch = field.options.length > 8;
+                final filteredOptions = showSearch
+                    ? field.options
+                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .toList()
+                    : field.options;
+
+                final optionsList = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: filteredOptions.map((o) {
+                    final on = selected.contains(o.value);
+                    return FilterChip(
+                      label: Text(o.label),
+                      selected: on,
+                      selectedColor: AppColors.brandLight,
+                      checkmarkColor: AppColors.brand,
+                      labelStyle: TextStyle(
+                        color: on ? AppColors.brand : AppColors.textSecondary,
+                        fontWeight: on ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      side: BorderSide(
+                          color: on ? AppColors.brand : AppColors.border),
+                      backgroundColor: AppColors.surfaceGrouped,
+                      onSelected: (v) => setState(() {
+                        final list = List<String>.from(selected);
+                        if (v) {
+                          list.add(o.value);
+                        } else {
+                          list.remove(o.value);
+                        }
+                        _values[field.fieldKey] = list;
+                        _errors.remove(field.fieldKey);
+                      }),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showSearch) ...[
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm lựa chọn...',
+                          prefixIcon: const Icon(Icons.search, size: 16),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        onChanged: (val) => setState(() {
+                          _values[queryKey] = val;
+                        }),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    showSearch
+                        ? Container(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: optionsList,
+                            ),
+                          )
+                        : optionsList,
+                  ],
+                );
+              },
             ),
             if (err != null)
               Padding(

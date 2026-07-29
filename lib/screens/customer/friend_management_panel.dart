@@ -170,28 +170,19 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     final isSelected = _view == value;
     return ChoiceChip(
       label: Text(label),
-      avatar: Icon(
-        icon,
-        size: 18,
-        color: isSelected ? Colors.white : AppColors.brand,
-      ),
       selected: isSelected,
       onSelected: (selected) {
         if (selected) setState(() => _view = value);
       },
       selectedColor: AppColors.brand,
-      backgroundColor: AppColors.surfaceElevated,
+      backgroundColor: Colors.grey.shade200,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.brand,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
-          color: isSelected
-              ? AppColors.brand
-              : AppColors.brand.withValues(alpha: 0.2),
-        ),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide.none,
       ),
       showCheckmark: false,
     );
@@ -199,7 +190,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
 
   Widget _searchField() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextField(
         controller: widget.searchController,
         textInputAction: TextInputAction.search,
@@ -207,7 +198,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         onSubmitted: _submitSearch,
         decoration: InputDecoration(
           hintText: 'sc_fm_search_hint'.tr,
-          prefixIcon: const Icon(Icons.search_rounded),
+          prefixIcon: const Icon(Icons.search_rounded, color: Colors.black54),
           suffixIcon: widget.searchController.text.isEmpty
               ? null
               : IconButton(
@@ -215,8 +206,15 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     widget.searchController.clear();
                     _submitSearch('');
                   },
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 20),
                 ),
+          filled: true,
+          fillColor: Colors.grey.shade200,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -243,7 +241,21 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
             ),
           );
         }
-        return _listSliver(social.friends.map(_friendCard).toList());
+        return _listSliver(
+          social.friends.map(_friendCard).toList(),
+          header: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'sc_fm_friend_count'.trParams({'count': social.friends.length.toString()}),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        );
       case _FriendView.requests:
         if (social.isRequestsLoading.value && social.pendingRequests.isEmpty) {
           return SliverFillRemaining(
@@ -317,13 +329,18 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     }
   }
 
-  Widget _listSliver(List<Widget> children) {
+  Widget _listSliver(List<Widget> children, {Widget? header}) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      sliver: SliverList.separated(
-        itemCount: children.length,
-        itemBuilder: (_, index) => children[index],
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+      padding: const EdgeInsets.only(top: 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (header != null && index == 0) return header;
+            final itemIndex = header != null ? index - 1 : index;
+            return children[itemIndex];
+          },
+          childCount: children.length + (header != null ? 1 : 0),
+        ),
       ),
     );
   }
@@ -333,47 +350,49 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         social.processingUserIds.contains(friend.userId);
     return _PersonCard(
       name: friend.fullName,
-      subtitle: 'sc_fm_friends_on_stayhub'.tr,
+      subtitle: '',
       avatarUrl: friend.avatarUrl,
       onTap: () => Get.toNamed(AppRoutes.userProfile, arguments: friend.userId),
       actions: [
-        IconButton.filled(
-          tooltip: 'sc_fm_btn_message'.tr,
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.brand,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.brandLight,
-            disabledForegroundColor: AppColors.textTertiary,
-          ),
-          onPressed: busy
-              ? null
-              : () => _openChat(
-                    friend.userId,
-                    friend.fullName,
-                    friend.avatarUrl,
-                  ),
-          icon: const Icon(Icons.chat_bubble_outline_rounded),
-        ),
-        PopupMenuButton<String>(
-          enabled: !busy,
-          onSelected: (value) {
-            if (value == 'unfriend') _confirmUnfriend(friend);
-          },
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'unfriend',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.person_remove_outlined,
-                    color: AppColors.error,
-                  ),
-                  SizedBox(width: 10),
-                  Text('sc_fm_unfriend_title'.tr),
-                ],
-              ),
+        Theme(
+          data: Theme.of(context).copyWith(
+            popupMenuTheme: PopupMenuThemeData(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-          ],
+          ),
+          child: PopupMenuButton<String>(
+            icon: const Icon(Icons.more_horiz, color: Colors.black54),
+            enabled: !busy,
+            onSelected: (value) {
+              if (value == 'message') {
+                _openChat(friend.userId, friend.fullName, friend.avatarUrl);
+              } else if (value == 'unfriend') {
+                _confirmUnfriend(friend);
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'message',
+                child: Row(
+                  children: [
+                    const Icon(Icons.chat_bubble_outline_rounded, color: Colors.black87),
+                    const SizedBox(width: 10),
+                    Text('sc_fm_btn_message'.tr),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'unfriend',
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_remove_outlined, color: AppColors.error),
+                    const SizedBox(width: 10),
+                    Text('sc_fm_unfriend_title'.tr, style: const TextStyle(color: AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
       busy: busy,
@@ -398,16 +417,12 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
               busy ? null : () => social.respondRequest(request.id, true),
           child: Text('sc_fm_btn_accept'.tr),
         ),
-        const SizedBox(width: 8),
-        IconButton.outlined(
-          tooltip: 'sc_fm_btn_decline'.tr,
-          style: IconButton.styleFrom(
-            foregroundColor: AppColors.brand,
-            side: const BorderSide(color: AppColors.brand),
-          ),
+        const SizedBox(width: 6),
+        FilledButton.tonal(
+          style: _secondaryButtonStyle(),
           onPressed:
               busy ? null : () => social.respondRequest(request.id, false),
-          icon: const Icon(Icons.close_rounded),
+          child: Text('sc_fm_btn_decline'.tr),
         ),
       ],
       busy: busy,
@@ -427,11 +442,10 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       onTap: () =>
           Get.toNamed(AppRoutes.userProfile, arguments: request.receiverId),
       actions: [
-        IconButton.outlined(
-          tooltip: 'sc_fm_revoke_title'.tr,
-          style: IconButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: const BorderSide(color: AppColors.error),
+        FilledButton.tonal(
+          style: _secondaryButtonStyle().copyWith(
+            backgroundColor: WidgetStateProperty.all(AppColors.error.withValues(alpha: 0.1)),
+            foregroundColor: WidgetStateProperty.all(AppColors.error),
           ),
           onPressed: busy
               ? null
@@ -461,7 +475,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     await social.fetchSentRequests();
                   }
                 },
-          icon: const Icon(Icons.person_remove_outlined),
+          child: Text('sc_fm_btn_revoke'.tr),
         ),
       ],
       busy: busy,
@@ -500,13 +514,11 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
             child: Text('sc_fm_btn_view_req'.tr),
           )
         else
-          FilledButton.icon(
-            style: _primaryButtonStyle(),
+          FilledButton(
+            style: sent ? _secondaryButtonStyle() : _primaryButtonStyle(),
             onPressed:
                 busy || sent ? null : () => social.sendFriendRequest(user.id),
-            icon:
-                Icon(sent ? Icons.schedule_rounded : Icons.person_add_rounded),
-            label: Text(sent ? sent ? 'sc_fm_btn_sent'.tr : 'sc_fm_btn_add_friend'.tr : 'sc_fm_btn_add_friend'.tr),
+            child: Text(sent ? 'sc_fm_btn_sent'.tr : 'sc_fm_btn_add_friend'.tr),
           ),
       ],
       busy: busy,
@@ -519,13 +531,21 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       foregroundColor: Colors.white,
       disabledBackgroundColor: AppColors.brand.withValues(alpha: 0.35),
       disabledForegroundColor: Colors.white.withValues(alpha: 0.85),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      minimumSize: const Size(0, 32),
+      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
     );
   }
 
   ButtonStyle _secondaryButtonStyle() {
-    return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.brand,
-      side: const BorderSide(color: AppColors.brand),
+    return FilledButton.styleFrom(
+      backgroundColor: Colors.grey.shade200,
+      foregroundColor: Colors.black87,
+      disabledBackgroundColor: Colors.grey.shade100,
+      disabledForegroundColor: Colors.black45,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+      minimumSize: const Size(0, 32),
+      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
     );
   }
 }
@@ -549,56 +569,50 @@ class _PersonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surfaceElevated,
-      borderRadius: AppRadius.card,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: AppRadius.card,
-          ),
-          child: Row(
-            children: [
-              _UserAvatar(name: name, imageUrl: avatarUrl),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name.isEmpty ? 'sc_fm_stayhub_user'.tr : name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            _UserAvatar(name: name, imageUrl: avatarUrl),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isEmpty ? 'sc_fm_stayhub_user'.tr : name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 3),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                     ),
                   ],
-                ),
+                ],
               ),
+            ),
+            if (busy)
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (actions.isNotEmpty) ...[
               const SizedBox(width: 8),
-              if (busy)
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                Row(mainAxisSize: MainAxisSize.min, children: actions),
+              Row(mainAxisSize: MainAxisSize.min, children: actions),
             ],
-          ),
+          ],
         ),
       ),
     );

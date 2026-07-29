@@ -288,6 +288,16 @@ class ApiClient {
     final status = e.response?.statusCode;
     final data = e.response?.data;
 
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return ApiError(
+        message: ApiError.silentTimeoutMessage,
+        statusCode: 408,
+        isSilent: true,
+      );
+    }
+
     if (status == 401) {
       return ApiError(
         message: ApiError.silent401Message,
