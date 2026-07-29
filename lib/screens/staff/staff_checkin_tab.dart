@@ -108,7 +108,7 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
             ),
             const SizedBox(height: 16),
             Text(
-              'Check-in thành công!',
+              'st_checkin_success'.tr,
               style: AppTextStyles.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.brand,
@@ -117,27 +117,27 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
             const SizedBox(height: 20),
             _ResultRow(
               icon: Icons.person_rounded,
-              label: 'Hành khách',
+              label: 'st_passenger'.tr,
               value: result.attendeeName,
             ),
             _ResultRow(
               icon: Icons.local_activity_rounded,
-              label: 'Loại vé',
+              label: 'st_ticket_type'.tr,
               value: result.ticketTypeName,
             ),
             _ResultRow(
               icon: Icons.confirmation_number_rounded,
-              label: 'Mã vé',
+              label: 'st_ticket_code'.tr,
               value: '#${result.ticketId}',
             ),
             _ResultRow(
               icon: Icons.event_rounded,
-              label: 'Ngày khởi hành',
+              label: 'st_departure_date'.tr,
               value: DateFormat('dd/MM/yyyy').format(result.departureDate),
             ),
             _ResultRow(
               icon: Icons.map_rounded,
-              label: 'Lịch trình',
+              label: 'st_schedule'.tr,
               value: '#${result.scheduleId}',
             ),
             const SizedBox(height: 8),
@@ -146,7 +146,7 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Đóng'),
+            child: Text('st_close'.tr),
           ),
         ],
       ),
@@ -157,7 +157,7 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Check-in QR')),
+      appBar: AppBar(title: Text('st_qr_checkin'.tr)),
       body: CustomScrollView(
         slivers: [
           SliverPadding(
@@ -234,100 +234,20 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
                 // Nhập thủ công
                 CustomTextField(
                   controller: _qrController,
-                  label: 'Hoặc nhập mã QR thủ công',
+                  label: 'st_enter_qr_manually'.tr,
                 ),
                 const SizedBox(height: 12),
 
                 // Nút check-in
                 CustomButton(
-                  label: _isProcessing ? 'Đang xử lý...' : 'Check-in',
+                  label: _isProcessing ? 'st_processing'.tr : 'st_checkin'.tr,
                   onPressed: _isProcessing ? null : _doCheckIn,
                 ),
                 const SizedBox(height: 24),
 
-                // Danh sách vé của lịch trình
-                Row(
-                  children: [
-                    Text('Danh sách vé',
-                        style: AppTextStyles.textTheme.titleMedium),
-                    const Spacer(),
-                    Obx(() {
-                      final total = _staff.tickets.length;
-                      final done =
-                          _staff.tickets.where((t) => t.isCheckedIn).length;
-                      if (total == 0) return const SizedBox.shrink();
-                      return Text(
-                        '$done / $total',
-                        style: AppTextStyles.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 8),
               ]),
             ),
           ),
-          Obx(() {
-            if (_staff.isLoadingTickets.value) {
-              return const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (_staff.tickets.isEmpty) {
-              return const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text(
-                    'Chưa có vé',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              );
-            }
-            return SliverPadding(
-              padding: EdgeInsets.only(
-                  bottom: ShellLayout.bottomInset(context) + 24),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final t = _staff.tickets[index];
-                    return ListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 24),
-                      leading: Icon(
-                        t.isCheckedIn
-                            ? Icons.check_circle_rounded
-                            : Icons.confirmation_number_outlined,
-                        color: t.isCheckedIn ? AppColors.brand : Colors.grey,
-                      ),
-                      title: Text(
-                        t.attendeeName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${t.idCard} • ${t.checkInStatus ?? 'Chưa check-in'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: (t.qrCode != null && t.qrCode!.isNotEmpty)
-                          ? IconButton(
-                              tooltip: 'Hiển thị QR',
-                              icon: const Icon(Icons.qr_code_rounded),
-                              onPressed: () => _showQrDialog(context, t),
-                            )
-                          : null,
-                    );
-                  },
-                  childCount: _staff.tickets.length,
-                ),
-              ),
-            );
-          }),
         ],
       ),
     );
@@ -359,16 +279,16 @@ void _showQrDialog(BuildContext context, StaffTicketModel t) {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Đóng'),
+          child: Text('st_close'.tr),
         ),
         FilledButton.icon(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: t.qrCode!));
             Navigator.of(ctx).pop();
-            SnackbarHelper.success('Đã sao chép mã QR');
+            SnackbarHelper.success('st_qr_copied'.tr);
           },
           icon: const Icon(Icons.copy_rounded, size: 16),
-          label: const Text('Sao chép'),
+          label: Text('st_copy'.tr),
         ),
       ],
     ),

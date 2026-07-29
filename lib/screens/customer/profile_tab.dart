@@ -13,6 +13,7 @@ import '../../widgets/custom_button.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../services/system_setting_service.dart';
 import '../../widgets/stayhub_logo.dart';
+import '../../widgets/language_bottom_sheet.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -458,8 +459,23 @@ class _ProfileTabState extends State<ProfileTab> {
                     _buildSupportTile(
                       icon: Icons.language_rounded,
                       title: 'pt_language_settings'.tr,
-                      onTap: () =>
-                          SnackbarHelper.info('pt_feature_dev'.tr),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => LanguageBottomSheet(
+                            selected: Get.locale?.languageCode ?? 'vi',
+                            onSelect: (lang) {
+                              if (lang == 'vi') {
+                                Get.updateLocale(const Locale('vi', 'VN'));
+                              } else {
+                                Get.updateLocale(const Locale('en', 'US'));
+                              }
+                              Navigator.pop(context);
+                            },
+                          ),
+                        );
+                      },
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
