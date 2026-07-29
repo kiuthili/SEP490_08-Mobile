@@ -89,7 +89,7 @@ class _QrScanScreenState extends State<QrScanScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Check-in thành công!',
+              'st_checkin_success'.tr,
               style: AppTextStyles.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.brand,
@@ -98,22 +98,22 @@ class _QrScanScreenState extends State<QrScanScreen>
             const SizedBox(height: 20),
             _ResultRow(
               icon: Icons.person_rounded,
-              label: 'Hành khách',
+              label: 'st_passenger'.tr,
               value: result.attendeeName,
             ),
             _ResultRow(
               icon: Icons.local_activity_rounded,
-              label: 'Loại vé',
+              label: 'st_ticket_type'.tr,
               value: result.ticketTypeName,
             ),
             _ResultRow(
               icon: Icons.confirmation_number_rounded,
-              label: 'Mã vé',
+              label: 'st_ticket_code'.tr,
               value: '#${result.ticketId}',
             ),
             _ResultRow(
               icon: Icons.event_rounded,
-              label: 'Ngày khởi hành',
+              label: 'st_departure_date'.tr,
               value: DateFormat('dd/MM/yyyy').format(result.departureDate),
             ),
             const SizedBox(height: 8),
@@ -124,7 +124,7 @@ class _QrScanScreenState extends State<QrScanScreen>
             width: double.infinity,
             child: FilledButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Đóng'),
+              child: Text('st_close'.tr),
             ),
           ),
         ],
@@ -139,7 +139,7 @@ class _QrScanScreenState extends State<QrScanScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('Quét QR Check-in'),
+        title: Text('st_scan_qr_checkin'.tr),
         actions: [
           // Torch toggle
           IconButton(
@@ -216,8 +216,8 @@ class _QrScanScreenState extends State<QrScanScreen>
                 const SizedBox(height: 12),
                 Text(
                   _processed
-                      ? 'Đang xử lý...'
-                      : 'Hướng camera vào mã QR trên vé',
+                      ? 'st_processing'.tr
+                      : 'st_point_camera_qr'.tr,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,

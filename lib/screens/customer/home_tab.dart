@@ -16,6 +16,7 @@ import '../../theme/app_text_styles.dart';
 import '../../utils/auth_gate.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/tour_card.dart';
+import '../../widgets/language_bottom_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Home Tab root
@@ -65,7 +66,7 @@ class _HomeTabState extends State<HomeTab> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _LanguageBottomSheet(
+      builder: (_) => LanguageBottomSheet(
         selected: _selectedLang,
         onSelect: (lang) {
           setState(() => _selectedLang = lang);
@@ -954,59 +955,3 @@ class _HeroSection extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 // Language bottom sheet
 // ─────────────────────────────────────────────────────────────
-class _LanguageBottomSheet extends StatelessWidget {
-  const _LanguageBottomSheet({required this.selected, required this.onSelect});
-  final String selected;
-  final void Function(String) onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final languages = [
-      ('vi', '🇻🇳', 'Tiếng Việt'),
-      ('en', '🇺🇸', 'English'),
-    ];
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'choose_language'.tr,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...languages.map((lang) => ListTile(
-                  leading: Text(lang.$2, style: const TextStyle(fontSize: 26)),
-                  title: Text(lang.$3,
-                      style: const TextStyle(fontWeight: FontWeight.w500)),
-                  trailing: selected == lang.$1
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: AppColors.brand)
-                      : null,
-                  onTap: () => onSelect(lang.$1),
-                )),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}

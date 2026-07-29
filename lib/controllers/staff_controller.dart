@@ -150,10 +150,9 @@ class StaffController extends GetxController {
   }
 
 // Thêm method apply customer filter:
-  Future<void> applyCustomerFilter(String name) async {
+  Future<void> applyCustomerFilter(int scheduleId, String name) async {
     customerNameFilter.value = name;
-    final scheduleId = selectedScheduleId.value;
-    if (scheduleId != null) await fetchCustomers(scheduleId);
+    await fetchCustomers(scheduleId);
   }
 
   /// Lấy danh sách vé – hỗ trợ filter tên hành khách & trạng thái check-in
@@ -176,15 +175,14 @@ class StaffController extends GetxController {
     }
   }
 
-  /// Gọi lại API vé sau khi thay đổi filter
-  Future<void> applyTicketFilters({
+  Future<void> applyTicketFilters(
+    int scheduleId, {
     required String attendeeName,
     required String? checkInStatus,
   }) async {
     ticketAttendeeFilter.value = attendeeName;
     ticketStatusFilter.value = checkInStatus;
-    final scheduleId = selectedScheduleId.value;
-    if (scheduleId != null) await fetchTickets(scheduleId);
+    await fetchTickets(scheduleId);
   }
 
   Future<void> fetchLiveLocations(int scheduleId) async {
