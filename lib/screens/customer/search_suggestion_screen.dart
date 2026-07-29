@@ -7,6 +7,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/currency_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/tour_card.dart';
 
 class SearchSuggestionScreen extends StatefulWidget {
   const SearchSuggestionScreen({super.key});
@@ -279,22 +280,31 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(7)),
-                          child: SizedBox(
-                            height: 90,
-                            width: double.infinity,
-                            child: tour.imageUrl != null
-                                ? CachedNetworkImage(
-                                    imageUrl: tour.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) =>
-                                        const ColoredBox(
-                                            color: AppColors.brandLight),
-                                  )
-                                : const ColoredBox(color: AppColors.brandLight),
-                          ),
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(7)),
+                              child: SizedBox(
+                                height: 90,
+                                width: double.infinity,
+                                child: tour.imageUrl != null
+                                    ? CachedNetworkImage(
+                                        imageUrl: tour.imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorWidget: (_, __, ___) =>
+                                            const ColoredBox(
+                                                color: AppColors.brandLight),
+                                      )
+                                    : const ColoredBox(color: AppColors.brandLight),
+                              ),
+                            ),
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: WishlistButton(tourId: tour.id),
+                            ),
+                          ],
                         ),
                         Expanded(
                           child: Padding(

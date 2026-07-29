@@ -1,6 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../controllers/feature_controllers.dart';
 import '../models/tour_model.dart';
+import '../routes/app_routes.dart';
+import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_decorations.dart';
 import '../theme/app_radius.dart';
@@ -12,12 +16,14 @@ class TourCard extends StatelessWidget {
   final TourModel tour;
   final VoidCallback onTap;
   final String? heroTagPrefix;
+  final bool showWishlist;
 
   const TourCard({
     super.key,
     required this.tour,
     required this.onTap,
     this.heroTagPrefix,
+    this.showWishlist = true,
   });
 
   @override
@@ -111,6 +117,12 @@ class TourCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ),
+                    if (showWishlist)
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: WishlistButton(tourId: tour.id),
                       ),
                   ],
                 ),
@@ -296,5 +308,82 @@ class _ImageBadge extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Nút tim wishlist dùng chung cho TourCard và SearchResultTourCard.
+/// Reactive với WishlistController, handle login-guard tự động.
+class WishlistButton extends StatelessWidget {
+  final int tourId;
+  const WishlistButton({super.key, required this.tourId});
+
+  @override
+  Widget build(BuildContext context) {
+    WishlistController? wishlistCtrl;
+    try {
+      wishlistCtrl = Get.find<WishlistController>();
+    } catch (_) {
+      // WishlistController not available on this route
+    }
+
+    if (wishlistCtrl == null) return const SizedBox.shrink();
+    final ctrl = wishlistCtrl;
+
+    return Obx(() {
+      final isInWishlist = ctrl.containsTour(tourId);
+      final isProcessing = ctrl.isProcessing(tourId);
+
+      return GestureDetector(
+        onTap: () {
+          final storage = Get.find<StorageService>();
+          if (!storage.isLoggedIn) {
+            Get.toNamed(AppRoutes.login);
+            return;
+          }
+          ctrl.toggleWishlist(tourId, isInWishlist: isInWishlist);
+        },
+        child: AnimatedScale(
+          scale: isProcessing ? 0.85 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: isProcessing
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: animation,
+                      child: child,
+                    ),
+                    child: Icon(
+                      isInWishlist
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      key: ValueKey(isInWishlist),
+                      size: 18,
+                      color: isInWishlist
+                          ? const Color(0xFFFF4D6D)
+                          : Colors.white,
+                    ),
+                  ),
+          ),
+        ),
+      );
+    });
   }
 }

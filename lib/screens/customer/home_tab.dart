@@ -15,6 +15,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/auth_gate.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/tour_card.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Home Tab root
@@ -539,6 +540,11 @@ class _TourCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: WishlistButton(tourId: tour.id),
+                ),
               ],
             ),
 

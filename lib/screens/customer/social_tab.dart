@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/comment_bottom_sheet.dart';
 import '../../widgets/moment_card.dart';
+import '../../widgets/safe_avatar.dart';
 import '../../utils/snackbar_helper.dart';
 import 'friend_management_panel.dart';
 import 'my_profile_panel.dart';
@@ -189,11 +190,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       backgroundColor: AppColors.brandLight,
-                      backgroundImage:
-                          (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
-                              ? CachedNetworkImageProvider(room.avatarUrl!)
-                              : null,
-                      child: (room.avatarUrl == null || room.avatarUrl!.isEmpty)
+                      backgroundImage: safeAvatarImageProvider(room.avatarUrl),
+                      child: safeAvatarImageProvider(room.avatarUrl) == null
                           ? const Icon(Icons.chat_bubble_outline_rounded,
                               color: AppColors.brand)
                           : null,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'safe_avatar.dart';
 import '../models/social_models.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
@@ -257,38 +258,15 @@ class _MomentCardState extends State<MomentCard>
                         },
                         child: Row(
                           children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                                boxShadow: const [
-                                  BoxShadow(
-                                      color: Colors.black26, blurRadius: 4)
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: (widget.moment.avatarUrl != null &&
-                                      widget.moment.avatarUrl!.isNotEmpty)
-                                  ? CachedNetworkImage(
-                                      imageUrl: widget.moment.avatarUrl!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      color: AppColors.brand,
-                                      child: Center(
-                                        child: Text(
-                                          initial,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                            SafeAvatar(
+                              imageUrl: widget.moment.avatarUrl,
+                              name: widget.moment.fullName,
+                              radius: 22,
+                              border: Border.all(color: Colors.white, width: 2),
+                              boxShadow: const [
+                                BoxShadow(
+                                    color: Colors.black26, blurRadius: 4),
+                              ],
                             ),
                             const SizedBox(width: 12),
                             Expanded(
