@@ -306,7 +306,7 @@ class _ProfileTabState extends State<ProfileTab> {
             child: _buildIconGridItem(
               Icons.assignment_return_outlined,
               'pt_cancel_req'.tr,
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Request to Cancelled'),
+              () => Get.toNamed(AppRoutes.orders, arguments: 'Request to cancel'),
             ),
           ),
         ],

@@ -162,7 +162,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   bool _shouldLoadItineraries(OrderModel order) {
     final status = order.status?.trim().toLowerCase();
-    return status != 'pending' && status != 'cancelled';
+    return status == 'paid' || status == 'completed';
   }
 
   Future<Map<int, TourismInformationModel>> _loadTourismInformation(
@@ -316,7 +316,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                     ],
                     if (order.status == 'Cancelled' ||
-                        order.status == 'Request to Cancelled') ...[
+                        order.status == 'Request to cancel') ...[
                       const SizedBox(height: 20),
                       _InactiveOrderNotice(status: order.status),
                     ],
@@ -351,24 +351,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (order.status == 'Paid' || order.status == 'Completed')
-                      OrderTicketsPanel(
-                        tickets: order.tickets,
-                        ticketTypeNames: _ticketTypeNames,
-                      )
-                    else
-                      Padding(
-                        padding: EdgeInsets.only(top: 40),
-                        child: Center(
-                          child: Text(
-                            'od_ticket_show_when_paid'.tr,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
+                    OrderTicketsPanel(
+                      tickets: order.tickets,
+                      ticketTypeNames: _ticketTypeNames,
+                    )
                   ],
                 ),
               ),
@@ -394,19 +380,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         _daysUntilDeparture(order.schedule?.departureDate);
     final feePercent = _cancellationFeePercent(daysUntilDeparture);
     if (feePercent == null || daysUntilDeparture == null) {
-      await showDialog<void>(
+      await showModalBottomSheet<void>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text('od_cannot_cancel'.tr),
-          content: Text(
-            'od_cancel_policy_error'.tr,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text('od_understood'.tr),
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetContext) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'od_cannot_cancel'.tr,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'od_cancel_policy_error'.tr,
+                  style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brand,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('od_understood'.tr),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
       return;
@@ -417,34 +432,77 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final cancellationFee = (feeBase * feePercent / 100).round();
     final estimatedRefund =
         (order.finalAmount - cancellationFee).clamp(0, 1 << 31);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('od_confirm_cancel_policy'.tr),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Còn $daysUntilDeparture ngày trước ngày khởi hành.'),
-            const SizedBox(height: 10),
-            Text(
-              'Phí hủy: $feePercent% '
-              '(${CurrencyFormatter.format(cancellationFee)})',
-            ),
-            const SizedBox(height: 6),
-            Text('Dự kiến hoàn: ${CurrencyFormatter.format(estimatedRefund)}'),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'od_confirm_cancel_policy'.tr,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'od_days_until_departure'.trParams({'days': daysUntilDeparture.toString()}),
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'od_cancel_fee'.trParams({
+                  'percent': feePercent.toString(),
+                  'amount': CurrencyFormatter.format(cancellationFee),
+                }),
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'od_estimated_refund'.trParams({'amount': CurrencyFormatter.format(estimatedRefund)}),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.accent),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('od_later'.tr),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.brand,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('od_continue'.tr),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('od_later'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('od_continue'.tr),
-          ),
-        ],
       ),
     );
 
@@ -1952,8 +2010,7 @@ class _PendingOrderNotice extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Giao dịch chưa hoàn tất. Đơn này không thể thanh toán lại; '
-              'hệ thống sẽ tự hủy nếu cổng thanh toán không xác nhận thành công.',
+              'od_unpaid_notice'.tr,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
@@ -2050,7 +2107,7 @@ class _InactiveOrderNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final requested = status == 'Request to Cancelled';
+    final requested = status == 'Request to cancel';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2124,7 +2181,7 @@ class _OrderStatusStyle {
           foreground: AppColors.error,
           background: Color(0xFFFEE2E2),
         );
-      case 'Request to Cancelled':
+      case 'Request to cancel':
         return _OrderStatusStyle(
           label: 'pt_cancel_req'.tr,
           icon: Icons.pending_actions_rounded,

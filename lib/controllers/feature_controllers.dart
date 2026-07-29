@@ -122,7 +122,7 @@ class OrderController extends GetxController {
         accountNumber: accountNumber,
         accountHolderName: accountHolderName,
       );
-      SnackbarHelper.success('Đã gửi yêu cầu hủy tour');
+      SnackbarHelper.success('rc_success_msg'.tr);
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
@@ -1154,9 +1154,7 @@ class BookingController extends GetxController {
         note: orderNote,
         orderDetails: orderDetails,
       );
-      SnackbarHelper.success(
-        'Đã tạo đơn. Hoàn tất thanh toán để xác nhận chỗ.',
-      );
+      SnackbarHelper.success('bk_order_created'.tr);
       return order;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);

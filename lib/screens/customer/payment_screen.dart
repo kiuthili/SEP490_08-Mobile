@@ -244,7 +244,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               const SizedBox(height: 8),
             ],
             CustomButton(
-              label: 'Hủy thanh toán',
+              label: 'pm_cancel_payment'.tr,
               outlined: true,
               isLoading: busy,
               onPressed: busy ? null : _cancelPayment,
