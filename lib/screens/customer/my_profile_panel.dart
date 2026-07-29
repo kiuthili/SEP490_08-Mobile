@@ -68,11 +68,6 @@ class _MyProfilePanelState extends State<MyProfilePanel>
               child: Divider(
                   height: 0.5, thickness: 0.5, color: AppColors.separator),
             ),
-            SliverToBoxAdapter(child: _buildTabRow()),
-            const SliverToBoxAdapter(
-              child: Divider(
-                  height: 0.5, thickness: 0.5, color: AppColors.separator),
-            ),
             if (_loading)
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -299,21 +294,6 @@ class _MyProfilePanelState extends State<MyProfilePanel>
   // ─────────────────────────────────────────
   // TAB ROW
   // ─────────────────────────────────────────
-  Widget _buildTabRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Icon(Icons.grid_on_rounded, size: 26, color: AppColors.navy),
-          Icon(Icons.map_outlined, size: 26, color: AppColors.textTertiary),
-          Icon(Icons.bookmark_border_rounded,
-              size: 26, color: AppColors.textTertiary),
-        ],
-      ),
-    );
-  }
-
   // ─────────────────────────────────────────
   // PHOTO GRID 3 CỘT
   // ─────────────────────────────────────────
@@ -431,12 +411,14 @@ class _MyProfilePanelState extends State<MyProfilePanel>
   }
 
   void _openFeedAtIndex(BuildContext context, int index) {
+    final user = _auth.currentUser.value;
+    if (user == null) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => _UserMomentsFeedScreen(
           moments: _myMoments,
           initialIndex: index,
-          currentUserId: _auth.currentUser.value?.id ?? 0,
+          currentUser: user,
           socialController: _socialController,
         ),
       ),
@@ -451,12 +433,12 @@ class _UserMomentsFeedScreen extends StatefulWidget {
   const _UserMomentsFeedScreen({
     required this.moments,
     required this.initialIndex,
-    required this.currentUserId,
+    required this.currentUser,
     required this.socialController,
   });
   final List<MomentModel> moments;
   final int initialIndex;
-  final int currentUserId;
+  final UserModel currentUser;
   final SocialController socialController;
 
   @override
@@ -512,7 +494,7 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
           final moment = _moments[index];
           return _FeedItem(
             moment: moment,
-            currentUserId: widget.currentUserId,
+            currentUser: widget.currentUser,
             onLike: () => _toggleLike(index),
             onComment: () {
               Get.toNamed(AppRoutes.momentDetail, arguments: moment);
@@ -534,14 +516,14 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
 class _FeedItem extends StatelessWidget {
   const _FeedItem({
     required this.moment,
-    required this.currentUserId,
+    required this.currentUser,
     required this.onLike,
     required this.onComment,
     required this.onDelete,
   });
 
   final MomentModel moment;
-  final int currentUserId;
+  final UserModel currentUser;
   final VoidCallback onLike;
   final VoidCallback onComment;
   final VoidCallback onDelete;
@@ -563,16 +545,16 @@ class _FeedItem extends StatelessWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: AppColors.brandLight,
-                  backgroundImage: moment.avatarUrl?.isNotEmpty == true &&
-                          !moment.avatarUrl!.toLowerCase().endsWith('.svg')
-                      ? CachedNetworkImageProvider(moment.avatarUrl!)
+                  backgroundImage: currentUser.avatarUrl?.isNotEmpty == true &&
+                          !currentUser.avatarUrl!.toLowerCase().endsWith('.svg')
+                      ? CachedNetworkImageProvider(currentUser.avatarUrl!)
                       : null,
-                  child: moment.avatarUrl == null ||
-                          moment.avatarUrl!.isEmpty ||
-                          moment.avatarUrl!.toLowerCase().endsWith('.svg')
+                  child: currentUser.avatarUrl == null ||
+                          currentUser.avatarUrl!.isEmpty ||
+                          currentUser.avatarUrl!.toLowerCase().endsWith('.svg')
                       ? Text(
-                          (moment.fullName?.isNotEmpty == true
-                                  ? moment.fullName![0]
+                          (currentUser.fullName.isNotEmpty == true
+                                  ? currentUser.fullName[0]
                                   : '?')
                               .toUpperCase(),
                           style: const TextStyle(
@@ -585,14 +567,14 @@ class _FeedItem extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    moment.fullName ?? 'sc_mp_stayhub_user'.tr,
+                    currentUser.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : currentUser.fullName,
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
                         fontSize: 14),
                   ),
                 ),
-                if (moment.userId == currentUserId)
+                if (moment.userId == currentUser.id)
                   IconButton(
                     icon: const Icon(Icons.more_vert, color: Colors.black87),
                     onPressed: () => _showOptions(context),
@@ -602,21 +584,36 @@ class _FeedItem extends StatelessWidget {
           ),
 
           // ── Image ──
-          CachedNetworkImage(
-            imageUrl: moment.imageUrl,
-            width: double.infinity,
-            fit:
-                BoxFit.contain, // Fit contain to avoid cropping vertical images
-            placeholder: (_, __) =>
-                Container(height: 300, color: Colors.black12),
-            errorWidget: (_, __, ___) => Container(
-              height: 300,
-              color: Colors.black12,
-              child: const Center(
-                  child: Icon(Icons.broken_image_outlined,
-                      color: Colors.black38, size: 48)),
+          GestureDetector(
+            onTap: onComment, // Re-use onComment to navigate to MomentDetailScreen
+            child: Hero(
+              tag: 'moment_image_${moment.id}',
+              child: CachedNetworkImage(
+                imageUrl: moment.imageUrl,
+                width: double.infinity,
+                fit: BoxFit.contain, // Fit contain to avoid cropping vertical images
+                placeholder: (_, __) =>
+                    Container(height: 300, color: Colors.black12),
+                errorWidget: (_, __, ___) => Container(
+                  height: 300,
+                  color: Colors.black12,
+                  child: const Center(
+                      child: Icon(Icons.broken_image_outlined,
+                          color: Colors.black38, size: 48)),
+                ),
+              ),
             ),
           ),
+
+          // ── Caption ──
+          if (moment.caption?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              child: Text(
+                moment.caption!,
+                style: const TextStyle(color: Colors.black87, fontSize: 14),
+              ),
+            ),
 
           // ── Actions ──
           Padding(
@@ -653,24 +650,6 @@ class _FeedItem extends StatelessWidget {
                     color: Colors.black,
                     fontWeight: FontWeight.w700,
                     fontSize: 13),
-              ),
-            ),
-
-          // ── Caption ──
-          if (moment.caption?.isNotEmpty == true)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
-                  children: [
-                    TextSpan(
-                      text: '${moment.fullName ?? ''}  ',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    TextSpan(text: moment.caption),
-                  ],
-                ),
               ),
             ),
 

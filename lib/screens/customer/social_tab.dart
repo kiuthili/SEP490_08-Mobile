@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
@@ -28,15 +30,25 @@ class _SocialTabState extends State<SocialTab>
   late final TabController _tabController;
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
+  
+  bool _isFeedLight = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
     _social.fetchFriends();
     _social.fetchPendingRequests();
     _social.fetchChatRooms();
     Get.find<OrderController>().fetchEligibleSchedules();
+  }
+
+  Color get _headerColor {
+    if (_tabController.index != 0) return Colors.black87;
+    return _isFeedLight ? Colors.black87 : Colors.white;
   }
 
   @override
@@ -49,8 +61,17 @@ class _SocialTabState extends State<SocialTab>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: _headerColor),
+        titleTextStyle: TextStyle(
+          color: _headerColor,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
         leading: IconButton(
           tooltip: 'sc_tooltip_add_moment'.tr,
           icon: const Icon(Icons.camera_alt_outlined),
@@ -59,57 +80,53 @@ class _SocialTabState extends State<SocialTab>
         title: Text('sc_title'.tr),
         actions: [
           IconButton(
-            tooltip: 'sc_tooltip_map'.tr,
-            onPressed: () => Get.find<ShellController>().changeTab(0),
-            icon: const Icon(Icons.map_outlined),
-          ),
-          IconButton(
             tooltip: 'sc_tooltip_messages'.tr,
             onPressed: () => Get.toNamed(AppRoutes.chatInbox),
             icon: const Icon(Icons.forum_outlined),
           ),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Container(
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                dividerColor: Colors.transparent,
-                indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  color: AppColors.brand,
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textSecondary,
-                splashBorderRadius: BorderRadius.circular(AppRadius.lg),
-                tabs: [
-                  Tab(text: 'sc_tab_feed'.tr),
-                  Tab(text: 'sc_tab_friends'.tr),
-                  Tab(text: 'sc_tab_profile'.tr),
-                ],
-              ),
-            ),
-          ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: _headerColor,
+          indicatorWeight: 3,
+          labelColor: _headerColor,
+          unselectedLabelColor: _headerColor.withValues(alpha: 0.6),
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          tabs: [
+            Tab(text: 'sc_tab_feed'.tr),
+            Tab(text: 'sc_tab_friends'.tr),
+            Tab(text: 'sc_tab_profile'.tr),
+          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _MomentsPanel(social: _social),
-          FriendManagementPanel(
+          _MomentsPanel(
             social: _social,
-            searchController: _searchController,
+            onThemeChanged: (isLight) {
+              if (_isFeedLight != isLight) {
+                setState(() => _isFeedLight = isLight);
+              }
+            },
           ),
-          const MyProfilePanel(),
+          Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight + 48,
+            ),
+            child: FriendManagementPanel(
+              social: _social,
+              searchController: _searchController,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight + 48,
+            ),
+            child: const MyProfilePanel(),
+          ),
         ],
       ),
     );
@@ -118,8 +135,9 @@ class _SocialTabState extends State<SocialTab>
 
 class _MomentsPanel extends StatefulWidget {
   final SocialController social;
+  final Function(bool isLight) onThemeChanged;
 
-  const _MomentsPanel({required this.social});
+  const _MomentsPanel({required this.social, required this.onThemeChanged});
 
   @override
   State<_MomentsPanel> createState() => _MomentsPanelState();
@@ -127,6 +145,8 @@ class _MomentsPanel extends StatefulWidget {
 
 class _MomentsPanelState extends State<_MomentsPanel> {
   final _pageController = PageController();
+  int _currentFeedIndex = 0;
+  final Map<int, bool> _isFeedLightMap = {};
 
   @override
   void initState() {
@@ -137,7 +157,47 @@ class _MomentsPanelState extends State<_MomentsPanel> {
           _pageController.position.maxScrollExtent - 200) {
         widget.social.loadMoreFeed();
       }
+      int newIndex = _pageController.page?.round() ?? 0;
+      if (newIndex != _currentFeedIndex) {
+        _currentFeedIndex = newIndex;
+        _checkImageColor(newIndex);
+      }
     });
+
+    ever(widget.social.moments, (_) {
+      if (widget.social.moments.isNotEmpty && !_isFeedLightMap.containsKey(0) && _currentFeedIndex == 0) {
+        _checkImageColor(0);
+      }
+    });
+  }
+
+  Future<void> _checkImageColor(int index) async {
+    if (index >= widget.social.moments.length) return;
+    
+    if (_isFeedLightMap.containsKey(index)) {
+      widget.onThemeChanged(_isFeedLightMap[index]!);
+      return;
+    }
+    
+    final imageUrl = widget.social.moments[index].imageUrl;
+    if (imageUrl.isEmpty) return;
+
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(
+        CachedNetworkImageProvider(imageUrl),
+      );
+      final dominantColor = palette.dominantColor?.color ?? palette.mutedColor?.color ?? Colors.black;
+      final isLight = dominantColor.computeLuminance() > 0.5;
+      
+      if (mounted) {
+        _isFeedLightMap[index] = isLight;
+        if (_currentFeedIndex == index) {
+          widget.onThemeChanged(isLight);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   void _shareMoment(MomentModel moment) {
@@ -300,22 +360,38 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     final detailsController = TextEditingController();
     var isSending = false;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                  '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}'),
-              content: SingleChildScrollView(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+
+                    Text(
+                      '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: selectedReason,
                       decoration: InputDecoration(
-                          labelText: 'sc_report_reason'.tr),
+                          labelText: 'sc_report_reason'.tr,
+                          border: const OutlineInputBorder()),
                       items: [
                         DropdownMenuItem(
                             value: 'Spam', child: Text('sc_report_spam'.tr)),
@@ -331,56 +407,67 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setDialogState(() => selectedReason = val);
+                          setSheetState(() => selectedReason = val);
                         }
                       },
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: detailsController,
                       decoration: InputDecoration(
                         labelText: 'sc_report_details'.tr,
                         hintText: 'sc_report_details_hint'.tr,
                         alignLabelWithHint: true,
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 3,
                     ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: isSending ? null : () => Navigator.pop(context),
+                            child: Text('sc_report_cancel'.tr),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: isSending
+                                ? null
+                                : () async {
+                                    setSheetState(() => isSending = true);
+                                    final ok = await social.reportContent(
+                                      contentType: contentType,
+                                      targetId: targetId,
+                                      reason: selectedReason,
+                                      details: detailsController.text.trim().isNotEmpty
+                                          ? detailsController.text.trim()
+                                          : null,
+                                    );
+                                    setSheetState(() => isSending = false);
+                                    if (ok) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.brand),
+                            child: isSending
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                  )
+                                : Text('sc_report_submit'.tr),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: Text('sc_report_cancel'.tr),
-                ),
-                FilledButton(
-                  onPressed: isSending
-                      ? null
-                      : () async {
-                          setDialogState(() => isSending = true);
-                          final ok = await social.reportContent(
-                            contentType: contentType,
-                            targetId: targetId,
-                            reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty
-                                ? detailsController.text.trim()
-                                : null,
-                          );
-                          setDialogState(() => isSending = false);
-                          if (ok) {
-                            Navigator.pop(context);
-                          }
-                        },
-                  child: isSending
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text('sc_report_submit'.tr),
-                ),
-              ],
             );
           },
         );

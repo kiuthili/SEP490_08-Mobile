@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/user_model.dart';
+import 'package:get/get.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_shadows.dart';
@@ -284,11 +285,11 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
     setState(() => _error = null);
     final phone = _phoneController.text.trim();
     if (phone.isEmpty) {
-      setState(() => _error = 'Vui lòng nhập số điện thoại');
+      setState(() => _error = 'auth_google_phone_req'.tr);
       return;
     }
     if (phone.length < 8 || phone.length > 15) {
-      setState(() => _error = 'Số điện thoại phải từ 8 đến 15 chữ số');
+      setState(() => _error = 'auth_google_phone_invalid'.tr);
       return;
     }
     widget.onSubmit(phone);
@@ -331,22 +332,22 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Bổ sung số điện thoại',
-                          style: TextStyle(
+                          'auth_google_phone_title'.tr,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: AppColors.navy,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Tài khoản Google mới cần số điện thoại để hoàn tất đăng ký',
-                          style: TextStyle(
+                          'auth_google_phone_desc'.tr,
+                          style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -417,9 +418,9 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
               const SizedBox(height: 20),
 
               // Phone field
-              const Text(
-                'Số điện thoại *',
-                style: TextStyle(
+              Text(
+                'auth_google_phone_label'.tr,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -438,7 +439,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                 ),
                 decoration: InputDecoration(
                   counterText: '',
-                  hintText: 'Nhập số điện thoại của bạn',
+                  hintText: 'auth_google_phone_hint'.tr,
                   hintStyle: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.normal,
@@ -495,9 +496,9 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                             borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                         ),
-                        child: const Text(
-                          'Hủy bỏ',
-                          style: TextStyle(
+                        child: Text(
+                          'btn_cancel'.tr,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,
@@ -530,9 +531,9 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                                       Colors.white),
                                 ),
                               )
-                            : const Text(
-                                'Xác nhận',
-                                style: TextStyle(
+                            : Text(
+                                'btn_confirm'.tr,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),

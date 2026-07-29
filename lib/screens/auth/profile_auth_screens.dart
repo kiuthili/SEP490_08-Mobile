@@ -98,7 +98,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       SnackbarHelper.success('profile_updated_success'.tr);
       Get.offAllNamed(AppRoutes.profile);
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      SnackbarHelper.error(e.message.tr);
     } catch (_) {
       SnackbarHelper.error(
         'profile_update_failed'.tr,

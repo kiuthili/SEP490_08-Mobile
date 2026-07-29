@@ -172,11 +172,11 @@ class WishlistController extends GetxController {
       if (isInWishlist) {
         await _service.removeFromWishlist(tourId);
         items.removeWhere((i) => i.tourId == tourId);
-        if (showMessage) SnackbarHelper.success('Đã xóa khỏi wishlist');
+        if (showMessage) SnackbarHelper.success('wl_removed_success'.tr);
       } else {
         await _service.addToWishlist(tourId);
         await fetchWishlist();
-        if (showMessage) SnackbarHelper.success('Đã thêm vào wishlist');
+        if (showMessage) SnackbarHelper.success('wl_added_success'.tr);
       }
       return true;
     } on ApiError catch (e) {
@@ -416,13 +416,13 @@ class SocialController extends GetxController {
       await _signalR.connectFriendship(
         onFriendRequest: () {
           unawaited(fetchPendingRequests());
-          SnackbarHelper.success('Bạn có lời mời kết bạn mới');
+          SnackbarHelper.success('sc_friend_request_received'.tr);
         },
         onRequestResponded: (responderId, status) {
           sentRequestUserIds.remove(responderId);
           if (status.toLowerCase() == 'accepted') {
             unawaited(fetchFriends());
-            SnackbarHelper.success('Lời mời kết bạn đã được chấp nhận');
+            SnackbarHelper.success('sc_friend_request_accepted'.tr);
           }
         },
         onFriendshipDeleted: (userId) {
@@ -509,7 +509,7 @@ class SocialController extends GetxController {
     try {
       await _service.sendFriendRequest(receiverId);
       sentRequestUserIds.add(receiverId);
-      SnackbarHelper.success('Đã gửi lời mời kết bạn');
+      SnackbarHelper.success('sc_friend_request_sent'.tr);
       return true;
     } catch (_) {
       return false;
