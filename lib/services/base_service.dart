@@ -14,11 +14,12 @@ mixin BaseServiceMixin on GetxService {
   }
 
   T parseData<T>(dynamic body, T Function(Map<String, dynamic>) fromJson) {
-    if (body is Map<String, dynamic>) {
-      if (body.containsKey('data') && body['data'] is Map<String, dynamic>) {
-        return fromJson(body['data'] as Map<String, dynamic>);
+    if (body is Map) {
+      final map = Map<String, dynamic>.from(body);
+      if (map.containsKey('data') && map['data'] is Map) {
+        return fromJson(Map<String, dynamic>.from(map['data'] as Map));
       }
-      return fromJson(body);
+      return fromJson(map);
     }
     throw StateError('Unexpected response format');
   }
@@ -28,20 +29,21 @@ mixin BaseServiceMixin on GetxService {
     T Function(Map<String, dynamic>) fromJson,
   ) {
     dynamic list = body;
-    if (body is Map<String, dynamic>) {
-      if (body['data'] is List) {
-        list = body['data'];
-      } else if (body['data'] is Map<String, dynamic>) {
-        final inner = body['data'] as Map<String, dynamic>;
+    if (body is Map) {
+      final map = Map<String, dynamic>.from(body);
+      if (map['data'] is List) {
+        list = map['data'];
+      } else if (map['data'] is Map) {
+        final inner = Map<String, dynamic>.from(map['data'] as Map);
         list = inner['data'] ?? inner['items'] ?? [];
       }
     }
     if (list is! List) return [];
     final out = <T>[];
     for (final item in list) {
-      if (item is! Map<String, dynamic>) continue;
+      if (item is! Map) continue;
       try {
-        out.add(fromJson(item));
+        out.add(fromJson(Map<String, dynamic>.from(item)));
       } catch (_) {
         // Bỏ qua phần tử lỗi parse — tránh crash cả list.
       }
@@ -53,10 +55,11 @@ mixin BaseServiceMixin on GetxService {
     dynamic body,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    if (body is Map<String, dynamic>) {
-      final inner = body.containsKey('data') && body['data'] is Map
-          ? body['data'] as Map<String, dynamic>
-          : body;
+    if (body is Map) {
+      final map = Map<String, dynamic>.from(body);
+      final inner = map.containsKey('data') && map['data'] is Map
+          ? Map<String, dynamic>.from(map['data'] as Map)
+          : map;
       return PaginationModel.fromJson(inner, fromJson);
     }
     return PaginationModel(
@@ -92,8 +95,10 @@ class PaginationModel<T> {
   ) {
     final rawList = json['data'] as List<dynamic>? ?? [];
     return PaginationModel(
-      data:
-          rawList.whereType<Map<String, dynamic>>().map(itemFromJson).toList(),
+      data: rawList
+          .where((e) => e is Map)
+          .map((e) => itemFromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
       total: json['total'] as int? ?? 0,
       totalPages: json['totalPages'] as int? ?? 0,
       currentPage: json['currentPage'] as int? ?? 1,

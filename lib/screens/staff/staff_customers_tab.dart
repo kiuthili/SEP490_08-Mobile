@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
@@ -332,11 +332,8 @@ class _MapTab extends StatefulWidget {
 }
 
 class _MapTabState extends State<_MapTab> {
-  final MapController _mapController = MapController();
-
-  static String get _tileUrl =>
-      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
-      '?access_token=${ApiConstants.mapboxAccessToken}';
+  mb.MapboxMap? _mapboxMap;
+  mb.PointAnnotationManager? _pointAnnotationManager;
 
   @override
   Widget build(BuildContext context) {
@@ -350,29 +347,16 @@ class _MapTabState extends State<_MapTab> {
           if (constraints.maxHeight < 1 || constraints.maxWidth < 1) {
             return const SizedBox.shrink();
           }
-          return FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: LatLng(centerLat, centerLng),
-              initialZoom: 14,
+          return mb.MapWidget(
+            cameraOptions: mb.CameraOptions(
+              center: mb.Point(coordinates: mb.Position(centerLng, centerLat)),
+              zoom: 14,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: _tileUrl,
-                userAgentPackageName: 'com.stayhub.stayhub_mobile',
-                maxZoom: 18,
-              ),
-              MarkerLayer(
-                markers: locs
-                    .map((loc) => Marker(
-                          point: LatLng(loc.latitude, loc.longitude),
-                          width: 70,
-                          height: 80,
-                          child: _LiveLocationMarker(location: loc),
-                        ))
-                    .toList(),
-              ),
-            ],
+            styleUri: mb.MapboxStyles.STANDARD,
+            onMapCreated: (map) async {
+              _mapboxMap = map;
+              _pointAnnotationManager = await map.annotations.createPointAnnotationManager();
+            },
           );
         },
       );

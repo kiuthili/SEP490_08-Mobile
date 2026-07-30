@@ -22,11 +22,9 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
+
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../../constants/api_constants.dart';
 import '../../controllers/social_map_controller.dart';
@@ -227,235 +225,34 @@ class _MapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      mapController: c.mapController,
-      options: MapOptions(
-        initialCenter: SocialMapController.defaultCenter,
-        initialZoom: SocialMapController.defaultZoom,
-        onMapReady: c.onMapReady,
-        onPositionChanged: (camera, hasGesture) {
-          c.updateZoom(camera.zoom);
-        },
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
+    // Dynamic Lighting based on system theme
+    final brightness = MediaQuery.of(context).platformBrightness;
+
+    final styleUri = brightness == Brightness.dark
+        ? mb.MapboxStyles.DARK
+        : mb.MapboxStyles.STANDARD;
+
+    return mb.MapWidget(
+      styleUri: styleUri,
+      onStyleLoadedListener: c.onStyleLoaded,
+      onMapCreated: c.onMapCreated,
+      cameraOptions: mb.CameraOptions(
+        center: mb.Point(coordinates: mb.Position(108.206230, 16.047079)),
+        zoom: 6.0,
       ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.stayhub.mobile',
-          maxZoom: 19,
-          // OSM không hỗ trợ @2x ({r}) -> KHÔNG bật retinaMode để tránh
-          // emulation (tải 4 tile/level => tốn băng thông, giảm max zoom).
-          tileProvider: NetworkTileProvider(),
-        ),
-
-        // --- 5) HEATMAP (đặt thấp nhất để marker nằm trên) ---
-        Obx(() {
-          if (!c.showHeatmap.value || c.heatPoints.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return HeatMapLayer(
-            heatMapDataSource: InMemoryHeatMapDataSource(
-              data: c.heatPoints
-                  .map(
-                    (p) => WeightedLatLng(LatLng(p.lat, p.lng), p.weight),
-                  )
-                  .toList(),
-            ),
-            heatMapOptions: HeatMapOptions(
-              gradient: {
-                0.4: Colors.teal,
-                0.6: Colors.purple,
-                0.8: Colors.pink,
-                1.0: Colors.orange,
-              },
-              minOpacity: 0.2,
-              radius: c.heatmapRadius.value,
-            ),
-            reset: c.heatmapResetStream,
-          );
-        }),
-
-        // --- 4) FOOTPRINTS ("cào map" - Smooth Bump Effect) ---
-        Obx(() {
-          if (!c.showFootprints.value) {
-            return const SizedBox.shrink();
-          }
-
-          final List<LatLng> activeFootprints = [
-            ...c.footprints.map((f) => LatLng(f.lat, f.lng)),
-            const LatLng(20.2536, 105.9754), // Dummy point 1 (Ninh Binh)
-            const LatLng(20.2650, 105.9800), // Dummy point 2 (Ninh Binh)
-          ];
-
-          return FogOfWarLayer(footprints: activeFootprints);
-        }),
-
-        // --- 4b) VỆT DI CHUYỂN REALTIME của tôi ("cào map liên tục") ---
-        Obx(() {
-          if (!c.showFootprints.value || c.liveTrail.length < 2) {
-            return const SizedBox.shrink();
-          }
-          return PolylineLayer(
-            polylines: [
-              Polyline(
-                points: c.liveTrail.toList(),
-                strokeWidth: 5,
-                gradientColors: const [Color(0xFF34C3FF), _kBrand],
-                borderColor: Colors.white,
-                borderStrokeWidth: 1.5,
-              ),
-            ],
-          );
-        }),
-
-        // --- 3) LỘ TRÌNH TOUR (Polyline) ---
-        Obx(() {
-          if (!c.showRoute.value || c.drivingRouteLatLngs.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return PolylineLayer(
-            polylines: [
-              // Underglow (thicker, semi-transparent)
-              Polyline(
-                points: c.drivingRouteLatLngs,
-                strokeWidth: 8,
-                color: _kBrandDark.withValues(alpha: 0.4),
-                borderStrokeWidth: 0,
-              ),
-              // Main solid line
-              Polyline(
-                points: c.drivingRouteLatLngs,
-                strokeWidth: 4.5,
-                color: _kBrand,
-                borderColor: Colors.white,
-                borderStrokeWidth: 1.5,
-              ),
-            ],
-          );
-        }),
-
-        // --- 3b) MARKER các điểm đến của lộ trình ---
-        Obx(() {
-          if (!c.showRoute.value || c.routePoints.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return MarkerLayer(
-            markers: [
-              for (var i = 0; i < c.routePoints.length; i++)
-                if (c.routePoints[i].hasCoordinates)
-                  Marker(
-                    point: LatLng(c.routePoints[i].lat, c.routePoints[i].lng),
-                    width: 140,
-                    height: 56,
-                    alignment: Alignment.topCenter,
-                    child: RepaintBoundary(
-                      child: _RoutePin(point: c.routePoints[i], order: i + 1),
-                    ),
-                  ),
-            ],
-          );
-        }),
-
-        // --- 2) MOMENTS trên map (Photo Map) ---
-        Obx(() {
-          if (!c.showMoments.value || c.mapMoments.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return MarkerClusterLayerWidget(
-            options: MarkerClusterLayerOptions(
-              maxClusterRadius: 45,
-              size: const Size(40, 40),
-              markers: [
-                for (final m in c.mapMoments)
-                  Marker(
-                    point: LatLng(m.lat!, m.lng!),
-                    width: 66,
-                    height: 66,
-                    child: RepaintBoundary(child: _MomentMarker(moment: m)),
-                  ),
-              ],
-              builder: (context, markers) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: _kBrand,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${markers.length}',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14),
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        }),
-
-        // --- 1) LIVE LOCATION bạn bè / người cùng tour ---
-        Obx(() {
-          if (!c.showLiveLocations.value || c.liveLocations.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return MarkerLayer(
-            markers: [
-              for (final loc in c.visualLiveLocations)
-                Marker(
-                  point: LatLng(loc.latitude, loc.longitude),
-                  width: 130,
-                  height: 78,
-                  alignment: Alignment.topCenter,
-                  child: RepaintBoundary(
-                    child: _LiveLocationMarker(location: loc),
-                  ),
-                ),
-            ],
-          );
-        }),
-
-        // --- Marker "Tôi" ở đầu vệt di chuyển realtime ---
-        Obx(() {
-          if (!c.isSharingLocation.value || c.liveTrail.isEmpty) {
-            return const SizedBox.shrink();
-          }
-          return MarkerLayer(
-            markers: [
-              Marker(
-                point: c.liveTrail.last,
-                width: 60,
-                height: 60,
-                child: const RepaintBoundary(child: _MeMarker()),
-              ),
-            ],
-          );
-        }),
-
-        // --- Attribution (bắt buộc theo điều khoản OSM) ---
-        RichAttributionWidget(
-          alignment: AttributionAlignment.bottomLeft,
-          attributions: [
-            TextSourceAttribution(
-              'OpenStreetMap contributors',
-              onTap: () {},
-            ),
-          ],
-        ),
-      ],
+      onCameraChangeListener: (event) {
+        c.cameraUpdateStream.add(null);
+        c.mapboxMap?.getCameraState().then((state) {
+          c.updateZoom(state.zoom);
+        });
+      },
+      onTapListener: (context) {
+        c.handleMapTap(context);
+      },
     );
   }
 }
 
-// ============================================================
-// MARKER WIDGETS
-// ============================================================
-
-/// Marker ảnh thumbnail của Moment (giống Snap/Zalo map). Chạm -> chi tiết.
 class _MomentMarker extends StatelessWidget {
   const _MomentMarker({required this.moment});
   final MomentModel moment;
@@ -1157,8 +954,6 @@ void _showHeatmapSettings(BuildContext context, SocialMapController c) {
             const SizedBox(height: 8),
             Obx(() => Row(
                   children: [
-                    Expanded(child: _buildTypeOption(c, 'all', 'All Data')),
-                    const SizedBox(width: 8),
                     Expanded(child: _buildTypeOption(c, 'online', 'Online')),
                     const SizedBox(width: 8),
                     Expanded(child: _buildTypeOption(c, 'moments', 'Moments')),
@@ -1517,7 +1312,15 @@ class _TimelinePanelState extends State<_TimelinePanel> {
     if (moments.isNotEmpty && _currentIndex < moments.length) {
       final m = moments[_currentIndex];
       if (m.lat != null && m.lng != null) {
-        widget.c.mapController.move(LatLng(m.lat!, m.lng!), 15);
+        if (widget.c.mapboxMap != null) {
+          widget.c.mapboxMap!.flyTo(
+            mb.CameraOptions(
+              center: mb.Point(coordinates: mb.Position(m.lng!, m.lat!)),
+              zoom: 15.0,
+            ),
+            mb.MapAnimationOptions(duration: 500),
+          );
+        }
       }
     }
   }
@@ -1966,173 +1769,5 @@ class _PolaroidCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class FogOfWarLayer extends StatelessWidget {
-  final List<LatLng> footprints;
-  const FogOfWarLayer({super.key, required this.footprints});
-
-  @override
-  Widget build(BuildContext context) {
-    final camera = MapCamera.of(context);
-    return IgnorePointer(
-      child: CustomPaint(
-        size: Size(camera.size.x, camera.size.y),
-        painter: _FogOfWarPainter(camera, footprints),
-      ),
-    );
-  }
-}
-
-class _FogOfWarPainter extends CustomPainter {
-  final MapCamera camera;
-  final List<LatLng> footprints;
-
-  _FogOfWarPainter(this.camera, this.footprints);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.saveLayer(rect, Paint());
-
-    // 1. Gen Z Aesthetic Holographic Gradient Fog
-    final fogPaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xDD1E1B4B), // Deep Indigo
-          Color(0xDD4C1D95), // Vibrant Purple
-          Color(0xDD9D174D), // Deep Pink
-        ],
-      ).createShader(rect)
-      ..blendMode = BlendMode.srcOver;
-    canvas.drawRect(rect, fogPaint);
-
-    // 2. Playful Floating Icons (Sparser & Minimalist)
-    // Only attempt grid rendering if zoom is high enough to avoid looping millions of coordinates
-    if (camera.zoom >= 8.5) {
-      final bounds = camera.visibleBounds;
-
-      // Dynamic grid spacing based on zoom level
-      double step = 0.025;
-      if (camera.zoom < 11) {
-        step = 0.4;
-      } else if (camera.zoom < 13) {
-        step = 0.15;
-      } else if (camera.zoom < 15) {
-        step = 0.05;
-      } else if (camera.zoom < 17) {
-        step = 0.02;
-      } else {
-        step = 0.008;
-      }
-
-      final startLat = (bounds.south / step).floor() * step;
-      final endLat = (bounds.north / step).ceil() * step;
-      final startLng = (bounds.west / step).floor() * step;
-      final endLng = (bounds.east / step).ceil() * step;
-
-      final icons = ['☁️', '✨', '☁️', '🌙'];
-      int iconCount = 0;
-      const int maxIcons =
-          60; // Strict hard limit to guarantee 60 FPS and prevent crashes
-
-      for (double lat = startLat; lat <= endLat; lat += step) {
-        for (double lng = startLng; lng <= endLng; lng += step) {
-          if (iconCount >= maxIcons) break;
-
-          int hash = (lat * 10000).toInt() ^ (lng * 10000).toInt();
-
-          // Show an icon for roughly 1 out of every 6 points
-          if (hash % 6 != 0) continue;
-
-          String icon = icons[hash.abs() % icons.length];
-
-          double latOffset = ((hash % 100) - 50) / 100 * (step * 0.5);
-          double lngOffset = (((hash ~/ 100) % 100) - 50) / 100 * (step * 0.5);
-
-          final targetPoint = LatLng(lat + latOffset, lng + lngOffset);
-          final pos = camera.project(targetPoint);
-
-          final dx = pos.x - camera.pixelOrigin.x;
-          final dy = pos.y - camera.pixelOrigin.y;
-
-          // Skip drawing if coordinates are far off viewport bounds
-          if (dx < -20 ||
-              dx > size.width + 20 ||
-              dy < -20 ||
-              dy > size.height + 20) {
-            continue;
-          }
-
-          final span = TextSpan(
-            text: icon,
-            style: TextStyle(
-              fontSize: (hash % 2 == 0) ? 24 : 16,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-          );
-          final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
-          tp.layout();
-
-          tp.paint(canvas, Offset(dx - tp.width / 2, dy - tp.height / 2));
-          iconCount++;
-        }
-        if (iconCount >= maxIcons) break;
-      }
-    }
-
-    for (final fp in footprints) {
-      final pos = camera.project(fp);
-      final offset =
-          Offset(pos.x - camera.pixelOrigin.x, pos.y - camera.pixelOrigin.y);
-
-      if (offset.dx < -130 ||
-          offset.dx > size.width + 130 ||
-          offset.dy < -130 ||
-          offset.dy > size.height + 130) {
-        continue;
-      }
-
-      // Calculate a geographic-based radius (approx 800m in longitude)
-      final posOffset =
-          camera.project(LatLng(fp.latitude, fp.longitude + 0.008));
-      final double radius = (pos.x - posOffset.x).abs();
-
-      // Clamp the pixel radius to keep holes proportional and visible.
-      // Minimum 8.0 pixels ensures it stays visible as a small dot when zoomed out,
-      // without covering the entire region or country.
-      // Maximum 120.0 pixels limits the revealed area when zoomed in.
-      final double clampedRadius = radius.clamp(8.0, 120.0);
-
-      // Define dynamic stroke and blur sizes based on current pixel radius
-      final double glowStroke = (clampedRadius * 0.55).clamp(4.0, 25.0);
-      final double glowBlur = (clampedRadius * 0.45).clamp(3.0, 20.0);
-      final double eraseBlur = (clampedRadius * 0.33).clamp(2.0, 15.0);
-
-      final glowPaint = Paint()
-        ..color = const Color(0xFF00E5FF).withValues(alpha: 0.6)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = glowStroke
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur);
-
-      final erasePaint = Paint()
-        ..blendMode = BlendMode.dstOut
-        ..style = PaintingStyle.fill
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, eraseBlur);
-
-      canvas.drawCircle(offset, clampedRadius, glowPaint);
-      canvas.drawCircle(offset, clampedRadius, erasePaint);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _FogOfWarPainter oldDelegate) {
-    return oldDelegate.camera.zoom != camera.zoom ||
-        oldDelegate.camera.center != camera.center ||
-        oldDelegate.footprints != footprints;
   }
 }

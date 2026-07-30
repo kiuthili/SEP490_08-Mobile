@@ -423,7 +423,7 @@ class SocialService extends GetxService with BaseServiceMixin {
   Future<List<FootprintDto>> getMyFootprints({int? scheduleId}) async {
     return request(() async {
       final response = await api.dio.get(
-        '${ApiConstants.moments}/my-footprints',
+        '${ApiConstants.locations}/footprints',
         queryParameters: {
           if (scheduleId != null && scheduleId > 0) 'scheduleId': scheduleId,
         },

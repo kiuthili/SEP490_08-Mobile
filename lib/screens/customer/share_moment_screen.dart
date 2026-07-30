@@ -827,18 +827,17 @@ class _HistoryPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, -120),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        width: 170,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           color: Colors.white.withValues(alpha: 0.12),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.tour_rounded, color: Colors.white, size: 16),
             const SizedBox(width: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 130),
+            Expanded(
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
@@ -913,12 +912,6 @@ class _PrivacyPill extends StatelessWidget {
     return found?.icon ?? Icons.public;
   }
 
-  String get _label {
-    final found =
-        _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
-    return found?.label ?? 'Public';
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
@@ -927,7 +920,7 @@ class _PrivacyPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, -120),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           color: Colors.white.withValues(alpha: 0.12),
@@ -936,18 +929,9 @@ class _PrivacyPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(_icon, color: Colors.white, size: 16),
-            const SizedBox(width: 6),
-            Text(
-              _label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
             const SizedBox(width: 4),
             const Icon(Icons.keyboard_arrow_down_rounded,
-                color: Colors.white70, size: 16),
+                color: Colors.white70, size: 14),
           ],
         ),
       ),

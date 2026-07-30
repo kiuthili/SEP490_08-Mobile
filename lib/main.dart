@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:stayhub_mobile/firebase_options.dart';
 import 'package:stayhub_mobile/constants/api_constants.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
@@ -34,6 +35,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _StayHubHttpOverrides();
   GoogleFonts.config.allowRuntimeFetching = true;
+
+  // Configure Mapbox access token before running app
+  MapboxOptions.setAccessToken(ApiConstants.mapboxAccessToken);
+
   await GetStorage.init();
   try {
     await Firebase.initializeApp(
