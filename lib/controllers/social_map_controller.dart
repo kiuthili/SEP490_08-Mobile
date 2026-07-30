@@ -48,6 +48,7 @@ import '../services/signalr_service.dart';
 import '../services/social_service.dart';
 import '../services/storage_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
 
 class SocialMapController extends GetxController {
   SocialMapController({
@@ -90,7 +91,7 @@ class SocialMapController extends GetxController {
   final showRoute = true.obs;
   final showFootprints = false.obs;
   final showHeatmap = false.obs;
-  
+
   final heatmapType = 'all'.obs; // 'all', 'online', 'moments'
   final heatmapRadius = 30.0.obs; // Similar to web radius
 
@@ -151,10 +152,11 @@ class SocialMapController extends GetxController {
       final fLng = loc.longitude;
       if (fLat == 0 && fLng == 0) continue;
 
-      final overlaps = placed.where((p) =>
-        (p.latitude - fLat).abs() < threshold &&
-        (p.longitude - fLng).abs() < threshold
-      ).toList();
+      final overlaps = placed
+          .where((p) =>
+              (p.latitude - fLat).abs() < threshold &&
+              (p.longitude - fLng).abs() < threshold)
+          .toList();
 
       if (overlaps.isNotEmpty) {
         final count = overlaps.length;
@@ -240,7 +242,7 @@ class SocialMapController extends GetxController {
 
   /// Stream để ép HeatMapLayer rebuild khi dữ liệu thay đổi.
   final StreamController<void> heatmapResetController =
-  StreamController<void>.broadcast();
+      StreamController<void>.broadcast();
   Stream<void> get heatmapResetStream => heatmapResetController.stream;
   Timer? _heatmapDebounce;
 
@@ -437,7 +439,9 @@ class SocialMapController extends GetxController {
     if (isSharingLocation.value) return true;
     final granted = await LocationHelper.ensurePermission();
     if (!granted) {
-      if (notify) SnackbarHelper.error('Location permission is required for tracking and sharing');
+      if (notify)
+        SnackbarHelper.error(
+            'Location permission is required for tracking and sharing');
       return false;
     }
     isSharingLocation.value = true;
@@ -526,7 +530,8 @@ class SocialMapController extends GetxController {
   // ======================= 2) MOMENTS ON MAP =======================
   Future<void> loadMapMoments(int? scheduleId) async {
     try {
-      final data = await _service.getMomentsWithLocation(scheduleId: scheduleId);
+      final data =
+          await _service.getMomentsWithLocation(scheduleId: scheduleId);
       mapMoments.assignAll(
         data.where((m) => m.lat != null && m.lng != null),
       );
@@ -589,14 +594,15 @@ class SocialMapController extends GetxController {
         : a.dayNumber.compareTo(b.dayNumber));
         
     routePoints.assignAll(pts);
-    
+
     // Fetch actual Mapbox driving route
     final waypoints = routeLatLngs;
     if (waypoints.isNotEmpty) {
       try {
         isRouteLoading.value = true;
         final actualRoute = await _service.getDrivingRoute(waypoints);
-        drivingRouteLatLngs.assignAll(actualRoute.isNotEmpty ? actualRoute : waypoints);
+        drivingRouteLatLngs
+            .assignAll(actualRoute.isNotEmpty ? actualRoute : waypoints);
       } catch (e) {
         drivingRouteLatLngs.assignAll(waypoints); // Fallback to straight lines
       } finally {
@@ -605,7 +611,7 @@ class SocialMapController extends GetxController {
     } else {
       drivingRouteLatLngs.clear();
     }
-    
+
     fitToRoute();
   }
 
@@ -618,7 +624,7 @@ class SocialMapController extends GetxController {
       _footprintsTimer?.cancel();
       _footprintsTimer = Timer.periodic(
         _footprintsRefreshInterval,
-            (_) => loadFootprints(silent: true),
+        (_) => loadFootprints(silent: true),
       );
     } else {
       _footprintsTimer?.cancel();
@@ -632,7 +638,8 @@ class SocialMapController extends GetxController {
       final data = await _service.getMyFootprints();
       footprints.assignAll(data);
       if (data.isEmpty && !silent && liveTrail.isEmpty) {
-        SnackbarHelper.success('No footprints recorded yet — start moving to map your path');
+        SnackbarHelper.success(
+            'No footprints recorded yet — start moving to map your path');
       }
     } on ApiError catch (e) {
       if (!silent) SnackbarHelper.error(e.message);
@@ -663,19 +670,22 @@ class SocialMapController extends GetxController {
     const double hexR = 220.0;
     final double sqrt3 = math.sqrt(3);
 
-    final refLat = validPoints.fold<double>(0.0, (sum, p) => sum + p.latitude) / validPoints.length;
-    final refLng = validPoints.fold<double>(0.0, (sum, p) => sum + p.longitude) / validPoints.length;
+    final refLat = validPoints.fold<double>(0.0, (sum, p) => sum + p.latitude) /
+        validPoints.length;
+    final refLng =
+        validPoints.fold<double>(0.0, (sum, p) => sum + p.longitude) /
+            validPoints.length;
     final cosRef = math.cos(refLat * math.pi / 180.0);
 
     List<double> toLocal(double lat, double lng) => [
-      (lng - refLng) * (math.pi / 180.0) * rEarth * cosRef,
-      (lat - refLat) * (math.pi / 180.0) * rEarth,
-    ];
+          (lng - refLng) * (math.pi / 180.0) * rEarth * cosRef,
+          (lat - refLat) * (math.pi / 180.0) * rEarth,
+        ];
 
     LatLng toGeo(double x, double y) => LatLng(
-      refLat + (y / rEarth) * (180.0 / math.pi),
-      refLng + (x / (rEarth * cosRef)) * (180.0 / math.pi),
-    );
+          refLat + (y / rEarth) * (180.0 / math.pi),
+          refLng + (x / (rEarth * cosRef)) * (180.0 / math.pi),
+        );
 
     final hexSet = <String, List<int>>{};
     for (final p in validPoints) {
@@ -708,7 +718,7 @@ class SocialMapController extends GetxController {
     }
 
     final polygons = <Polygon>[];
-    final hexFillColor = const Color(0xFFBAE6FF).withValues(alpha: 0.28);
+    final hexFillColor = AppColors.brandLight.withValues(alpha: 0.28);
     final hexBorderColor = const Color(0xFFE0F2FE).withValues(alpha: 0.85);
 
     for (final qr in hexSet.values) {
@@ -778,16 +788,17 @@ class SocialMapController extends GetxController {
   /// Gộp mọi toạ độ đang có thành điểm heatmap (fallback khi chưa có API).
   List<HeatPointModel> _buildHeatmapFromClientData() {
     final pts = <HeatPointModel>[];
-    
+
     if (heatmapType.value == 'all' || heatmapType.value == 'moments') {
       for (final m in mapMoments) {
-        if (m.lat != null && m.lng != null) pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
+        if (m.lat != null && m.lng != null)
+          pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
       }
       for (final f in footprints) {
         pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
       }
     }
-    
+
     if (heatmapType.value == 'all' || heatmapType.value == 'online') {
       for (final l in liveLocations) {
         pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
@@ -796,7 +807,7 @@ class SocialMapController extends GetxController {
         pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
       }
     }
-    
+
     return pts;
   }
 
@@ -864,15 +875,17 @@ class SocialMapController extends GetxController {
 
     try {
       // 1. Tạo cấu trúc dữ liệu JSON dòng thời gian hành trình
-      final momentsData = timelineMoments.map((m) => {
-        'id': m.id,
-        'user': m.fullName ?? 'User',
-        'caption': m.caption ?? '',
-        'imageUrl': m.imageUrl,
-        'lat': m.lat,
-        'lng': m.lng,
-        'time': m.createdAt.toIso8601String(),
-      }).toList();
+      final momentsData = timelineMoments
+          .map((m) => {
+                'id': m.id,
+                'user': m.fullName ?? 'User',
+                'caption': m.caption ?? '',
+                'imageUrl': m.imageUrl,
+                'lat': m.lat,
+                'lng': m.lng,
+                'time': m.createdAt.toIso8601String(),
+              })
+          .toList();
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(momentsData);
 
@@ -881,7 +894,8 @@ class SocialMapController extends GetxController {
       try {
         final downloadDir = Directory('/storage/emulated/0/Download');
         if (await downloadDir.exists()) {
-          final file = File('${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+          final file = File(
+              '${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
           await file.writeAsString(jsonString);
           savedFile = file;
         }
@@ -892,7 +906,8 @@ class SocialMapController extends GetxController {
       // 3. Nếu là iOS hoặc thư mục Download công cộng bị giới hạn quyền, lưu vào thư mục tạm của ứng dụng
       if (savedFile == null) {
         final tempDir = Directory.systemTemp;
-        final file = File('${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
+        final file = File(
+            '${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
         await file.writeAsString(jsonString);
         savedFile = file;
       }
@@ -901,7 +916,8 @@ class SocialMapController extends GetxController {
       await Clipboard.setData(ClipboardData(text: jsonString));
 
       // 5. Hiển thị thông báo thành công
-      SnackbarHelper.success('Timeline downloaded to: ${savedFile.path}\n(Data has also been copied to Clipboard!)');
+      SnackbarHelper.success(
+          'Timeline downloaded to: ${savedFile.path}\n(Data has also been copied to Clipboard!)');
     } catch (e) {
       SnackbarHelper.error('Error exporting timeline: $e');
     }

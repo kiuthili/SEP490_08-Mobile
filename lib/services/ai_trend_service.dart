@@ -50,8 +50,9 @@ class AiTrendService extends GetxService with BaseServiceMixin {
 
       List<dynamic> raw = [];
       if (body is Map<String, dynamic>) {
-        final inner =
-            body.containsKey('data') && body['data'] is Map ? body['data'] : body;
+        final inner = body.containsKey('data') && body['data'] is Map
+            ? body['data']
+            : body;
         raw = inner['provinceForecasts'] as List<dynamic>? ?? [];
       }
 

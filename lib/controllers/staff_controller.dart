@@ -13,7 +13,7 @@ import 'package:stayhub_mobile/utils/snackbar_helper.dart';
 
 class StaffController extends GetxController {
   final StaffScheduleService _staffScheduleService =
-  Get.find<StaffScheduleService>();
+      Get.find<StaffScheduleService>();
   final OrderService _orderService = Get.find<OrderService>();
 
   // ── Schedules list state ───────────────────────────────────────────────────
@@ -57,9 +57,8 @@ class StaffController extends GetxController {
         page: _currentPage,
         pageSize: _pageSize,
         upcomingOnly: upcomingOnly.value,
-        tourName: searchQuery.value.trim().isEmpty
-            ? null
-            : searchQuery.value.trim(),
+        tourName:
+            searchQuery.value.trim().isEmpty ? null : searchQuery.value.trim(),
       );
       schedules.assignAll(result.data);
       _hasMore = result.currentPage < result.totalPages;
@@ -83,9 +82,8 @@ class StaffController extends GetxController {
         page: _currentPage,
         pageSize: _pageSize,
         upcomingOnly: upcomingOnly.value,
-        tourName: searchQuery.value.trim().isEmpty
-            ? null
-            : searchQuery.value.trim(),
+        tourName:
+            searchQuery.value.trim().isEmpty ? null : searchQuery.value.trim(),
       );
       schedules.addAll(result.data);
       _hasMore = result.currentPage < result.totalPages;

@@ -48,7 +48,7 @@ class StaffTicketsTab extends GetView<StaffController> {
                       EmptyStateWidget(
                         title: 'Chưa có vé',
                         subtitle:
-                        'Chọn lịch trình ở tab Lịch để xem danh sách vé',
+                            'Chọn lịch trình ở tab Lịch để xem danh sách vé',
                       ),
                     ],
                   ),
@@ -67,13 +67,12 @@ class StaffTicketsTab extends GetView<StaffController> {
                       onRefresh: _refresh,
                       child: ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32)
-                            .copyWith(
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 12, 16, 32).copyWith(
                           bottom: ShellLayout.bottomInset(context),
                         ),
                         itemCount: controller.tickets.length,
-                        separatorBuilder: (_, __) =>
-                        const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) =>
                             _TicketCard(ticket: controller.tickets[index]),
                       ),
@@ -177,17 +176,17 @@ class _TicketFilterBarState extends State<_TicketFilterBar> {
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                onPressed: () {
-                  _searchCtrl.clear();
-                  _apply();
-                  setState(() {});
-                },
-              )
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        _apply();
+                        setState(() {});
+                      },
+                    )
                   : null,
               isDense: true,
               contentPadding:
-              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: AppColors.border),
@@ -222,20 +221,17 @@ class _TicketFilterBarState extends State<_TicketFilterBar> {
                         color: selected
                             ? AppColors.brand
                             : AppColors.surfaceGrouped,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         border: Border.all(
-                          color: selected
-                              ? AppColors.brand
-                              : AppColors.border,
+                          color: selected ? AppColors.brand : AppColors.border,
                           width: 0.5,
                         ),
                       ),
                       child: Text(
                         e.value,
                         style: AppTextStyles.textTheme.labelSmall?.copyWith(
-                          color: selected
-                              ? Colors.white
-                              : AppColors.textSecondary,
+                          color:
+                              selected ? Colors.white : AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -290,12 +286,12 @@ class _SummaryBar extends StatelessWidget {
           SizedBox(
             width: 80,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: AppColors.border,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  progress == 1.0 ? Colors.green : AppColors.brand,
+                  progress == 1.0 ? AppColors.success : AppColors.brand,
                 ),
                 minHeight: 6,
               ),
@@ -347,7 +343,7 @@ class _TicketCard extends StatelessWidget {
                   height: 42,
                   decoration: BoxDecoration(
                     color: statusStyle.iconBg,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(statusStyle.icon,
                       size: 22, color: statusStyle.iconColor),
@@ -389,8 +385,7 @@ class _TicketCard extends StatelessWidget {
                             Text(
                               ticket.ticketTypeName!,
                               style: AppTextStyles.textTheme.labelSmall
-                                  ?.copyWith(
-                                  color: AppColors.textSecondary),
+                                  ?.copyWith(color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -415,12 +410,11 @@ class _TicketCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
               child: Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceGrouped,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border:
-                  Border.all(color: AppColors.border, width: 0.5),
+                  border: Border.all(color: AppColors.border, width: 0.5),
                 ),
                 child: Row(
                   children: [
@@ -569,7 +563,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         label,

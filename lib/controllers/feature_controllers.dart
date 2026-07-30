@@ -56,7 +56,9 @@ class OrderController extends GetxController {
       final result = await _service.getMyOrders(
         userId: userId,
         page: _page,
-        status: statusFilter.value,
+        status: (statusFilter.value != null && statusFilter.value!.isNotEmpty)
+            ? statusFilter.value
+            : null,
       );
       if (refresh) {
         orders.assignAll(result.data);
@@ -159,10 +161,10 @@ class WishlistController extends GetxController {
   }
 
   Future<bool> toggleWishlist(
-      int tourId, {
-        required bool isInWishlist,
-        bool showMessage = true,
-      }) async {
+    int tourId, {
+    required bool isInWishlist,
+    bool showMessage = true,
+  }) async {
     if (processingTourIds.contains(tourId)) return false;
     processingTourIds.add(tourId);
     processingTourIds.refresh();
@@ -259,6 +261,9 @@ class AiController extends GetxController {
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
+    } catch (e) {
+      SnackbarHelper.error('Lỗi parse data: $e');
+      return false;
     } finally {
       questionnaireSubmitting.value = false;
     }
@@ -266,7 +271,7 @@ class AiController extends GetxController {
 
   Future<void> fetchRecommendations() async {
     // The backend does not persist AI recommendations, they are only returned via submitQuestionnaire (POST).
-    // Therefore, we cannot fetch them generically without a profile. 
+    // Therefore, we cannot fetch them generically without a profile.
     // We just return the cached ones or do nothing to prevent 404 errors.
     return;
   }
@@ -291,9 +296,18 @@ class AiController extends GetxController {
     );
     isSendingChat.value = true;
     try {
+      final history = chatMessages
+          .where((m) => m.role == 'user' || m.role == 'assistant')
+          .map((m) => {
+                'role': m.role == 'assistant' ? 'model' : 'user',
+                'content': m.text,
+              })
+          .toList();
+
       final response = await _service.sendChatMessage(
         message: text,
         sessionId: _chatSessionId,
+        history: history.isNotEmpty ? history : null,
       );
       chatMessages.add(
         AiChatMessageModel(
@@ -341,8 +355,10 @@ class SocialController extends GetxController {
 
   int get currentUserId => _storage.user?.id ?? 0;
 
-  List<ChatRoomModel> get tourGroupChats => chatRooms.where((r) => r.isGroup && r.scheduleId != null).toList();
-  List<ChatRoomModel> get directChats => chatRooms.where((r) => !r.isGroup).toList();
+  List<ChatRoomModel> get tourGroupChats =>
+      chatRooms.where((r) => r.isGroup && r.scheduleId != null).toList();
+  List<ChatRoomModel> get directChats =>
+      chatRooms.where((r) => !r.isGroup).toList();
 
   int get unreadChatCount =>
       chatRooms.fold<int>(0, (sum, room) => sum + room.unreadCount);
@@ -446,7 +462,8 @@ class SocialController extends GetxController {
     isSearchingUsers.value = true;
     try {
       final result = await _service.searchUsers(query: normalized);
-      searchResults.assignAll(result.data.where((user) => user.id != currentUserId));
+      searchResults
+          .assignAll(result.data.where((user) => user.id != currentUserId));
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
@@ -456,12 +473,22 @@ class SocialController extends GetxController {
 
   Future<void> fetchFriends() async {
     isFriendsLoading.value = true;
-    try { friends.assignAll(await _service.getFriends()); } catch (_) {} finally { isFriendsLoading.value = false; }
+    try {
+      friends.assignAll(await _service.getFriends());
+    } catch (_) {
+    } finally {
+      isFriendsLoading.value = false;
+    }
   }
 
   Future<void> fetchPendingRequests() async {
     isRequestsLoading.value = true;
-    try { pendingRequests.assignAll(await _service.getPendingRequests()); } catch (_) {} finally { isRequestsLoading.value = false; }
+    try {
+      pendingRequests.assignAll(await _service.getPendingRequests());
+    } catch (_) {
+    } finally {
+      isRequestsLoading.value = false;
+    }
   }
 
   Future<void> fetchSentRequests() async {
@@ -473,7 +500,8 @@ class SocialController extends GetxController {
   }
 
   bool isFriend(int userId) => friends.any((friend) => friend.userId == userId);
-  bool hasIncomingRequest(int userId) => pendingRequests.any((request) => request.senderId == userId);
+  bool hasIncomingRequest(int userId) =>
+      pendingRequests.any((request) => request.senderId == userId);
 
   Future<bool> sendFriendRequest(int receiverId) async {
     if (processingUserIds.contains(receiverId)) return false;
@@ -483,7 +511,11 @@ class SocialController extends GetxController {
       sentRequestUserIds.add(receiverId);
       SnackbarHelper.success('Đã gửi lời mời kết bạn');
       return true;
-    } catch (_) { return false; } finally { processingUserIds.remove(receiverId); }
+    } catch (_) {
+      return false;
+    } finally {
+      processingUserIds.remove(receiverId);
+    }
   }
 
   Future<bool> respondRequest(int requestId, bool accept) async {
@@ -494,7 +526,11 @@ class SocialController extends GetxController {
       pendingRequests.removeWhere((r) => r.id == requestId);
       if (accept) await fetchFriends();
       return true;
-    } catch (_) { return false; } finally { processingRequestIds.remove(requestId); }
+    } catch (_) {
+      return false;
+    } finally {
+      processingRequestIds.remove(requestId);
+    }
   }
 
   Future<bool> unfriend(int friendshipId) async {
@@ -504,7 +540,11 @@ class SocialController extends GetxController {
       await _service.unfriend(friendshipId);
       friends.removeWhere((f) => f.friendshipId == friendshipId);
       return true;
-    } catch (_) { return false; } finally { processingFriendshipIds.remove(friendshipId); }
+    } catch (_) {
+      return false;
+    } finally {
+      processingFriendshipIds.remove(friendshipId);
+    }
   }
 
   Future<ChatRoomModel?> createDirectChat(int friendId) async {
@@ -512,12 +552,19 @@ class SocialController extends GetxController {
       final room = await _service.createDirectChat(friendId);
       await fetchChatRooms();
       return room;
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> fetchChatRooms() async {
     isChatLoading.value = true;
-    try { chatRooms.assignAll(await _service.getChatRooms()); } catch (_) {} finally { isChatLoading.value = false; }
+    try {
+      chatRooms.assignAll(await _service.getChatRooms());
+    } catch (_) {
+    } finally {
+      isChatLoading.value = false;
+    }
   }
 
   Future<void> markChatRoomAsRead(int roomId) async {
@@ -544,7 +591,8 @@ class SocialController extends GetxController {
     try {
       final pos = await LocationHelper.getCurrentPosition();
       if (pos != null) {
-        await _service.pingLocation(lat: pos.latitude, lng: pos.longitude, scheduleId: scheduleId);
+        await _service.pingLocation(
+            lat: pos.latitude, lng: pos.longitude, scheduleId: scheduleId);
       }
     } catch (_) {}
   }
@@ -557,13 +605,18 @@ class SocialController extends GetxController {
     }
     if (!_momentsHasMore) return;
 
-    if (refresh) isMomentsLoading.value = true;
-    else isMomentsLoadingMore.value = true;
+    if (refresh)
+      isMomentsLoading.value = true;
+    else
+      isMomentsLoadingMore.value = true;
 
     try {
-      final data = await _service.getMoments(scheduleId: scheduleId, skip: _momentsSkip, top: 10);
-      if (refresh) moments.assignAll(data);
-      else moments.addAll(data);
+      final data = await _service.getMoments(
+          scheduleId: scheduleId, skip: _momentsSkip, top: 10);
+      if (refresh)
+        moments.assignAll(data);
+      else
+        moments.addAll(data);
 
       _momentsSkip += 10;
       if (data.length < 10) _momentsHasMore = false;
@@ -579,7 +632,8 @@ class SocialController extends GetxController {
     await loadFeed();
   }
 
-  Future<bool> shareMoment(String imagePath, int? scheduleId, double lat, double lng, String? caption, String privacy) async {
+  Future<bool> shareMoment(String imagePath, int? scheduleId, double lat,
+      double lng, String? caption, String privacy) async {
     isSharingMoment.value = true;
     try {
       await _service.createMoment(
@@ -589,8 +643,7 @@ class SocialController extends GetxController {
           lat: lat,
           lng: lng,
           caption: caption,
-          privacy: privacy
-      );
+          privacy: privacy);
       // POST da xong (moment da luu) -> dong man + bao thanh cong NGAY,
       // KHONG cho loadFeed (tranh quay loading mai du da dang thanh cong).
       isSharingMoment.value = false;
@@ -610,7 +663,8 @@ class SocialController extends GetxController {
     }
   }
 
-  Future<MomentModel> getMomentById(int id) async => await _service.getMomentById(id);
+  Future<MomentModel> getMomentById(int id) async =>
+      await _service.getMomentById(id);
 
   /// Like/Unlike moment với CẬP NHẬT LẠC QUAN: đổi UI ngay rồi mới gọi API,
   /// nếu lỗi thì revert lại trạng thái cũ. Giúp nút tim phản hồi tức thì ở feed.
@@ -618,7 +672,8 @@ class SocialController extends GetxController {
     // CHẨN ĐOÁN: userId này PHẢI trùng với user trong JWT thì BE mới tính
     // isLikedByMe đúng khi load lại feed (endpoint reactions lấy userId từ body).
     if (currentUserId == 0) {
-      SnackbarHelper.error('Account not verified (userId=0). Please log in again.');
+      SnackbarHelper.error(
+          'Account not verified (userId=0). Please log in again.');
       return;
     }
 
@@ -631,8 +686,9 @@ class SocialController extends GetxController {
       if (previous.isLikedByMe == isLike) {
         return;
       }
-      final newCount =
-      (previous.reactionCount + (isLike ? 1 : -1)).clamp(0, 1 << 30).toInt();
+      final newCount = (previous.reactionCount + (isLike ? 1 : -1))
+          .clamp(0, 1 << 30)
+          .toInt();
       moments[idx] = previous.copyWith(
         isLikedByMe: isLike,
         reactionCount: newCount,
@@ -658,25 +714,30 @@ class SocialController extends GetxController {
     }
   }
 
-  Future<SocialCommentModel?> commentMoment(int momentId, String content) async {
+  Future<SocialCommentModel?> commentMoment(
+      int momentId, String content) async {
     if (currentUserId == 0) {
-      SnackbarHelper.error('Account not verified (userId=0). Please log in again.');
+      SnackbarHelper.error(
+          'Account not verified (userId=0). Please log in again.');
       return null;
     }
     try {
-      final newComment = await _service.addComment(momentId, content, currentUserId);
+      final newComment =
+          await _service.addComment(momentId, content, currentUserId);
       if (newComment != null) {
         // Điền thông tin user hiện tại nếu server chưa kịp trả về tên/avatar (hoặc khi chưa đồng bộ)
         final commentWithUser = SocialCommentModel(
           id: newComment.id,
           momentId: newComment.momentId,
           userId: newComment.userId,
-          userName: (newComment.userName != null && newComment.userName!.isNotEmpty)
-              ? newComment.userName
-              : (_storage.user?.fullName ?? 'You'),
-          avatarUrl: (newComment.avatarUrl != null && newComment.avatarUrl!.isNotEmpty)
-              ? newComment.avatarUrl
-              : _storage.user?.avatarUrl,
+          userName:
+              (newComment.userName != null && newComment.userName!.isNotEmpty)
+                  ? newComment.userName
+                  : (_storage.user?.fullName ?? 'You'),
+          avatarUrl:
+              (newComment.avatarUrl != null && newComment.avatarUrl!.isNotEmpty)
+                  ? newComment.avatarUrl
+                  : _storage.user?.avatarUrl,
           comment: newComment.comment,
           timestamp: newComment.timestamp,
         );
@@ -685,7 +746,9 @@ class SocialController extends GetxController {
         final idx = moments.indexWhere((m) => m.id == momentId);
         if (idx >= 0) {
           final previous = moments[idx];
-          final updatedComments = List<SocialCommentModel>.from(previous.comments)..add(commentWithUser);
+          final updatedComments =
+              List<SocialCommentModel>.from(previous.comments)
+                ..add(commentWithUser);
           moments[idx] = previous.copyWith(comments: updatedComments);
           moments.refresh();
         }
@@ -707,10 +770,12 @@ class SocialController extends GetxController {
 
       // Đồng bộ cục bộ trên feed của SocialController
       for (int i = 0; i < moments.length; i++) {
-        final commentIdx = moments[i].comments.indexWhere((c) => c.id == commentId);
+        final commentIdx =
+            moments[i].comments.indexWhere((c) => c.id == commentId);
         if (commentIdx >= 0) {
           final previous = moments[i];
-          final updatedComments = List<SocialCommentModel>.from(previous.comments);
+          final updatedComments =
+              List<SocialCommentModel>.from(previous.comments);
           final oldComment = updatedComments[commentIdx];
           updatedComments[commentIdx] = SocialCommentModel(
             id: oldComment.id,
@@ -739,7 +804,8 @@ class SocialController extends GetxController {
       for (int i = 0; i < moments.length; i++) {
         if (moments[i].comments.any((c) => c.id == commentId)) {
           final previous = moments[i];
-          final updatedComments = previous.comments.where((c) => c.id != commentId).toList();
+          final updatedComments =
+              previous.comments.where((c) => c.id != commentId).toList();
           moments[i] = previous.copyWith(comments: updatedComments);
           moments.refresh();
           break;
@@ -780,7 +846,8 @@ class SocialController extends GetxController {
         for (int i = 0; i < moments.length; i++) {
           if (moments[i].comments.any((c) => c.id == targetId)) {
             final previous = moments[i];
-            final updatedComments = previous.comments.where((c) => c.id != targetId).toList();
+            final updatedComments =
+                previous.comments.where((c) => c.id != targetId).toList();
             moments[i] = previous.copyWith(comments: updatedComments);
             moments.refresh();
             break;
@@ -798,7 +865,6 @@ class SocialController extends GetxController {
     }
   }
 }
-
 
 class BookingPassengerInput {
   final int tourScheduleTicketId;
@@ -913,10 +979,12 @@ class BookingController extends GetxController {
   String ticketTypeName(int ticketTypeId) {
     final name = ticketTypeNames[ticketTypeId]?.trim();
     if (name != null && name.isNotEmpty) return name;
-    
-    final fallback = tickets.firstWhereOrNull((t) => t.ticketTypeId == ticketTypeId)?.ticketTypeName;
+
+    final fallback = tickets
+        .firstWhereOrNull((t) => t.ticketTypeId == ticketTypeId)
+        ?.ticketTypeName;
     if (fallback != null && fallback.trim().isNotEmpty) return fallback.trim();
-    
+
     return 'Loại vé #$ticketTypeId';
   }
 
@@ -933,11 +1001,11 @@ class BookingController extends GetxController {
           final ticketType = await _catalogService.getTicketTypeById(id);
           final name = ticketType.name.trim();
           if (name.isEmpty) return null;
-          
+
           String formattedName = name;
           final min = ticketType.minAge ?? 0;
           final max = ticketType.maxAge ?? 0;
-          
+
           if (min > 0 && max > 0 && max < 99) {
             formattedName = '$name (Từ $min - $max tuổi)';
           } else if (max > 0 && max < 99) {
@@ -945,7 +1013,7 @@ class BookingController extends GetxController {
           } else if (min > 0) {
             formattedName = '$name (Từ $min tuổi trở lên)';
           }
-          
+
           return MapEntry(id, formattedName);
         } catch (_) {
           return null;
@@ -959,10 +1027,10 @@ class BookingController extends GetxController {
   void setTicketQty(int ticketId, int qty) {
     final ticket = tickets.firstWhereOrNull((t) => t.id == ticketId);
     if (ticket == null) return;
-    
+
     final currentTotal = totalPassengers;
     final oldQty = ticketQuantities[ticketId] ?? 0;
-    
+
     if (qty > oldQty) {
       final diff = qty - oldQty;
       if (currentTotal + diff > 9) {
@@ -970,7 +1038,7 @@ class BookingController extends GetxController {
         qty = oldQty + (9 - currentTotal);
       }
     }
-    
+
     final max = ticket.availableQuantity;
     ticketQuantities[ticketId] = qty.clamp(0, max);
     discountAmount.value = 0;
@@ -1065,13 +1133,13 @@ class BookingController extends GetxController {
         'tickets': entry.value
             .map(
               (p) => {
-            'attendeeName': p['attendeeName'],
-            'idCard': p['idCard'],
-            'dateOfBirth': p['dateOfBirth'],
-            'gender': p['gender'],
-            'nationality': p['nationality'],
-          },
-        )
+                'attendeeName': p['attendeeName'],
+                'idCard': p['idCard'],
+                'dateOfBirth': p['dateOfBirth'],
+                'gender': p['gender'],
+                'nationality': p['nationality'],
+              },
+            )
             .toList(),
       });
     }

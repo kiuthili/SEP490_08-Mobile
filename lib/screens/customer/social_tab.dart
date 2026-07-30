@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
+import '../../controllers/shell_controller.dart';
 import '../../models/social_models.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
@@ -11,6 +12,8 @@ import '../../widgets/comment_bottom_sheet.dart';
 import '../../widgets/moment_card.dart';
 import '../../utils/snackbar_helper.dart';
 import 'friend_management_panel.dart';
+import 'my_profile_panel.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class SocialTab extends StatefulWidget {
   const SocialTab({super.key});
@@ -19,7 +22,8 @@ class SocialTab extends StatefulWidget {
   State<SocialTab> createState() => _SocialTabState();
 }
 
-class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMixin {
+class _SocialTabState extends State<SocialTab>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
@@ -27,7 +31,7 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _social.fetchFriends();
     _social.fetchPendingRequests();
     _social.fetchChatRooms();
@@ -55,7 +59,7 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
         actions: [
           IconButton(
             tooltip: 'Social Map',
-            onPressed: () => Get.toNamed(AppRoutes.socialMap),
+            onPressed: () => Get.find<ShellController>().changeTab(0),
             icon: const Icon(Icons.map_outlined),
           ),
           IconButton(
@@ -65,23 +69,46 @@ class _SocialTabState extends State<SocialTab> with SingleTickerProviderStateMix
           ),
           const SizedBox(width: 6),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Friends'),
-            Tab(text: 'Moments'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                dividerColor: Colors.transparent,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  color: AppColors.brand,
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: Colors.white,
+                unselectedLabelColor: AppColors.textSecondary,
+                splashBorderRadius: BorderRadius.circular(AppRadius.lg),
+                tabs: const [
+                  Tab(text: 'Lướt'),
+                  Tab(text: 'Bạn bè'),
+                  Tab(text: 'Cá nhân'),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
+          _MomentsPanel(social: _social),
           FriendManagementPanel(
             social: _social,
             searchController: _searchController,
           ),
-          _MomentsPanel(social: _social),
+          const MyProfilePanel(),
         ],
       ),
     );
@@ -105,7 +132,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     super.initState();
     widget.social.loadFeed(refresh: true);
     _pageController.addListener(() {
-      if (_pageController.position.pixels >= _pageController.position.maxScrollExtent - 200) {
+      if (_pageController.position.pixels >=
+          _pageController.position.maxScrollExtent - 200) {
         widget.social.loadMoreFeed();
       }
     });
@@ -134,7 +162,10 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               children: [
                 const Text(
                   'Send to',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
                 ),
                 IconButton(
                   onPressed: () => Get.back(),
@@ -149,36 +180,44 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
-                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Conversation';
-                  
+                  final roomName =
+                      (room.name != null && room.name!.trim().isNotEmpty)
+                          ? room.name!
+                          : 'Conversation';
+
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       backgroundColor: AppColors.brandLight,
-                      backgroundImage: (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
-                          ? CachedNetworkImageProvider(room.avatarUrl!)
-                          : null,
+                      backgroundImage:
+                          (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
+                              ? CachedNetworkImageProvider(room.avatarUrl!)
+                              : null,
                       child: (room.avatarUrl == null || room.avatarUrl!.isEmpty)
-                          ? const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.brand)
+                          ? const Icon(Icons.chat_bubble_outline_rounded,
+                              color: AppColors.brand)
                           : null,
                     ),
                     title: Text(
                       roomName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
                       room.isGroup ? 'Tour Group' : 'Direct Chat',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textTertiary),
                     ),
-                    trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
+                    trailing: const Icon(Icons.send_rounded,
+                        color: AppColors.brand, size: 20),
                     onTap: () async {
                       Get.back(); // Đóng bottom sheet
                       final shareText = '[MomentShare:${jsonEncode({
-                        'id': moment.id,
-                        'imageUrl': moment.imageUrl,
-                        'caption': moment.caption ?? '',
-                      })}]';
-                      
+                            'id': moment.id,
+                            'imageUrl': moment.imageUrl,
+                            'caption': moment.caption ?? '',
+                          })}]';
+
                       await widget.social.sendChatMessage(room.id, shareText);
                       SnackbarHelper.success('Moment shared successfully');
                     },
@@ -204,9 +243,11 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     return RefreshIndicator(
       onRefresh: () => widget.social.loadFeed(refresh: true),
       child: Obx(() {
-        if (widget.social.isMomentsLoading.value && widget.social.moments.isEmpty) {
+        if (widget.social.isMomentsLoading.value &&
+            widget.social.moments.isEmpty) {
           return ListView.builder(
-            padding: const EdgeInsets.all(16).copyWith(bottom: ShellLayout.bottomInset(context)),
+            padding: const EdgeInsets.all(16)
+                .copyWith(bottom: ShellLayout.bottomInset(context)),
             itemCount: 3,
             itemBuilder: (_, __) => const _SkeletonPlaceholder(),
           );
@@ -224,10 +265,13 @@ class _MomentsPanelState extends State<_MomentsPanel> {
         return PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.vertical,
-          itemCount: widget.social.moments.length + (widget.social.isMomentsLoadingMore.value ? 1 : 0),
+          itemCount: widget.social.moments.length +
+              (widget.social.isMomentsLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == widget.social.moments.length) {
-              return const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: CircularProgressIndicator()));
+              return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CircularProgressIndicator()));
             }
             final m = widget.social.moments[index];
             return MomentCard(
@@ -242,7 +286,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                   backgroundColor: Colors.transparent,
                 );
               },
-              onReport: (id) => _showReportDialog(context, 'Moment', id, widget.social),
+              onReport: (id) =>
+                  _showReportDialog(context, 'Moment', id, widget.social),
               onShare: () => _shareMoment(m),
             );
           },
@@ -251,7 +296,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     );
   }
 
-  void _showReportDialog(BuildContext context, String contentType, int targetId, SocialController social) {
+  void _showReportDialog(BuildContext context, String contentType, int targetId,
+      SocialController social) {
     String selectedReason = 'Spam';
     final detailsController = TextEditingController();
     var isSending = false;
@@ -262,20 +308,28 @@ class _MomentsPanelState extends State<_MomentsPanel> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
+              title: Text(
+                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(labelText: 'Reason for reporting'),
+                      decoration: const InputDecoration(
+                          labelText: 'Reason for reporting'),
                       items: const [
-                        DropdownMenuItem(value: 'Spam', child: Text('Spam / Advertisement')),
-                        DropdownMenuItem(value: 'Hate Speech', child: Text('Hate Speech')),
-                        DropdownMenuItem(value: 'Harassment', child: Text('Harassment / Threats')),
-                        DropdownMenuItem(value: 'Violence', child: Text('Violence / Gore')),
-                        DropdownMenuItem(value: 'Other', child: Text('Other reason')),
+                        DropdownMenuItem(
+                            value: 'Spam', child: Text('Spam / Advertisement')),
+                        DropdownMenuItem(
+                            value: 'Hate Speech', child: Text('Hate Speech')),
+                        DropdownMenuItem(
+                            value: 'Harassment',
+                            child: Text('Harassment / Threats')),
+                        DropdownMenuItem(
+                            value: 'Violence', child: Text('Violence / Gore')),
+                        DropdownMenuItem(
+                            value: 'Other', child: Text('Other reason')),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -310,7 +364,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                             contentType: contentType,
                             targetId: targetId,
                             reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                            details: detailsController.text.trim().isNotEmpty
+                                ? detailsController.text.trim()
+                                : null,
                           );
                           setDialogState(() => isSending = false);
                           if (ok) {
@@ -321,7 +377,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Submit Report'),
                 ),
@@ -367,7 +424,7 @@ class _SkeletonPlaceholderState extends State<_SkeletonPlaceholder> {
         height: 250,
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.separator),
         ),
       ),

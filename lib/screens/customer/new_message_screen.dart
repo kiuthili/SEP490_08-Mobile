@@ -9,6 +9,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class NewMessageScreen extends StatefulWidget {
   const NewMessageScreen({super.key});
@@ -63,9 +64,10 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
                 hintText: 'Tìm kiếm bạn bè theo tên hoặc email...',
                 filled: true,
                 fillColor: AppColors.surfaceGrouped,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   borderSide: BorderSide.none,
                 ),
                 prefixIcon: const Icon(Icons.search_rounded),
@@ -84,7 +86,8 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
           Expanded(
             child: Obx(() {
               if (_social.isLoading.value && _social.friends.isEmpty) {
-                return const LoadingWidget(message: 'Đang tải danh sách bạn bè...');
+                return const LoadingWidget(
+                    message: 'Đang tải danh sách bạn bè...');
               }
               if (_social.friends.isEmpty) {
                 return const EmptyStateWidget(
@@ -141,12 +144,12 @@ class _FriendListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(

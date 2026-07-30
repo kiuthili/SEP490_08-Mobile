@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../utils/validators.dart';
 import '../widgets/auth_page_layout.dart';
 import '../widgets/auth_widgets.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 enum _RegisterStep { info, verifyOtp }
 
@@ -296,12 +297,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.brandLight,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.info_outline_rounded, color: AppColors.brand, size: 20),
+              Icon(Icons.info_outline_rounded,
+                  color: AppColors.brand, size: 20),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -355,23 +357,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fillColor: const Color(0xFFF8F9FF),
             contentPadding: const EdgeInsets.symmetric(vertical: 18),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error, width: 1.5),
             ),
           ),
@@ -381,10 +383,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // ── Resend button ───────────────────────────────
         Center(
           child: TextButton(
-            onPressed:
-                (_countdown > 0 || _sendingOtp || _auth.isLoading.value)
-                    ? null
-                    : _resendCode,
+            onPressed: (_countdown > 0 || _sendingOtp || _auth.isLoading.value)
+                ? null
+                : _resendCode,
             style: TextButton.styleFrom(
               foregroundColor: AppColors.brand,
               disabledForegroundColor: AppColors.textSecondary,
@@ -468,8 +469,8 @@ class _PhoneInputField extends StatelessWidget {
             counterText: '',
             hintText: 'Nhập số điện thoại',
             hintStyle: TextStyle(fontSize: 15, color: Colors.grey.shade400),
-            prefixIcon:
-                Icon(Icons.phone_outlined, size: 20, color: Colors.grey.shade400),
+            prefixIcon: Icon(Icons.phone_outlined,
+                size: 20, color: Colors.grey.shade400),
             filled: true,
             fillColor: const Color(0xFFF8F9FF),
             contentPadding: const EdgeInsets.symmetric(
@@ -477,23 +478,23 @@ class _PhoneInputField extends StatelessWidget {
               vertical: 16,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: BorderSide(color: Colors.grey.shade200),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               borderSide: const BorderSide(color: AppColors.error, width: 1.5),
             ),
           ),
@@ -525,7 +526,7 @@ class _TermsCheckbox extends StatelessWidget {
             activeColor: AppColors.brand,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
             ),
           ),
         ),
@@ -550,8 +551,7 @@ class _TermsCheckbox extends StatelessWidget {
               ),
               const Text(
                 ' và ',
-                style:
-                    TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.privacy),
@@ -581,7 +581,7 @@ class _LoginFooter extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
@@ -595,7 +595,7 @@ class _LoginFooter extends StatelessWidget {
                   height: 38,
                   decoration: BoxDecoration(
                     color: AppColors.brand.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Icon(
                     Icons.login_rounded,
@@ -638,7 +638,7 @@ class _LoginFooter extends StatelessWidget {
               backgroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 side: const BorderSide(color: AppColors.brand, width: 1.2),
               ),
             ),

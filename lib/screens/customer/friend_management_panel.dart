@@ -61,6 +61,9 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
   }
 
   void _onSearchChanged(String value) {
+    if (value.isNotEmpty && _view != _FriendView.search) {
+      setState(() => _view = _FriendView.search);
+    }
     setState(() {});
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 500), () {
@@ -118,9 +121,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(child: _summaryCard()),
+          SliverToBoxAdapter(child: _searchField()),
           SliverToBoxAdapter(child: _viewSelector()),
-          if (_view == _FriendView.search)
-            SliverToBoxAdapter(child: _searchField()),
           Obx(_buildContent),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
@@ -196,65 +198,64 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       child: Obx(
         () => SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: SegmentedButton<_FriendView>(
-            style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith(
-                (states) => states.contains(WidgetState.selected)
-                    ? AppColors.brand
-                    : AppColors.surfaceElevated,
+          child: Row(
+            children: [
+              _buildFilterChip(
+                _FriendView.friends,
+                'Bạn bè',
+                Icons.people_outline_rounded,
               ),
-              foregroundColor: WidgetStateProperty.resolveWith(
-                (states) => states.contains(WidgetState.selected)
-                    ? Colors.white
-                    : AppColors.brand,
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                _FriendView.requests,
+                social.pendingRequests.isEmpty
+                    ? 'Lời mời nhận'
+                    : 'Lời mời nhận (${social.pendingRequests.length})',
+                Icons.person_add_alt_1_rounded,
               ),
-              iconColor: WidgetStateProperty.resolveWith(
-                (states) => states.contains(WidgetState.selected)
-                    ? Colors.white
-                    : AppColors.brand,
-              ),
-              side: WidgetStateProperty.all(
-                const BorderSide(color: AppColors.brand),
-              ),
-            ),
-            segments: [
-              const ButtonSegment(
-                value: _FriendView.friends,
-                icon: Icon(Icons.people_outline_rounded),
-                label: Text('Bạn bè'),
-              ),
-              ButtonSegment(
-                value: _FriendView.requests,
-                icon: const Icon(Icons.person_add_alt_1_rounded),
-                label: Text(
-                  social.pendingRequests.isEmpty
-                      ? 'Lời mời nhận'
-                      : 'Lời mời nhận (${social.pendingRequests.length})',
-                ),
-              ),
-              ButtonSegment(
-                value: _FriendView.sent,
-                icon: const Icon(Icons.outbox_rounded),
-                label: Text(
-                  social.sentRequests.isEmpty
-                      ? 'Đã gửi'
-                      : 'Đã gửi (${social.sentRequests.length})',
-                ),
-              ),
-              const ButtonSegment(
-                value: _FriendView.search,
-                icon: Icon(Icons.search_rounded),
-                label: Text('Tìm kiếm'),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                _FriendView.sent,
+                social.sentRequests.isEmpty
+                    ? 'Đã gửi'
+                    : 'Đã gửi (${social.sentRequests.length})',
+                Icons.outbox_rounded,
               ),
             ],
-            selected: {_view},
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) {
-              setState(() => _view = selection.first);
-            },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFilterChip(_FriendView value, String label, IconData icon) {
+    final isSelected = _view == value;
+    return ChoiceChip(
+      label: Text(label),
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: isSelected ? Colors.white : AppColors.brand,
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) setState(() => _view = value);
+      },
+      selectedColor: AppColors.brand,
+      backgroundColor: AppColors.surfaceElevated,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : AppColors.brand,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(
+          color: isSelected
+              ? AppColors.brand
+              : AppColors.brand.withValues(alpha: 0.2),
+        ),
+      ),
+      showCheckmark: false,
     );
   }
 
@@ -459,6 +460,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
               busy ? null : () => social.respondRequest(request.id, true),
           child: const Text('Chấp nhận'),
         ),
+        const SizedBox(width: 8),
         IconButton.outlined(
           tooltip: 'Từ chối',
           style: IconButton.styleFrom(
@@ -493,30 +495,34 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
             foregroundColor: AppColors.error,
             side: const BorderSide(color: AppColors.error),
           ),
-          onPressed: busy ? null : () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('Thu hồi yêu cầu'),
-                content: Text('Bạn có chắc muốn thu hồi yêu cầu kết bạn gửi đến ${request.senderName}?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
-                    child: const Text('Không'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(dialogContext, true),
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-                    child: const Text('Thu hồi'),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed == true) {
-              await social.unfriend(request.id);
-              await social.fetchSentRequests();
-            }
-          },
+          onPressed: busy
+              ? null
+              : () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Thu hồi yêu cầu'),
+                      content: Text(
+                          'Bạn có chắc muốn thu hồi yêu cầu kết bạn gửi đến ${request.senderName}?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('Không'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.error),
+                          child: const Text('Thu hồi'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await social.unfriend(request.id);
+                    await social.fetchSentRequests();
+                  }
+                },
           icon: const Icon(Icons.person_remove_outlined),
         ),
       ],

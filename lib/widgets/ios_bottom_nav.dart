@@ -86,8 +86,8 @@ class IosBottomNav extends StatelessWidget {
                         ),
                         decoration: selected
                             ? BoxDecoration(
-                                color: AppColors.brandLight
-                                    .withValues(alpha: 0.9),
+                                color:
+                                    AppColors.brandLight.withValues(alpha: 0.9),
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.pill,
                                 ),
@@ -109,9 +109,8 @@ class IosBottomNav extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 10,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
                           color: selected
                               ? AppColors.brand
                               : AppColors.textSecondary,

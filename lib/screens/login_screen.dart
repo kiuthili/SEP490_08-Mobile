@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../utils/validators.dart';
 import '../widgets/auth_widgets.dart';
 import '../widgets/stayhub_logo.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,7 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(24, topPadding + 24, 24, 24 + bottomPadding),
+        padding:
+            EdgeInsets.fromLTRB(24, topPadding + 24, 24, 24 + bottomPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -166,7 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Divider "Hoặc"
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
+                      Expanded(
+                          child: Divider(
+                              color: Colors.grey.shade200, thickness: 1)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Text(
@@ -178,7 +182,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.grey.shade200, thickness: 1)),
+                      Expanded(
+                          child: Divider(
+                              color: Colors.grey.shade200, thickness: 1)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -201,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
                 boxShadow: [
                   BoxShadow(
@@ -220,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 44,
                         decoration: BoxDecoration(
                           color: AppColors.brand.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: const Icon(
                           Icons.person_add_alt_1_rounded,
@@ -264,11 +270,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         arguments: Get.arguments,
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.brand, width: 1.5),
+                        side: const BorderSide(
+                            color: AppColors.brand, width: 1.5),
                         foregroundColor: AppColors.brand,
                         backgroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                       ),
                       child: const Text(

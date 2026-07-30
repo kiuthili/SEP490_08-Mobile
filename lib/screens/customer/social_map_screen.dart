@@ -35,12 +35,12 @@ import '../../models/social_models.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 // Bảng màu thương hiệu (đồng bộ với web: brand #0068E0).
-const Color _kBrand = Color(0xFF0068E0);
+const Color _kBrand = AppColors.brand;
 const Color _kBrandDark = Color(0xFF0050B3);
-
-
 
 class SocialMapScreen extends StatelessWidget {
   const SocialMapScreen({super.key});
@@ -58,7 +58,7 @@ class SocialMapScreen extends StatelessWidget {
           onPressed: () => _showShareLinkDialog(c),
         ),
         Obx(
-              () => IconButton(
+          () => IconButton(
             tooltip: c.isSharingLocation.value
                 ? 'Sharing location - tap to stop'
                 : 'Share my location',
@@ -66,7 +66,7 @@ class SocialMapScreen extends StatelessWidget {
               c.isSharingLocation.value
                   ? Icons.location_on_rounded
                   : Icons.location_off_rounded,
-              color: c.isSharingLocation.value ? Colors.redAccent : null,
+              color: c.isSharingLocation.value ? AppColors.error : null,
             ),
             onPressed: c.toggleShareMyLocation,
           ),
@@ -95,23 +95,23 @@ class SocialMapScreen extends StatelessWidget {
 
             // ---- Overlay phải: control + layer toggle ----
             Obx(() => Positioned(
-              right: 12,
-              bottom: c.showTimeline.value ? 450 : 24,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _MapControls(c: c),
-                ],
-              ),
-            )),
+                  right: 12,
+                  bottom: c.showTimeline.value ? 450 : 24,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _MapControls(c: c),
+                    ],
+                  ),
+                )),
 
             // ---- Overlay trái: chú thích Heatmap ----
             Obx(() => Positioned(
-              left: 12,
-              bottom: c.showTimeline.value ? 450 : 24,
-              child: _HeatmapLegend(c: c),
-            )),
+                  left: 12,
+                  bottom: c.showTimeline.value ? 450 : 24,
+                  child: _HeatmapLegend(c: c),
+                )),
 
             // ---- Nút Chụp & đăng Moment (giữa dưới) ----
             Obx(() => c.showTimeline.value
@@ -137,17 +137,17 @@ class SocialMapScreen extends StatelessWidget {
 
             // ---- Thanh tiến trình mảnh khi đang tải nền ----
             Obx(
-                  () => c.isLoading.value
+              () => c.isLoading.value
                   ? const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: LinearProgressIndicator(
-                  minHeight: 2.5,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation(_kBrand),
-                ),
-              )
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: LinearProgressIndicator(
+                        minHeight: 2.5,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation(_kBrand),
+                      ),
+                    )
                   : const SizedBox.shrink(),
             ),
           ],
@@ -167,7 +167,8 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
   final url = '${ApiConstants.webUrl}/track/$token';
   await Get.dialog(
     AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       title: const Row(
         children: [
           Icon(Icons.share_location_rounded, color: _kBrand),
@@ -187,7 +188,7 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: _kBrand.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: _kBrand.withValues(alpha: 0.25)),
             ),
             child: SelectableText(
@@ -259,7 +260,7 @@ class _MapView extends StatelessWidget {
               data: c.heatPoints
                   .map(
                     (p) => WeightedLatLng(LatLng(p.lat, p.lng), p.weight),
-              )
+                  )
                   .toList(),
             ),
             heatMapOptions: HeatMapOptions(
@@ -385,7 +386,10 @@ class _MapView extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '${markers.length}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14),
                     ),
                   ),
                 );
@@ -493,8 +497,8 @@ class _MomentMarker extends StatelessWidget {
             ),
             errorWidget: (_, __, ___) => Container(
               color: Colors.grey.shade400,
-              child: const Icon(Icons.broken_image,
-                  size: 20, color: Colors.white),
+              child:
+                  const Icon(Icons.broken_image, size: 20, color: Colors.white),
             ),
           ),
         ),
@@ -565,9 +569,10 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
             margin: const EdgeInsets.only(bottom: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF059669), // Emerald 600
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF34D399), width: 1), // Emerald 400
+              color: AppColors.success, // Emerald 600
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border:
+                  Border.all(color: AppColors.success, width: 1), // Emerald 400
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 2),
               ],
@@ -598,7 +603,7 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                     height: 24 + 26 * t,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: (isStaff ? const Color(0xFF10B981) : _kBrand)
+                      color: (isStaff ? AppColors.success : _kBrand)
                           .withValues(alpha: (1 - t) * 0.35),
                     ),
                   );
@@ -610,9 +615,9 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isStaff ? const Color(0xFF10B981) : _kBrand,
+                  color: isStaff ? AppColors.success : _kBrand,
                   border: Border.all(
-                    color: isStaff ? const Color(0xFF10B981) : Colors.white,
+                    color: isStaff ? AppColors.success : Colors.white,
                     width: 2.5,
                   ),
                   boxShadow: const [
@@ -622,14 +627,14 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                 clipBehavior: Clip.antiAlias,
                 child: avatar != null
                     ? CachedNetworkImage(
-                  imageUrl: avatar,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => const Icon(
-                    Icons.person,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                )
+                        imageUrl: avatar,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => const Icon(
+                          Icons.person,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(Icons.person, size: 18, color: Colors.white),
               ),
             ],
@@ -640,7 +645,7 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.70),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
           child: Text(
             _name,
@@ -725,11 +730,12 @@ class _ScheduleSelectorBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       if (c.eligibleSchedules.isEmpty) return const SizedBox.shrink();
-      
-      final selectedSchedule = c.eligibleSchedules.firstWhereOrNull(
-        (s) => s.scheduleId == c.selectedScheduleId.value
-      );
-      final label = c.selectedScheduleId.value == 0 ? 'All Trips' : (selectedSchedule?.tourName ?? 'All Trips');
+
+      final selectedSchedule = c.eligibleSchedules
+          .firstWhereOrNull((s) => s.scheduleId == c.selectedScheduleId.value);
+      final label = c.selectedScheduleId.value == 0
+          ? 'All Trips'
+          : (selectedSchedule?.tourName ?? 'All Trips');
 
       return GestureDetector(
         onTap: () {
@@ -756,7 +762,8 @@ class _ScheduleSelectorBar extends StatelessWidget {
               const Icon(Icons.tour_rounded, size: 18, color: _kBrand),
               const SizedBox(width: 8),
               ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.5),
+                constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.5),
                 child: Text(
                   label,
                   maxLines: 1,
@@ -769,7 +776,8 @@ class _ScheduleSelectorBar extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.black54),
+              const Icon(Icons.keyboard_arrow_down_rounded,
+                  size: 20, color: Colors.black54),
             ],
           ),
         ),
@@ -806,14 +814,17 @@ void _showTourSelector(BuildContext context, SocialMapController c) {
                   final isAllTrips = c.selectedScheduleId.value == 0;
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: isAllTrips ? _kBrand : Colors.grey.shade200,
+                      backgroundColor:
+                          isAllTrips ? _kBrand : Colors.grey.shade200,
                       child: Icon(Icons.public_rounded,
-                          color: isAllTrips ? Colors.white : Colors.black54, size: 20),
+                          color: isAllTrips ? Colors.white : Colors.black54,
+                          size: 20),
                     ),
                     title: Text(
                       'All Trips',
                       style: TextStyle(
-                        fontWeight: isAllTrips ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isAllTrips ? FontWeight.bold : FontWeight.normal,
                         color: isAllTrips ? _kBrand : Colors.black87,
                       ),
                     ),
@@ -827,26 +838,30 @@ void _showTourSelector(BuildContext context, SocialMapController c) {
                     },
                   );
                 }),
-                
+
                 // Real Schedules
                 ...c.eligibleSchedules.map((s) {
                   return Obx(() {
                     final selected = c.selectedScheduleId.value == s.scheduleId;
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: selected ? _kBrand : Colors.grey.shade200,
+                        backgroundColor:
+                            selected ? _kBrand : Colors.grey.shade200,
                         child: Icon(Icons.tour_rounded,
-                            color: selected ? Colors.white : Colors.black54, size: 20),
+                            color: selected ? Colors.white : Colors.black54,
+                            size: 20),
                       ),
                       title: Text(
                         s.tourName,
                         style: TextStyle(
-                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              selected ? FontWeight.bold : FontWeight.normal,
                           color: selected ? _kBrand : Colors.black87,
                         ),
                       ),
                       trailing: selected
-                          ? const Icon(Icons.check_circle_rounded, color: _kBrand)
+                          ? const Icon(Icons.check_circle_rounded,
+                              color: _kBrand)
                           : null,
                       onTap: () {
                         HapticFeedback.selectionClick();
@@ -892,8 +907,9 @@ class _DaySelectorBar extends StatelessWidget {
             final bool selected = isOverview
                 ? c.selectedDay.value == null
                 : c.selectedDay.value == c.routeDays[i - 1].dayNumber;
-            
-            final String label = isOverview ? 'Overview' : 'Day ${c.routeDays[i - 1].dayNumber}';
+
+            final String label =
+                isOverview ? 'Overview' : 'Day ${c.routeDays[i - 1].dayNumber}';
 
             return GestureDetector(
               onTap: () {
@@ -906,11 +922,11 @@ class _DaySelectorBar extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? _kBrand
-                      : Colors.white.withValues(alpha: 0.9),
+                  color:
+                      selected ? _kBrand : Colors.white.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: const [
                     BoxShadow(color: Colors.black12, blurRadius: 3),
@@ -966,11 +982,11 @@ class _MapControls extends StatelessWidget {
           ),
           const _CtrlDivider(),
           Obx(() => _CtrlBtn(
-            icon: Icons.history_rounded,
-            tooltip: 'Journey Timeline',
-            color: c.showTimeline.value ? _kBrand : null,
-            onTap: () => c.showTimeline.toggle(),
-          )),
+                icon: Icons.history_rounded,
+                tooltip: 'Journey Timeline',
+                color: c.showTimeline.value ? _kBrand : null,
+                onTap: () => c.showTimeline.toggle(),
+              )),
           const _CtrlDivider(),
           _CtrlBtn(
             icon: Icons.add_rounded,
@@ -1013,7 +1029,7 @@ class _CtrlBtn extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
@@ -1035,7 +1051,7 @@ void _showLayersSheet(BuildContext context, SocialMapController c) {
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1061,52 +1077,53 @@ void _showLayersSheet(BuildContext context, SocialMapController c) {
             alignment: WrapAlignment.center,
             children: [
               Obx(() => _LayerButton(
-                icon: Icons.people_alt_rounded,
-                label: 'Friends',
-                active: c.showLiveLocations.value,
-                onTap: c.showLiveLocations.toggle,
-              )),
+                    icon: Icons.people_alt_rounded,
+                    label: 'Friends',
+                    active: c.showLiveLocations.value,
+                    onTap: c.showLiveLocations.toggle,
+                  )),
               Obx(() => _LayerButton(
-                icon: c.showMoments.value
-                    ? Icons.photo_library_rounded
-                    : Icons.hide_image_rounded,
-                label: 'Moments',
-                active: c.showMoments.value,
-                onTap: c.showMoments.toggle,
-              )),
+                    icon: c.showMoments.value
+                        ? Icons.photo_library_rounded
+                        : Icons.hide_image_rounded,
+                    label: 'Moments',
+                    active: c.showMoments.value,
+                    onTap: c.showMoments.toggle,
+                  )),
               Obx(() => _LayerButton(
-                icon: Icons.route_rounded,
-                label: 'Route',
-                active: c.showRoute.value,
-                onTap: c.showRoute.toggle,
-              )),
+                    icon: Icons.route_rounded,
+                    label: 'Route',
+                    active: c.showRoute.value,
+                    onTap: c.showRoute.toggle,
+                  )),
               Obx(() => _LayerButton(
-                icon: Icons.terrain_rounded,
-                label: 'Footprints',
-                active: c.showFootprints.value,
-                loading: c.isFootprintsLoading.value,
-                onTap: c.toggleFootprints,
-              )),
+                    icon: Icons.terrain_rounded,
+                    label: 'Footprints',
+                    active: c.showFootprints.value,
+                    loading: c.isFootprintsLoading.value,
+                    onTap: c.toggleFootprints,
+                  )),
               Obx(() => _LayerButton(
-                icon: Icons.local_fire_department_rounded,
-                label: 'Heatmap',
-                active: c.showHeatmap.value,
-                loading: c.isHeatmapLoading.value,
-                onTap: () {
-                  c.toggleHeatmap();
-                  if (c.showHeatmap.value) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Long press the Heatmap button for options'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
-                onLongPress: () {
-                  _showHeatmapSettings(context, c);
-                },
-              )),
+                    icon: Icons.local_fire_department_rounded,
+                    label: 'Heatmap',
+                    active: c.showHeatmap.value,
+                    loading: c.isHeatmapLoading.value,
+                    onTap: () {
+                      c.toggleHeatmap();
+                      if (c.showHeatmap.value) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'Long press the Heatmap button for options'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    onLongPress: () {
+                      _showHeatmapSettings(context, c);
+                    },
+                  )),
             ],
           ),
           const SizedBox(height: 16),
@@ -1120,7 +1137,8 @@ void _showHeatmapSettings(BuildContext context, SocialMapController c) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (context) {
       return Padding(
         padding: const EdgeInsets.all(20),
@@ -1128,38 +1146,46 @@ void _showHeatmapSettings(BuildContext context, SocialMapController c) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Heatmap Settings', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Heatmap Settings',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            const Text('Data Source', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Data Source',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Obx(() => Row(
-              children: [
-                Expanded(child: _buildTypeOption(c, 'all', 'All Data')),
-                const SizedBox(width: 8),
-                Expanded(child: _buildTypeOption(c, 'online', 'Online')),
-                const SizedBox(width: 8),
-                Expanded(child: _buildTypeOption(c, 'moments', 'Moments')),
-              ],
-            )),
+                  children: [
+                    Expanded(child: _buildTypeOption(c, 'all', 'All Data')),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildTypeOption(c, 'online', 'Online')),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildTypeOption(c, 'moments', 'Moments')),
+                  ],
+                )),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Radius & Intensity', style: TextStyle(fontWeight: FontWeight.bold)),
-                Obx(() => Text('${c.heatmapRadius.value.toInt()}', style: const TextStyle(color: _kBrand, fontWeight: FontWeight.bold))),
+                const Text('Radius & Intensity',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Obx(() => Text('${c.heatmapRadius.value.toInt()}',
+                    style: const TextStyle(
+                        color: _kBrand, fontWeight: FontWeight.bold))),
               ],
             ),
             Obx(() => Slider(
-              value: c.heatmapRadius.value,
-              min: 10,
-              max: 100,
-              activeColor: _kBrand,
-              inactiveColor: _kBrand.withValues(alpha: 0.2),
-              onChanged: (val) {
-                c.heatmapRadius.value = val;
-                c.loadHeatmap();
-              },
-            )),
+                  value: c.heatmapRadius.value,
+                  min: 10,
+                  max: 100,
+                  activeColor: _kBrand,
+                  inactiveColor: _kBrand.withValues(alpha: 0.2),
+                  onChanged: (val) {
+                    c.heatmapRadius.value = val;
+                    c.loadHeatmap();
+                  },
+                )),
             const SizedBox(height: 20),
           ],
         ),
@@ -1175,19 +1201,21 @@ Widget _buildTypeOption(SocialMapController c, String type, String label) {
       c.heatmapType.value = type;
       c.loadHeatmap();
     },
-    borderRadius: BorderRadius.circular(8),
+    borderRadius: BorderRadius.circular(AppRadius.xs),
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected ? _kBrand.withValues(alpha: 0.1) : Colors.grey.shade100,
+        color:
+            isSelected ? _kBrand.withValues(alpha: 0.1) : Colors.grey.shade100,
         border: Border.all(color: isSelected ? _kBrand : Colors.transparent),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       alignment: Alignment.center,
-      child: Text(label, style: TextStyle(
-        color: isSelected ? _kBrand : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      )),
+      child: Text(label,
+          style: TextStyle(
+            color: isSelected ? _kBrand : Colors.black87,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          )),
     ),
   );
 }
@@ -1213,21 +1241,21 @@ class _LayerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = active ? _kBrand : Colors.grey.shade500;
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       onTap: loading
           ? null
           : () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
+              HapticFeedback.selectionClick();
+              onTap();
+            },
       onLongPress: loading
           ? null
           : () {
-        if (onLongPress != null) {
-          HapticFeedback.heavyImpact();
-          onLongPress!();
-        }
-      },
+              if (onLongPress != null) {
+                HapticFeedback.heavyImpact();
+                onLongPress!();
+              }
+            },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         width: 62,
@@ -1235,19 +1263,19 @@ class _LayerButton extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 1),
         decoration: BoxDecoration(
           color: active ? _kBrand.withValues(alpha: 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Column(
           children: [
             loading
                 ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(_kBrand),
-              ),
-            )
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(_kBrand),
+                    ),
+                  )
                 : Icon(icon, color: color, size: 22),
             const SizedBox(height: 3),
             Text(
@@ -1291,7 +1319,12 @@ class _HeatmapLegend extends StatelessWidget {
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.all(Radius.circular(4)),
                 gradient: LinearGradient(
-                  colors: [Colors.blue, Colors.green, Colors.yellow, Colors.red],
+                  colors: [
+                    Colors.blue,
+                    AppColors.success,
+                    Colors.yellow,
+                    AppColors.error
+                  ],
                 ),
               ),
             ),
@@ -1342,7 +1375,8 @@ class _CaptureMomentButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 24),
+          child: const Icon(Icons.camera_alt_rounded,
+              color: Colors.white, size: 24),
         ),
       ),
     );
@@ -1463,12 +1497,12 @@ class _TimelinePanelState extends State<_TimelinePanel> {
   int _currentIndex = 0;
   Timer? _timer;
   bool _isPlaying = false;
-  
+
   // Smooth dragging physics states
   double _dragOffset = 0.0;
   double _targetOffset = 0.0;
   bool _isDragging = false;
-  
+
   // Autoplay speed states (1x = 3.0s, 2x = 1.5s, 3x = 1.0s)
   int _playbackSpeed = 1;
 
@@ -1524,9 +1558,11 @@ class _TimelinePanelState extends State<_TimelinePanel> {
       _isPlaying = true;
     });
     _timer?.cancel();
-    
-    final double intervalSeconds = _playbackSpeed == 1 ? 3.0 : (_playbackSpeed == 2 ? 1.5 : 1.0);
-    _timer = Timer.periodic(Duration(milliseconds: (intervalSeconds * 1000).toInt()), (timer) {
+
+    final double intervalSeconds =
+        _playbackSpeed == 1 ? 3.0 : (_playbackSpeed == 2 ? 1.5 : 1.0);
+    _timer = Timer.periodic(
+        Duration(milliseconds: (intervalSeconds * 1000).toInt()), (timer) {
       _nextCard();
     });
   }
@@ -1572,7 +1608,7 @@ class _TimelinePanelState extends State<_TimelinePanel> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.65),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: const Text(
           'No moments yet in this journey.',
@@ -1586,7 +1622,8 @@ class _TimelinePanelState extends State<_TimelinePanel> {
     final m1 = moments[(_currentIndex + 1) % total];
     final mActive = moments[_currentIndex];
 
-    final timeStr = '${mActive.createdAt.hour.toString().padLeft(2, '0')}:${mActive.createdAt.minute.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${mActive.createdAt.hour.toString().padLeft(2, '0')}:${mActive.createdAt.minute.toString().padLeft(2, '0')}';
     final dateStr = '${mActive.createdAt.day}/${mActive.createdAt.month}';
 
     return Container(
@@ -1658,14 +1695,20 @@ class _TimelinePanelState extends State<_TimelinePanel> {
                       });
                     },
                     child: TweenAnimationBuilder<double>(
-                      duration: _isDragging ? Duration.zero : const Duration(milliseconds: 250),
+                      duration: _isDragging
+                          ? Duration.zero
+                          : const Duration(milliseconds: 250),
                       curve: Curves.easeOutCubic,
-                      tween: Tween<double>(begin: _dragOffset, end: _targetOffset),
+                      tween:
+                          Tween<double>(begin: _dragOffset, end: _targetOffset),
                       builder: (context, value, child) {
                         return Transform.translate(
                           offset: Offset(value, 0),
                           child: Transform.rotate(
-                            angle: (value / 300) * (12 * 3.1415926535 / 180), // Rotate slightly on drag
+                            angle: (value / 300) *
+                                (12 *
+                                    3.1415926535 /
+                                    180), // Rotate slightly on drag
                             child: child,
                           ),
                         );
@@ -1674,23 +1717,27 @@ class _TimelinePanelState extends State<_TimelinePanel> {
                         duration: const Duration(milliseconds: 350),
                         switchInCurve: Curves.easeOutBack,
                         switchOutCurve: Curves.easeIn,
-                        transitionBuilder: (Widget child, Animation<double> animation) {
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
                           return SlideTransition(
                             position: Tween<Offset>(
-                              begin: const Offset(0.2, 0.0), // Slide in from right slightly
+                              begin: const Offset(
+                                  0.2, 0.0), // Slide in from right slightly
                               end: Offset.zero,
                             ).animate(animation),
                             child: FadeTransition(
                               opacity: animation,
                               child: ScaleTransition(
-                                scale: Tween<double>(begin: 0.9, end: 1.0).animate(animation),
+                                scale: Tween<double>(begin: 0.9, end: 1.0)
+                                    .animate(animation),
                                 child: child,
                               ),
                             ),
                           );
                         },
                         child: _PolaroidCard(
-                          key: ValueKey<int>(_currentIndex), // Trigger switch animation on change
+                          key: ValueKey<int>(
+                              _currentIndex), // Trigger switch animation on change
                           m: mActive,
                           timeStr: timeStr,
                           dateStr: dateStr,
@@ -1703,23 +1750,26 @@ class _TimelinePanelState extends State<_TimelinePanel> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Replay Control Panel with Play / Pause & Speed
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 28),
+                icon: const Icon(Icons.skip_previous_rounded,
+                    color: Colors.white, size: 28),
                 onPressed: () => _prevCard(manual: true),
               ),
               const SizedBox(width: 8),
-              
+
               // Play/Pause button
               IconButton(
                 icon: Icon(
-                  _isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+                  _isPlaying
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.play_circle_filled_rounded,
                   color: const Color(0xFF00E5FF),
                   size: 40,
                 ),
@@ -1728,19 +1778,21 @@ class _TimelinePanelState extends State<_TimelinePanel> {
               const SizedBox(width: 8),
 
               IconButton(
-                icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 28),
+                icon: const Icon(Icons.skip_next_rounded,
+                    color: Colors.white, size: 28),
                 onPressed: () => _nextCard(manual: true),
               ),
               const SizedBox(width: 12),
-              
+
               // Speed control badge
               InkWell(
                 onTap: _toggleSpeed,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                     color: Colors.white.withValues(alpha: 0.15),
                     border: Border.all(color: Colors.white24),
                   ),
@@ -1755,11 +1807,12 @@ class _TimelinePanelState extends State<_TimelinePanel> {
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   color: Colors.black.withValues(alpha: 0.6),
                   border: Border.all(color: Colors.white10),
                 ),
@@ -1820,7 +1873,7 @@ class _PolaroidCard extends StatelessWidget {
             // Image Container
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1841,7 +1894,8 @@ class _PolaroidCard extends StatelessWidget {
                         ),
                         errorWidget: (context, url, error) => Container(
                           color: Colors.grey.shade100,
-                          child: const Icon(Icons.broken_image_rounded, size: 24, color: Colors.black38),
+                          child: const Icon(Icons.broken_image_rounded,
+                              size: 24, color: Colors.black38),
                         ),
                       ),
                     ),
@@ -1857,7 +1911,8 @@ class _PolaroidCard extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: Colors.black.withValues(alpha: 0.4),
                             ),
-                            child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                            child: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 16),
                           ),
                         ),
                       ),
@@ -1865,7 +1920,7 @@ class _PolaroidCard extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             if (!isBackground) ...[
               const SizedBox(height: 12),
               // Caption (Handwritten feel)
@@ -1940,7 +1995,7 @@ class _FogOfWarPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     canvas.saveLayer(rect, Paint());
-    
+
     // 1. Gen Z Aesthetic Holographic Gradient Fog
     final fogPaint = Paint()
       ..shader = const LinearGradient(
@@ -1959,9 +2014,9 @@ class _FogOfWarPainter extends CustomPainter {
     // Only attempt grid rendering if zoom is high enough to avoid looping millions of coordinates
     if (camera.zoom >= 8.5) {
       final bounds = camera.visibleBounds;
-      
+
       // Dynamic grid spacing based on zoom level
-      double step = 0.025; 
+      double step = 0.025;
       if (camera.zoom < 11) {
         step = 0.4;
       } else if (camera.zoom < 13) {
@@ -1981,43 +2036,47 @@ class _FogOfWarPainter extends CustomPainter {
 
       final icons = ['☁️', '✨', '☁️', '🌙'];
       int iconCount = 0;
-      const int maxIcons = 60; // Strict hard limit to guarantee 60 FPS and prevent crashes
+      const int maxIcons =
+          60; // Strict hard limit to guarantee 60 FPS and prevent crashes
 
       for (double lat = startLat; lat <= endLat; lat += step) {
         for (double lng = startLng; lng <= endLng; lng += step) {
           if (iconCount >= maxIcons) break;
 
           int hash = (lat * 10000).toInt() ^ (lng * 10000).toInt();
-          
+
           // Show an icon for roughly 1 out of every 6 points
           if (hash % 6 != 0) continue;
 
           String icon = icons[hash.abs() % icons.length];
-          
+
           double latOffset = ((hash % 100) - 50) / 100 * (step * 0.5);
           double lngOffset = (((hash ~/ 100) % 100) - 50) / 100 * (step * 0.5);
 
           final targetPoint = LatLng(lat + latOffset, lng + lngOffset);
           final pos = camera.project(targetPoint);
-          
+
           final dx = pos.x - camera.pixelOrigin.x;
           final dy = pos.y - camera.pixelOrigin.y;
 
           // Skip drawing if coordinates are far off viewport bounds
-          if (dx < -20 || dx > size.width + 20 || dy < -20 || dy > size.height + 20) {
+          if (dx < -20 ||
+              dx > size.width + 20 ||
+              dy < -20 ||
+              dy > size.height + 20) {
             continue;
           }
 
           final span = TextSpan(
             text: icon,
             style: TextStyle(
-              fontSize: (hash % 2 == 0) ? 24 : 16, 
-              color: Colors.white.withValues(alpha: 0.5), 
+              fontSize: (hash % 2 == 0) ? 24 : 16,
+              color: Colors.white.withValues(alpha: 0.5),
             ),
           );
           final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
           tp.layout();
-          
+
           tp.paint(canvas, Offset(dx - tp.width / 2, dy - tp.height / 2));
           iconCount++;
         }
@@ -2027,17 +2086,21 @@ class _FogOfWarPainter extends CustomPainter {
 
     for (final fp in footprints) {
       final pos = camera.project(fp);
-      final offset = Offset(pos.x - camera.pixelOrigin.x, pos.y - camera.pixelOrigin.y);
+      final offset =
+          Offset(pos.x - camera.pixelOrigin.x, pos.y - camera.pixelOrigin.y);
 
-      if (offset.dx < -130 || offset.dx > size.width + 130 ||
-          offset.dy < -130 || offset.dy > size.height + 130) {
+      if (offset.dx < -130 ||
+          offset.dx > size.width + 130 ||
+          offset.dy < -130 ||
+          offset.dy > size.height + 130) {
         continue;
       }
-      
+
       // Calculate a geographic-based radius (approx 800m in longitude)
-      final posOffset = camera.project(LatLng(fp.latitude, fp.longitude + 0.008));
+      final posOffset =
+          camera.project(LatLng(fp.latitude, fp.longitude + 0.008));
       final double radius = (pos.x - posOffset.x).abs();
-      
+
       // Clamp the pixel radius to keep holes proportional and visible.
       // Minimum 8.0 pixels ensures it stays visible as a small dot when zoomed out,
       // without covering the entire region or country.
@@ -2073,4 +2136,3 @@ class _FogOfWarPainter extends CustomPainter {
         oldDelegate.footprints != footprints;
   }
 }
-

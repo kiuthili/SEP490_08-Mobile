@@ -11,6 +11,7 @@ import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class AiRecommendationsScreen extends StatelessWidget {
   const AiRecommendationsScreen({super.key});
@@ -76,7 +77,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
               title: 'Chưa có gợi ý',
               subtitle: 'Hoàn thành khảo sát AI để nhận danh sách tour phù hợp',
               retryLabel: 'Bắt đầu khảo sát',
-              onRetry: widget.onRetake ?? () => Get.toNamed(AppRoutes.aiQuestionnaire),
+              onRetry: widget.onRetake ??
+                  () => Get.toNamed(AppRoutes.aiQuestionnaire),
             ),
           ],
         );
@@ -128,6 +130,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       );
     });
   }
+
   Widget _buildResponsiveWrapper({required Widget child}) {
     return Center(
       child: ConstrainedBox(
@@ -137,14 +140,16 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  Widget _buildToursTab(BuildContext context, AiController ai, PersonalizedRecommendationModel? detail) {
+  Widget _buildToursTab(BuildContext context, AiController ai,
+      PersonalizedRecommendationModel? detail) {
     final hasNearby = detail?.nearbyScheduleTours.isNotEmpty == true;
 
     final exactTours = ai.recommendations;
     final nearbyTours = detail?.nearbyScheduleTours ?? const [];
 
     final showExact = _tourFilter == 'all' || _tourFilter == 'exact';
-    final showNearby = (_tourFilter == 'all' || _tourFilter == 'nearby') && hasNearby;
+    final showNearby =
+        (_tourFilter == 'all' || _tourFilter == 'nearby') && hasNearby;
 
     return _buildResponsiveWrapper(
       child: ListView(
@@ -159,7 +164,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
               child: Row(
                 children: [
                   ChoiceChip(
-                    label: Text('Tất cả (${exactTours.length + nearbyTours.length})'),
+                    label: Text(
+                        'Tất cả (${exactTours.length + nearbyTours.length})'),
                     selected: _tourFilter == 'all',
                     onSelected: (val) {
                       if (val) setState(() => _tourFilter = 'all');
@@ -285,7 +291,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                     child: const Icon(
                       Icons.auto_awesome_rounded,
@@ -322,16 +328,19 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  Widget _buildTripProfileChips(BuildContext context, TourPreferenceQuestionnaireModel profile) {
+  Widget _buildTripProfileChips(
+      BuildContext context, TourPreferenceQuestionnaireModel profile) {
     final destination = [profile.preferredCity, profile.preferredCountry]
         .where((e) => e != null && e.isNotEmpty)
         .join(', ');
     final dates = [
-      if (profile.preferredStartDate.isNotEmpty) _formatDateStr(profile.preferredStartDate),
-      if (profile.preferredEndDate != null && profile.preferredEndDate!.isNotEmpty)
+      if (profile.preferredStartDate.isNotEmpty)
+        _formatDateStr(profile.preferredStartDate),
+      if (profile.preferredEndDate != null &&
+          profile.preferredEndDate!.isNotEmpty)
         _formatDateStr(profile.preferredEndDate),
     ].join(' - ');
-    
+
     final companion = profile.companionType;
     String companionLabel = companion;
     if (companion == 'solo') companionLabel = 'Đi một mình';
@@ -344,16 +353,26 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       if (profile.hasChildren) 'Trẻ em',
     ].join(', ');
 
-    final budget = profile.maxBudgetPerPerson != null && profile.maxBudgetPerPerson! > 0
-        ? CurrencyFormatter.format(profile.maxBudgetPerPerson!)
-        : 'Không giới hạn';
+    final budget =
+        profile.maxBudgetPerPerson != null && profile.maxBudgetPerPerson! > 0
+            ? CurrencyFormatter.format(profile.maxBudgetPerPerson!)
+            : 'Không giới hạn';
 
     final chips = <({IconData icon, String label})>[
-      if (destination.isNotEmpty) (icon: Icons.place_outlined, label: destination),
+      if (destination.isNotEmpty)
+        (icon: Icons.place_outlined, label: destination),
       if (dates.isNotEmpty) (icon: Icons.date_range_outlined, label: dates),
-      (icon: Icons.people_outline_rounded, label: companionLabel + (companionDetails.isNotEmpty ? ' ($companionDetails)' : '')),
-      (icon: Icons.account_balance_wallet_outlined, label: 'Ngân sách: $budget'),
-      ...profile.travelInterests.map((interest) => (icon: Icons.interests_outlined, label: interest)),
+      (
+        icon: Icons.people_outline_rounded,
+        label: companionLabel +
+            (companionDetails.isNotEmpty ? ' ($companionDetails)' : '')
+      ),
+      (
+        icon: Icons.account_balance_wallet_outlined,
+        label: 'Ngân sách: $budget'
+      ),
+      ...profile.travelInterests
+          .map((interest) => (icon: Icons.interests_outlined, label: interest)),
     ];
 
     return Column(
@@ -385,10 +404,11 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
             itemBuilder: (context, index) {
               final item = chips[index];
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
@@ -414,7 +434,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  void _showAiTransparencySheet(BuildContext context, RecommenderMetaModel meta) {
+  void _showAiTransparencySheet(
+      BuildContext context, RecommenderMetaModel meta) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -455,7 +476,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: AppColors.brandLight,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: const Icon(
                           Icons.info_outline_rounded,
@@ -492,12 +513,13 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                     ),
                     child: const Text(
                       'Đóng',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
                 ],
@@ -509,7 +531,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  Widget _buildAiGuideTab(BuildContext context, AiController ai, PersonalizedRecommendationModel? detail) {
+  Widget _buildAiGuideTab(BuildContext context, AiController ai,
+      PersonalizedRecommendationModel? detail) {
     if (detail == null) {
       return const Center(child: Text('Không có dữ liệu cẩm nang'));
     }
@@ -521,29 +544,25 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
         children: [
           if (detail.summary.isNotEmpty)
             _buildAiOverviewBanner(context, detail.summary),
-          
           if (detail.appliedProfile != null)
             _buildTripProfileChips(context, detail.appliedProfile!),
-          
           const SizedBox(height: 4),
-
           _TipsTabsContent(detail: detail),
           const SizedBox(height: 24),
-          
           _DestinationTipsContent(detail: detail),
           const SizedBox(height: 24),
-          
           if (detail.relatedInsights.isNotEmpty) ...[
             _RelatedInsightsContent(insights: detail.relatedInsights),
             const SizedBox(height: 24),
           ],
-          
           if (detail.recommenderMeta != null) ...[
             const SizedBox(height: 8),
             Center(
               child: TextButton.icon(
-                onPressed: () => _showAiTransparencySheet(context, detail.recommenderMeta!),
-                icon: const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.brand),
+                onPressed: () =>
+                    _showAiTransparencySheet(context, detail.recommenderMeta!),
+                icon: const Icon(Icons.info_outline_rounded,
+                    size: 16, color: AppColors.brand),
                 label: const Text(
                   'Cách thuật toán AI StayHub chấm điểm gợi ý',
                   style: TextStyle(
@@ -561,7 +580,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  void _showAiMatchDetailsSheet(BuildContext context, TourRecommendationModel rec) {
+  void _showAiMatchDetailsSheet(
+      BuildContext context, TourRecommendationModel rec) {
     final hasBreakdown = rec.scoreBreakdown != null;
 
     showModalBottomSheet(
@@ -599,7 +619,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                       ),
                     ),
                   ),
-                  
+
                   // Header Row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,7 +682,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     ],
                   ),
                   const Divider(height: 24),
-                  
+
                   // Detail Content
                   Expanded(
                     child: SingleChildScrollView(
@@ -675,13 +695,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceGrouped,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                               border: Border.all(color: AppColors.border),
                             ),
                             child: Row(
                               children: [
                                 if (rec.city != null) ...[
-                                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                                  const Icon(Icons.location_on_outlined,
+                                      size: 14, color: AppColors.textSecondary),
                                   const SizedBox(width: 4),
                                   Text(
                                     rec.city!,
@@ -694,7 +715,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                                   const Spacer(),
                                 ],
                                 if (rec.durationDays != null) ...[
-                                  const Icon(Icons.wb_sunny_outlined, size: 14, color: AppColors.textSecondary),
+                                  const Icon(Icons.wb_sunny_outlined,
+                                      size: 14, color: AppColors.textSecondary),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${rec.durationDays} ngày',
@@ -709,12 +731,13 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Match Reason Text
                           if (rec.reason != null && rec.reason!.isNotEmpty) ...[
                             const Row(
                               children: [
-                                Icon(Icons.psychology_outlined, color: AppColors.brand, size: 18),
+                                Icon(Icons.psychology_outlined,
+                                    color: AppColors.brand, size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'Lý do phù hợp với bạn',
@@ -731,8 +754,10 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.brandLight.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.brand.withOpacity(0.1)),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                    color: AppColors.brand.withOpacity(0.1)),
                               ),
                               child: Text(
                                 rec.reason!,
@@ -745,12 +770,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                             ),
                             const SizedBox(height: 20),
                           ],
-                          
+
                           // Match Reasons Checklist Tags
-                          if (rec.matchReasons != null && rec.matchReasons!.isNotEmpty) ...[
+                          if (rec.matchReasons != null &&
+                              rec.matchReasons!.isNotEmpty) ...[
                             const Row(
                               children: [
-                                Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 18),
+                                Icon(Icons.check_circle_outline_rounded,
+                                    color: AppColors.success, size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'Điểm cộng nổi bật',
@@ -768,16 +795,19 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                               runSpacing: 8,
                               children: rec.matchReasons!.map((tag) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: AppColors.surfaceGrouped,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.xs),
                                     border: Border.all(color: AppColors.border),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.check_rounded, color: AppColors.success, size: 12),
+                                      const Icon(Icons.check_rounded,
+                                          color: AppColors.success, size: 12),
                                       const SizedBox(width: 4),
                                       Text(
                                         tag,
@@ -794,12 +824,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                             ),
                             const SizedBox(height: 20),
                           ],
-                          
+
                           // Schedule Note
-                          if (rec.scheduleNote != null && rec.scheduleNote!.isNotEmpty) ...[
+                          if (rec.scheduleNote != null &&
+                              rec.scheduleNote!.isNotEmpty) ...[
                             const Row(
                               children: [
-                                Icon(Icons.calendar_month_rounded, color: AppColors.accent, size: 18),
+                                Icon(Icons.calendar_month_rounded,
+                                    color: AppColors.accent, size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'Lịch trình gợi ý',
@@ -816,8 +848,10 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.accentLight.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.accent.withOpacity(0.1)),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                    color: AppColors.accent.withOpacity(0.1)),
                               ),
                               child: Text(
                                 rec.scheduleNote!,
@@ -831,17 +865,19 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                             ),
                             const SizedBox(height: 20),
                           ],
-                          
+
                           // Weather Advice
                           if (rec.destinationWeather != null) ...[
-                            _WeatherAdviceContent(weather: rec.destinationWeather!),
+                            _WeatherAdviceContent(
+                                weather: rec.destinationWeather!),
                           ],
-                          
+
                           // Score Breakdown
                           if (hasBreakdown) ...[
                             const Row(
                               children: [
-                                Icon(Icons.analytics_outlined, color: AppColors.brand, size: 18),
+                                Icon(Icons.analytics_outlined,
+                                    color: AppColors.brand, size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'Điểm số theo tiêu chí',
@@ -854,13 +890,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            _buildScoreBreakdownInSheet(context, rec.scoreBreakdown!),
+                            _buildScoreBreakdownInSheet(
+                                context, rec.scoreBreakdown!),
                           ],
                         ],
                       ),
                     ),
                   ),
-                  
+
                   // Bottom Action Bar
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -873,7 +910,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       elevation: 0,
                     ),
@@ -901,21 +938,25 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  Widget _buildScoreBreakdownInSheet(BuildContext context, ScoreBreakdownModel breakdown) {
+  Widget _buildScoreBreakdownInSheet(
+      BuildContext context, ScoreBreakdownModel breakdown) {
     final explanations = breakdown.dimensionExplanations.isNotEmpty
         ? breakdown.dimensionExplanations
-        : breakdown.dimensionScores.entries.map((entry) => ScoreDimensionExplanationModel(
-              dimensionKey: entry.key,
-              label: _formatDimensionKey(entry.key),
-              score: entry.value,
-              weight: 0.0,
-              explanation: '',
-            )).toList();
+        : breakdown.dimensionScores.entries
+            .map((entry) => ScoreDimensionExplanationModel(
+                  dimensionKey: entry.key,
+                  label: _formatDimensionKey(entry.key),
+                  score: entry.value,
+                  weight: 0.0,
+                  explanation: '',
+                ))
+            .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (breakdown.overallExplanation != null && breakdown.overallExplanation!.isNotEmpty) ...[
+        if (breakdown.overallExplanation != null &&
+            breakdown.overallExplanation!.isNotEmpty) ...[
           Text(
             breakdown.overallExplanation!,
             style: const TextStyle(
@@ -956,12 +997,13 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                 ),
                 const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                   child: LinearProgressIndicator(
                     value: item.score,
                     minHeight: 6,
                     backgroundColor: AppColors.backgroundSecondary,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brand),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppColors.brand),
                   ),
                 ),
                 if (item.explanation.isNotEmpty) ...[
@@ -984,7 +1026,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
 }
 
 class _RecommendationCard extends StatelessWidget {
-  const _RecommendationCard({required this.rec, this.nearby = false, required this.onShowDetails});
+  const _RecommendationCard(
+      {required this.rec, this.nearby = false, required this.onShowDetails});
 
   final TourRecommendationModel rec;
   final bool nearby;
@@ -1012,7 +1055,7 @@ class _RecommendationCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: InkWell(
         onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: rec.tourId),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -1022,7 +1065,7 @@ class _RecommendationCard extends StatelessWidget {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                     child: SizedBox(
                       width: 100,
                       height: 100,
@@ -1030,7 +1073,8 @@ class _RecommendationCard extends StatelessWidget {
                           ? Image.network(
                               rec.imageUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                              errorBuilder: (_, __, ___) =>
+                                  _buildFallbackImage(),
                             )
                           : _buildFallbackImage(),
                     ),
@@ -1041,7 +1085,8 @@ class _RecommendationCard extends StatelessWidget {
                       top: 4,
                       left: 4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppColors.brand.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(6),
@@ -1066,7 +1111,7 @@ class _RecommendationCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.accent.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: const Center(
                           child: Text(
@@ -1083,7 +1128,7 @@ class _RecommendationCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 12),
-              
+
               // Right: Text info
               Expanded(
                 child: Column(
@@ -1102,12 +1147,14 @@ class _RecommendationCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    
+
                     // Rating & Location
                     Row(
                       children: [
-                        if (rec.averageStar != null && rec.averageStar! > 0) ...[
-                          const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+                        if (rec.averageStar != null &&
+                            rec.averageStar! > 0) ...[
+                          const Icon(Icons.star_rounded,
+                              color: Colors.amber, size: 14),
                           const SizedBox(width: 2),
                           Text(
                             rec.averageStar!.toStringAsFixed(1),
@@ -1128,11 +1175,14 @@ class _RecommendationCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                         ],
-                        const Icon(Icons.location_on_rounded, color: AppColors.textSecondary, size: 12),
+                        const Icon(Icons.location_on_rounded,
+                            color: AppColors.textSecondary, size: 12),
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            [rec.city, rec.country].where((e) => e != null && e.isNotEmpty).join(', '),
+                            [rec.city, rec.country]
+                                .where((e) => e != null && e.isNotEmpty)
+                                .join(', '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -1144,7 +1194,7 @@ class _RecommendationCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    
+
                     // Compact Weather Indicator
                     if (rec.destinationWeather != null) ...[
                       Row(
@@ -1164,7 +1214,7 @@ class _RecommendationCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                     ],
-                    
+
                     // Price & Duration Info
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1178,7 +1228,8 @@ class _RecommendationCard extends StatelessWidget {
                               if (rec.durationDays != null)
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today_rounded, color: AppColors.brand, size: 11),
+                                    const Icon(Icons.calendar_today_rounded,
+                                        color: AppColors.brand, size: 11),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${rec.durationDays} ngày',
@@ -1204,12 +1255,13 @@ class _RecommendationCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        
+
                         // "Why match" button
                         GestureDetector(
                           onTap: onShowDetails,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
                               color: AppColors.brandLight,
                               borderRadius: BorderRadius.circular(6),
@@ -1217,7 +1269,8 @@ class _RecommendationCard extends StatelessWidget {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.auto_awesome_rounded, color: AppColors.brand, size: 10),
+                                Icon(Icons.auto_awesome_rounded,
+                                    color: AppColors.brand, size: 10),
                                 SizedBox(width: 4),
                                 Text(
                                   'Tại sao? ✨',
@@ -1284,7 +1337,7 @@ class _WeatherAdviceContent extends StatelessWidget {
         return Colors.indigo.shade50;
       case 'mild':
       default:
-        return Colors.green.shade50;
+        return AppColors.success.withValues(alpha: 0.1);
     }
   }
 
@@ -1298,7 +1351,7 @@ class _WeatherAdviceContent extends StatelessWidget {
         return Colors.indigo.shade700;
       case 'mild':
       default:
-        return Colors.green.shade700;
+        return AppColors.success;
     }
   }
 
@@ -1351,9 +1404,10 @@ class _WeatherAdviceContent extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: AppColors.accentLight,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
-                    child: const Icon(Icons.cloud_outlined, color: AppColors.accent, size: 18),
+                    child: const Icon(Icons.cloud_outlined,
+                        color: AppColors.accent, size: 18),
                   ),
                   const SizedBox(width: 10),
                   const Text(
@@ -1370,7 +1424,7 @@ class _WeatherAdviceContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Row(
                   children: [
@@ -1398,13 +1452,16 @@ class _WeatherAdviceContent extends StatelessWidget {
                   children: [
                     Text(
                       weather.city,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800),
                     ),
-                    if (weather.periodStart != null && weather.periodEnd != null) ...[
+                    if (weather.periodStart != null &&
+                        weather.periodEnd != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         '${_formatDateTime(weather.periodStart)} - ${_formatDateTime(weather.periodEnd)}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.textSecondary),
                       ),
                     ],
                   ],
@@ -1416,11 +1473,15 @@ class _WeatherAdviceContent extends StatelessWidget {
                   children: [
                     Text(
                       '${weather.avgMaxTempC!.round()}°C',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary),
                     ),
                     Text(
                       'Thấp nhất: ${weather.avgMinTempC?.round() ?? 0}°C',
-                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 10, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -1432,18 +1493,21 @@ class _WeatherAdviceContent extends StatelessWidget {
             children: [
               if (weather.totalRainMm != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.water_drop_outlined, size: 12, color: AppColors.brand),
+                      const Icon(Icons.water_drop_outlined,
+                          size: 12, color: AppColors.brand),
                       const SizedBox(width: 4),
                       Text(
                         'Lượng mưa: ${weather.totalRainMm!.toStringAsFixed(1)} mm',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -1451,7 +1515,8 @@ class _WeatherAdviceContent extends StatelessWidget {
               const Spacer(),
               Text(
                 _formatDataSource(weather.dataSource),
-                style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 9, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -1459,7 +1524,8 @@ class _WeatherAdviceContent extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               weather.summary,
-              style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.4),
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textPrimary, height: 1.4),
             ),
           ],
           if (weather.impactOnTours.isNotEmpty) ...[
@@ -1468,13 +1534,14 @@ class _WeatherAdviceContent extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.accentLight,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(color: AppColors.accent.withOpacity(0.1)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppColors.accent, size: 16),
+                  const Icon(Icons.warning_amber_rounded,
+                      color: AppColors.accent, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1504,7 +1571,13 @@ class _TipsTabsContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categories = <({String label, IconData icon, List<String> tips, Color color, Color bgColor})>[
+    final categories = <({
+      String label,
+      IconData icon,
+      List<String> tips,
+      Color color,
+      Color bgColor
+    })>[
       if (detail.generalTips.isNotEmpty)
         (
           label: 'Mẹo chung',
@@ -1550,9 +1623,10 @@ class _TipsTabsContent extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: AppColors.brandLight,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
-              child: const Icon(Icons.tips_and_updates_outlined, color: AppColors.brand, size: 18),
+              child: const Icon(Icons.tips_and_updates_outlined,
+                  color: AppColors.brand, size: 18),
             ),
             const SizedBox(width: 10),
             const Text(
@@ -1583,7 +1657,7 @@ class _TipsTabsContent extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: AppColors.border),
                   boxShadow: [
                     BoxShadow(
@@ -1602,7 +1676,7 @@ class _TipsTabsContent extends StatelessWidget {
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: cat.bgColor,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
                           ),
                           child: Icon(cat.icon, color: cat.color, size: 16),
                         ),
@@ -1629,7 +1703,8 @@ class _TipsTabsContent extends StatelessWidget {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(Icons.check_circle_outline_rounded, color: cat.color, size: 14),
+                                  Icon(Icons.check_circle_outline_rounded,
+                                      color: cat.color, size: 14),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
@@ -1668,7 +1743,7 @@ class _DestinationTipsContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final profile = detail.appliedProfile;
     final preferredCity = profile?.preferredCity?.trim();
-    
+
     final List<String> tourCities = [];
     if (preferredCity != null && preferredCity.isNotEmpty) {
       tourCities.add(preferredCity);
@@ -1702,9 +1777,10 @@ class _DestinationTipsContent extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: AppColors.brandLight,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
-              child: const Icon(Icons.place_outlined, color: AppColors.brand, size: 18),
+              child: const Icon(Icons.place_outlined,
+                  color: AppColors.brand, size: 18),
             ),
             const SizedBox(width: 10),
             const Text(
@@ -1728,7 +1804,8 @@ class _DestinationTipsContent extends StatelessWidget {
             itemBuilder: (context, idx) {
               final fact = facts[idx];
               final formatted = _formatDestinationFact(fact.fact);
-              final hasHeadline = formatted.headline != null && formatted.headline!.isNotEmpty;
+              final hasHeadline =
+                  formatted.headline != null && formatted.headline!.isNotEmpty;
               final screenWidth = MediaQuery.of(context).size.width;
               final cardWidth = screenWidth > 600 ? 320.0 : screenWidth * 0.75;
 
@@ -1737,7 +1814,7 @@ class _DestinationTipsContent extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceGrouped,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
@@ -1748,14 +1825,16 @@ class _DestinationTipsContent extends StatelessWidget {
                       children: [
                         if (fact.city != null && fact.city!.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.brand.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.location_on_rounded, size: 10, color: AppColors.brand),
+                                const Icon(Icons.location_on_rounded,
+                                    size: 10, color: AppColors.brand),
                                 const SizedBox(width: 2),
                                 Text(
                                   fact.city!,
@@ -1768,7 +1847,8 @@ class _DestinationTipsContent extends StatelessWidget {
                               ],
                             ),
                           ),
-                        const Icon(Icons.explore_outlined, size: 14, color: AppColors.textSecondary),
+                        const Icon(Icons.explore_outlined,
+                            size: 14, color: AppColors.textSecondary),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -1827,9 +1907,10 @@ class _RelatedInsightsContent extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: AppColors.brandLight,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
-              child: const Icon(Icons.insights_outlined, color: AppColors.brand, size: 18),
+              child: const Icon(Icons.insights_outlined,
+                  color: AppColors.brand, size: 18),
             ),
             const SizedBox(width: 10),
             const Text(
@@ -1863,7 +1944,7 @@ class _RelatedInsightsContent extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
@@ -1880,7 +1961,8 @@ class _RelatedInsightsContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    if (insight.description != null && insight.description!.isNotEmpty)
+                    if (insight.description != null &&
+                        insight.description!.isNotEmpty)
                       Expanded(
                         child: Text(
                           insight.description!,
@@ -1930,13 +2012,17 @@ class _RecommenderTransparencyContent extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style:
+                const TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(width: 4),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -1954,8 +2040,9 @@ class _RecommenderTransparencyContent extends StatelessWidget {
         // Technical summary
         _buildMetaRow(Icons.memory_rounded, 'Thuật toán:', meta.modelFamily),
         _buildMetaRow(Icons.verified_outlined, 'Phiên bản:', meta.modelVersion),
-        _buildMetaRow(Icons.groups_rounded, 'Chỉ số công bằng (Fairness):', meta.fairnessAlpha.toStringAsFixed(2)),
-        
+        _buildMetaRow(Icons.groups_rounded, 'Chỉ số công bằng (Fairness):',
+            meta.fairnessAlpha.toStringAsFixed(2)),
+
         if (meta.aggregationFormula.isNotEmpty) ...[
           const SizedBox(height: 10),
           Container(
@@ -1963,7 +2050,7 @@ class _RecommenderTransparencyContent extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
               border: Border.all(color: AppColors.border),
             ),
             child: Text(
@@ -1976,7 +2063,7 @@ class _RecommenderTransparencyContent extends StatelessWidget {
             ),
           ),
         ],
-        
+
         if (weights.isNotEmpty) ...[
           const SizedBox(height: 16),
           const Text(
@@ -1988,7 +2075,6 @@ class _RecommenderTransparencyContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
           ...weights.map((entry) {
             final label = _formatDimensionKey(entry.key);
             final pct = (entry.value * 100).round();
@@ -2002,22 +2088,27 @@ class _RecommenderTransparencyContent extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                       Text(
                         '$pct%',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.brand),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.brand),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                     child: LinearProgressIndicator(
                       value: entry.value,
                       minHeight: 5,
                       backgroundColor: AppColors.backgroundSecondary,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.brand),
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(AppColors.brand),
                     ),
                   ),
                 ],
@@ -2029,9 +2120,6 @@ class _RecommenderTransparencyContent extends StatelessWidget {
     );
   }
 }
-
-
-
 
 class _FormattedDestinationFact {
   final String? headline;
@@ -2054,7 +2142,6 @@ _FormattedDestinationFact _formatDestinationFact(String fact) {
 
   return _FormattedDestinationFact(body: trimmed);
 }
-
 
 String _normalizeCityKey(String value) {
   final withoutDiacritics = value

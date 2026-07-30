@@ -8,6 +8,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String tourDetail = '/tour-detail';
   static const String booking = '/booking';
+  static const String orders = '/orders';
   static const String orderDetail = '/order-detail';
   static const String notifications = '/notifications';
   static const String wishlist = '/wishlist';
@@ -42,4 +43,3 @@ class AppRoutes {
   static const String searchResult = '/search-result';
   static const String footprint = '/footprint';
 }
-

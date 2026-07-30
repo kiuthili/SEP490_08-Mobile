@@ -107,13 +107,15 @@ class TourController extends GetxController {
         email: email,
         note: note,
       );
-      SnackbarHelper.success('Đã gửi yêu cầu tư vấn thành công! Chúng tôi sẽ sớm liên hệ với bạn.');
+      SnackbarHelper.success(
+          'Đã gửi yêu cầu tư vấn thành công! Chúng tôi sẽ sớm liên hệ với bạn.');
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
     } catch (e) {
-      SnackbarHelper.error('Không gửi được yêu cầu tư vấn. Vui lòng thử lại sau.');
+      SnackbarHelper.error(
+          'Không gửi được yêu cầu tư vấn. Vui lòng thử lại sau.');
       return false;
     }
   }

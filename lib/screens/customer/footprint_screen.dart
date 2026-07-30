@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../constants/api_constants.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
+import 'package:stayhub_mobile/theme/app_text_styles.dart';
 
 class VisitedLocation {
   final String name;
@@ -102,13 +104,15 @@ class _FootprintScreenState extends State<FootprintScreen> {
     ),
   ];
 
-  List<LatLng> _generateCirclePoints(LatLng center, double radiusInDegrees, {int segments = 36}) {
+  List<LatLng> _generateCirclePoints(LatLng center, double radiusInDegrees,
+      {int segments = 36}) {
     final List<LatLng> points = [];
     for (int i = 0; i < segments; i++) {
       final double angle = (i * 360 / segments) * math.pi / 180;
       final double lat = center.latitude + radiusInDegrees * math.sin(angle);
       final double cosLat = math.cos(center.latitude * math.pi / 180);
-      final double lng = center.longitude + radiusInDegrees * math.cos(angle) / (cosLat == 0 ? 1.0 : cosLat);
+      final double lng = center.longitude +
+          radiusInDegrees * math.cos(angle) / (cosLat == 0 ? 1.0 : cosLat);
       points.add(LatLng(lat, lng));
     }
     return points;
@@ -150,7 +154,8 @@ class _FootprintScreenState extends State<FootprintScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${ApiConstants.mapboxAccessToken}',
+                  urlTemplate:
+                      'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${ApiConstants.mapboxAccessToken}',
                   userAgentPackageName: 'com.stayhub.stayhub_mobile',
                   maxZoom: 18,
                 ),
@@ -159,12 +164,13 @@ class _FootprintScreenState extends State<FootprintScreen> {
                     Polygon(
                       points: const [
                         LatLng(85.0, -180.0), // Đổi 90 thành 85.0
-                        LatLng(85.0, 180.0),  // Đổi 90 thành 85.0
+                        LatLng(85.0, 180.0), // Đổi 90 thành 85.0
                         LatLng(-85.0, 180.0), // Đổi -90 thành -85.0
                         LatLng(-85.0, -180.0),
                       ],
                       holePointsList: holes,
-                      color: Colors.black.withValues(alpha: 0.6), // The dark fog overlay
+                      color: Colors.black
+                          .withValues(alpha: 0.6), // The dark fog overlay
                       borderStrokeWidth: 0,
                     ),
                   ],
@@ -222,7 +228,10 @@ class _FootprintScreenState extends State<FootprintScreen> {
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.black.withValues(alpha: 0.5), Colors.transparent],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.transparent
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -242,7 +251,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
                 ),
                 middle: Text(
                   'My Footprint',
-                  style: GoogleFonts.outfit(
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -344,10 +353,12 @@ class _FootprintScreenState extends State<FootprintScreen> {
                                     color: isSelected
                                         ? Colors.white.withValues(alpha: 0.08)
                                         : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
                                     border: Border.all(
                                       color: isSelected
-                                          ? loc.themeColor.withValues(alpha: 0.3)
+                                          ? loc.themeColor
+                                              .withValues(alpha: 0.3)
                                           : Colors.transparent,
                                       width: 1,
                                     ),
@@ -362,10 +373,12 @@ class _FootprintScreenState extends State<FootprintScreen> {
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: loc.themeColor.withValues(alpha: 0.15),
+                                        color: loc.themeColor
+                                            .withValues(alpha: 0.15),
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: loc.themeColor.withValues(alpha: 0.3),
+                                          color: loc.themeColor
+                                              .withValues(alpha: 0.3),
                                           width: 1,
                                         ),
                                       ),
@@ -377,7 +390,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
                                     ),
                                     title: Text(
                                       loc.name,
-                                      style: GoogleFonts.outfit(
+                                      style: AppTextStyles.bodyMedium.copyWith(
                                         color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -385,19 +398,24 @@ class _FootprintScreenState extends State<FootprintScreen> {
                                     ),
                                     subtitle: Text(
                                       loc.country,
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white.withValues(alpha: 0.5),
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.5),
                                         fontSize: 13,
                                       ),
                                     ),
                                     trailing: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
                                         Text(
                                           loc.date,
-                                          style: GoogleFonts.outfit(
-                                            color: Colors.white.withValues(alpha: 0.4),
+                                          style:
+                                              AppTextStyles.bodyMedium.copyWith(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.4),
                                             fontSize: 12,
                                           ),
                                         ),
@@ -445,7 +463,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       children: [
         Text(
           value.toString().padLeft(2, '0'),
-          style: GoogleFonts.outfit(
+          style: AppTextStyles.bodyMedium.copyWith(
             color: Colors.white,
             fontSize: 28,
             fontWeight: FontWeight.w800,
@@ -455,7 +473,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: AppTextStyles.bodyMedium.copyWith(
             color: Colors.white.withValues(alpha: 0.4),
             fontSize: 12,
             fontWeight: FontWeight.w500,

@@ -79,17 +79,17 @@ class _CustomersTabState extends State<_CustomersTab> {
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                onPressed: () {
-                  _searchController.clear();
-                  widget.controller.applyCustomerFilter('');
-                  setState(() {});
-                },
-              )
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: () {
+                        _searchController.clear();
+                        widget.controller.applyCustomerFilter('');
+                        setState(() {});
+                      },
+                    )
                   : null,
               isDense: true,
               contentPadding:
-              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: AppColors.border),
@@ -174,7 +174,8 @@ class _CustomerCard extends StatelessWidget {
           ),
           title: Text(
             name,
-            style: AppTextStyles.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: AppTextStyles.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -208,16 +209,27 @@ class _CustomerCard extends StatelessWidget {
               child: Column(
                 children: [
                   if (phone != null && phone.isNotEmpty)
-                    _InfoRow(icon: Icons.phone_rounded, label: 'SĐT', value: phone),
+                    _InfoRow(
+                        icon: Icons.phone_rounded, label: 'SĐT', value: phone),
                   _InfoRow(
-                    icon: Icons.badge_rounded, 
-                    label: 'CCCD/Passport', 
-                    value: (customer.idCard as String?)?.isNotEmpty == true ? customer.idCard! : '—'
-                  ),
-                  if (customer.dateOfBirth != null && (customer.dateOfBirth as String).isNotEmpty)
-                    _InfoRow(icon: Icons.cake_rounded, label: 'Ngày sinh', value: customer.dateOfBirth as String),
-                  if (customer.nationality != null && (customer.nationality as String).isNotEmpty)
-                    _InfoRow(icon: Icons.flag_rounded, label: 'Quốc tịch', value: customer.nationality as String, isLast: true),
+                      icon: Icons.badge_rounded,
+                      label: 'CCCD/Passport',
+                      value: (customer.idCard as String?)?.isNotEmpty == true
+                          ? customer.idCard!
+                          : '—'),
+                  if (customer.dateOfBirth != null &&
+                      (customer.dateOfBirth as String).isNotEmpty)
+                    _InfoRow(
+                        icon: Icons.cake_rounded,
+                        label: 'Ngày sinh',
+                        value: customer.dateOfBirth as String),
+                  if (customer.nationality != null &&
+                      (customer.nationality as String).isNotEmpty)
+                    _InfoRow(
+                        icon: Icons.flag_rounded,
+                        label: 'Quốc tịch',
+                        value: customer.nationality as String,
+                        isLast: true),
                 ],
               ),
             ),
@@ -251,13 +263,15 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '$label:',
-            style: AppTextStyles.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.textTheme.bodySmall
+                ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              style: AppTextStyles.textTheme.bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.right,
             ),
           ),
@@ -286,7 +300,7 @@ class _SmallPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -368,7 +382,7 @@ class _MapTabState extends State<_MapTab> {
 
 class _LiveLocationMarker extends StatefulWidget {
   const _LiveLocationMarker({required this.location});
-  final dynamic location; 
+  final dynamic location;
 
   @override
   State<_LiveLocationMarker> createState() => _LiveLocationMarkerState();
@@ -426,9 +440,9 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
             margin: const EdgeInsets.only(bottom: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF059669),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF34D399), width: 1),
+              color: AppColors.success,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.success, width: 1),
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 2),
               ],
@@ -458,7 +472,7 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                     height: 24 + 26 * t,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: (isStaff ? const Color(0xFF10B981) : AppColors.brand)
+                      color: (isStaff ? AppColors.success : AppColors.brand)
                           .withValues(alpha: (1 - t) * 0.35),
                     ),
                   );
@@ -469,9 +483,9 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isStaff ? const Color(0xFF10B981) : AppColors.brand,
+                  color: isStaff ? AppColors.success : AppColors.brand,
                   border: Border.all(
-                    color: isStaff ? const Color(0xFF10B981) : Colors.white,
+                    color: isStaff ? AppColors.success : Colors.white,
                     width: 2.5,
                   ),
                   boxShadow: const [
@@ -499,7 +513,7 @@ class _LiveLocationMarkerState extends State<_LiveLocationMarker>
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.70),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
           child: Text(
             _name,

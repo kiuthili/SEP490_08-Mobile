@@ -12,7 +12,7 @@ class SearchResultController extends GetxController {
   final isLoading = false.obs;
   final isLoadingMore = false.obs;
   final hasMore = true.obs;
-  
+
   // Filter States
   final city = ''.obs;
   final startDate = ''.obs;
@@ -51,7 +51,8 @@ class SearchResultController extends GetxController {
     isLoadingProvinces.value = true;
     try {
       final dio = Dio();
-      final response = await dio.get('https://provinces.open-api.vn/api/v2/?depth=1');
+      final response =
+          await dio.get('https://provinces.open-api.vn/api/v2/?depth=1');
       if (response.statusCode == 200) {
         final List data = response.data;
         provinces.value = data.map((e) => e['name'] as String).toList();
@@ -59,8 +60,16 @@ class SearchResultController extends GetxController {
     } catch (_) {
       // Fallback if API fails
       provinces.value = [
-        'Thành phố Hồ Chí Minh', 'Thành phố Hà Nội', 'Thành phố Đà Nẵng', 'Thành phố Hải Phòng', 'Thành phố Cần Thơ',
-        'Tỉnh Bà Rịa - Vũng Tàu', 'Tỉnh Khánh Hòa', 'Tỉnh Lâm Đồng', 'Tỉnh Quảng Ninh', 'Thừa Thiên Huế'
+        'Thành phố Hồ Chí Minh',
+        'Thành phố Hà Nội',
+        'Thành phố Đà Nẵng',
+        'Thành phố Hải Phòng',
+        'Thành phố Cần Thơ',
+        'Tỉnh Bà Rịa - Vũng Tàu',
+        'Tỉnh Khánh Hòa',
+        'Tỉnh Lâm Đồng',
+        'Tỉnh Quảng Ninh',
+        'Thừa Thiên Huế'
       ];
     } finally {
       isLoadingProvinces.value = false;
@@ -79,7 +88,7 @@ class SearchResultController extends GetxController {
 
     try {
       final processedCity = _cleanCityName(city.value);
-      
+
       final result = await _tourService.searchTours(
         searchTerm: _searchTerm,
         page: _page,
@@ -93,16 +102,15 @@ class SearchResultController extends GetxController {
         categoryId: categoryId.value,
         sortBy: sortBy.value.isEmpty ? null : sortBy.value,
       );
-      
+
       if (refresh) {
         tours.value = result.data;
       } else {
         tours.addAll(result.data);
       }
-      
+
       hasMore.value = result.hasMore;
       if (hasMore.value) _page++;
-      
     } catch (_) {
     } finally {
       isLoading.value = false;
@@ -111,11 +119,11 @@ class SearchResultController extends GetxController {
   }
 
   void loadMore() => _fetchTours(refresh: false);
-  
+
   void applyFilters() {
     _fetchTours(refresh: true);
   }
-  
+
   void clearFilters() {
     city.value = '';
     startDate.value = '';
@@ -129,22 +137,22 @@ class SearchResultController extends GetxController {
   }
 
   String get currentSearchTerm => _searchTerm;
-  
+
   String _cleanCityName(String rawCity) {
     if (rawCity.isEmpty) return '';
-    
+
     // Remove "Thành phố", "Tỉnh"
     String cleaned = rawCity
         .replaceAll(RegExp(r'^Thành phố\s+', caseSensitive: false), '')
         .replaceAll(RegExp(r'^Tỉnh\s+', caseSensitive: false), '')
         .trim();
-        
+
     // Remove Vietnamese tones
     cleaned = _removeVietnameseTones(cleaned);
-    
+
     return cleaned;
   }
-  
+
   String _removeVietnameseTones(String str) {
     str = str.replaceAll(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), 'a');
     str = str.replaceAll(RegExp(r'[èéẹẻẽêềếệểễ]'), 'e');

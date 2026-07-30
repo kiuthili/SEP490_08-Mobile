@@ -29,8 +29,7 @@ class LegalDocumentScreen extends StatelessWidget {
     final args = Get.arguments as Map<String, dynamic>? ?? {};
     final resolvedTitle =
         title ?? args['title'] as String? ?? 'Văn bản pháp lý';
-    final resolvedUpdated =
-        lastUpdated ?? args['lastUpdated'] as String? ?? '';
+    final resolvedUpdated = lastUpdated ?? args['lastUpdated'] as String? ?? '';
     final resolvedSections =
         sections ?? (args['sections'] as List<LegalSection>?) ?? [];
     final resolvedRelatedRoute =
@@ -143,7 +142,9 @@ class _SectionCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           b,
-                          style: Theme.of(context).textTheme.bodyMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
                               ?.copyWith(height: 1.4),
                         ),
                       ),

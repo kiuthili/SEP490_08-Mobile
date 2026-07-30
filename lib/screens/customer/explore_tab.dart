@@ -21,7 +21,6 @@ import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/scroll_to_top_button.dart';
 import '../../widgets/tour_card.dart';
-import '../../widgets/ai_floating_assistant.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../utils/auth_gate.dart';
 
@@ -524,7 +523,11 @@ class _ExploreTabState extends State<ExploreTab> {
                                 tour: entry.value,
                                 onTap: () => Get.toNamed(
                                   AppRoutes.tourDetail,
-                                  arguments: {'id': entry.value.id, 'heroTag': 'explore-tour-image-${entry.value.id}'},
+                                  arguments: {
+                                    'id': entry.value.id,
+                                    'heroTag':
+                                        'explore-tour-image-${entry.value.id}'
+                                  },
                                 ),
                               ),
                             ),
@@ -547,7 +550,13 @@ class _ExploreTabState extends State<ExploreTab> {
                       }
                       if (_aiController.recommendations.isEmpty) {
                         return TextButton(
-                          onPressed: () => showAiAssistantPanel(context),
+                          onPressed: () {
+                            try {
+                              Get.find<ShellController>().changeTab(3);
+                            } catch (_) {
+                              Get.toNamed(AppRoutes.aiQuestionnaire);
+                            }
+                          },
                           child: const Text('Bắt đầu khảo sát AI →'),
                         );
                       }
@@ -564,7 +573,8 @@ class _ExploreTabState extends State<ExploreTab> {
                               ),
                               leading: rec.imageUrl != null
                                   ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.sm),
                                       child: Image.network(
                                         rec.imageUrl!,
                                         width: 48,
@@ -768,7 +778,13 @@ class _ExploreTabState extends State<ExploreTab> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => showAiAssistantPanel(context),
+        onTap: () {
+          try {
+            Get.find<ShellController>().changeTab(3);
+          } catch (_) {
+            Get.toNamed(AppRoutes.aiQuestionnaire);
+          }
+        },
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Ink(
           padding: const EdgeInsets.all(16),

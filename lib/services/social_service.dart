@@ -12,9 +12,18 @@ import 'package:latlong2/latlong.dart';
 
 class SocialService extends GetxService with BaseServiceMixin {
   // ================= USERS & FRIENDS =================
-  Future<PaginationModel<UserSearchModel>> searchUsers({required String query, int page = 1, int pageSize = AppConstants.defaultPageSize}) async {
+  Future<PaginationModel<UserSearchModel>> searchUsers(
+      {required String query,
+      int page = 1,
+      int pageSize = AppConstants.defaultPageSize}) async {
     return request(() async {
-      final response = await api.dio.get('${ApiConstants.users}/search', queryParameters: {'q': query, 'page': page, 'pageSize': pageSize, 'role': 'Customer'});
+      final response = await api.dio.get('${ApiConstants.users}/search',
+          queryParameters: {
+            'q': query,
+            'page': page,
+            'pageSize': pageSize,
+            'role': 'Customer'
+          });
       return parsePagination(response.data, UserSearchModel.fromJson);
     });
   }
@@ -32,7 +41,10 @@ class SocialService extends GetxService with BaseServiceMixin {
   }
 
   Future<void> sendFriendRequest(int receiverId) async {
-    await request(() async { await api.dio.post(ApiConstants.friends, data: {'receiverId': receiverId}); });
+    await request(() async {
+      await api.dio
+          .post(ApiConstants.friends, data: {'receiverId': receiverId});
+    });
   }
 
   Future<List<FriendRequestModel>> getPendingRequests() async {
@@ -49,8 +61,14 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<void> respondFriendRequest({required int requestId, required bool accept}) async {
-    await request(() async { await api.dio.put('${ApiConstants.friends}/respond', data: {'requestId': requestId, 'status': accept ? 'Accepted' : 'Declined'}); });
+  Future<void> respondFriendRequest(
+      {required int requestId, required bool accept}) async {
+    await request(() async {
+      await api.dio.put('${ApiConstants.friends}/respond', data: {
+        'requestId': requestId,
+        'status': accept ? 'Accepted' : 'Declined'
+      });
+    });
   }
 
   Future<List<FriendModel>> getFriends() async {
@@ -61,13 +79,17 @@ class SocialService extends GetxService with BaseServiceMixin {
   }
 
   Future<void> unfriend(int friendshipId) async {
-    await request(() async { await api.dio.delete('${ApiConstants.friends}/$friendshipId'); });
+    await request(() async {
+      await api.dio.delete('${ApiConstants.friends}/$friendshipId');
+    });
   }
 
   // ================= MOMENTS & COMMENTS =================
-  Future<List<MomentModel>> getMoments({int? scheduleId, int skip = 0, int top = 20}) async {
+  Future<List<MomentModel>> getMoments(
+      {int? scheduleId, int skip = 0, int top = 20}) async {
     return request(() async {
-      final response = await api.dio.get(ApiConstants.moments, queryParameters: {
+      final response =
+          await api.dio.get(ApiConstants.moments, queryParameters: {
         if (scheduleId != null) 'scheduleId': scheduleId,
         r'$skip': skip,
         r'$top': top,
@@ -88,7 +110,14 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<void> createMoment({required int userId, int? scheduleId, required String imagePath, required double lat, required double lng, String? caption, String privacy = 'Public'}) async {
+  Future<void> createMoment(
+      {required int userId,
+      int? scheduleId,
+      required String imagePath,
+      required double lat,
+      required double lng,
+      String? caption,
+      String privacy = 'Public'}) async {
     await request(() async {
       final formData = FormData.fromMap({
         'UserId': userId,
@@ -114,32 +143,49 @@ class SocialService extends GetxService with BaseServiceMixin {
 
   Future<void> deleteMoment(int momentId, int userId) async {
     await request(() async {
-      await api.dio.delete('${ApiConstants.moments}/$momentId', queryParameters: {'userId': userId});
+      await api.dio.delete('${ApiConstants.moments}/$momentId',
+          queryParameters: {'userId': userId});
     });
   }
 
   Future<void> toggleReaction(int momentId, int userId, bool isLike) async {
     await request(() async {
-      final payload = {'momentId': momentId, 'userId': userId, 'isLike': isLike, 'type': isLike ? 'Like' : 'None'};
-      final resp = await api.dio.post('${ApiConstants.moments}/$momentId/reactions', data: payload);
+      final payload = {
+        'momentId': momentId,
+        'userId': userId,
+        'isLike': isLike,
+        'type': isLike ? 'Like' : 'None'
+      };
+      final resp = await api.dio
+          .post('${ApiConstants.moments}/$momentId/reactions', data: payload);
       // CHẨN ĐOÁN: in payload + kết quả để xác minh BE có nhận đúng userId không.
-      debugPrint('[REACTION] POST /moments/$momentId/reactions userId=$userId isLike=$isLike '
+      debugPrint(
+          '[REACTION] POST /moments/$momentId/reactions userId=$userId isLike=$isLike '
           '-> status=${resp.statusCode} body=${resp.data}');
     });
   }
 
   Future<List<SocialReactionModel>> getMomentReactions(int momentId) async {
     return request(() async {
-      final response = await api.dio.get('${ApiConstants.moments}/$momentId/reactions');
+      final response =
+          await api.dio.get('${ApiConstants.moments}/$momentId/reactions');
       return parseList(response.data, SocialReactionModel.fromJson);
     });
   }
 
-  Future<SocialCommentModel?> addComment(int momentId, String comment, int userId) async {
+  Future<SocialCommentModel?> addComment(
+      int momentId, String comment, int userId) async {
     return request(() async {
       // Gửi đủ biến thể field 'comment'/'content'/'text' để khớp CommentRequestDto.
-      final payload = {'momentId': momentId, 'userId': userId, 'comment': comment, 'content': comment, 'text': comment};
-      final resp = await api.dio.post('${ApiConstants.moments}/$momentId/comments', data: payload);
+      final payload = {
+        'momentId': momentId,
+        'userId': userId,
+        'comment': comment,
+        'content': comment,
+        'text': comment
+      };
+      final resp = await api.dio
+          .post('${ApiConstants.moments}/$momentId/comments', data: payload);
       debugPrint('[COMMENT] POST /moments/$momentId/comments userId=$userId '
           '-> status=${resp.statusCode} body=${resp.data}');
       if (resp.data != null) {
@@ -149,9 +195,12 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<List<SocialCommentModel>> getMomentComments(int momentId, {int skip = 0, int top = 50}) async {
+  Future<List<SocialCommentModel>> getMomentComments(int momentId,
+      {int skip = 0, int top = 50}) async {
     return request(() async {
-      final response = await api.dio.get('${ApiConstants.moments}/$momentId/comments', queryParameters: {r'$skip': skip, r'$top': top});
+      final response = await api.dio.get(
+          '${ApiConstants.moments}/$momentId/comments',
+          queryParameters: {r'$skip': skip, r'$top': top});
       return parseList(response.data, SocialCommentModel.fromJson);
     });
   }
@@ -159,13 +208,15 @@ class SocialService extends GetxService with BaseServiceMixin {
   Future<void> updateComment(int commentId, String comment, int userId) async {
     await request(() async {
       // FIX: gửi cả 'comment' lẫn 'content' để khớp CommentRequestDto.
-      await api.dio.put('${ApiConstants.moments}/comments/$commentId', data: {'userId': userId, 'comment': comment, 'content': comment});
+      await api.dio.put('${ApiConstants.moments}/comments/$commentId',
+          data: {'userId': userId, 'comment': comment, 'content': comment});
     });
   }
 
   Future<void> deleteComment(int commentId, int userId) async {
     await request(() async {
-      await api.dio.delete('${ApiConstants.moments}/comments/$commentId', queryParameters: {'userId': userId});
+      await api.dio.delete('${ApiConstants.moments}/comments/$commentId',
+          queryParameters: {'userId': userId});
     });
   }
 
@@ -177,16 +228,20 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<List<ChatMessageModel>> getChatMessages(int roomId, {int skip = 0, int top = 50}) async {
+  Future<List<ChatMessageModel>> getChatMessages(int roomId,
+      {int skip = 0, int top = 50}) async {
     return request(() async {
-      final response = await api.dio.get('${ApiConstants.chat}/rooms/$roomId/messages', queryParameters: {'skip': skip, 'top': top});
+      final response = await api.dio.get(
+          '${ApiConstants.chat}/rooms/$roomId/messages',
+          queryParameters: {'skip': skip, 'top': top});
       return parseList(response.data, ChatMessageModel.fromJson);
     });
   }
 
   Future<ChatRoomModel> createDirectChat(int friendId) async {
     return request(() async {
-      final response = await api.dio.post('${ApiConstants.chat}/rooms', data: {'friendId': friendId});
+      final response = await api.dio
+          .post('${ApiConstants.chat}/rooms', data: {'friendId': friendId});
       final body = response.data;
       if (body is Map<String, dynamic>) {
         final data = body['data'] ?? body;
@@ -197,7 +252,9 @@ class SocialService extends GetxService with BaseServiceMixin {
   }
 
   Future<void> leaveChatRoom(int roomId) async {
-    await request(() async { await api.dio.delete('${ApiConstants.chat}/rooms/$roomId/leave'); });
+    await request(() async {
+      await api.dio.delete('${ApiConstants.chat}/rooms/$roomId/leave');
+    });
   }
 
   Future<void> markChatRoomAsRead(int roomId) async {
@@ -207,7 +264,8 @@ class SocialService extends GetxService with BaseServiceMixin {
   }
 
   // ================= LOCATION & TRACKING =================
-  Future<void> pingLocation({required double lat, required double lng, int? scheduleId}) async {
+  Future<void> pingLocation(
+      {required double lat, required double lng, int? scheduleId}) async {
     await request(() async {
       await api.dio.post('${ApiConstants.locations}/ping', data: {
         'latitude': lat,
@@ -223,9 +281,11 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  Future<List<LiveLocationModel>> getScheduleLiveLocations(int scheduleId) async {
+  Future<List<LiveLocationModel>> getScheduleLiveLocations(
+      int scheduleId) async {
     return request(() async {
-      final response = await api.dio.get('${ApiConstants.locations}/schedules/$scheduleId/live');
+      final response = await api.dio
+          .get('${ApiConstants.locations}/schedules/$scheduleId/live');
       return parseList(response.data, LiveLocationModel.fromJson);
     });
   }
@@ -243,11 +303,13 @@ class SocialService extends GetxService with BaseServiceMixin {
 
   Future<PublicLocationModel> getPublicLocation(String token) async {
     return request(() async {
-      final response = await api.dio.get('${ApiConstants.locations}/track/$token');
+      final response =
+          await api.dio.get('${ApiConstants.locations}/track/$token');
       final body = response.data;
       if (body is Map<String, dynamic>) {
         final data = body['data'] ?? body;
-        if (data is Map<String, dynamic>) return PublicLocationModel.fromJson(data);
+        if (data is Map<String, dynamic>)
+          return PublicLocationModel.fromJson(data);
       }
       throw StateError('Invalid tracking response');
     });
@@ -266,9 +328,9 @@ class SocialService extends GetxService with BaseServiceMixin {
 
   /// Toạ độ các điểm đến trong 1 ngày (đã sắp theo thứ tự để nối Polyline).
   Future<List<RoutePointModel>> getTourRoutePoints(
-      int scheduleId,
-      int dayNumber,
-      ) async {
+    int scheduleId,
+    int dayNumber,
+  ) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.tours}/schedules/$scheduleId/itinerary/route',
@@ -304,14 +366,24 @@ class SocialService extends GetxService with BaseServiceMixin {
   Future<List<LiveLocationModel>> getLiveFriendsLocations() async {
     return request(() async {
       final response =
-      await api.dio.get('${ApiConstants.locations}/friends/live');
+          await api.dio.get('${ApiConstants.locations}/friends/live');
       return parseList(response.data, LiveLocationModel.fromJson);
     });
   }
 
   // ============ 2) MOMENTS ON MAP (Photo Map) ============
   /// Dùng lại feed moments rồi lọc lat/lng != null ở client.
-  /// GET /api/moments?scheduleId=&$skip=&$top=
+
+  /// GET /api/moments/user/{targetUserId}
+  Future<List<MomentModel>> getUserMoments(int targetUserId) async {
+    return request(() async {
+      final response = await api.dio.get(
+        '${ApiConstants.moments}/user/$targetUserId',
+      );
+      return parseList(response.data, MomentModel.fromJson);
+    });
+  }
+
   Future<List<MomentModel>> getMomentsWithLocation({
     int? scheduleId,
     int top = 200,
@@ -346,7 +418,7 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-    // ============ 4) FOOTPRINTS ("Cào Map") ============
+  // ============ 4) FOOTPRINTS ("Cào Map") ============
   /// GET /api/moments/my-footprints  (token-based, KHÔNG truyền userId)
   Future<List<FootprintDto>> getMyFootprints({int? scheduleId}) async {
     return request(() async {
@@ -399,21 +471,27 @@ class SocialService extends GetxService with BaseServiceMixin {
     if (waypoints.length > 25) {
       waypoints = waypoints.sublist(0, 25); // Mapbox limits
     }
-    
+
     return request(() async {
-      final coordsStr = waypoints.map((p) => '${p.longitude},${p.latitude}').join(';');
-      final url = 'https://api.mapbox.com/directions/v5/mapbox/driving/$coordsStr'
+      final coordsStr =
+          waypoints.map((p) => '${p.longitude},${p.latitude}').join(';');
+      final url =
+          'https://api.mapbox.com/directions/v5/mapbox/driving/$coordsStr'
           '?geometries=geojson'
           '&access_token=${ApiConstants.mapboxAccessToken}';
-          
+
       // Khong the dung api.dio vi no tu them baseUrl
       final response = await Dio().get(url);
-      
+
       final data = response.data;
-      if (data['code'] == 'Ok' && data['routes'] != null && data['routes'].isNotEmpty) {
+      if (data['code'] == 'Ok' &&
+          data['routes'] != null &&
+          data['routes'].isNotEmpty) {
         final route = data['routes'][0];
         final coords = route['geometry']['coordinates'] as List;
-        return coords.map((c) => LatLng(c[1] as double, c[0] as double)).toList();
+        return coords
+            .map((c) => LatLng(c[1] as double, c[0] as double))
+            .toList();
       }
       return [];
     });

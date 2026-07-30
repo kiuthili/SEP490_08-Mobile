@@ -597,7 +597,7 @@ class _OrderHero extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.36),
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
                 'Mã đơn #${order.id}',
@@ -660,7 +660,6 @@ class _OrderHero extends StatelessWidget {
     );
   }
 }
-
 
 class _TripTimeline extends StatelessWidget {
   const _TripTimeline({required this.order});
@@ -1520,7 +1519,7 @@ class _TimelineDate extends StatelessWidget {
 
 class _DashedDivider extends StatelessWidget {
   const _DashedDivider();
-  
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -1564,7 +1563,7 @@ class _OrderInformationCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
@@ -1610,18 +1609,16 @@ class _OrderInformationCard extends StatelessWidget {
                 Text(
                   DateFormatter.display(order.orderedAt),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                        color: AppColors.textSecondary,
+                      ),
                 ),
               ],
             ),
           ),
-          
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: _DashedDivider(),
           ),
-
           Padding(
             padding: const EdgeInsets.all(20),
             child: _TicketBreakdownSection(
@@ -1629,12 +1626,10 @@ class _OrderInformationCard extends StatelessWidget {
               ticketTypeNames: ticketTypeNames,
             ),
           ),
-
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: _DashedDivider(),
           ),
-
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -1683,7 +1678,6 @@ class _OrderInformationCard extends StatelessWidget {
               ],
             ),
           ),
-          
           if (hasNote) ...[
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -1697,9 +1691,9 @@ class _OrderInformationCard extends StatelessWidget {
                   Text(
                     'Ghi chú:',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                    ),
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1781,9 +1775,9 @@ class _TicketBreakdownSection extends StatelessWidget {
         Text(
           'Chi tiết vé',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AppColors.textSecondary,
-          ),
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+              ),
         ),
         const SizedBox(height: 12),
         ...items.map(
@@ -2011,7 +2005,7 @@ class _PostPaymentActions extends StatelessWidget {
               backgroundColor: AppColors.brand,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
             onPressed: onReview,
@@ -2029,7 +2023,7 @@ class _PostPaymentActions extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 side: const BorderSide(color: AppColors.brand),
               ),
@@ -2159,7 +2153,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: style.background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

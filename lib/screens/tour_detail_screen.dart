@@ -173,7 +173,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       final tour = _tourController.selectedTour.value;
       if (tour == null) return;
       final hasImages = tour.tourImages != null && tour.tourImages!.isNotEmpty;
-      final images = hasImages ? tour.tourImages! : (tour.imageUrl != null ? [tour.imageUrl!] : []);
+      final images = hasImages
+          ? tour.tourImages!
+          : (tour.imageUrl != null ? [tour.imageUrl!] : []);
       if (images.length > 1 && _pageController.hasClients) {
         int nextPage = _currentImageIndex + 1;
         if (nextPage >= images.length) {
@@ -252,18 +254,21 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
   void _showSchedulePicker() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     // 1. Lọc các schedule ở tương lai
     final futureSchedules = _tourController.detailSchedules
-        .where((s) => s.departureDate.isAfter(today) || s.departureDate.isAtSameMomentAs(today))
+        .where((s) =>
+            s.departureDate.isAfter(today) ||
+            s.departureDate.isAtSameMomentAs(today))
         .toList();
-        
+
     futureSchedules.sort((a, b) => a.departureDate.compareTo(b.departureDate));
 
     // 2. Nhóm theo tháng
     final Map<String, List<TourScheduleModel>> schedulesByMonth = {};
     for (final s in futureSchedules) {
-      final monthKey = 'Tháng ${s.departureDate.month} - ${s.departureDate.year}';
+      final monthKey =
+          'Tháng ${s.departureDate.month} - ${s.departureDate.year}';
       if (!schedulesByMonth.containsKey(monthKey)) {
         schedulesByMonth[monthKey] = [];
       }
@@ -296,14 +301,16 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     final tour = _tourController.selectedTour.value;
     if (tour == null) return;
 
-    final authController = Get.isRegistered<AuthController>()
-        ? Get.find<AuthController>()
-        : null;
+    final authController =
+        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
     final currentUser = authController?.currentUser.value;
 
-    final nameController = TextEditingController(text: currentUser?.fullName ?? '');
-    final phoneController = TextEditingController(text: currentUser?.phoneNumber ?? '');
-    final emailController = TextEditingController(text: currentUser?.email ?? '');
+    final nameController =
+        TextEditingController(text: currentUser?.fullName ?? '');
+    final phoneController =
+        TextEditingController(text: currentUser?.phoneNumber ?? '');
+    final emailController =
+        TextEditingController(text: currentUser?.email ?? '');
     final noteController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final isSubmitting = false.obs;
@@ -346,9 +353,10 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: AppColors.brandLight,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
-                        child: const Icon(Icons.support_agent_rounded, color: AppColors.brand, size: 24),
+                        child: const Icon(Icons.support_agent_rounded,
+                            color: AppColors.brand, size: 24),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -357,7 +365,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           children: [
                             Text(
                               'Đăng ký nhận tư vấn',
-                              style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                              style:
+                                  AppTextStyles.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
@@ -383,10 +392,14 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     decoration: InputDecoration(
                       labelText: 'Họ và tên *',
                       prefixIcon: const Icon(Icons.person_outline_rounded),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập họ và tên' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Vui lòng nhập họ và tên'
+                        : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -395,10 +408,14 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     decoration: InputDecoration(
                       labelText: 'Số điện thoại *',
                       prefixIcon: const Icon(Icons.phone_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Vui lòng nhập số điện thoại' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Vui lòng nhập số điện thoại'
+                        : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -407,12 +424,16 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     decoration: InputDecoration(
                       labelText: 'Email *',
                       prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Vui lòng nhập email';
-                      if (!GetUtils.isEmail(v.trim())) return 'Email không hợp lệ';
+                      if (v == null || v.trim().isEmpty)
+                        return 'Vui lòng nhập email';
+                      if (!GetUtils.isEmail(v.trim()))
+                        return 'Email không hợp lệ';
                       return null;
                     },
                   ),
@@ -422,10 +443,13 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'Ghi chú / Yêu cầu đặc biệt (tùy chọn)',
-                      hintText: 'Ví dụ: Cần tư vấn về lịch trình đoàn đông, chính sách giá trẻ em...',
+                      hintText:
+                          'Ví dụ: Cần tư vấn về lịch trình đoàn đông, chính sách giá trẻ em...',
                       alignLabelWithHint: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -438,7 +462,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           : () async {
                               if (!formKey.currentState!.validate()) return;
                               isSubmitting.value = true;
-                              final success = await _tourController.requestConsultation(
+                              final success =
+                                  await _tourController.requestConsultation(
                                 tourId: tour.id,
                                 fullName: nameController.text.trim(),
                                 phone: phoneController.text.trim(),
@@ -486,7 +511,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     if (tour == null) return null;
     final schedule = _selectedSchedule;
     final minPrice = schedule != null ? _scheduleMinPrice(schedule) : null;
-    final originalPrice = schedule != null ? _scheduleOriginalMinPrice(schedule) : null;
+    final originalPrice =
+        schedule != null ? _scheduleOriginalMinPrice(schedule) : null;
     final hasSchedules = _tourController.detailSchedules.isNotEmpty;
     return SafeArea(
       top: false,
@@ -515,7 +541,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (originalPrice != null && originalPrice > (minPrice ?? 0))
+                    if (originalPrice != null &&
+                        originalPrice > (minPrice ?? 0))
                       Text(
                         CurrencyFormatter.format(originalPrice),
                         style: const TextStyle(
@@ -533,7 +560,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                                   ? 'Đang cập nhật'
                                   : 'Chưa thể đặt',
                           style: TextStyle(
-                            color: minPrice != null ? AppColors.brand : AppColors.textSecondary,
+                            color: minPrice != null
+                                ? AppColors.brand
+                                : AppColors.textSecondary,
                             fontWeight: FontWeight.w800,
                             fontSize: 20,
                           ),
@@ -555,10 +584,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.phone_in_talk_rounded, color: Colors.blue.shade700),
+                    icon: Icon(Icons.phone_in_talk_rounded,
+                        color: Colors.blue.shade700),
                     onPressed: _showConsultationSheet,
                   ),
                 ),
@@ -568,7 +598,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
                     onPressed: hasSchedules ? _showSchedulePicker : null,
@@ -576,7 +606,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       'Ngày khác',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: hasSchedules ? AppColors.primary : AppColors.textSecondary,
+                        color: hasSchedules
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -588,7 +620,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       backgroundColor: AppColors.brand,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
                     onPressed: schedule != null && _scheduleAvailable(schedule)
@@ -630,7 +662,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               return IconButton(
                 style: IconButton.styleFrom(
                   backgroundColor: inWishlist
-                      ? Colors.red.withValues(alpha: 0.1)
+                      ? AppColors.error.withValues(alpha: 0.1)
                       : AppColors.surfaceGrouped,
                 ),
                 icon: busy
@@ -763,7 +795,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           ? const Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
                               child: Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
                             )
                           : _buildItineraryTimeline(),
@@ -788,7 +821,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           )
                         : Column(
                             children: [
-                              _buildReviewStatistics(_reviewController.reviews, tour.averageStar),
+                              _buildReviewStatistics(
+                                  _reviewController.reviews, tour.averageStar),
                               ..._reviewController.reviews
                                   .map(
                                     (review) => _ReviewCard(review: review),
@@ -832,7 +866,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
         }
       }
     }
-    
+
     final images = <String>[];
     if (tour.imageUrl != null && tour.imageUrl!.isNotEmpty) {
       images.add(tour.imageUrl!);
@@ -889,7 +923,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
             ),
           ),
         ),
-
         Positioned(
           left: 20,
           right: 20,
@@ -897,7 +930,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               Text(
                 tour.name,
                 style: AppTextStyles.textTheme.headlineMedium?.copyWith(
@@ -909,7 +941,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.place_rounded, size: 16, color: Colors.white70),
+                  const Icon(Icons.place_rounded,
+                      size: 16, color: Colors.white70),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -921,7 +954,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   if (tour.transportationType?.isNotEmpty == true) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black45,
                         borderRadius: BorderRadius.circular(6),
@@ -1053,12 +1087,14 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
-                          if (originalMinPrice != null && minPrice < originalMinPrice)
+                          if (originalMinPrice != null &&
+                              minPrice < originalMinPrice)
                             Padding(
                               padding: const EdgeInsets.only(right: 6),
                               child: Text(
                                 CurrencyFormatter.format(originalMinPrice),
-                                style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                                style:
+                                    AppTextStyles.textTheme.bodySmall?.copyWith(
                                   decoration: TextDecoration.lineThrough,
                                   color: AppColors.textSecondary,
                                 ),
@@ -1077,7 +1113,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   )
                 else
                   Icon(
-                    selected 
+                    selected
                         ? Icons.check_circle_rounded
                         : Icons.chevron_right_rounded,
                     color: selected ? AppColors.brand : AppColors.textTertiary,
@@ -1315,7 +1351,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: Row(
@@ -1390,19 +1426,22 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     );
   }
 
-  Widget _buildReviewStatistics(List<ReviewModel> reviews, double? averageStar) {
+  Widget _buildReviewStatistics(
+      List<ReviewModel> reviews, double? averageStar) {
     if (reviews.isEmpty) return const SizedBox.shrink();
-    
+
     final totalCount = reviews.length;
     final starCounts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
-    
+
     for (final review in reviews) {
       if (review.rating >= 1 && review.rating <= 5) {
         starCounts[review.rating] = starCounts[review.rating]! + 1;
       }
     }
-    
-    final average = averageStar ?? (reviews.fold<double>(0, (sum, item) => sum + item.rating) / totalCount);
+
+    final average = averageStar ??
+        (reviews.fold<double>(0, (sum, item) => sum + item.rating) /
+            totalCount);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -1431,7 +1470,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: List.generate(5, (index) {
                   return Icon(
-                    index < average.round() ? Icons.star_rounded : Icons.star_border_rounded,
+                    index < average.round()
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
                     color: const Color(0xFFFFB800),
                     size: 16,
                   );
@@ -1454,7 +1495,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 final star = 5 - index;
                 final count = starCounts[star]!;
                 final percentage = totalCount > 0 ? count / totalCount : 0.0;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
@@ -1467,16 +1508,18 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.star_rounded, size: 12, color: AppColors.textSecondary),
+                      const Icon(Icons.star_rounded,
+                          size: 12, color: AppColors.textSecondary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                           child: LinearProgressIndicator(
                             value: percentage,
                             minHeight: 6,
                             backgroundColor: AppColors.border,
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFB800)),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFFFFB800)),
                           ),
                         ),
                       ),
@@ -1716,18 +1759,23 @@ class _ItineraryActivityCard extends StatelessWidget {
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: () async {
-                                  final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${itinerary.locationLat},${itinerary.locationLng}');
+                                  final uri = Uri.parse(
+                                      'https://www.google.com/maps/search/?api=1&query=${itinerary.locationLat},${itinerary.locationLng}');
                                   try {
-                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    await launchUrl(uri,
+                                        mode: LaunchMode.externalApplication);
                                   } catch (_) {
                                     // Ignore error, or you can add a snackbar if context is available
                                   }
                                 },
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xs),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 4, horizontal: 2),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Padding(
                                         padding: EdgeInsets.only(top: 2),
@@ -1741,7 +1789,9 @@ class _ItineraryActivityCard extends StatelessWidget {
                                       Expanded(
                                         child: Text(
                                           'Xem trên bản đồ',
-                                          style: AppTextStyles.textTheme.labelSmall?.copyWith(
+                                          style: AppTextStyles
+                                              .textTheme.labelSmall
+                                              ?.copyWith(
                                             color: AppColors.brandDeep,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -1852,7 +1902,7 @@ class _HeritageSourceLink extends StatelessWidget {
                 height: 32,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: const Icon(
                   Icons.public_rounded,
@@ -2022,7 +2072,7 @@ class _DetailSection extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.brandLight,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(icon, size: 20, color: AppColors.brand),
               ),
@@ -2336,7 +2386,7 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
         }
       }
     }
-    
+
     for (final id in ids) {
       catalogService.getTicketTypeById(id).then((value) {
         if (mounted) {
@@ -2395,26 +2445,31 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                   child: Container(
                     width: 90,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue.shade50 : AppColors.surface,
+                      color:
+                          isSelected ? Colors.blue.shade50 : AppColors.surface,
                       border: Border.all(
                         color: isSelected ? Colors.blue : AppColors.border,
                         width: isSelected ? 2 : 1,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.calendar_month_rounded,
-                          color: isSelected ? Colors.blue : AppColors.textSecondary,
+                          color: isSelected
+                              ? Colors.blue
+                              : AppColors.textSecondary,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           lines.first,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.blue : AppColors.textPrimary,
+                            color: isSelected
+                                ? Colors.blue
+                                : AppColors.textPrimary,
                           ),
                         ),
                         if (lines.length > 1)
@@ -2422,7 +2477,9 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                             lines[1],
                             style: TextStyle(
                               fontSize: 12,
-                              color: isSelected ? Colors.blue : AppColors.textSecondary,
+                              color: isSelected
+                                  ? Colors.blue
+                                  : AppColors.textSecondary,
                             ),
                           ),
                       ],
@@ -2439,19 +2496,22 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
               itemCount: widget.schedulesByMonth[_selectedMonth]!.length,
               separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
-                final schedule = widget.schedulesByMonth[_selectedMonth]![index];
+                final schedule =
+                    widget.schedulesByMonth[_selectedMonth]![index];
                 final isSelected = schedule.id == widget.selectedSchedule?.id;
-                
+
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.brandLight.withValues(alpha: 0.5) : AppColors.surface,
+                    color: isSelected
+                        ? AppColors.brandLight.withValues(alpha: 0.5)
+                        : AppColors.surface,
                     border: Border.all(
                       color: isSelected ? AppColors.brand : AppColors.border,
                       width: isSelected ? 2 : 1,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2469,7 +2529,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                     const SizedBox(width: 4),
                                     Text(
                                       'Đi: ${DateFormatter.display(schedule.departureDate)}',
-                                      style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                                      style: AppTextStyles.textTheme.labelMedium
+                                          ?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -2481,7 +2542,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                     const SizedBox(width: 4),
                                     Text(
                                       'Về: ${DateFormatter.display(schedule.returnDate)}',
-                                      style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                                      style: AppTextStyles.textTheme.labelMedium
+                                          ?.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
@@ -2495,7 +2557,9 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                               padding: EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 'Đang chọn',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.brand),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.brand),
                               ),
                             )
                           else
@@ -2504,9 +2568,11 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                 backgroundColor: AppColors.brand,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.xs),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 minimumSize: Size.zero,
                               ),
                               onPressed: () => widget.onSelect(schedule),
@@ -2521,13 +2587,22 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                       // Tickets list
                       const Text(
                         'Chi tiết các loại vé:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       const SizedBox(height: 8),
-                      ...schedule.tickets.where((t) => t.isActive != false).map((t) {
+                      ...schedule.tickets
+                          .where((t) => t.isActive != false)
+                          .map((t) {
                         final isSoldOut = t.availableQuantity <= 0;
-                        final typeName = t.ticketTypeName ?? _ticketTypeNames[t.ticketTypeId] ?? (t.ticketTypeId == 1 ? 'Người lớn' : t.ticketTypeId == 2 ? 'Trẻ em' : 'Vé loại ${t.ticketTypeId}');
-                        
+                        final typeName = t.ticketTypeName ??
+                            _ticketTypeNames[t.ticketTypeId] ??
+                            (t.ticketTypeId == 1
+                                ? 'Người lớn'
+                                : t.ticketTypeId == 2
+                                    ? 'Trẻ em'
+                                    : 'Vé loại ${t.ticketTypeId}');
+
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Row(
@@ -2536,24 +2611,33 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                               Row(
                                 children: [
                                   Icon(
-                                    t.ticketTypeId == 1 ? Icons.person_rounded : Icons.child_care_rounded,
+                                    t.ticketTypeId == 1
+                                        ? Icons.person_rounded
+                                        : Icons.child_care_rounded,
                                     size: 16,
-                                    color: isSoldOut ? AppColors.textSecondary : AppColors.textPrimary,
+                                    color: isSoldOut
+                                        ? AppColors.textSecondary
+                                        : AppColors.textPrimary,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     typeName,
                                     style: TextStyle(
-                                      color: isSoldOut ? AppColors.textSecondary : AppColors.textPrimary,
+                                      color: isSoldOut
+                                          ? AppColors.textSecondary
+                                          : AppColors.textPrimary,
                                     ),
                                   ),
                                   if (!isSoldOut) ...[
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppColors.accent.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(4),
+                                        color: AppColors.accent
+                                            .withValues(alpha: 0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.xs),
                                       ),
                                       child: Text(
                                         'Còn ${t.availableQuantity}',
@@ -2570,7 +2654,9 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                       padding: EdgeInsets.only(left: 8),
                                       child: Text(
                                         '(Hết vé)',
-                                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary),
                                       ),
                                     ),
                                 ],
@@ -2591,7 +2677,9 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                     CurrencyFormatter.format(t.effectivePrice),
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: isSoldOut ? AppColors.textSecondary : AppColors.brand,
+                                      color: isSoldOut
+                                          ? AppColors.textSecondary
+                                          : AppColors.brand,
                                     ),
                                   ),
                                 ],
@@ -2603,7 +2691,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                       if (schedule.tickets.isEmpty)
                         const Text(
                           'Chưa có thông tin vé.',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: TextStyle(
+                              color: AppColors.textSecondary, fontSize: 13),
                         ),
                     ],
                   ),

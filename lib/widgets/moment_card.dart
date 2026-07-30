@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../models/social_models.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class MomentCard extends StatefulWidget {
   final MomentModel moment;
@@ -33,11 +34,12 @@ class MomentCard extends StatefulWidget {
   State<MomentCard> createState() => _MomentCardState();
 }
 
-class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateMixin {
+class _MomentCardState extends State<MomentCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _heartAnimController;
   late Animation<double> _heartScale;
   late Animation<double> _heartFade;
-  
+
   bool? _isLiked;
   int? _reactionCount;
 
@@ -106,7 +108,7 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
 
   void _triggerDoubleTapLike() {
     HapticFeedback.mediumImpact();
-    
+
     final currentLiked = _isLiked ?? widget.moment.isLikedByMe;
     if (!currentLiked) {
       setState(() {
@@ -115,7 +117,7 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
       });
       widget.onLike(true);
     }
-    
+
     // Start / replay the heart popping animation
     _heartAnimController.reset();
     _heartAnimController.forward();
@@ -174,7 +176,7 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF34C3FF), Color(0xFF0068E0)],
+                      colors: [Color(0xFF34C3FF), AppColors.brand],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -225,7 +227,7 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                           ),
                           child: const Icon(
                             Icons.favorite_rounded,
-                            color: Colors.redAccent,
+                            color: AppColors.error,
                             size: 100,
                           ),
                         ),
@@ -260,11 +262,16 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                               height: 44,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                                boxShadow: const [
+                                  BoxShadow(
+                                      color: Colors.black26, blurRadius: 4)
+                                ],
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child: (widget.moment.avatarUrl != null && widget.moment.avatarUrl!.isNotEmpty)
+                              child: (widget.moment.avatarUrl != null &&
+                                      widget.moment.avatarUrl!.isNotEmpty)
                                   ? CachedNetworkImage(
                                       imageUrl: widget.moment.avatarUrl!,
                                       fit: BoxFit.cover,
@@ -294,17 +301,26 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                                      shadows: [
+                                        Shadow(
+                                            color: Colors.black45,
+                                            blurRadius: 4)
+                                      ],
                                     ),
                                   ),
                                   Text(
-                                    DateFormat('HH:mm - dd/MM/yyyy')
-                                        .format(widget.moment.createdAt.toLocal()),
+                                    DateFormat('HH:mm - dd/MM/yyyy').format(
+                                        widget.moment.createdAt.toLocal()),
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.8),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.8),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
-                                      shadows: const [Shadow(color: Colors.black45, blurRadius: 4)],
+                                      shadows: const [
+                                        Shadow(
+                                            color: Colors.black45,
+                                            blurRadius: 4)
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -314,7 +330,8 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                         ),
                       ),
                     ),
-                    if (widget.moment.userId == widget.currentUserId || widget.onReport != null)
+                    if (widget.moment.userId == widget.currentUserId ||
+                        widget.onReport != null)
                       _buildMoreMenu(context),
                   ],
                 ),
@@ -340,7 +357,9 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                                 fontSize: 15,
                                 height: 1.4,
                                 fontWeight: FontWeight.w500,
-                                shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                                shadows: [
+                                  Shadow(color: Colors.black54, blurRadius: 4)
+                                ],
                               ),
                             )
                           : const SizedBox.shrink(),
@@ -354,13 +373,14 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                           icon: isLiked
                               ? Icons.favorite_rounded
                               : Icons.favorite_outline_rounded,
-                          iconColor: isLiked ? Colors.redAccent : Colors.white,
+                          iconColor: isLiked ? AppColors.error : Colors.white,
                           label: reactionCount > 0 ? '$reactionCount' : '',
                           onTap: () {
                             final nextState = !isLiked;
                             setState(() {
                               _isLiked = nextState;
-                              _reactionCount = widget.moment.reactionCount + (nextState ? 1 : -1);
+                              _reactionCount = widget.moment.reactionCount +
+                                  (nextState ? 1 : -1);
                             });
                             widget.onLike(nextState);
                           },
@@ -431,11 +451,13 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
       ),
       child: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 28),
+        icon:
+            const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 28),
         onSelected: (val) {
           if (val == 'delete') {
             showDialog(
@@ -444,7 +466,8 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                 title: const Text('Xóa khoảnh khắc'),
                 content: const Text(
                     'Bạn có chắc chắn muốn xóa khoảnh khắc này không? Thao tác này không thể hoàn tác.'),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg)),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
@@ -455,7 +478,8 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                       Navigator.pop(dialogContext);
                       widget.onDelete(widget.moment.id);
                     },
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                    style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.error),
                     child: const Text('Xóa'),
                   ),
                 ],
@@ -476,7 +500,8 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                 ],
               ),
             ),
-          if (widget.moment.userId != widget.currentUserId && widget.onReport != null)
+          if (widget.moment.userId != widget.currentUserId &&
+              widget.onReport != null)
             const PopupMenuItem(
               value: 'report',
               child: Row(

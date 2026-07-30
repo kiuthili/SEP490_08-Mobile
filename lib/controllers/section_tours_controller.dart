@@ -43,13 +43,16 @@ class SectionToursController extends GetxController {
       PaginationModel<TourModel>? result;
       switch (sectionType.value) {
         case 'hot':
-          result = await _tourService.getHotTours(page: _currentPage, pageSize: _pageSize);
+          result = await _tourService.getHotTours(
+              page: _currentPage, pageSize: _pageSize);
           break;
         case 'sale':
-          result = await _tourService.getSaleTours(page: _currentPage, pageSize: _pageSize);
+          result = await _tourService.getSaleTours(
+              page: _currentPage, pageSize: _pageSize);
           break;
         case 'upcoming':
-          result = await _tourService.getUpcomingTours(page: _currentPage, pageSize: _pageSize);
+          result = await _tourService.getUpcomingTours(
+              page: _currentPage, pageSize: _pageSize);
           break;
       }
 

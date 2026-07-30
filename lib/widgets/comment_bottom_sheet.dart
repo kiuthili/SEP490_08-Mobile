@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../utils/snackbar_helper.dart';
 import 'glass_widgets.dart';
 import 'moment_card.dart';
+import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class CommentBottomSheet extends StatefulWidget {
   final MomentModel moment;
@@ -80,17 +81,19 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
           }
         }
         setState(() {
-          _comments = _comments.map((c) => c.id == editingId
-              ? SocialCommentModel(
-                  id: c.id,
-                  momentId: c.momentId,
-                  userId: c.userId,
-                  userName: c.userName,
-                  avatarUrl: c.avatarUrl,
-                  comment: text,
-                  timestamp: c.timestamp,
-                )
-              : c).toList();
+          _comments = _comments
+              .map((c) => c.id == editingId
+                  ? SocialCommentModel(
+                      id: c.id,
+                      momentId: c.momentId,
+                      userId: c.userId,
+                      userName: c.userName,
+                      avatarUrl: c.avatarUrl,
+                      comment: text,
+                      timestamp: c.timestamp,
+                    )
+                  : c)
+              .toList();
           _editingCommentId = null;
         });
       } else {
@@ -130,7 +133,8 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
     }
   }
 
-  void _showReportDialog(BuildContext context, String contentType, int targetId) {
+  void _showReportDialog(
+      BuildContext context, String contentType, int targetId) {
     String selectedReason = 'Spam';
     final detailsController = TextEditingController();
     var isSending = false;
@@ -141,20 +145,28 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
+              title: Text(
+                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(labelText: 'Reason for reporting'),
+                      decoration: const InputDecoration(
+                          labelText: 'Reason for reporting'),
                       items: const [
-                        DropdownMenuItem(value: 'Spam', child: Text('Spam / Advertisement')),
-                        DropdownMenuItem(value: 'Hate Speech', child: Text('Hate Speech')),
-                        DropdownMenuItem(value: 'Harassment', child: Text('Harassment / Threats')),
-                        DropdownMenuItem(value: 'Violence', child: Text('Violence / Gore')),
-                        DropdownMenuItem(value: 'Other', child: Text('Other reason')),
+                        DropdownMenuItem(
+                            value: 'Spam', child: Text('Spam / Advertisement')),
+                        DropdownMenuItem(
+                            value: 'Hate Speech', child: Text('Hate Speech')),
+                        DropdownMenuItem(
+                            value: 'Harassment',
+                            child: Text('Harassment / Threats')),
+                        DropdownMenuItem(
+                            value: 'Violence', child: Text('Violence / Gore')),
+                        DropdownMenuItem(
+                            value: 'Other', child: Text('Other reason')),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -189,7 +201,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                             contentType: contentType,
                             targetId: targetId,
                             reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                            details: detailsController.text.trim().isNotEmpty
+                                ? detailsController.text.trim()
+                                : null,
                           );
                           setDialogState(() => isSending = false);
                           if (ok) {
@@ -200,7 +214,8 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Submit Report'),
                 ),
@@ -222,219 +237,239 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      bottom: false,
-      child: GlassContainer(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        color: Colors.white.withValues(alpha: 0.85),
-        blur: 24,
-        padding: EdgeInsets.only(
-        top: 8,
-        left: 0,
-        right: 0,
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.black26,
-              borderRadius: BorderRadius.circular(2),
-            ),
+        bottom: false,
+        child: GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: Colors.white.withValues(alpha: 0.85),
+          blur: 24,
+          padding: EdgeInsets.only(
+            top: 8,
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          
-          // Content
-          Flexible(
-            child: CustomScrollView(
-              shrinkWrap: true,
-              physics: const ClampingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: MomentCard(
-                      moment: _moment,
-                      currentUserId: _currentUserId,
-                      onDelete: (id) async {
-                        await _socialController.deleteMoment(id);
-                        Get.back();
-                      },
-                      onLike: (isLike) async {
-                        if (_moment.isLikedByMe == isLike) return;
-
-                        final newCount = (_moment.reactionCount + (isLike ? 1 : -1))
-                            .clamp(0, 1 << 30)
-                            .toInt();
-                        setState(() {
-                          _moment = _moment.copyWith(
-                            isLikedByMe: isLike,
-                            reactionCount: newCount,
-                          );
-                        });
-
-                        await _socialController.reactMoment(_moment.id, isLike);
-                        final updated = _findInFeed(_moment.id);
-                        if (updated != null && mounted) {
-                          setState(() => _moment = updated);
-                        }
-                      },
-                      onReport: (id) => _showReportDialog(context, 'Moment', id),
-                      isDetail: true,
-                    ),
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text(
-                      'Comments (${_comments.length})',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                if (_comments.isEmpty)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Center(
-                        child: Text(
-                          'No comments yet. Be the first to comment!',
-                          style: TextStyle(color: AppColors.textTertiary),
-                        ),
-                      ),
-                    ),
-                  ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final c = _comments[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.brandLight,
-                          backgroundImage: (c.avatarUrl != null && c.avatarUrl!.isNotEmpty)
-                              ? CachedNetworkImageProvider(c.avatarUrl!)
-                              : null,
-                          child: (c.avatarUrl == null || c.avatarUrl!.isEmpty)
-                              ? const Icon(Icons.person, size: 20, color: AppColors.brand)
-                              : null,
-                        ),
-                        title: Text(
-                          c.userName ?? 'User',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        subtitle: Text(c.comment),
-                        trailing: PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert_rounded, size: 20, color: Colors.black45),
-                          onSelected: (val) async {
-                            if (val == 'edit') {
-                              _editComment(c);
-                            } else if (val == 'delete') {
-                              await _deleteComment(c);
-                            } else if (val == 'report') {
-                              _showReportDialog(context, 'Comment', c.id);
+              ),
+
+              // Content
+              Flexible(
+                child: CustomScrollView(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: MomentCard(
+                          moment: _moment,
+                          currentUserId: _currentUserId,
+                          onDelete: (id) async {
+                            await _socialController.deleteMoment(id);
+                            Get.back();
+                          },
+                          onLike: (isLike) async {
+                            if (_moment.isLikedByMe == isLike) return;
+
+                            final newCount =
+                                (_moment.reactionCount + (isLike ? 1 : -1))
+                                    .clamp(0, 1 << 30)
+                                    .toInt();
+                            setState(() {
+                              _moment = _moment.copyWith(
+                                isLikedByMe: isLike,
+                                reactionCount: newCount,
+                              );
+                            });
+
+                            await _socialController.reactMoment(
+                                _moment.id, isLike);
+                            final updated = _findInFeed(_moment.id);
+                            if (updated != null && mounted) {
+                              setState(() => _moment = updated);
                             }
                           },
-                          itemBuilder: (_) => [
-                            if (c.userId == _currentUserId) ...const [
-                              PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Delete', style: TextStyle(color: AppColors.error)),
-                              ),
-                            ],
-                            if (c.userId != _currentUserId)
-                              const PopupMenuItem(
-                                value: 'report',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.flag_outlined, size: 20),
-                                    SizedBox(width: 8),
-                                    Text('Report Violation'),
-                                  ],
-                                ),
-                              ),
-                          ],
+                          onReport: (id) =>
+                              _showReportDialog(context, 'Moment', id),
+                          isDetail: true,
                         ),
-                      );
-                    },
-                    childCount: _comments.length,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Glass Composer
-          Container(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.paddingOf(context).bottom + 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.5),
-              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.4))),
-            ),
-            child: Row(
-              children: [
-                if (_editingCommentId != null)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.error),
-                    onPressed: () {
-                      setState(() {
-                        _editingCommentId = null;
-                        _commentController.clear();
-                        FocusScope.of(context).unfocus();
-                      });
-                    },
-                  ),
-                Expanded(
-                  child: GlassContainer(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    blur: 16,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      controller: _commentController,
-                      focusNode: _commentFocusNode,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _submitComment(),
-                      decoration: InputDecoration(
-                        hintText: _editingCommentId != null ? 'Edit comment...' : 'Add a comment...',
-                        border: InputBorder.none,
-                        hintStyle: const TextStyle(color: Colors.black54),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _sendingComment
-                    ? const SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Text(
+                          'Comments (${_comments.length})',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ),
+                    ),
+                    if (_comments.isEmpty)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              'No comments yet. Be the first to comment!',
+                              style: TextStyle(color: AppColors.textTertiary),
+                            ),
                           ),
                         ),
-                      )
-                    : GlassIconButton(
-                        icon: Icons.send_rounded,
-                        onPressed: _submitComment,
-                        color: AppColors.brand,
-                        iconColor: Colors.white,
-                        size: 44,
                       ),
-              ],
-            ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final c = _comments[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.brandLight,
+                              backgroundImage: (c.avatarUrl != null &&
+                                      c.avatarUrl!.isNotEmpty)
+                                  ? CachedNetworkImageProvider(c.avatarUrl!)
+                                  : null,
+                              child:
+                                  (c.avatarUrl == null || c.avatarUrl!.isEmpty)
+                                      ? const Icon(Icons.person,
+                                          size: 20, color: AppColors.brand)
+                                      : null,
+                            ),
+                            title: Text(
+                              c.userName ?? 'User',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            subtitle: Text(c.comment),
+                            trailing: PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert_rounded,
+                                  size: 20, color: Colors.black45),
+                              onSelected: (val) async {
+                                if (val == 'edit') {
+                                  _editComment(c);
+                                } else if (val == 'delete') {
+                                  await _deleteComment(c);
+                                } else if (val == 'report') {
+                                  _showReportDialog(context, 'Comment', c.id);
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                if (c.userId == _currentUserId) ...const [
+                                  PopupMenuItem(
+                                      value: 'edit', child: Text('Edit')),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text('Delete',
+                                        style:
+                                            TextStyle(color: AppColors.error)),
+                                  ),
+                                ],
+                                if (c.userId != _currentUserId)
+                                  const PopupMenuItem(
+                                    value: 'report',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.flag_outlined, size: 20),
+                                        SizedBox(width: 8),
+                                        Text('Report Violation'),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                        childCount: _comments.length,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Glass Composer
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                    16, 8, 16, MediaQuery.paddingOf(context).bottom + 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  border: Border(
+                      top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.4))),
+                ),
+                child: Row(
+                  children: [
+                    if (_editingCommentId != null)
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded,
+                            color: AppColors.error),
+                        onPressed: () {
+                          setState(() {
+                            _editingCommentId = null;
+                            _commentController.clear();
+                            FocusScope.of(context).unfocus();
+                          });
+                        },
+                      ),
+                    Expanded(
+                      child: GlassContainer(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        blur: 16,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: TextField(
+                          controller: _commentController,
+                          focusNode: _commentFocusNode,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _submitComment(),
+                          decoration: InputDecoration(
+                            hintText: _editingCommentId != null
+                                ? 'Edit comment...'
+                                : 'Add a comment...',
+                            border: InputBorder.none,
+                            hintStyle: const TextStyle(color: Colors.black54),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _sendingComment
+                        ? const SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          )
+                        : GlassIconButton(
+                            icon: Icons.send_rounded,
+                            onPressed: _submitComment,
+                            color: AppColors.brand,
+                            iconColor: Colors.white,
+                            size: 44,
+                          ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ));
+        ));
   }
 }

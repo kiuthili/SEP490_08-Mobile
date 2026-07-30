@@ -171,7 +171,8 @@ class SubmitUserStudyResponseResultModel {
     required this.message,
   });
 
-  factory SubmitUserStudyResponseResultModel.fromJson(Map<String, dynamic> json) =>
+  factory SubmitUserStudyResponseResultModel.fromJson(
+          Map<String, dynamic> json) =>
       SubmitUserStudyResponseResultModel(
         responseId: JsonUtils.readInt(json['responseId']),
         message: JsonUtils.readString(json['message']) ?? '',

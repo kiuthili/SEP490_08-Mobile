@@ -42,21 +42,24 @@ class AppScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasBar =
-        title != null || titleWidget != null || (actions != null && actions!.isNotEmpty) || bottom != null;
+    final hasBar = title != null ||
+        titleWidget != null ||
+        (actions != null && actions!.isNotEmpty) ||
+        bottom != null;
 
     return PageScaffold(
       extendBody: extendBody,
       appBar: hasBar
           ? AppBar(
-              title: titleWidget ?? (title != null
-                  ? Text(
-                      title!,
-                      style: AppTextStyles.textTheme.titleLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : null),
+              title: titleWidget ??
+                  (title != null
+                      ? Text(
+                          title!,
+                          style: AppTextStyles.textTheme.titleLarge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null),
               centerTitle: centerTitle,
               actions: actions,
               bottom: bottom,

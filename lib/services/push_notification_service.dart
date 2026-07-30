@@ -116,9 +116,8 @@ class PushNotificationService extends GetxService {
         return;
       }
 
-      final title = message.notification?.title ??
-          data['senderName'] ??
-          'Tin nhắn mới';
+      final title =
+          message.notification?.title ?? data['senderName'] ?? 'Tin nhắn mới';
       final body = message.notification?.body ??
           data['content'] ??
           'Bạn có tin nhắn mới';

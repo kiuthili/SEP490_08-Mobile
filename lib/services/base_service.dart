@@ -92,10 +92,8 @@ class PaginationModel<T> {
   ) {
     final rawList = json['data'] as List<dynamic>? ?? [];
     return PaginationModel(
-      data: rawList
-          .whereType<Map<String, dynamic>>()
-          .map(itemFromJson)
-          .toList(),
+      data:
+          rawList.whereType<Map<String, dynamic>>().map(itemFromJson).toList(),
       total: json['total'] as int? ?? 0,
       totalPages: json['totalPages'] as int? ?? 0,
       currentPage: json['currentPage'] as int? ?? 1,
