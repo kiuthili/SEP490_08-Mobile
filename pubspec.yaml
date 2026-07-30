@@ -38,6 +38,7 @@ dependencies:
   flutter_map_heatmap: ^0.0.8
   flutter_markdown: ^0.7.7+1
   palette_generator: ^0.3.3+7
+  image_cropper: ^12.2.1
 
 
 dev_dependencies:

@@ -44,6 +44,10 @@
                     android:host="payment-result"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
             android:value="false"/>
