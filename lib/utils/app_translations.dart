@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+﻿import 'package:get/get.dart';
 
 class AppTranslations extends Translations {
   @override
@@ -167,6 +167,7 @@ class AppTranslations extends Translations {
           'err_name_special': 'Full name cannot contain special characters or symbols',
           'err_phone_exists': 'This phone number is already used. Please use another one.',
           'err_otp_invalid': 'OTP confirmation code is incorrect or expired.',
+          'InvalidProvider': 'This email is registered with a different login method. Please select the correct login method.',
 
           // --- General Auth Prompts ---
           'login_required': 'Please login to use this feature',
@@ -1084,6 +1085,7 @@ class AppTranslations extends Translations {
           'err_name_special': 'Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng',
           'err_phone_exists': 'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.',
           'err_otp_invalid': 'Mã xác nhận OTP không chính xác hoặc đã hết hạn.',
+          'InvalidProvider': 'Email này đã được đăng ký bằng phương thức khác. Vui lòng chọn đúng phương thức đăng nhập.',
 
           // --- General Auth Prompts ---
           'login_required': 'Vui lòng đăng nhập để sử dụng chức năng này',
@@ -1798,3 +1800,4 @@ class AppTranslations extends Translations {
         }
       };
 }
+

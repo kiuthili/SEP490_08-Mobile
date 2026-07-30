@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:get/get.dart';
 import '../models/api_response.dart';
@@ -57,7 +57,11 @@ class AuthController extends GetxController {
         );
       }
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -155,7 +159,11 @@ class AuthController extends GetxController {
     try {
       currentUser.value = await _authService.getProfile();
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -264,7 +272,11 @@ class AuthController extends GetxController {
         );
       }
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
     } catch (_) {
       SnackbarHelper.error('err_google_login'.tr);
     } finally {
@@ -322,6 +334,8 @@ class AuthController extends GetxController {
         SnackbarHelper.error('err_phone_exists'.tr);
       } else if (e.message == 'PhoneNumberMax15Chars') {
         SnackbarHelper.error('err_phone_length'.tr);
+      } else if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -332,3 +346,4 @@ class AuthController extends GetxController {
     }
   }
 }
+
