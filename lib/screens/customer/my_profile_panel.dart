@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../models/user_model.dart';
@@ -35,15 +36,15 @@ class _MyProfilePanelState extends State<MyProfilePanel>
     _loadMoments();
   }
 
-  Future<void> _loadMoments() async {
-    setState(() => _loading = true);
+  Future<void> _loadMoments({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       final user = _auth.currentUser.value;
       if (user != null) {
         _myMoments = await _socialService.getUserMoments(user.id);
       }
     } catch (_) {
-      SnackbarHelper.error('Không thể tải dữ liệu khoảnh khắc');
+      SnackbarHelper.error('sc_mp_err_load_moments'.tr);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -54,7 +55,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
     return Obx(() {
       final user = _auth.currentUser.value;
       if (user == null) {
-        return const Center(child: Text('Chưa đăng nhập'));
+        return Center(child: Text('sc_mp_not_logged_in'.tr));
       }
       return RefreshIndicator(
         color: AppColors.brand,
@@ -68,17 +69,12 @@ class _MyProfilePanelState extends State<MyProfilePanel>
               child: Divider(
                   height: 0.5, thickness: 0.5, color: AppColors.separator),
             ),
-            SliverToBoxAdapter(child: _buildTabRow()),
-            const SliverToBoxAdapter(
-              child: Divider(
-                  height: 0.5, thickness: 0.5, color: AppColors.separator),
-            ),
             if (_loading)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 hasScrollBody: false,
                 child: Padding(
                   padding: EdgeInsets.all(60),
-                  child: LoadingWidget(message: 'Đang tải khoảnh khắc...'),
+                  child: LoadingWidget(message: 'sc_mp_loading_moments'.tr),
                 ),
               )
             else if (_myMoments.isEmpty)
@@ -126,7 +122,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_myMoments.length.toString(), 'Bài viết'),
+                        _buildStat(_myMoments.length.toString(), 'sc_mp_posts'.tr),
                         Container(
                           width: 1,
                           height: 28,
@@ -134,7 +130,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                         ),
                         _buildStat(
                           _socialController.friends.length.toString(),
-                          'Bạn bè',
+                          'sc_mp_friends'.tr,
                         ),
                       ],
                     ),
@@ -145,7 +141,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           ),
           const SizedBox(height: 14),
           Text(
-            user.fullName.isEmpty ? 'StayHub User' : user.fullName,
+            user.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : user.fullName,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -265,8 +261,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  'Chỉnh sửa hồ sơ',
+                child: Text(
+                  'sc_mp_edit_profile'.tr,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -299,21 +295,6 @@ class _MyProfilePanelState extends State<MyProfilePanel>
   // ─────────────────────────────────────────
   // TAB ROW
   // ─────────────────────────────────────────
-  Widget _buildTabRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Icon(Icons.grid_on_rounded, size: 26, color: AppColors.navy),
-          Icon(Icons.map_outlined, size: 26, color: AppColors.textTertiary),
-          Icon(Icons.bookmark_border_rounded,
-              size: 26, color: AppColors.textTertiary),
-        ],
-      ),
-    );
-  }
-
   // ─────────────────────────────────────────
   // PHOTO GRID 3 CỘT
   // ─────────────────────────────────────────
@@ -400,8 +381,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Chưa có bài viết nào',
+        Text(
+          'sc_mp_empty_posts_title'.tr,
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
@@ -409,16 +390,16 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Khi bạn chia sẻ ảnh, chúng\nsẽ hiển thị trên trang cá nhân.',
+        Text(
+          'sc_mp_empty_posts_desc'.tr,
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         const SizedBox(height: 20),
         GestureDetector(
           onTap: () => Get.toNamed(AppRoutes.shareMoment),
-          child: const Text(
-            'Chia sẻ ảnh đầu tiên',
+          child: Text(
+            'sc_mp_share_first'.tr,
             style: TextStyle(
               color: AppColors.brand,
               fontWeight: FontWeight.w700,
@@ -430,17 +411,20 @@ class _MyProfilePanelState extends State<MyProfilePanel>
     );
   }
 
-  void _openFeedAtIndex(BuildContext context, int index) {
-    Navigator.of(context).push(
+  void _openFeedAtIndex(BuildContext context, int index) async {
+    final user = _auth.currentUser.value;
+    if (user == null) return;
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => _UserMomentsFeedScreen(
           moments: _myMoments,
           initialIndex: index,
-          currentUserId: _auth.currentUser.value?.id ?? 0,
+          currentUser: user,
           socialController: _socialController,
         ),
       ),
     );
+    _loadMoments(silent: true);
   }
 }
 
@@ -451,12 +435,12 @@ class _UserMomentsFeedScreen extends StatefulWidget {
   const _UserMomentsFeedScreen({
     required this.moments,
     required this.initialIndex,
-    required this.currentUserId,
+    required this.currentUser,
     required this.socialController,
   });
   final List<MomentModel> moments;
   final int initialIndex;
-  final int currentUserId;
+  final UserModel currentUser;
   final SocialController socialController;
 
   @override
@@ -471,6 +455,22 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
     super.initState();
     // Bắt đầu từ bài được chọn để khi cuộn ListView sẽ liên tiếp các bài cũ hơn
     _moments = widget.moments.sublist(widget.initialIndex);
+    _loadFullMoments();
+  }
+
+  Future<void> _loadFullMoments() async {
+    for (int i = 0; i < _moments.length; i++) {
+      try {
+        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        if (mounted) {
+          setState(() {
+            _moments[i] = fullData;
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   Future<void> _toggleLike(int index) async {
@@ -492,8 +492,8 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        title: const Text(
-          'Bài viết',
+        title: Text(
+          'sc_mp_posts'.tr,
           style: TextStyle(
               color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18),
         ),
@@ -512,7 +512,7 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
           final moment = _moments[index];
           return _FeedItem(
             moment: moment,
-            currentUserId: widget.currentUserId,
+            currentUser: widget.currentUser,
             onLike: () => _toggleLike(index),
             onComment: () {
               Get.toNamed(AppRoutes.momentDetail, arguments: moment);
@@ -534,14 +534,14 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
 class _FeedItem extends StatelessWidget {
   const _FeedItem({
     required this.moment,
-    required this.currentUserId,
+    required this.currentUser,
     required this.onLike,
     required this.onComment,
     required this.onDelete,
   });
 
   final MomentModel moment;
-  final int currentUserId;
+  final UserModel currentUser;
   final VoidCallback onLike;
   final VoidCallback onComment;
   final VoidCallback onDelete;
@@ -563,16 +563,16 @@ class _FeedItem extends StatelessWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: AppColors.brandLight,
-                  backgroundImage: moment.avatarUrl?.isNotEmpty == true &&
-                          !moment.avatarUrl!.toLowerCase().endsWith('.svg')
-                      ? CachedNetworkImageProvider(moment.avatarUrl!)
+                  backgroundImage: currentUser.avatarUrl?.isNotEmpty == true &&
+                          !currentUser.avatarUrl!.toLowerCase().endsWith('.svg')
+                      ? CachedNetworkImageProvider(currentUser.avatarUrl!)
                       : null,
-                  child: moment.avatarUrl == null ||
-                          moment.avatarUrl!.isEmpty ||
-                          moment.avatarUrl!.toLowerCase().endsWith('.svg')
+                  child: currentUser.avatarUrl == null ||
+                          currentUser.avatarUrl!.isEmpty ||
+                          currentUser.avatarUrl!.toLowerCase().endsWith('.svg')
                       ? Text(
-                          (moment.fullName?.isNotEmpty == true
-                                  ? moment.fullName![0]
+                          (currentUser.fullName.isNotEmpty == true
+                                  ? currentUser.fullName[0]
                                   : '?')
                               .toUpperCase(),
                           style: const TextStyle(
@@ -585,14 +585,14 @@ class _FeedItem extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    moment.fullName ?? 'StayHub User',
+                    currentUser.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : currentUser.fullName,
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
                         fontSize: 14),
                   ),
                 ),
-                if (moment.userId == currentUserId)
+                if (moment.userId == currentUser.id)
                   IconButton(
                     icon: const Icon(Icons.more_vert, color: Colors.black87),
                     onPressed: () => _showOptions(context),
@@ -602,21 +602,41 @@ class _FeedItem extends StatelessWidget {
           ),
 
           // ── Image ──
-          CachedNetworkImage(
-            imageUrl: moment.imageUrl,
-            width: double.infinity,
-            fit:
-                BoxFit.contain, // Fit contain to avoid cropping vertical images
-            placeholder: (_, __) =>
-                Container(height: 300, color: Colors.black12),
-            errorWidget: (_, __, ___) => Container(
-              height: 300,
-              color: Colors.black12,
-              child: const Center(
-                  child: Icon(Icons.broken_image_outlined,
-                      color: Colors.black38, size: 48)),
+          GestureDetector(
+            onTap: onComment, // Re-use onComment to navigate to MomentDetailScreen
+            child: Hero(
+              tag: 'moment_image_${moment.id}',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: moment.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain, // Fit contain to avoid cropping vertical images
+                  placeholder: (_, __) =>
+                      Container(height: 300, color: Colors.black12),
+                  errorWidget: (_, __, ___) => Container(
+                    height: 300,
+                    color: Colors.black12,
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined,
+                            color: Colors.black38, size: 48)),
+                  ),
+                ),
+              ),
             ),
           ),
+
+          // ── Caption ──
+          if (moment.caption?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              child: Text(
+                moment.caption!,
+                style: const TextStyle(color: Colors.black87, fontSize: 14),
+              ),
+            ),
 
           // ── Actions ──
           Padding(
@@ -644,42 +664,41 @@ class _FeedItem extends StatelessWidget {
           ),
 
           // ── Likes Count ──
-          if (moment.reactionCount > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                '${moment.reactionCount} lượt thích',
-                style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13),
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              Get.locale?.languageCode == 'vi'
+                  ? '${moment.reactionCount} lượt thích'
+                  : '${moment.reactionCount} likes',
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13),
             ),
+          ),
 
-          // ── Caption ──
-          if (moment.caption?.isNotEmpty == true)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
-                  children: [
-                    TextSpan(
-                      text: '${moment.fullName ?? ''}  ',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    TextSpan(text: moment.caption),
-                  ],
-                ),
-              ),
-            ),
-
-          // ── Time ──
+          // ── Time & Comments ──
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+            child: GestureDetector(
+              onTap: onComment,
+              child: Text(
+                moment.comments.isNotEmpty
+                    ? (Get.locale?.languageCode == 'vi'
+                        ? 'Xem tất cả ${moment.comments.length} bình luận'
+                        : 'View all ${moment.comments.length} comments')
+                    : (Get.locale?.languageCode == 'vi'
+                        ? 'Thêm bình luận...'
+                        : 'Add a comment...'),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              'Xem tất cả bình luận', // Can be refined later with real date formatting if needed
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),
         ],
@@ -697,24 +716,11 @@ class _FeedItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(2)),
-            ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('Xóa bài viết',
+              title: Text('sc_mp_delete_post'.tr,
                   style: TextStyle(color: AppColors.error)),
               onTap: onDelete,
-            ),
-            ListTile(
-              leading: const Icon(Icons.cancel_outlined, color: Colors.black87),
-              title: const Text('Hủy', style: TextStyle(color: Colors.black87)),
-              onTap: () => Navigator.pop(context),
             ),
             const SizedBox(height: 8),
           ],

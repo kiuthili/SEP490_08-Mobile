@@ -58,6 +58,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   bool _isInitializing = true;
   bool _isUploading = false;
+  bool _isCameraInitializedFirstTime = false;
 
   @override
   void initState() {
@@ -133,11 +134,12 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         if (mounted) setState(() => _isInitializing = false);
         return;
       }
-      if (_cameraController == null) {
+      if (!_isCameraInitializedFirstTime) {
         _cameraIndex = _cameras.indexWhere(
           (c) => c.lensDirection == CameraLensDirection.back,
         );
         if (_cameraIndex < 0) _cameraIndex = 0;
+        _isCameraInitializedFirstTime = true;
       }
       final controller = CameraController(
         _cameras[_cameraIndex],
@@ -223,18 +225,20 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         _privacy,
       );
 
-      if (success) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) Get.back();
-        });
-      } else if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    } catch (e) {
-      SnackbarHelper.error('Cannot share moment at this time: $e');
       if (mounted) {
         setState(() => _isUploading = false);
       }
+
+      if (success) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+      SnackbarHelper.error('Cannot share moment at this time: $e');
     }
   }
 
@@ -250,7 +254,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   Widget build(BuildContext context) {
     final schedules = _ongoingSchedules;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: _capturedImage != null
           ? SafeArea(child: _buildReviewScreen())
           : _buildCameraScreen(schedules),
@@ -425,19 +429,32 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        var scale = constraints.maxHeight /
-            constraints.maxWidth *
-            cam.value.aspectRatio;
-        if (scale < 1) scale = 1 / scale;
-        return Transform.scale(
-          scale: scale,
-          child: Center(
-            child: CameraPreview(cam),
-          ),
-        );
-      },
+    final size = MediaQuery.of(context).size;
+    var cameraRatio = cam.value.aspectRatio;
+    
+    // Ensure camera ratio is in portrait (width < height)
+    if (cameraRatio > 1) {
+      cameraRatio = 1 / cameraRatio;
+    }
+
+    final deviceRatio = size.width / size.height;
+    
+    // Calculate scale to cover the screen
+    double scale = 1.0;
+    if (deviceRatio < cameraRatio) {
+      scale = cameraRatio / deviceRatio;
+    } else {
+      scale = deviceRatio / cameraRatio;
+    }
+
+    return Transform.scale(
+      scale: scale,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: cameraRatio,
+          child: CameraPreview(cam),
+        ),
+      ),
     );
   }
 
@@ -458,17 +475,17 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                   height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: Colors.black.withValues(alpha: 0.05),
                   ),
                   child: const Icon(Icons.arrow_back_rounded,
-                      color: Colors.white, size: 20),
+                      color: Colors.black, size: 20),
                 ),
               ),
               const Spacer(),
               const Text(
                 'Preview',
                 style: TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87,
                     fontWeight: FontWeight.w600,
                     fontSize: 17),
               ),
@@ -530,15 +547,29 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                         maxLines: 2,
                         maxLength: _kMaxCaption,
                         textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(
-                          hintText: 'Add a caption...',
-                          hintStyle:
-                              TextStyle(color: Colors.white60, fontSize: 15),
+                        decoration: InputDecoration(
+                          hintText: Get.locale?.languageCode == 'vi'
+                              ? 'Thêm dòng trạng thái...'
+                              : 'Add a caption...',
+                          hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            shadows: const [
+                              Shadow(color: Colors.black54, blurRadius: 4)
+                            ],
+                          ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
                           counterStyle:
-                              TextStyle(color: Colors.white54, fontSize: 11),
+                              const TextStyle(color: Colors.white54, fontSize: 11),
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
+                          filled: false,
+                          fillColor: Colors.transparent,
                         ),
                       ),
                     ),
@@ -575,9 +606,9 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppRadius.lg),
-                      color: sel ? _kAccentCyan : Colors.white12,
+                      color: sel ? AppColors.brand : Colors.grey.shade100,
                       border: Border.all(
-                        color: sel ? _kAccentCyan : Colors.white24,
+                        color: sel ? AppColors.brand : Colors.grey.shade300,
                         width: 1.2,
                       ),
                     ),
@@ -586,14 +617,14 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                       children: [
                         Icon(opt.icon,
                             size: 13,
-                            color: sel ? Colors.black : Colors.white70),
+                            color: sel ? Colors.white : Colors.black54),
                         const SizedBox(width: 5),
                         Text(
                           opt.label,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: sel ? Colors.black : Colors.white70,
+                            color: sel ? Colors.white : Colors.black54,
                           ),
                         ),
                       ],
@@ -616,8 +647,8 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
             child: FilledButton(
               onPressed: _isUploading ? null : _submitMoment,
               style: FilledButton.styleFrom(
-                backgroundColor: _kAccentCyan,
-                foregroundColor: Colors.black,
+                backgroundColor: AppColors.brand,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(32)),
                 elevation: 0,
@@ -627,7 +658,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.black),
+                          strokeWidth: 2.5, color: Colors.white),
                     )
                   : const Text(
                       'Send Moment',
@@ -664,10 +695,10 @@ class _LocketShutterButton extends StatelessWidget {
         height: 78,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: _kAccentCyan, width: 3.5),
+          border: Border.all(color: AppColors.brand, width: 3.5),
           boxShadow: [
             BoxShadow(
-              color: _kAccentCyan.withValues(alpha: 0.35),
+              color: AppColors.brand.withValues(alpha: 0.35),
               blurRadius: 14,
               spreadRadius: 2,
             ),
@@ -771,7 +802,7 @@ class _TourPill extends StatelessWidget {
                 s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
                 size: 16,
                 color:
-                    s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
+                    s.scheduleId == selectedId ? AppColors.brand : Colors.white54,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -781,7 +812,7 @@ class _TourPill extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: s.scheduleId == selectedId
-                        ? _kAccentCyan
+                        ? AppColors.brand
                         : Colors.white,
                     fontWeight: s.scheduleId == selectedId
                         ? FontWeight.bold
@@ -791,7 +822,7 @@ class _TourPill extends StatelessWidget {
                 ),
               ),
               if (s.scheduleId == selectedId)
-                const Icon(Icons.check_rounded, size: 14, color: _kAccentCyan),
+                const Icon(Icons.check_rounded, size: 14, color: AppColors.brand),
             ],
           ),
           onTap: () => onChanged(s.scheduleId),

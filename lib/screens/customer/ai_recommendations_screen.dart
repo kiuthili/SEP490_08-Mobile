@@ -19,15 +19,15 @@ class AiRecommendationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Gợi ý AI',
+      title: 'ai_recommendations_title'.tr,
       actions: [
         IconButton(
-          tooltip: 'Khảo sát A/B (User Study)',
+          tooltip: 'ai_user_study_tooltip'.tr,
           icon: const Icon(Icons.rate_review_outlined),
           onPressed: () => Get.toNamed(AppRoutes.userStudy),
         ),
         IconButton(
-          tooltip: 'Làm lại khảo sát',
+          tooltip: 'ai_retake_tooltip'.tr,
           icon: const Icon(Icons.psychology_outlined),
           onPressed: () => Get.toNamed(AppRoutes.aiQuestionnaire),
         ),
@@ -62,21 +62,25 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       if (ai.isLoading.value && ai.recommendations.isEmpty) {
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 120),
-            LoadingWidget(message: 'Đang tải gợi ý...'),
+          children: [
+            const SizedBox(height: 120),
+            LoadingWidget(message: 'ai_loading_recommendations'.tr),
           ],
         );
       }
-      if (ai.recommendations.isEmpty) {
+      final detail = ai.recommendationDetail.value;
+      final hasExact = ai.recommendations.isNotEmpty;
+      final hasNearby = detail?.nearbyScheduleTours.isNotEmpty == true;
+
+      if (!hasExact && !hasNearby) {
         return ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             const SizedBox(height: 80),
             EmptyStateWidget(
-              title: 'Chưa có gợi ý',
-              subtitle: 'Hoàn thành khảo sát AI để nhận danh sách tour phù hợp',
-              retryLabel: 'Bắt đầu khảo sát',
+              title: 'ai_no_recommendations'.tr,
+              subtitle: 'ai_no_recommendations_subtitle'.tr,
+              retryLabel: 'ai_start_questionnaire'.tr,
               onRetry: widget.onRetake ??
                   () => Get.toNamed(AppRoutes.aiQuestionnaire),
             ),
@@ -84,27 +88,25 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
         );
       }
 
-      final detail = ai.recommendationDetail.value;
-
       return DefaultTabController(
         length: 2,
         child: Column(
           children: [
             Container(
               color: AppColors.surface,
-              child: const TabBar(
+              child: TabBar(
                 indicatorColor: AppColors.brand,
                 labelColor: AppColors.brand,
                 unselectedLabelColor: AppColors.textSecondary,
                 indicatorSize: TabBarIndicatorSize.tab,
                 tabs: [
                   Tab(
-                    icon: Icon(Icons.tour_rounded),
-                    text: 'Tour gợi ý',
+                    icon: const Icon(Icons.tour_rounded),
+                    text: 'ai_tab_tours'.tr,
                   ),
                   Tab(
-                    icon: Icon(Icons.menu_book_rounded),
-                    text: 'Cẩm nang du lịch',
+                    icon: const Icon(Icons.menu_book_rounded),
+                    text: 'ai_tab_guide'.tr,
                   ),
                 ],
               ),
@@ -147,113 +149,160 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     final exactTours = ai.recommendations;
     final nearbyTours = detail?.nearbyScheduleTours ?? const [];
 
-    final showExact = _tourFilter == 'all' || _tourFilter == 'exact';
+    final showExactSection = exactTours.isNotEmpty;
+    final showNearbySection = nearbyTours.isNotEmpty;
+
+    // Align active filter logic with web
+    String activeFilter = _tourFilter;
+    if (!showExactSection && showNearbySection) {
+      activeFilter = 'nearby';
+    } else if (showExactSection && _tourFilter == 'nearby' && !showNearbySection) {
+      activeFilter = 'exact';
+    }
+
+    final showExact = activeFilter == 'all' || activeFilter == 'exact';
     final showNearby =
-        (_tourFilter == 'all' || _tourFilter == 'nearby') && hasNearby;
+        (activeFilter == 'all' || activeFilter == 'nearby') && hasNearby;
 
     return _buildResponsiveWrapper(
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          // Filter chips
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ChoiceChip(
-                    label: Text(
-                        'Tất cả (${exactTours.length + nearbyTours.length})'),
-                    selected: _tourFilter == 'all',
-                    onSelected: (val) {
-                      if (val) setState(() => _tourFilter = 'all');
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: Text('Đúng ngày (${exactTours.length})'),
-                    selected: _tourFilter == 'exact',
-                    onSelected: (val) {
-                      if (val) setState(() => _tourFilter = 'exact');
-                    },
-                  ),
-                  if (hasNearby) ...[
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: Text('Lịch gần (${nearbyTours.length})'),
-                      selected: _tourFilter == 'nearby',
-                      onSelected: (val) {
-                        if (val) setState(() => _tourFilter = 'nearby');
-                      },
-                    ),
+          // Filter chips matching web visibility rules
+          if ((showExactSection && showNearbySection) || showExactSection || showNearbySection)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (showExactSection && showNearbySection) ...[
+                      ChoiceChip(
+                        label: Text('ai_filter_all'.trParams({'count': '${exactTours.length + nearbyTours.length}'})),
+                        selected: activeFilter == 'all',
+                        onSelected: (val) {
+                          if (val) setState(() => _tourFilter = 'all');
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (showExactSection) ...[
+                      ChoiceChip(
+                        label: Text('ai_filter_exact'.trParams({'count': '${exactTours.length}'})),
+                        selected: activeFilter == 'exact',
+                        onSelected: (val) {
+                          if (val) setState(() => _tourFilter = 'exact');
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (showNearbySection) ...[
+                      ChoiceChip(
+                        label: Text('ai_filter_nearby'.trParams({'count': '${nearbyTours.length}'})),
+                        selected: activeFilter == 'nearby',
+                        onSelected: (val) {
+                          if (val) setState(() => _tourFilter = 'nearby');
+                        },
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
 
           if (showExact) ...[
-            if (_tourFilter == 'all' && hasNearby)
+            if (activeFilter == 'all' && hasNearby)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10, top: 4),
                 child: Text(
-                  'Tour đúng lịch trình',
+                  'ai_exact_tours'.tr,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
               ),
             if (exactTours.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'Không có tour đúng lịch trình phù hợp.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    'ai_no_exact_tours'.tr,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               )
             else
-              ...exactTours.map((rec) => _RecommendationCard(
-                    rec: rec,
-                    onShowDetails: () => _showAiMatchDetailsSheet(context, rec),
-                  )),
+              _buildTourList(context, exactTours),
           ],
 
           if (showNearby) ...[
             const SizedBox(height: 16),
-            if (_tourFilter == 'all')
+            if (activeFilter == 'all')
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
-                  'Tour lịch gần phù hợp',
+                  'ai_nearby_tours'.tr,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
               ),
             if (nearbyTours.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'Không có tour lịch gần phù hợp.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    'ai_no_nearby_tours'.tr,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
               )
             else
-              ...nearbyTours.map((rec) => _RecommendationCard(
-                    rec: rec,
-                    nearby: true,
-                    onShowDetails: () => _showAiMatchDetailsSheet(context, rec),
-                  )),
+              _buildTourList(context, nearbyTours, nearby: true),
           ],
         ],
       ),
     );
+  }
+
+  Widget _buildTourList(BuildContext context, List<TourRecommendationModel> tours, {bool nearby = false}) {
+    final width = MediaQuery.of(context).size.width;
+    final isWide = width > 600;
+
+    if (isWide) {
+      final colCount = width > 900 ? 3 : 2;
+      final colWidth = width / colCount;
+      final childRatio = colWidth / 140; // Maintain fixed card height
+
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: colCount,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: childRatio,
+        ),
+        itemCount: tours.length,
+        itemBuilder: (context, index) {
+          final rec = tours[index];
+          return _RecommendationCard(
+            rec: rec,
+            nearby: nearby,
+            onShowDetails: () => _showAiMatchDetailsSheet(context, rec),
+          );
+        },
+      );
+    } else {
+      return Column(
+        children: tours.map((rec) => _RecommendationCard(
+          rec: rec,
+          nearby: nearby,
+          onShowDetails: () => _showAiMatchDetailsSheet(context, rec),
+        )).toList(),
+      );
+    }
   }
 
   Widget _buildAiOverviewBanner(BuildContext context, String summary) {
@@ -300,9 +349,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'CẨM NANG AI',
-                    style: TextStyle(
+                  Text(
+                    'ai_guide_title'.tr,
+                    style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       fontSize: 12,
@@ -339,24 +388,18 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       if (profile.preferredEndDate != null &&
           profile.preferredEndDate!.isNotEmpty)
         _formatDateStr(profile.preferredEndDate),
-    ].join(' - ');
-
-    final companion = profile.companionType;
-    String companionLabel = companion;
-    if (companion == 'solo') companionLabel = 'Đi một mình';
-    if (companion == 'couple') companionLabel = 'Cặp đôi';
-    if (companion == 'family') companionLabel = 'Gia đình';
-    if (companion == 'group') companionLabel = 'Nhóm bạn';
+    ].join(' - ');    final companion = profile.companionType;
+    final companionLabel = 'ai_companion_$companion'.tr;
 
     final companionDetails = [
-      if (profile.hasElderly) 'Người cao tuổi',
-      if (profile.hasChildren) 'Trẻ em',
+      if (profile.hasElderly) 'ai_elderly'.tr,
+      if (profile.hasChildren) 'ai_children'.tr,
     ].join(', ');
 
     final budget =
         profile.maxBudgetPerPerson != null && profile.maxBudgetPerPerson! > 0
             ? CurrencyFormatter.format(profile.maxBudgetPerPerson!)
-            : 'Không giới hạn';
+            : 'ai_unlimited'.tr;
 
     final chips = <({IconData icon, String label})>[
       if (destination.isNotEmpty)
@@ -369,10 +412,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       ),
       (
         icon: Icons.account_balance_wallet_outlined,
-        label: 'Ngân sách: $budget'
+        label: 'ai_budget_prefix'.trParams({'budget': budget})
       ),
-      ...profile.travelInterests
-          .map((interest) => (icon: Icons.interests_outlined, label: interest)),
+      ...profile.travelInterests.map((interest) {
+        final key = 'ai_interest_${interest.toLowerCase().trim()}';
+        final trans = key.tr;
+        final localizedLabel = trans == key ? interest : trans;
+        return (icon: Icons.interests_outlined, label: localizedLabel);
+      }),
     ];
 
     return Column(
@@ -383,7 +430,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
             const Icon(Icons.badge_outlined, size: 14, color: AppColors.brand),
             const SizedBox(width: 6),
             Text(
-              'Hồ sơ chuyến đi',
+              'ai_trip_profile'.tr,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -485,10 +532,10 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'CƠ CHẾ ĐÁNH GIÁ AI',
-                          style: TextStyle(
+                          'ai_evaluation_mechanism'.tr,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
@@ -512,14 +559,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                       foregroundColor: AppColors.textPrimary,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.button,
                       ),
                     ),
-                    child: const Text(
-                      'Đóng',
+                    child: Text(
+                      'ai_close'.tr,
                       style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
                 ],
@@ -534,7 +581,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
   Widget _buildAiGuideTab(BuildContext context, AiController ai,
       PersonalizedRecommendationModel? detail) {
     if (detail == null) {
-      return const Center(child: Text('Không có dữ liệu cẩm nang'));
+      return Center(child: Text('ai_no_guide_data'.tr));
     }
 
     return _buildResponsiveWrapper(
@@ -563,9 +610,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     _showAiTransparencySheet(context, detail.recommenderMeta!),
                 icon: const Icon(Icons.info_outline_rounded,
                     size: 16, color: AppColors.brand),
-                label: const Text(
-                  'Cách thuật toán AI StayHub chấm điểm gợi ý',
-                  style: TextStyle(
+                label: Text(
+                  'ai_how_it_works'.tr,
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.brand,
@@ -628,9 +675,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'PHÂN TÍCH GỢI Ý AI',
-                              style: TextStyle(
+                            Text(
+                              'ai_analysis_title'.tr,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.0,
@@ -719,7 +766,7 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                                       size: 14, color: AppColors.textSecondary),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${rec.durationDays} ngày',
+                                    'ai_days'.trParams({'days': '${rec.durationDays}'}),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -734,14 +781,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
 
                           // Match Reason Text
                           if (rec.reason != null && rec.reason!.isNotEmpty) ...[
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.psychology_outlined,
+                                const Icon(Icons.psychology_outlined,
                                     color: AppColors.brand, size: 18),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Lý do phù hợp với bạn',
-                                  style: TextStyle(
+                                  'ai_match_reason'.tr,
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary,
@@ -774,14 +821,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                           // Match Reasons Checklist Tags
                           if (rec.matchReasons != null &&
                               rec.matchReasons!.isNotEmpty) ...[
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.check_circle_outline_rounded,
+                                const Icon(Icons.check_circle_outline_rounded,
                                     color: AppColors.success, size: 18),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Điểm cộng nổi bật',
-                                  style: TextStyle(
+                                  'ai_highlight_points'.tr,
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary,
@@ -828,14 +875,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                           // Schedule Note
                           if (rec.scheduleNote != null &&
                               rec.scheduleNote!.isNotEmpty) ...[
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.calendar_month_rounded,
+                                const Icon(Icons.calendar_month_rounded,
                                     color: AppColors.accent, size: 18),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Lịch trình gợi ý',
-                                  style: TextStyle(
+                                  'ai_suggested_schedule'.tr,
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary,
@@ -874,14 +921,14 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
 
                           // Score Breakdown
                           if (hasBreakdown) ...[
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.analytics_outlined,
+                                const Icon(Icons.analytics_outlined,
                                     color: AppColors.brand, size: 18),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Điểm số theo tiêu chí',
-                                  style: TextStyle(
+                                  'ai_criteria_scores'.tr,
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary,
@@ -909,23 +956,23 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                       backgroundColor: AppColors.brand,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.button,
                       ),
                       elevation: 0,
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Xem chi tiết & Đặt Tour',
-                          style: TextStyle(
+                          'ai_view_details_book'.tr,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 16),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_rounded, size: 16),
                       ],
                     ),
                   ),
@@ -1113,10 +1160,10 @@ class _RecommendationCard extends StatelessWidget {
                           color: AppColors.accent.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'Lịch gần',
-                            style: TextStyle(
+                            'ai_filter_nearby'.tr,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -1232,7 +1279,7 @@ class _RecommendationCard extends StatelessWidget {
                                         color: AppColors.brand, size: 11),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${rec.durationDays} ngày',
+                                      'ai_days'.trParams({'days': '${rec.durationDays}'}),
                                       style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -1245,7 +1292,7 @@ class _RecommendationCard extends StatelessWidget {
                               // Price
                               if (rec.minPrice != null && rec.minPrice! > 0)
                                 Text(
-                                  'Từ ${CurrencyFormatter.format(rec.minPrice!)}',
+                                  'ai_price_from'.trParams({'price': CurrencyFormatter.format(rec.minPrice!)}),
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -1263,18 +1310,18 @@ class _RecommendationCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
-                              color: AppColors.brandLight,
-                              borderRadius: BorderRadius.circular(6),
+                                color: AppColors.brandLight,
+                                borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.auto_awesome_rounded,
+                                const Icon(Icons.auto_awesome_rounded,
                                     color: AppColors.brand, size: 10),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Tại sao? ✨',
-                                  style: TextStyle(
+                                  'ai_why_fit'.tr,
+                                  style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.brand,
@@ -1316,14 +1363,14 @@ class _WeatherAdviceContent extends StatelessWidget {
   String _getWeatherConditionLabel(String condition) {
     switch (condition) {
       case 'rainy':
-        return 'Nhiều mưa';
+        return 'ai_weather_rainy'.tr;
       case 'hot':
-        return 'Nắng nóng';
+        return 'ai_weather_hot'.tr;
       case 'cool':
-        return 'Mát / se lạnh';
+        return 'ai_weather_cool'.tr;
       case 'mild':
       default:
-        return 'Ổn định, dễ đi tour';
+        return 'ai_weather_mild'.tr;
     }
   }
 
@@ -1358,16 +1405,16 @@ class _WeatherAdviceContent extends StatelessWidget {
   String _formatDataSource(String source) {
     final s = source.toLowerCase();
     if (s.contains('forecast')) {
-      return 'Dự báo thời tiết (Open-Meteo)';
+      return 'ai_weather_forecast'.tr;
     }
     if (s.contains('historical')) {
-      return 'Thống kê cùng kỳ năm trước';
+      return 'ai_weather_historical'.tr;
     }
     return source;
   }
 
   String _formatDateTime(DateTime? dateTime) {
-    if (dateTime == null) return 'Chưa xác định';
+    if (dateTime == null) return 'ai_unknown'.tr;
     return DateFormat('dd/MM/yyyy').format(dateTime);
   }
 
@@ -1410,9 +1457,9 @@ class _WeatherAdviceContent extends StatelessWidget {
                         color: AppColors.accent, size: 18),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Thời tiết điểm đến',
-                    style: TextStyle(
+                  Text(
+                    'ai_destination_weather'.tr,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -1479,7 +1526,7 @@ class _WeatherAdviceContent extends StatelessWidget {
                           color: AppColors.textPrimary),
                     ),
                     Text(
-                      'Thấp nhất: ${weather.avgMinTempC?.round() ?? 0}°C',
+                      'ai_min_temp_prefix'.trParams({'temp': '${weather.avgMinTempC?.round() ?? 0}'}),
                       style: const TextStyle(
                           fontSize: 10, color: AppColors.textSecondary),
                     ),
@@ -1505,7 +1552,7 @@ class _WeatherAdviceContent extends StatelessWidget {
                           size: 12, color: AppColors.brand),
                       const SizedBox(width: 4),
                       Text(
-                        'Lượng mưa: ${weather.totalRainMm!.toStringAsFixed(1)} mm',
+                        'ai_rain_prefix'.trParams({'rain': weather.totalRainMm!.toStringAsFixed(1)}),
                         style: const TextStyle(
                             fontSize: 11, fontWeight: FontWeight.w600),
                       ),
@@ -1580,7 +1627,7 @@ class _TipsTabsContent extends StatelessWidget {
     })>[
       if (detail.generalTips.isNotEmpty)
         (
-          label: 'Mẹo chung',
+          label: 'ai_tip_general_label'.tr,
           icon: Icons.lightbulb_rounded,
           tips: detail.generalTips,
           color: AppColors.brand,
@@ -1588,7 +1635,7 @@ class _TipsTabsContent extends StatelessWidget {
         ),
       if (detail.foreignVisitorTips.isNotEmpty)
         (
-          label: 'Khách nước ngoài',
+          label: 'ai_tip_foreigner_label'.tr,
           icon: Icons.translate_rounded,
           tips: detail.foreignVisitorTips,
           color: AppColors.accent,
@@ -1596,7 +1643,7 @@ class _TipsTabsContent extends StatelessWidget {
         ),
       if (detail.elderlyCompanionTips.isNotEmpty)
         (
-          label: 'Đoàn người cao tuổi',
+          label: 'ai_tip_elderly_label'.tr,
           icon: Icons.elderly_rounded,
           tips: detail.elderlyCompanionTips,
           color: Colors.teal,
@@ -1604,7 +1651,7 @@ class _TipsTabsContent extends StatelessWidget {
         ),
       if (detail.childrenCompanionTips.isNotEmpty)
         (
-          label: 'Gia đình có trẻ em',
+          label: 'ai_tip_children_label'.tr,
           icon: Icons.child_care_rounded,
           tips: detail.childrenCompanionTips,
           color: Colors.purple,
@@ -1629,9 +1676,9 @@ class _TipsTabsContent extends StatelessWidget {
                   color: AppColors.brand, size: 18),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'Lời khuyên cho đoàn đi',
-              style: TextStyle(
+            Text(
+              'ai_tips_group_title'.tr,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -1709,7 +1756,7 @@ class _TipsTabsContent extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       tip,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textPrimary,
                                         height: 1.35,
@@ -1783,9 +1830,9 @@ class _DestinationTipsContent extends StatelessWidget {
                   color: AppColors.brand, size: 18),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'Cẩm nang văn hóa địa phương',
-              style: TextStyle(
+            Text(
+              'ai_local_culture_guide'.tr,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -1913,9 +1960,9 @@ class _RelatedInsightsContent extends StatelessWidget {
                   color: AppColors.brand, size: 18),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'Thông tin du lịch liên quan',
-              style: TextStyle(
+            Text(
+              'ai_related_insights'.tr,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -2038,9 +2085,9 @@ class _RecommenderTransparencyContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Technical summary
-        _buildMetaRow(Icons.memory_rounded, 'Thuật toán:', meta.modelFamily),
-        _buildMetaRow(Icons.verified_outlined, 'Phiên bản:', meta.modelVersion),
-        _buildMetaRow(Icons.groups_rounded, 'Chỉ số công bằng (Fairness):',
+        _buildMetaRow(Icons.memory_rounded, 'ai_algorithm_label'.tr, meta.modelFamily),
+        _buildMetaRow(Icons.verified_outlined, 'ai_version_label'.tr, meta.modelVersion),
+        _buildMetaRow(Icons.groups_rounded, 'ai_fairness_label'.tr,
             meta.fairnessAlpha.toStringAsFixed(2)),
 
         if (meta.aggregationFormula.isNotEmpty) ...[
@@ -2066,9 +2113,9 @@ class _RecommenderTransparencyContent extends StatelessWidget {
 
         if (weights.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text(
-            'Trọng số tiêu chí đánh giá:',
-            style: TextStyle(
+          Text(
+            'ai_weights_label'.tr,
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -2176,7 +2223,7 @@ String _labelize(String value) {
 }
 
 String _formatDateStr(String? dateStr) {
-  if (dateStr == null || dateStr.isEmpty) return 'Chưa xác định';
+  if (dateStr == null || dateStr.isEmpty) return 'ai_unknown'.tr;
   try {
     final parsed = DateTime.parse(dateStr);
     return DateFormat('dd/MM/yyyy').format(parsed);
@@ -2185,17 +2232,24 @@ String _formatDateStr(String? dateStr) {
   }
 }
 
-const Map<String, String> _dimensionLabels = {
-  'interest_semantic': 'Sở thích',
-  'location': 'Điểm đến',
-  'budget': 'Ngân sách',
-  'schedule': 'Lịch khởi hành',
-  'weather': 'Thời tiết',
-  'accessibility': 'Dễ đi / an toàn',
-  'cultural_fit': 'Văn hóa địa phương',
-};
-
 String _formatDimensionKey(String key) {
   final normalized = key.toLowerCase();
-  return _dimensionLabels[normalized] ?? _labelize(key);
+  switch (normalized) {
+    case 'interest_semantic':
+      return 'ai_dim_interest'.tr;
+    case 'location':
+      return 'ai_dim_location'.tr;
+    case 'budget':
+      return 'ai_dim_budget'.tr;
+    case 'schedule':
+      return 'ai_dim_schedule'.tr;
+    case 'weather':
+      return 'ai_dim_weather'.tr;
+    case 'accessibility':
+      return 'ai_dim_accessibility'.tr;
+    case 'cultural_fit':
+      return 'ai_dim_cultural_fit'.tr;
+    default:
+      return _labelize(key);
+  }
 }

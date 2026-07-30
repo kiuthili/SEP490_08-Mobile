@@ -9,12 +9,13 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+      // return 'https://028xpj74-7010.asse.devtunnels.ms';
       return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
-      return 'https://jpg6krl7-7010.asse.devtunnels.ms';
+      return 'https://028xpj74-7010.asse.devtunnels.ms';
+      // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
     }
 
     // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
@@ -29,9 +30,13 @@ class ApiConstants {
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`
   static String get chatHubUrl => '$baseUrl/hubs/chat';
+
   static String get friendshipHubUrl => '$baseUrl/hubs/friendship';
+
   static String get trackingHubUrl => '$baseUrl/hubs/tracking';
+
   static String get globalChatHubUrl => '$baseUrl/hubs/global-chat';
+
   static String get notificationHubUrl => '$baseUrl/hubs/notifications';
 
   /// Must match AuthAPI's Google:ClientId because the backend validates the

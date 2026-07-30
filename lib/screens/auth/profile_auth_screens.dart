@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/auth_controller.dart';
 import '../../models/api_response.dart';
@@ -63,10 +64,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickAvatar() async {
     final picked = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 512,
+      maxWidth: 1024,
       imageQuality: 90,
     );
-    if (picked != null) setState(() => _avatarFile = File(picked.path));
+    if (picked != null) {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Image',
+            toolbarColor: AppColors.brand,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'Crop Image',
+            aspectRatioLockEnabled: true,
+          ),
+        ],
+      );
+      if (croppedFile != null) {
+        setState(() => _avatarFile = File(croppedFile.path));
+      }
+    }
   }
 
   Future<void> _pickBirthDate() async {
@@ -95,13 +117,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             : DateFormat('yyyy-MM-dd').format(_dateOfBirth!),
         avatarPath: _avatarFile?.path,
       );
-      SnackbarHelper.success('Cập nhật hồ sơ thành công');
+      SnackbarHelper.success('profile_updated_success'.tr);
       Get.offAllNamed(AppRoutes.profile);
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      SnackbarHelper.error(e.message.tr);
     } catch (_) {
       SnackbarHelper.error(
-        'Không cập nhật được hồ sơ. Vui lòng thử lại.',
+        'profile_update_failed'.tr,
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -116,273 +138,167 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return null;
   }
 
-  Widget _buildRow({
-    required BuildContext context,
-    required String label,
-    Widget? trailing,
-    String? value,
-    VoidCallback? onTap,
-    bool isAction = false,
-    bool showBorder = true,
-    Color? valueColor,
-  }) {
-    final textTheme = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: showBorder
-              ? const Border(
-                  bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Text(label,
-                style: textTheme.bodyMedium?.copyWith(color: Colors.black87)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: trailing ??
-                  (value != null
-                      ? Text(
-                          value,
-                          textAlign: TextAlign.right,
-                          style: textTheme.bodyMedium
-                              ?.copyWith(color: valueColor ?? Colors.black87),
-                        )
-                      : const SizedBox()),
-            ),
-            if (isAction) ...[
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: Colors.black38),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSection(List<Widget> children) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Column(
-        children: children,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser.value;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundSecondary,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text('Sửa hồ sơ',
-            style:
-                textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400)),
-        centerTitle: true,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          _loading
-              ? const Center(
-                  child: Padding(
-                      padding: EdgeInsets.only(right: 16),
-                      child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2))))
-              : TextButton(
-                  onPressed: _submit,
-                  child: Text('Lưu',
-                      style: textTheme.titleMedium
-                          ?.copyWith(color: AppColors.brand)),
-                ),
-        ],
-      ),
+    return AppScreen(
+      title: 'edit_profile'.tr,
+      actions: [
+        _loading
+            ? const Center(
+                child: Padding(
+                    padding: EdgeInsets.only(right: 16),
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))))
+            : TextButton(
+                onPressed: _submit,
+                child: Text('save'.tr,
+                    style: textTheme.titleMedium
+                        ?.copyWith(color: AppColors.brand)),
+              ),
+      ],
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          children: [
-            _buildSection(
-              [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _pickAvatar,
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.transparent,
-                          backgroundImage: _avatarImage(user),
-                          child: _avatarImage(user) == null
-                              ? const Icon(Icons.person,
-                                  color: AppColors.brand, size: 40)
-                              : null,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar
+              GestureDetector(
+                onTap: _pickAvatar,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.inputFill,
+                        image: _avatarImage(user) != null
+                            ? DecorationImage(
+                                image: _avatarImage(user)!,
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        border: Border.all(color: AppColors.separator, width: 1),
+                      ),
+                      child: _avatarImage(user) == null
+                          ? const Icon(Icons.person, color: AppColors.brand, size: 50)
+                          : null,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.brand,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              IosSurfaceCard(
+                child: Column(
+                  children: [
+                    CustomTextField(
+                      controller: _nameController,
+                      label: 'name'.tr,
+                      validator: Validators.fullName,
+                      prefixIcon: Icons.person_outline,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _phoneController,
+                      label: 'phone_number'.tr,
+                      keyboardType: TextInputType.phone,
+                      prefixIcon: Icons.phone_outlined,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) return null;
+                        return Validators.phone(value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _emailController,
+                      label: 'Email',
+                      enabled: false,
+                      prefixIcon: Icons.email_outlined,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              IosSurfaceCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('gender'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.inputFill,
+                        borderRadius: AppRadius.input,
+                        border: Border.all(color: AppColors.separator),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _gender,
+                          isExpanded: true,
+                          icon: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                          style: textTheme.bodyLarge?.copyWith(color: Colors.black87),
+                          items: [
+                            DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
+                            DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
+                            DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
+                          ],
+                          onChanged: (value) => setState(() => _gender = value),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      GestureDetector(
-                        onTap: _pickAvatar,
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    Text('date_of_birth'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _pickBirthDate,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputFill,
+                          borderRadius: AppRadius.input,
+                          border: Border.all(color: AppColors.separator),
+                        ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.edit_square,
-                                size: 16, color: AppColors.brand),
-                            const SizedBox(width: 6),
-                            Text('Sửa',
-                                style: textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.brand)),
+                            Text(
+                              _dateOfBirth == null ? 'set_now'.tr : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: _dateOfBirth == null ? AppColors.textSecondary : Colors.black87,
+                              ),
+                            ),
+                            const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondary),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildSection(
-              [
-                _buildRow(
-                  context: context,
-                  label: 'Tên',
-                  showBorder: true,
-                  isAction: true,
-                  trailing: TextFormField(
-                    controller: _nameController,
-                    textAlign: TextAlign.right,
-                    style:
-                        textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                    decoration: const InputDecoration(
-                      hintText: 'Thiết lập ngay',
-                      hintStyle: TextStyle(color: Colors.black38),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      filled: false,
                     ),
-                    validator: Validators.fullName,
-                  ),
+                  ],
                 ),
-                _buildRow(
-                  context: context,
-                  label: 'Tên Đăng Nhập',
-                  value: user?.email ?? '',
-                  valueColor: Colors.black54,
-                  showBorder: false,
-                  isAction: true,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildSection(
-              [
-                _buildRow(
-                  context: context,
-                  label: 'Giới tính',
-                  showBorder: true,
-                  trailing: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _gender,
-                      isDense: true,
-                      alignment: Alignment.centerRight,
-                      icon: const Icon(Icons.chevron_right_rounded,
-                          size: 18, color: Colors.black38),
-                      style:
-                          textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                      items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('Nam')),
-                        DropdownMenuItem(value: 'Female', child: Text('Nữ')),
-                        DropdownMenuItem(value: 'Other', child: Text('Khác')),
-                      ],
-                      onChanged: (value) => setState(() => _gender = value),
-                    ),
-                  ),
-                ),
-                _buildRow(
-                  context: context,
-                  label: 'Ngày sinh',
-                  value: _dateOfBirth == null
-                      ? 'Thiết lập ngay'
-                      : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
-                  valueColor:
-                      _dateOfBirth == null ? AppColors.brand : Colors.black87,
-                  isAction: true,
-                  showBorder: false,
-                  onTap: _pickBirthDate,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildSection(
-              [
-                _buildRow(
-                  context: context,
-                  label: 'Số điện thoại',
-                  showBorder: true,
-                  isAction: true,
-                  trailing: TextFormField(
-                    controller: _phoneController,
-                    textAlign: TextAlign.right,
-                    style:
-                        textTheme.bodyMedium?.copyWith(color: Colors.black87),
-                    decoration: const InputDecoration(
-                      hintText: 'Thiết lập ngay',
-                      hintStyle: TextStyle(color: Colors.black38),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      filled: false,
-                    ),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return null;
-                      return Validators.phone(value);
-                    },
-                  ),
-                ),
-                _buildRow(
-                  context: context,
-                  label: 'Email',
-                  value: user?.email ?? 'Thiết lập ngay',
-                  valueColor: (user?.email?.isEmpty ?? true)
-                      ? AppColors.brand
-                      : Colors.black87,
-                  isAction: true,
-                  showBorder: true,
-                ),
-                _buildRow(
-                  context: context,
-                  label: 'Đổi mật khẩu',
-                  value: '********',
-                  isAction: true,
-                  showBorder: false,
-                  onTap: () => Get.toNamed(AppRoutes.changePassword),
-                ),
-              ],
-            ),
-            const SizedBox(height: 40),
-          ],
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -415,7 +331,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final user = Get.find<AuthController>().currentUser.value;
     return AppScreen(
-      title: 'Đổi mật khẩu',
+      title: 'change_password'.tr,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Form(
@@ -431,8 +347,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     border: Border.all(color: Colors.amber.shade200),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: const Text(
-                    'Bạn cần đổi mật khẩu trước khi tiếp tục sử dụng tài khoản.',
+                  child: Text(
+                    'require_password_change'.tr,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -442,18 +358,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   children: [
                     CustomTextField(
                       controller: _oldController,
-                      label: 'Mật khẩu cũ',
+                      label: 'current_password'.tr,
                       obscureText: true,
                       prefixIcon: Icons.lock_outline_rounded,
                       validator: (v) => Validators.requiredField(
                         v,
-                        label: 'Mật khẩu cũ',
+                        label: 'current_password'.tr,
                       ),
                     ),
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _newController,
-                      label: 'Mật khẩu mới',
+                      label: 'new_password'.tr,
                       obscureText: true,
                       prefixIcon: Icons.lock_reset_rounded,
                       validator: Validators.strongPassword,
@@ -461,7 +377,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     const SizedBox(height: 16),
                     CustomTextField(
                       controller: _confirmController,
-                      label: 'Xác nhận mật khẩu mới',
+                      label: 'confirm_new_password'.tr,
                       obscureText: true,
                       prefixIcon: Icons.lock_reset_rounded,
                       validator: (v) =>
@@ -472,7 +388,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 24),
               CustomButton(
-                label: 'Đổi mật khẩu',
+                label: 'change_password'.tr,
                 isLoading: _loading,
                 onPressed: () async {
                   if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -482,11 +398,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       oldPassword: _oldController.text,
                       newPassword: _newController.text,
                     );
-                    SnackbarHelper.success('Đổi mật khẩu thành công');
+                    await Get.find<AuthController>().logout(false);
+                    SnackbarHelper.success('change_password_success_relogin'.tr);
                     _oldController.clear();
                     _newController.clear();
                     _confirmController.clear();
-                    Get.offAllNamed(AppRoutes.home);
+                    Get.offAllNamed(AppRoutes.login);
                   } on ApiError catch (e) {
                     SnackbarHelper.error(e.message);
                   } finally {
@@ -552,13 +469,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _startCountdown(result.retryAfterSeconds!);
         SnackbarHelper.error(
           result.message ??
-              'Vui lòng đợi ${result.retryAfterSeconds} giây trước khi gửi lại mã.',
+              '${'please_wait'.tr} ${result.retryAfterSeconds}s',
         );
         return;
       }
       _startCountdown();
       SnackbarHelper.success(
-        result.message ?? 'Nếu email đã đăng ký, mã xác nhận đã được gửi.',
+        result.message ?? 'if_email_registered'.tr,
       );
       Get.offNamed(AppRoutes.resetPassword, arguments: email);
     } on ApiError catch (e) {
@@ -573,8 +490,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return AuthPageLayout(
       showBack: true,
       headerSubtitle: 'YOUR JOURNEY · YOUR VALUE',
-      title: 'Quên mật khẩu 🔑',
-      subtitle: 'Nhập email của bạn để nhận mã xác nhận đặt lại mật khẩu.',
+      title: '${'forgot_password_title'.tr} 🔑',
+      subtitle: 'forgot_password_subtitle'.tr,
       body: Form(
         key: _formKey,
         child: Column(
@@ -600,8 +517,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
             AuthInputField(
               controller: _emailController,
-              label: 'Địa chỉ Email',
-              hint: 'Nhập địa chỉ email đã đăng ký',
+              label: 'email_address_label'.tr,
+              hint: 'email_address_hint'.tr,
               icon: Icons.mail_outline_rounded,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
@@ -611,8 +528,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
             AuthPrimaryButton(
               label: _countdown > 0
-                  ? 'Vui lòng đợi ${_countdown}s...'
-                  : (_loading ? 'Đang gửi...' : 'Gửi mã xác nhận'),
+                  ? '${'please_wait'.tr} ${_countdown}s...'
+                  : (_loading ? 'sending'.tr : 'send_recovery_code'.tr),
               isLoading: _loading,
               onPressed: _countdown > 0 ? null : _submit,
             ),
@@ -622,7 +539,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             TextButton.icon(
               onPressed: Get.back,
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
-              label: const Text('Quay lại đăng nhập'),
+              label: Text('back_to_login'.tr),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 textStyle: const TextStyle(
@@ -717,11 +634,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _startCountdown(seconds);
       if (result.retryAfterSeconds != null) {
         SnackbarHelper.error(
-          result.message ?? 'Vui lòng đợi $seconds giây trước khi gửi lại mã.',
+          result.message ?? '${'please_wait'.tr} $seconds s',
         );
       } else {
         SnackbarHelper.success(
-          result.message ?? 'Nếu email đã đăng ký, mã xác nhận đã được gửi.',
+          result.message ?? 'if_email_registered'.tr,
         );
       }
     } on ApiError catch (e) {
@@ -741,7 +658,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         code: _codeController.text.trim(),
       );
       SnackbarHelper.success(
-        'Xác nhận OTP thành công! Bạn có thể đặt lại mật khẩu mới.',
+        'verify_otp_success'.tr,
       );
       if (mounted) {
         setState(() {
@@ -756,14 +673,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
         SnackbarHelper.error(
-            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+            'otp_invalid_or_expired'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
       if (mounted) setState(() => _verifyingOtp = false);
     } catch (e) {
       SnackbarHelper.error(
-        'Mã xác nhận OTP không chính xác hoặc đã hết hạn.',
+        'otp_invalid_or_expired'.tr,
       );
       if (mounted) setState(() => _verifyingOtp = false);
     }
@@ -772,7 +689,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Future<void> _submitReset() async {
     if (_loading || !(_formKey.currentState?.validate() ?? false)) return;
     if (_passwordController.text != _confirmPasswordController.text) {
-      SnackbarHelper.error('Mật khẩu không khớp!');
+      SnackbarHelper.error('password_mismatch'.tr);
       return;
     }
     setState(() => _loading = true);
@@ -782,7 +699,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         resetToken: _resetToken,
         newPassword: _passwordController.text,
       );
-      SnackbarHelper.success('Đặt lại mật khẩu thành công');
+      SnackbarHelper.success('reset_password_success'.tr);
       Get.offAllNamed(AppRoutes.login);
     } on ApiError catch (e) {
       if (e.message == 'InvalidOrExpiredOtp' ||
@@ -790,7 +707,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
         SnackbarHelper.error(
-            'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
+            'otp_invalid_or_expired'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -805,11 +722,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       showBack: true,
       headerSubtitle: 'YOUR JOURNEY · YOUR VALUE',
       title: _step == _ResetPasswordStep.verifyOtp
-          ? 'Nhập mã OTP 📩'
-          : 'Mật khẩu mới 🔐',
+          ? '${'enter_otp_title'.tr} 📩'
+          : '${'new_password_title'.tr} 🔐',
       subtitle: _step == _ResetPasswordStep.verifyOtp
-          ? 'Nhập mã 6 chữ số đã gửi đến email của bạn.'
-          : 'Mã OTP đã xác thực. Hãy tạo mật khẩu mới cho tài khoản.',
+          ? 'enter_6_digit_sent'.tr
+          : 'otp_verified_create_password'.tr,
       body: Form(
         key: _formKey,
         child: _step == _ResetPasswordStep.verifyOtp
@@ -826,7 +743,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         // ── Email (disabled) ────────────────────────────
         AuthInputField(
           controller: _emailController,
-          label: 'Email',
+          label: 'email_label'.tr,
           hint: '',
           icon: Icons.mail_outline_rounded,
           enabled: false,
@@ -841,14 +758,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.info_outline_rounded,
+              const Icon(Icons.info_outline_rounded,
                   color: AppColors.brand, size: 20),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Kiểm tra hộp thư (kể cả thư rác) để lấy mã xác nhận 6 chữ số.',
+                  'check_email_spam'.tr,
                   style: TextStyle(
                       fontSize: 13, color: AppColors.brand, height: 1.4),
                 ),
@@ -859,8 +776,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 20),
 
         // ── OTP input large ─────────────────────────────
-        const Text(
-          'Mã xác minh OTP',
+        Text(
+          'otp_code'.tr,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -930,10 +847,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             ),
             child: Text(
               _resending
-                  ? 'Đang gửi lại...'
+                  ? 'resending_code'.tr
                   : _countdown > 0
-                      ? 'Gửi lại mã sau ${_countdown}s'
-                      : 'Gửi lại mã OTP',
+                      ? '${'resend_code_later'.tr} ${_countdown}s'
+                      : 'resend_code'.tr,
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
@@ -941,7 +858,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 20),
 
         AuthPrimaryButton(
-          label: _verifyingOtp ? 'Đang xác nhận...' : 'Xác nhận OTP',
+          label: _verifyingOtp ? 'verifying'.tr : 'verify_otp'.tr,
           isLoading: _verifyingOtp,
           onPressed: _verifyingOtp ? null : _verifyOtp,
         ),
@@ -972,7 +889,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     style: const TextStyle(
                         color: Color(0xFF065F46), fontSize: 13, height: 1.4),
                     children: [
-                      const TextSpan(text: 'Đã xác thực OTP cho email '),
+                      TextSpan(text: 'otp_verified_for_email'.tr),
                       TextSpan(
                         text: _email,
                         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -988,8 +905,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
         AuthInputField(
           controller: _passwordController,
-          label: 'Mật khẩu mới',
-          hint: 'Tối thiểu 8 ký tự, chữ hoa, số và ký tự đặc biệt',
+          label: 'new_password'.tr,
+          hint: 'password_register_hint'.tr,
           icon: Icons.lock_outline_rounded,
           obscureText: true,
           textInputAction: TextInputAction.next,
@@ -999,8 +916,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
         AuthInputField(
           controller: _confirmPasswordController,
-          label: 'Xác nhận mật khẩu mới',
-          hint: 'Nhập lại mật khẩu',
+          label: 'confirm_new_password'.tr,
+          hint: 'confirm_password_hint'.tr,
           icon: Icons.lock_reset_rounded,
           obscureText: true,
           textInputAction: TextInputAction.done,
@@ -1010,7 +927,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SizedBox(height: 24),
 
         AuthPrimaryButton(
-          label: _loading ? 'Đang đặt lại...' : 'Đặt lại mật khẩu',
+          label: _loading ? 'resetting'.tr : 'reset_password'.tr,
           isLoading: _loading,
           onPressed: _loading ? null : _submitReset,
         ),

@@ -297,14 +297,29 @@ class AppPages {
     GetPage(
       name: AppRoutes.tourSearch,
       page: () => const SearchSuggestionScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<WishlistController>()) {
+          Get.lazyPut<WishlistController>(() => WishlistController());
+        }
+      }),
     ),
     GetPage(
       name: AppRoutes.searchResult,
       page: () => const SearchResultScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<WishlistController>()) {
+          Get.lazyPut<WishlistController>(() => WishlistController());
+        }
+      }),
     ),
     GetPage(
       name: AppRoutes.sectionTours,
       page: () => const SectionToursScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<WishlistController>()) {
+          Get.lazyPut<WishlistController>(() => WishlistController());
+        }
+      }),
     ),
     GetPage(
       name: AppRoutes.footprint,

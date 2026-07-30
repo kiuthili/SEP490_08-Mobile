@@ -7,6 +7,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
 import '../../utils/currency_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/tour_card.dart';
 
 class SearchSuggestionScreen extends StatefulWidget {
   const SearchSuggestionScreen({super.key});
@@ -83,7 +84,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                 controller: _controller.searchController,
                 focusNode: _controller.focusNode,
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm...',
+                  hintText: 'search_hint'.tr,
                   hintStyle: AppTextStyles.textTheme.bodyMedium?.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -141,7 +142,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   size: 48, color: AppColors.textTertiary),
               const SizedBox(height: 16),
               Text(
-                'Không tìm thấy kết quả nào',
+                'no_search_results'.tr,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
@@ -176,7 +177,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   size: 20, color: AppColors.brand),
               const SizedBox(width: 8),
               Text(
-                'XU HƯỚNG TÌM KIẾM NỔI BẬT',
+                'trending_searches'.tr,
                 style: AppTextStyles.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.brand,
@@ -239,7 +240,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   size: 20, color: AppColors.brand),
               const SizedBox(width: 8),
               Text(
-                'Tour xem nhiều nhất',
+                'most_viewed_tours'.tr,
                 style: AppTextStyles.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -279,22 +280,31 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(7)),
-                          child: SizedBox(
-                            height: 90,
-                            width: double.infinity,
-                            child: tour.imageUrl != null
-                                ? CachedNetworkImage(
-                                    imageUrl: tour.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) =>
-                                        const ColoredBox(
-                                            color: AppColors.brandLight),
-                                  )
-                                : const ColoredBox(color: AppColors.brandLight),
-                          ),
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(7)),
+                              child: SizedBox(
+                                height: 90,
+                                width: double.infinity,
+                                child: tour.imageUrl != null
+                                    ? CachedNetworkImage(
+                                        imageUrl: tour.imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorWidget: (_, __, ___) =>
+                                            const ColoredBox(
+                                                color: AppColors.brandLight),
+                                      )
+                                    : const ColoredBox(color: AppColors.brandLight),
+                              ),
+                            ),
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: WishlistButton(tourId: tour.id),
+                            ),
+                          ],
                         ),
                         Expanded(
                           child: Padding(
@@ -318,7 +328,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Giá từ',
+                                      Text('price_from'.tr,
                                           style: TextStyle(
                                               fontSize: 10,
                                               color: AppColors.textSecondary)),

@@ -65,13 +65,13 @@ class PaymentDeepLinkService extends GetxService {
       await _openOrderDetail(orderId);
 
       if (status == 'Paid' || status == 'Completed') {
-        SnackbarHelper.success('Thanh toán thành công');
+        SnackbarHelper.success('pm_success_msg'.tr);
       } else if (status == 'Cancelled') {
-        SnackbarHelper.info('Thanh toán không thành công. Đơn đã được hủy.');
+        SnackbarHelper.info('pm_fail_msg'.tr);
       } else if (expectedSuccess == true) {
-        SnackbarHelper.info('Giao dịch đang được hệ thống xác nhận.');
+        SnackbarHelper.info('pm_processing_msg'.tr);
       } else {
-        SnackbarHelper.info('Đơn đang được cập nhật trạng thái thanh toán.');
+        SnackbarHelper.info('pm_updating_msg'.tr);
       }
     } finally {
       _processing.remove(processingKey);

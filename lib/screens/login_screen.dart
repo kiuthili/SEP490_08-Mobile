@@ -53,17 +53,17 @@ class _LoginScreenState extends State<LoginScreen> {
             // ── Phần trên cùng: Logo & Tagline nhỏ gọn ─────────────
             GestureDetector(
               onTap: _goHome,
-              child: const Column(
+              child: Column(
                 children: [
-                  StayHubLogo(
+                  const StayHubLogo(
                     variant: StayHubLogoVariant.full,
                     theme: StayHubLogoTheme.defaultTheme,
                     iconSize: 44,
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'YOUR JOURNEY · YOUR VALUE',
-                    style: TextStyle(
+                    'app_tagline'.tr,
+                    style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textSecondary,
                       letterSpacing: 1.2,
@@ -76,9 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 28),
 
             // ── Tiêu đề & Lời chào ───────────────────────────────
-            const Text(
-              'Đăng nhập',
-              style: TextStyle(
+            Text(
+              'login_title'.tr,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
                 color: AppColors.navy,
@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Vui lòng nhập thông tin tài khoản của bạn',
+              'login_subtitle'.tr,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.grey.shade600,
@@ -104,8 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Email/Phone input
                   AuthInputField(
                     controller: _emailController,
-                    label: 'Tài khoản',
-                    hint: 'Số điện thoại hoặc Email',
+                    label: 'account_label'.tr,
+                    hint: 'account_hint'.tr,
                     icon: Icons.person_outline_rounded,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
@@ -116,8 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Password input
                   AuthInputField(
                     controller: _passwordController,
-                    label: 'Mật khẩu',
-                    hint: 'Nhập mật khẩu',
+                    label: 'password_label'.tr,
+                    hint: 'password_hint'.tr,
                     icon: Icons.lock_outline_rounded,
                     obscureText: true,
                     textInputAction: TextInputAction.done,
@@ -137,9 +137,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           vertical: 6,
                         ),
                       ),
-                      child: const Text(
-                        'Quên mật khẩu?',
-                        style: TextStyle(
+                      child: Text(
+                        'forgot_password_link'.tr,
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Primary Login Button
                   Obx(
                     () => AuthPrimaryButton(
-                      label: 'Đăng nhập',
+                      label: 'login_btn'.tr,
                       isLoading: _auth.isLoading.value,
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Text(
-                          'Hoặc tiếp tục với',
+                          'or_continue_with'.tr,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade500,
@@ -192,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Google Button
                   Obx(
                     () => AuthGoogleButton(
-                      label: 'Đăng nhập với Google',
+                      label: 'login_with_google'.tr,
                       isLoading: _auth.isLoading.value,
                       onPressed: _auth.loginWithGoogle,
                     ),
@@ -239,9 +239,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Bạn chưa có tài khoản?',
-                              style: TextStyle(
+                            Text(
+                              'no_account'.tr,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
@@ -249,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Đăng ký thành viên để nhận ưu đãi từ StayHub',
+                              'register_now_desc'.tr,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
@@ -278,9 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                       ),
-                      child: const Text(
-                        'Đăng ký tài khoản mới',
-                        style: TextStyle(
+                      child: Text(
+                        'register_new_account'.tr,
+                        style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -297,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: TextButton.icon(
                 onPressed: _goHome,
                 icon: const Icon(Icons.home_outlined, size: 16),
-                label: const Text('Trở về trang chủ'),
+                label: Text('back_to_home'.tr),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
                   textStyle: const TextStyle(

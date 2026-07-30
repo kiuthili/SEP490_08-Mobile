@@ -19,9 +19,9 @@ class AppColors {
   static const Color primaryDark = brandDeep;
   static const Color secondary = accent;
 
-  /// Nền app — xám xanh nhạt kiểu iOS Settings.
-  static const Color background = Color(0xFFF2F4F8);
-  static const Color backgroundSecondary = Color(0xFFE8ECF4);
+  /// Nền app — xám nhạt đặc trưng của iOS.
+  static const Color background = Color(0xFFF2F2F7);
+  static const Color backgroundSecondary = Color(0xFFE5E5EA);
 
   static const Color surface = Colors.white;
   static const Color surfaceElevated = Color(0xFFFCFDFF);

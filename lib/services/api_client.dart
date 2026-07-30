@@ -288,13 +288,17 @@ class ApiClient {
     final status = e.response?.statusCode;
     final data = e.response?.data;
 
-    if (status == 401) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
       return ApiError(
-        message: ApiError.silent401Message,
-        statusCode: 401,
+        message: ApiError.silentTimeoutMessage,
+        statusCode: 408,
         isSilent: true,
       );
     }
+
+    // Removed the unconditional 401 override to allow parsing backend message from JSON.
 
     if (data is String &&
         (data.contains('405 Not Allowed') || data.contains('nginx'))) {
@@ -327,6 +331,14 @@ class ApiClient {
         retryAfterSeconds: retryAfter,
       );
     }
+    if (status == 401) {
+      return ApiError(
+        message: ApiError.silent401Message,
+        statusCode: 401,
+        isSilent: true,
+      );
+    }
+
     return ApiError(
       message: e.message ?? 'Không thể kết nối máy chủ',
       statusCode: status,

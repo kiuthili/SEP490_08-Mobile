@@ -122,7 +122,7 @@ class OrderController extends GetxController {
         accountNumber: accountNumber,
         accountHolderName: accountHolderName,
       );
-      SnackbarHelper.success('Đã gửi yêu cầu hủy tour');
+      SnackbarHelper.success('rc_success_msg'.tr);
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
@@ -172,11 +172,11 @@ class WishlistController extends GetxController {
       if (isInWishlist) {
         await _service.removeFromWishlist(tourId);
         items.removeWhere((i) => i.tourId == tourId);
-        if (showMessage) SnackbarHelper.success('Đã xóa khỏi wishlist');
+        if (showMessage) SnackbarHelper.success('wl_removed_success'.tr);
       } else {
         await _service.addToWishlist(tourId);
         await fetchWishlist();
-        if (showMessage) SnackbarHelper.success('Đã thêm vào wishlist');
+        if (showMessage) SnackbarHelper.success('wl_added_success'.tr);
       }
       return true;
     } on ApiError catch (e) {
@@ -256,13 +256,13 @@ class AiController extends GetxController {
       recommendationDetail.value = result;
       recommendations.assignAll(result.recommendedTours);
       summary.value = result.summary.isEmpty ? null : result.summary;
-      SnackbarHelper.success('Đã tạo gợi ý tour phù hợp');
+      SnackbarHelper.success('ai_msg_success'.tr);
       return true;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
       return false;
     } catch (e) {
-      SnackbarHelper.error('Lỗi parse data: $e');
+      SnackbarHelper.error('ai_msg_err_parse'.trParams({'err': e.toString()}));
       return false;
     } finally {
       questionnaireSubmitting.value = false;
@@ -279,11 +279,11 @@ class AiController extends GetxController {
   Future<void> sendChatMessage(String message) async {
     final text = message.trim();
     if (text.length < 2) {
-      SnackbarHelper.error('Tin nhắn phải có ít nhất 2 ký tự');
+      SnackbarHelper.error('ai_msg_err_min_length'.tr);
       return;
     }
     if (text.length > 2000) {
-      SnackbarHelper.error('Tin nhắn tối đa 2000 ký tự');
+      SnackbarHelper.error('ai_msg_err_max_length'.tr);
       return;
     }
 
@@ -416,13 +416,13 @@ class SocialController extends GetxController {
       await _signalR.connectFriendship(
         onFriendRequest: () {
           unawaited(fetchPendingRequests());
-          SnackbarHelper.success('Bạn có lời mời kết bạn mới');
+          SnackbarHelper.success('sc_friend_request_received'.tr);
         },
         onRequestResponded: (responderId, status) {
           sentRequestUserIds.remove(responderId);
           if (status.toLowerCase() == 'accepted') {
             unawaited(fetchFriends());
-            SnackbarHelper.success('Lời mời kết bạn đã được chấp nhận');
+            SnackbarHelper.success('sc_friend_request_accepted'.tr);
           }
         },
         onFriendshipDeleted: (userId) {
@@ -509,7 +509,7 @@ class SocialController extends GetxController {
     try {
       await _service.sendFriendRequest(receiverId);
       sentRequestUserIds.add(receiverId);
-      SnackbarHelper.success('Đã gửi lời mời kết bạn');
+      SnackbarHelper.success('sc_friend_request_sent'.tr);
       return true;
     } catch (_) {
       return false;
@@ -1007,11 +1007,11 @@ class BookingController extends GetxController {
           final max = ticketType.maxAge ?? 0;
 
           if (min > 0 && max > 0 && max < 99) {
-            formattedName = '$name (Từ $min - $max tuổi)';
+            formattedName = 'sc_bk_age_range'.trParams({'name': name, 'min': min.toString(), 'max': max.toString()});
           } else if (max > 0 && max < 99) {
-            formattedName = '$name (Dưới $max tuổi)';
+            formattedName = 'sc_bk_age_under'.trParams({'name': name, 'max': max.toString()});
           } else if (min > 0) {
-            formattedName = '$name (Từ $min tuổi trở lên)';
+            formattedName = 'sc_bk_age_over'.trParams({'name': name, 'min': min.toString()});
           }
 
           return MapEntry(id, formattedName);
@@ -1154,9 +1154,7 @@ class BookingController extends GetxController {
         note: orderNote,
         orderDetails: orderDetails,
       );
-      SnackbarHelper.success(
-        'Đã tạo đơn. Hoàn tất thanh toán để xác nhận chỗ.',
-      );
+      SnackbarHelper.success('bk_order_created'.tr);
       return order;
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);

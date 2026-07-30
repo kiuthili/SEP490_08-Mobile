@@ -39,12 +39,23 @@ dependencies:
   turf: ^0.0.12
   clipper2: ^0.0.3
   http: ^1.6.0
+  palette_generator: ^0.3.3+7
+  image_cropper: ^12.2.1
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.2
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/stayhub_icon_transparent.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/stayhub_icon_transparent.png"
 
 flutter:
   uses-material-design: true

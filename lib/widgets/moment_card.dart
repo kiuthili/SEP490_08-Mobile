@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'safe_avatar.dart';
 import '../models/social_models.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
@@ -135,43 +136,55 @@ class _MomentCardState extends State<MomentCard>
     final reactionCount = _reactionCount ?? widget.moment.reactionCount;
 
     return Container(
-      margin: EdgeInsets.only(bottom: widget.isDetail ? 0 : 24),
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceGrouped,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          )
-        ],
+      decoration: const BoxDecoration(
+        color: Colors.white,
       ),
-      child: AspectRatio(
-        aspectRatio: 0.85, // Locket style: slightly vertical
-        child: GestureDetector(
+      child: GestureDetector(
           onDoubleTap: _triggerDoubleTapLike,
           child: Stack(
             fit: StackFit.expand,
             children: [
               // 1. Background Image or Gradient
               if (hasImage)
-                CachedNetworkImage(
-                  imageUrl: widget.moment.imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: AppColors.surfaceElevated,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: AppColors.surfaceElevated,
-                    child: const Icon(Icons.broken_image_outlined,
-                        color: AppColors.textTertiary, size: 40),
-                  ),
-                )
+                widget.isDetail
+                    ? Hero(
+                        tag: 'moment_image_${widget.moment.id}',
+                        child: CachedNetworkImage(
+                          imageUrl: widget.moment.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: AppColors.surfaceElevated,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: AppColors.surfaceElevated,
+                            child: const Center(
+                              child: Icon(Icons.broken_image_outlined,
+                                  color: Colors.black38, size: 48),
+                            ),
+                          ),
+                        ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: widget.moment.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: AppColors.surfaceElevated,
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppColors.surfaceElevated,
+                          child: const Center(
+                            child: Icon(Icons.broken_image_outlined,
+                                color: Colors.black38, size: 48),
+                          ),
+                        ),
+                      )
               else
                 Container(
                   decoration: const BoxDecoration(
@@ -237,177 +250,149 @@ class _MomentCardState extends State<MomentCard>
                 ),
               ),
 
-              // 4. Header (Avatar, Name, Time, Menu)
+              // 4. TikTok Style Layout (Bottom Content & Right Actions)
               Positioned(
-                top: 16,
-                left: 16,
-                right: 16,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          Get.toNamed(
-                            AppRoutes.userProfile,
-                            arguments: widget.moment.userId,
-                          );
-                        },
-                        child: Row(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Bottom Left: User info & Caption
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Get.toNamed(
+                                    AppRoutes.userProfile,
+                                    arguments: widget.moment.userId,
+                                  );
+                                },
+                                child: Text(
+                                  widget.moment.fullName ?? 'User',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    shadows: [
+                                      Shadow(color: Colors.black45, blurRadius: 4)
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                DateFormat('HH:mm - dd/MM/yyyy').format(
+                                    widget.moment.createdAt.toLocal()),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: const [
+                                    Shadow(color: Colors.black45, blurRadius: 4)
+                                  ],
+                                ),
+                              ),
+                              if (widget.moment.caption?.isNotEmpty == true) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  widget.moment.caption!,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w500,
+                                    shadows: [
+                                      Shadow(color: Colors.black54, blurRadius: 4)
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Right Column: Actions
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                Get.toNamed(
+                                  AppRoutes.userProfile,
+                                  arguments: widget.moment.userId,
+                                );
+                              },
+                              child: SafeAvatar(
+                                imageUrl: widget.moment.avatarUrl,
+                                name: widget.moment.fullName,
+                                radius: 24,
+                                border: Border.all(color: Colors.white, width: 2),
                                 boxShadow: const [
-                                  BoxShadow(
-                                      color: Colors.black26, blurRadius: 4)
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: (widget.moment.avatarUrl != null &&
-                                      widget.moment.avatarUrl!.isNotEmpty)
-                                  ? CachedNetworkImage(
-                                      imageUrl: widget.moment.avatarUrl!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      color: AppColors.brand,
-                                      child: Center(
-                                        child: Text(
-                                          initial,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.moment.fullName ?? 'User',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      shadows: [
-                                        Shadow(
-                                            color: Colors.black45,
-                                            blurRadius: 4)
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
-                                    DateFormat('HH:mm - dd/MM/yyyy').format(
-                                        widget.moment.createdAt.toLocal()),
-                                    style: TextStyle(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.8),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      shadows: const [
-                                        Shadow(
-                                            color: Colors.black45,
-                                            blurRadius: 4)
-                                      ],
-                                    ),
-                                  ),
+                                  BoxShadow(color: Colors.black26, blurRadius: 4),
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 24),
+                            _buildSolidActionButton(
+                              icon: isLiked
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_outline_rounded,
+                              iconColor: isLiked ? AppColors.error : Colors.white,
+                              label: reactionCount > 0 ? '$reactionCount' : '',
+                              onTap: () {
+                                final nextState = !isLiked;
+                                setState(() {
+                                  _isLiked = nextState;
+                                  _reactionCount = widget.moment.reactionCount +
+                                      (nextState ? 1 : -1);
+                                });
+                                widget.onLike(nextState);
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            _buildSolidActionButton(
+                              icon: Icons.chat_bubble_rounded,
+                              label: widget.moment.comments.isNotEmpty 
+                                  ? '${widget.moment.comments.length}' 
+                                  : 'sc_btn_comment'.tr,
+                              onTap: widget.onComment ?? () {},
+                            ),
+                            if (widget.onShare != null) ...[
+                              const SizedBox(height: 16),
+                              _buildSolidActionButton(
+                                icon: Icons.send_rounded,
+                                label: 'sc_btn_share'.tr,
+                                onTap: widget.onShare!,
+                              ),
+                            ],
+                            if (widget.moment.userId == widget.currentUserId ||
+                                widget.onReport != null) ...[
+                              const SizedBox(height: 16),
+                              _buildMoreMenu(context),
+                            ],
                           ],
                         ),
-                      ),
-                    ),
-                    if (widget.moment.userId == widget.currentUserId ||
-                        widget.onReport != null)
-                      _buildMoreMenu(context),
-                  ],
-                ),
-              ),
-
-              // 5. Caption & Actions
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Caption
-                    Expanded(
-                      child: widget.moment.caption?.isNotEmpty == true
-                          ? Text(
-                              widget.moment.caption!,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                height: 1.4,
-                                fontWeight: FontWeight.w500,
-                                shadows: [
-                                  Shadow(color: Colors.black54, blurRadius: 4)
-                                ],
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                    const SizedBox(width: 16),
-                    // Actions Column
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildSolidActionButton(
-                          icon: isLiked
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_outline_rounded,
-                          iconColor: isLiked ? AppColors.error : Colors.white,
-                          label: reactionCount > 0 ? '$reactionCount' : '',
-                          onTap: () {
-                            final nextState = !isLiked;
-                            setState(() {
-                              _isLiked = nextState;
-                              _reactionCount = widget.moment.reactionCount +
-                                  (nextState ? 1 : -1);
-                            });
-                            widget.onLike(nextState);
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildSolidActionButton(
-                          icon: Icons.chat_bubble_rounded,
-                          label: 'Bình luận',
-                          onTap: widget.onComment ?? () {},
-                        ),
-                        if (widget.onShare != null) ...[
-                          const SizedBox(height: 16),
-                          _buildSolidActionButton(
-                            icon: Icons.send_rounded,
-                            label: 'Chia sẻ',
-                            onTap: widget.onShare!,
-                          ),
-                        ],
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -460,29 +445,99 @@ class _MomentCardState extends State<MomentCard>
             const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 28),
         onSelected: (val) {
           if (val == 'delete') {
-            showDialog(
+            showModalBottomSheet(
               context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('Xóa khoảnh khắc'),
-                content: const Text(
-                    'Bạn có chắc chắn muốn xóa khoảnh khắc này không? Thao tác này không thể hoàn tác.'),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg)),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Không'),
-                  ),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      widget.onDelete(widget.moment.id);
-                    },
-                    style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.error),
-                    child: const Text('Xóa'),
-                  ),
-                ],
+              backgroundColor: Colors.transparent,
+              builder: (bottomSheetContext) => Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded,
+                          color: AppColors.error, size: 32),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'sc_del_moment_title'.tr,
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'sc_del_moment_desc'.tr,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(bottomSheetContext),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: const BorderSide(color: Colors.black12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'sc_btn_no'.tr,
+                              style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              Navigator.pop(bottomSheetContext);
+                              widget.onDelete(widget.moment.id);
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.error,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'sc_btn_delete'.tr,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: MediaQuery.paddingOf(context).bottom),
+                  ],
+                ),
               ),
             );
           }
@@ -490,25 +545,25 @@ class _MomentCardState extends State<MomentCard>
         },
         itemBuilder: (_) => [
           if (widget.moment.userId == widget.currentUserId)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
                   Icon(Icons.delete_outline, color: AppColors.error, size: 20),
                   SizedBox(width: 8),
-                  Text('Xóa bài', style: TextStyle(color: AppColors.error)),
+                  Text('sc_menu_delete'.tr, style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),
           if (widget.moment.userId != widget.currentUserId &&
               widget.onReport != null)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'report',
               child: Row(
                 children: [
                   Icon(Icons.flag_outlined, color: Colors.black87, size: 20),
                   SizedBox(width: 8),
-                  Text('Báo cáo vi phạm'),
+                  Text('sc_menu_report'.tr),
                 ],
               ),
             ),

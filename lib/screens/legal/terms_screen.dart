@@ -12,6 +12,7 @@ class TermsScreen extends StatelessWidget {
       title: 'Điều khoản dịch vụ',
       lastUpdated: termsSectionsViLastUpdated,
       sections: termsSectionsVi,
+      settingKey: 'TermsAndConditions',
       relatedDocuments: const [
         {
           'label': 'Xem Chính sách quyền riêng tư',

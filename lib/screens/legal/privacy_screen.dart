@@ -12,6 +12,7 @@ class PrivacyScreen extends StatelessWidget {
       title: 'Chính sách quyền riêng tư',
       lastUpdated: privacySectionsViLastUpdated,
       sections: privacySectionsVi,
+      settingKey: 'PrivacyPolicy',
       relatedDocuments: const [
         {
           'label': 'Xem Điều khoản dịch vụ',

@@ -10,8 +10,10 @@ import '../../theme/app_radius.dart';
 import '../../theme/shell_layout.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/ios_grouped.dart';
 import '../../utils/snackbar_helper.dart';
+import '../../services/system_setting_service.dart';
+import '../../widgets/stayhub_logo.dart';
+import '../../widgets/language_bottom_sheet.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -63,9 +65,41 @@ class _ProfileTabState extends State<ProfileTab> {
                 icon: const Icon(Icons.notifications_none_rounded,
                     color: Colors.white),
               ),
-              IconButton(
-                onPressed: _openEditProfile,
+              PopupMenuButton<String>(
                 icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _openEditProfile();
+                  } else if (value == 'password') {
+                    Get.toNamed(AppRoutes.changePassword);
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
+                        const SizedBox(width: 8),
+                        Text('edit_profile'.tr, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'password',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textPrimary),
+                        const SizedBox(width: 8),
+                        Text('change_password'.tr, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -126,12 +160,12 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.verified_rounded,
+                        children: [
+                          const Icon(Icons.verified_rounded,
                               size: 14, color: Color(0xFF8FE5B0)),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
-                            'Thành viên StayHub',
+                            'pt_member'.tr,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 11,
@@ -241,8 +275,8 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildMyBookings() {
     return _buildSectionCard(
-      title: 'Đơn đặt tour của tôi',
-      viewAllText: 'Xem lịch sử',
+      title: 'pt_my_orders'.tr,
+      viewAllText: 'pt_view_history'.tr,
       onViewAll: () => Get.toNamed(AppRoutes.orders, arguments: ''),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -250,30 +284,30 @@ class _ProfileTabState extends State<ProfileTab> {
         children: [
           Expanded(
             child: _buildIconGridItem(
-              Icons.account_balance_wallet_outlined,
-              'Chờ\nthanh toán',
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Pending'),
+              Icons.receipt_long_outlined,
+              'pt_all'.tr,
+              () => Get.toNamed(AppRoutes.orders, arguments: ''),
             ),
           ),
           Expanded(
             child: _buildIconGridItem(
               Icons.check_circle_outline_rounded,
-              'Đã\nxác nhận',
+              'pt_paid'.tr,
               () => Get.toNamed(AppRoutes.orders, arguments: 'Paid'),
             ),
           ),
           Expanded(
             child: _buildIconGridItem(
-              Icons.flight_takeoff_rounded,
-              'Hoàn thành',
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Completed'),
+              Icons.cancel_outlined,
+              'pt_cancelled'.tr,
+              () => Get.toNamed(AppRoutes.orders, arguments: 'Cancelled'),
             ),
           ),
           Expanded(
             child: _buildIconGridItem(
-              Icons.cancel_outlined,
-              'Đã hủy',
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Cancelled'),
+              Icons.assignment_return_outlined,
+              'pt_cancel_req'.tr,
+              () => Get.toNamed(AppRoutes.orders, arguments: 'Request to cancel'),
             ),
           ),
         ],
@@ -283,7 +317,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildMyUtilities() {
     return _buildSectionCard(
-      title: 'Tiện ích & Ưu đãi',
+      title: 'pt_utilities_offers'.tr,
       viewAllText: '',
       onViewAll: () {},
       child: Row(
@@ -293,7 +327,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.local_offer_outlined,
-              'Ví\nVoucher',
+              'pt_wallet_voucher'.tr,
               () => Get.toNamed(AppRoutes.vouchers),
               iconColor: Colors.deepOrange,
             ),
@@ -301,7 +335,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.favorite_border_rounded,
-              'Wishlist',
+              'wl_title'.tr,
               () => Get.toNamed(AppRoutes.wishlist),
               iconColor: Colors.pink,
             ),
@@ -309,7 +343,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.confirmation_number_outlined,
-              'Vé & QR',
+              'pt_ticket_qr'.tr,
               () => Get.toNamed(AppRoutes.myTickets),
               iconColor: Colors.purple,
             ),
@@ -317,7 +351,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.star_outline_rounded,
-              'Đánh giá',
+              'pt_reviews'.tr,
               () => Get.toNamed(AppRoutes.myReviews),
               iconColor: Colors.amber.shade700,
             ),
@@ -329,7 +363,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildCommunityAndExplore() {
     return _buildSectionCard(
-      title: 'Cộng đồng & Khám phá',
+      title: 'pt_community_explore'.tr,
       viewAllText: '',
       onViewAll: () {},
       child: Row(
@@ -339,7 +373,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.psychology_outlined,
-              'Trợ lý\nAI',
+              'pt_ai_assistant'.tr,
               () {
                 try {
                   Get.find<ShellController>().changeTab(3);
@@ -353,7 +387,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.people_outline_rounded,
-              'Bạn bè',
+              'pt_friends'.tr,
               () => Get.find<ShellController>().changeTab(2),
               iconColor: Colors.teal,
             ),
@@ -369,7 +403,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Expanded(
             child: _buildIconGridItem(
               Icons.chat_bubble_outline_rounded,
-              'Tin nhắn',
+              'pt_messages'.tr,
               () => Get.toNamed(AppRoutes.chatInbox),
               iconColor: Colors.indigo,
             ),
@@ -401,52 +435,67 @@ class _ProfileTabState extends State<ProfileTab> {
               _buildMyUtilities(),
               _buildCommunityAndExplore(),
               _buildSectionCard(
-                title: 'Hỗ trợ & Khác',
+                title: 'pt_support_others'.tr,
                 viewAllText: '',
                 onViewAll: () {},
                 child: Column(
                   children: [
                     _buildSupportTile(
                       icon: Icons.notifications_active_outlined,
-                      title: 'Cài đặt thông báo',
+                      title: 'pt_notif_settings'.tr,
                       onTap: () =>
-                          SnackbarHelper.info('Tính năng đang phát triển'),
+                          SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.location_on_outlined,
-                      title: 'Cài đặt quyền riêng tư định vị',
+                      title: 'pt_privacy_location'.tr,
                       onTap: () =>
-                          SnackbarHelper.info('Tính năng đang phát triển'),
+                          SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.language_rounded,
-                      title: 'Cài đặt ngôn ngữ',
-                      onTap: () =>
-                          SnackbarHelper.info('Tính năng đang phát triển'),
+                      title: 'pt_language_settings'.tr,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => LanguageBottomSheet(
+                            selected: Get.locale?.languageCode ?? 'vi',
+                            onSelect: (lang) {
+                              if (lang == 'vi') {
+                                Get.updateLocale(const Locale('vi', 'VN'));
+                              } else {
+                                Get.updateLocale(const Locale('en', 'US'));
+                              }
+                              Navigator.pop(context);
+                            },
+                          ),
+                        );
+                      },
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.policy_outlined,
-                      title: 'Chính sách hoàn hủy',
+                      title: 'pt_refund_policy'.tr,
                       onTap: () => Get.toNamed(AppRoutes.bookingTerms),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.description_outlined,
-                      title: 'Điều khoản dịch vụ',
+                      title: 'pt_terms'.tr,
                       onTap: () => Get.toNamed(AppRoutes.terms),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.privacy_tip_outlined,
-                      title: 'Chính sách bảo mật',
+                      title: 'pt_privacy_policy'.tr,
                       onTap: () => Get.toNamed(AppRoutes.privacy),
                     ),
                   ],
@@ -456,15 +505,53 @@ class _ProfileTabState extends State<ProfileTab> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: CustomButton(
-                  label: 'Đăng xuất',
+                  label: 'pt_logout'.tr,
                   outlined: true,
                   onPressed: _controller.logout,
                 ),
               ),
+              const SizedBox(height: 32),
+              _buildCompanyInfo(),
+              const SizedBox(height: 16),
             ],
           ),
         );
       }),
     );
+  }
+
+  Widget _buildCompanyInfo() {
+    return Obx(() {
+      final service = Get.isRegistered<SystemSettingService>() 
+          ? Get.find<SystemSettingService>() 
+          : null;
+          
+      final _ = service?.isLoading.value;
+      
+      final name = service?.getSettingSync('CompanyName') ?? 'pt_company_name'.tr;
+      final address = service?.getSettingSync('CompanyAddress') ?? '';
+      final phone = service?.getSettingSync('CompanyPhone') ?? '';
+      final email = service?.getSettingSync('CompanyEmail') ?? '';
+      
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const StayHubLogo(variant: StayHubLogoVariant.full, iconSize: 32),
+          const SizedBox(height: 12),
+          Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          if (address.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 32, right: 32),
+              child: Text(address, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
+            ),
+          const SizedBox(height: 4),
+          if (phone.isNotEmpty || email.isNotEmpty)
+            Text('${phone.isNotEmpty ? "Hotline: $phone" : ""}${phone.isNotEmpty && email.isNotEmpty ? " • " : ""}${email.isNotEmpty ? "Email: $email" : ""}', 
+                 textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 16),
+          Text('${'pt_version'.tr} 1.0.0', style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withValues(alpha: 0.5))),
+        ],
+      );
+    });
   }
 }

@@ -162,7 +162,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   bool _shouldLoadItineraries(OrderModel order) {
     final status = order.status?.trim().toLowerCase();
-    return status != 'pending' && status != 'cancelled';
+    return status == 'paid' || status == 'completed';
   }
 
   Future<Map<int, TourismInformationModel>> _loadTourismInformation(
@@ -226,12 +226,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Obx(() {
       final order = _controller.selectedOrder.value;
       return AppScreen(
-        title: order == null ? 'Chi tiết đơn' : 'Đơn #${order.id}',
+        title: order == null ? 'od_order_detail'.tr : 'od_order_id'.trParams({'id': order.id.toString()}),
         actions: order == null
             ? null
             : [
                 IconButton(
-                  tooltip: 'Làm mới',
+                  tooltip: 'ot_refresh'.tr,
                   onPressed: () => _refreshOrder(order.id),
                   icon: const Icon(Icons.refresh_rounded),
                 ),
@@ -244,7 +244,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildBody(OrderModel? order) {
     if (_controller.isLoading.value && order == null) {
-      return const LoadingWidget(message: 'Đang tải chi tiết đơn...');
+      return LoadingWidget(message: 'od_loading_detail'.tr);
     }
     if (order == null) {
       return const _OrderNotFound();
@@ -271,7 +271,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _SliverAppBarDelegate(
-                  const TabBar(
+                  TabBar(
                     labelColor: AppColors.brand,
                     unselectedLabelColor: AppColors.textSecondary,
                     indicatorColor: AppColors.brand,
@@ -280,9 +280,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     unselectedLabelStyle:
                         TextStyle(fontWeight: FontWeight.w500),
                     tabs: [
-                      Tab(text: 'Thông tin'),
-                      Tab(text: 'Lịch trình'),
-                      Tab(text: 'Vé'),
+                      Tab(text: 'od_info_tab'.tr),
+                      Tab(text: 'od_itinerary_tab'.tr),
+                      Tab(text: 'od_ticket_tab'.tr),
                     ],
                   ),
                 ),
@@ -316,7 +316,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                     ],
                     if (order.status == 'Cancelled' ||
-                        order.status == 'Request to Cancelled') ...[
+                        order.status == 'Request to cancel') ...[
                       const SizedBox(height: 20),
                       _InactiveOrderNotice(status: order.status),
                     ],
@@ -351,24 +351,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (order.status == 'Paid' || order.status == 'Completed')
-                      OrderTicketsPanel(
-                        tickets: order.tickets,
-                        ticketTypeNames: _ticketTypeNames,
-                      )
-                    else
-                      const Padding(
-                        padding: EdgeInsets.only(top: 40),
-                        child: Center(
-                          child: Text(
-                            'Vé sẽ hiển thị khi đơn hàng đã thanh toán',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
+                    OrderTicketsPanel(
+                      tickets: order.tickets,
+                      ticketTypeNames: _ticketTypeNames,
+                    )
                   ],
                 ),
               ),
@@ -386,7 +372,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Future<void> _openCancellationRequest(OrderModel order) async {
     if (!_canRequestCancellation(order)) {
-      SnackbarHelper.error('Chỉ đơn đã thanh toán mới có thể yêu cầu hủy tour');
+      SnackbarHelper.error('od_only_paid_cancel'.tr);
       return;
     }
 
@@ -394,19 +380,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         _daysUntilDeparture(order.schedule?.departureDate);
     final feePercent = _cancellationFeePercent(daysUntilDeparture);
     if (feePercent == null || daysUntilDeparture == null) {
-      await showDialog<void>(
+      await showModalBottomSheet<void>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Không thể yêu cầu hủy'),
-          content: const Text(
-            'Yêu cầu hủy không được hỗ trợ trong vòng 1 ngày trước ngày khởi hành hoặc khi thiếu thông tin ngày khởi hành.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Đã hiểu'),
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetContext) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'od_cannot_cancel'.tr,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'od_cancel_policy_error'.tr,
+                  style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brand,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                  ),
+                  child: Text('od_understood'.tr),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
       return;
@@ -417,34 +432,77 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final cancellationFee = (feeBase * feePercent / 100).round();
     final estimatedRefund =
         (order.finalAmount - cancellationFee).clamp(0, 1 << 31);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xác nhận chính sách hủy'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Còn $daysUntilDeparture ngày trước ngày khởi hành.'),
-            const SizedBox(height: 10),
-            Text(
-              'Phí hủy: $feePercent% '
-              '(${CurrencyFormatter.format(cancellationFee)})',
-            ),
-            const SizedBox(height: 6),
-            Text('Dự kiến hoàn: ${CurrencyFormatter.format(estimatedRefund)}'),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'od_confirm_cancel_policy'.tr,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'od_days_until_departure'.trParams({'days': daysUntilDeparture.toString()}),
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'od_cancel_fee'.trParams({
+                  'percent': feePercent.toString(),
+                  'amount': CurrencyFormatter.format(cancellationFee),
+                }),
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'od_estimated_refund'.trParams({'amount': CurrencyFormatter.format(estimatedRefund)}),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.accent),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                      ),
+                      child: Text('od_later'.tr),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.brand,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                      ),
+                      child: Text('od_continue'.tr),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Để sau'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Tiếp tục'),
-          ),
-        ],
       ),
     );
 
@@ -465,13 +523,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Đánh giá chuyến đi'),
+        title: Text('od_review_trip'.tr),
         content: StatefulBuilder(
           builder: (context, setDialogState) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Trải nghiệm của bạn thế nào?',
+                'od_how_was_experience'.tr,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 10),
@@ -495,8 +553,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: commentController,
-                decoration: const InputDecoration(
-                  hintText: 'Chia sẻ cảm nhận của bạn...',
+                decoration: InputDecoration(
+                  hintText: 'od_share_feelings'.tr,
                   prefixIcon: Icon(Icons.rate_review_outlined),
                 ),
                 maxLines: 3,
@@ -507,7 +565,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Để sau'),
+            child: Text('od_later'.tr),
           ),
           FilledButton.icon(
             onPressed: () async {
@@ -522,7 +580,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               }
             },
             icon: const Icon(Icons.send_rounded, size: 18),
-            label: const Text('Gửi đánh giá'),
+            label: Text('od_submit_review'.tr),
           ),
         ],
       ),
@@ -600,7 +658,7 @@ class _OrderHero extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
-                'Mã đơn #${order.id}',
+                'od_order_code'.trParams({'id': order.id.toString()}),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
@@ -617,7 +675,7 @@ class _OrderHero extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  order.tour?.name ?? 'Chuyến đi của bạn',
+                  order.tour?.name ?? 'od_your_trip'.tr,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -682,7 +740,7 @@ class _TripTimeline extends StatelessWidget {
               children: [
                 Expanded(
                   child: _TimelineDate(
-                    label: 'KHỞI HÀNH',
+                    label: 'od_departure'.tr,
                     date: schedule.departureDate,
                     icon: Icons.flight_takeoff_rounded,
                   ),
@@ -697,7 +755,7 @@ class _TripTimeline extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${schedule.returnDate.difference(schedule.departureDate).inDays + 1} ngày',
+                        'od_duration_days'.trParams({'days': (schedule.returnDate.difference(schedule.departureDate).inDays + 1).toString()}),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -707,7 +765,7 @@ class _TripTimeline extends StatelessWidget {
                 ),
                 Expanded(
                   child: _TimelineDate(
-                    label: 'KẾT THÚC',
+                    label: 'od_end'.tr,
                     date: schedule.returnDate,
                     icon: Icons.flag_rounded,
                     alignEnd: true,
@@ -781,14 +839,14 @@ class _ScheduleItineraryPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Lịch trình chi tiết',
+                        'td_detailed_itinerary'.tr,
                         style: AppTextStyles.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${days.length} ngày • ${itineraries.length} hoạt động',
+                        'od_days_activities'.trParams({'d': days.length.toString(), 'a': itineraries.length.toString()}),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -904,7 +962,7 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                           Row(
                             children: [
                               Text(
-                                'Ngày ${widget.day}',
+                                'td_day_index'.trParams({'day': widget.day.toString()}),
                                 style: AppTextStyles.textTheme.titleSmall
                                     ?.copyWith(
                                   fontWeight: FontWeight.w800,
@@ -925,8 +983,8 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                                     borderRadius:
                                         BorderRadius.circular(AppRadius.pill),
                                   ),
-                                  child: const Text(
-                                    'HÔM NAY',
+                                  child: Text(
+                                    'od_today'.tr,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
@@ -941,8 +999,8 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                           const SizedBox(height: 2),
                           Text(
                             date == null
-                                ? '${widget.activities.length} hoạt động'
-                                : '${DateFormatter.display(date)} • ${widget.activities.length} hoạt động',
+                                ? 'td_activities_count'.trParams({'count': widget.activities.length.toString()})
+                                : 'od_date_activities'.trParams({'date': DateFormatter.display(date), 'a': widget.activities.length.toString()}),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -1010,7 +1068,7 @@ class _ScheduleActivity extends StatelessWidget {
         ? heritage!.name.trim()
         : itinerary.title?.trim().isNotEmpty == true
             ? itinerary.title!.trim()
-            : 'Hoạt động trong ngày';
+            : 'td_daily_activities'.tr;
     final description = heritage?.description?.trim().isNotEmpty == true
         ? heritage!.description!.trim()
         : itinerary.description?.trim();
@@ -1114,7 +1172,7 @@ class _ScheduleActivity extends StatelessWidget {
                             child: _HeritageBadge(
                               label: heritage?.type?.trim().isNotEmpty == true
                                   ? heritage!.type!.trim()
-                                  : 'Điểm di sản',
+                                  : 'td_heritage_sites'.tr,
                             ),
                           ),
                         ],
@@ -1154,7 +1212,7 @@ class _ScheduleActivity extends StatelessWidget {
                                   label:
                                       heritage.type?.trim().isNotEmpty == true
                                           ? heritage.type!.trim()
-                                          : 'Điểm di sản',
+                                          : 'td_heritage_sites'.tr,
                                 ),
                             ],
                           ),
@@ -1221,7 +1279,7 @@ class _ScheduleActivity extends StatelessWidget {
                                   heritage?.sourceName?.trim().isNotEmpty ==
                                           true
                                       ? heritage!.sourceName!.trim()
-                                      : 'Nguồn tham khảo',
+                                      : 'td_references'.tr,
                               uri: sourceUri,
                             ),
                           ],
@@ -1338,7 +1396,7 @@ class _HeritageSourceLink extends StatelessWidget {
     }
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở liên kết nguồn')),
+        SnackBar(content: Text('td_cannot_open_link'.tr)),
       );
     }
   }
@@ -1411,7 +1469,7 @@ class _ItineraryLoadingCard extends StatelessWidget {
         borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
           SizedBox(
             width: 20,
@@ -1419,7 +1477,7 @@ class _ItineraryLoadingCard extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           SizedBox(width: 12),
-          Text('Đang tải lịch trình chi tiết...'),
+          Text('od_loading_itinerary'.tr),
         ],
       ),
     );
@@ -1443,9 +1501,9 @@ class _ItineraryErrorCard extends StatelessWidget {
       child: Row(
         children: [
           const Icon(Icons.route_outlined, color: AppColors.error),
-          const SizedBox(width: 10),
-          const Expanded(child: Text('Chưa tải được lịch trình chuyến đi.')),
-          TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+          SizedBox(width: 10),
+          Expanded(child: Text('od_cannot_load_itinerary'.tr)),
+          TextButton(onPressed: onRetry, child: Text('od_retry'.tr)),
         ],
       ),
     );
@@ -1464,12 +1522,12 @@ class _EmptyItineraryCard extends StatelessWidget {
         borderRadius: AppRadius.card,
         border: Border.all(color: AppColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Icon(Icons.event_note_outlined, color: AppColors.textSecondary),
           SizedBox(width: 10),
           Expanded(
-            child: Text('Lịch trình chi tiết đang được cập nhật.'),
+            child: Text('od_itinerary_updating'.tr),
           ),
         ],
       ),
@@ -1588,7 +1646,7 @@ class _OrderInformationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'HÓA ĐƠN ĐẶT TOUR',
+                  'od_tour_invoice'.tr,
                   style: AppTextStyles.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -1635,18 +1693,18 @@ class _OrderInformationCard extends StatelessWidget {
             child: Column(
               children: [
                 _DetailRow(
-                  label: 'Tạm tính',
+                  label: 'od_subtotal'.tr,
                   value: CurrencyFormatter.format(order.totalAmount),
                 ),
                 if ((order.discountValue ?? 0) > 0)
                   _DetailRow(
-                    label: 'Ưu đãi',
+                    label: 'od_discount'.tr,
                     value: '-${CurrencyFormatter.format(order.discountValue!)}',
                     valueColor: AppColors.success,
                   ),
                 if ((order.promotionDiscountValue ?? 0) > 0)
                   _DetailRow(
-                    label: 'Khuyến mãi',
+                    label: 'od_promotion'.tr,
                     value:
                         '-${CurrencyFormatter.format(order.promotionDiscountValue!)}',
                     valueColor: AppColors.success,
@@ -1661,7 +1719,7 @@ class _OrderInformationCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Thành tiền',
+                      'od_total_amount'.tr,
                       style: AppTextStyles.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -1689,7 +1747,7 @@ class _OrderInformationCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Ghi chú:',
+                    'od_note'.tr,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.textSecondary,
@@ -1761,7 +1819,7 @@ class _TicketBreakdownSection extends StatelessWidget {
   String _ticketTypeName(int ticketTypeId) {
     final name = ticketTypeNames[ticketTypeId]?.trim();
     if (name != null && name.isNotEmpty) return name;
-    return 'Loại vé #$ticketTypeId';
+    return 'od_ticket_type'.trParams({'id': ticketTypeId.toString()});
   }
 
   @override
@@ -1773,7 +1831,7 @@ class _TicketBreakdownSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Chi tiết vé',
+          'od_ticket_details'.tr,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.textSecondary,
@@ -1850,7 +1908,7 @@ class _TicketBreakdownRow extends StatelessWidget {
                 Text(
                   hasPrice
                       ? '$quantity x ${CurrencyFormatter.format(unitPrice)}'
-                      : '$quantity vé',
+                      : 'ot_tickets_count'.trParams({'count': quantity.toString()}),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -1952,8 +2010,7 @@ class _PendingOrderNotice extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Giao dịch chưa hoàn tất. Đơn này không thể thanh toán lại; '
-              'hệ thống sẽ tự hủy nếu cổng thanh toán không xác nhận thành công.',
+              'od_unpaid_notice'.tr,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
@@ -1989,14 +2046,14 @@ class _PostPaymentActions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            completed ? 'Chuyến đi đã hoàn thành' : 'Quản lý chuyến đi',
+            completed ? 'od_trip_completed'.tr : 'od_manage_trip'.tr,
             style: AppTextStyles.textTheme.titleSmall,
           ),
           const SizedBox(height: 5),
           Text(
             completed
-                ? 'Cảm nhận của bạn giúp cộng đồng chọn tour tốt hơn.'
-                : 'Vé QR đã sẵn sàng. Bạn có thể quản lý yêu cầu tại đây.',
+                ? 'od_review_prompt'.tr
+                : 'od_qr_ready'.tr,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 14),
@@ -2009,8 +2066,8 @@ class _PostPaymentActions extends StatelessWidget {
               ),
             ),
             onPressed: onReview,
-            child: const Text(
-              'Viết đánh giá',
+            child: Text(
+              'td_write_review'.tr,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -2028,8 +2085,8 @@ class _PostPaymentActions extends StatelessWidget {
                 side: const BorderSide(color: AppColors.brand),
               ),
               onPressed: onCancellation,
-              child: const Text(
-                'Yêu cầu hủy tour',
+              child: Text(
+                'od_request_cancel_tour'.tr,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.brand,
@@ -2050,7 +2107,7 @@ class _InactiveOrderNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final requested = status == 'Request to Cancelled';
+    final requested = status == 'Request to cancel';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2067,8 +2124,8 @@ class _InactiveOrderNotice extends StatelessWidget {
           Expanded(
             child: Text(
               requested
-                  ? 'Yêu cầu hủy đang được xử lý. StayHub sẽ cập nhật khi có kết quả.'
-                  : 'Đơn đặt tour này đã được hủy và không còn hiệu lực.',
+                  ? 'od_cancel_processing'.tr
+                  : 'od_order_cancelled'.tr,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.navy,
                     height: 1.4,
@@ -2097,43 +2154,43 @@ class _OrderStatusStyle {
   factory _OrderStatusStyle.from(String? status) {
     switch (status) {
       case 'Pending':
-        return const _OrderStatusStyle(
-          label: 'Chờ thanh toán',
+        return _OrderStatusStyle(
+          label: 'od_status_pending'.tr,
           icon: Icons.schedule_rounded,
           foreground: AppColors.accent,
           background: AppColors.accentLight,
         );
       case 'Paid':
-        return const _OrderStatusStyle(
-          label: 'Đã thanh toán',
+        return _OrderStatusStyle(
+          label: 'pt_paid'.tr,
           icon: Icons.verified_rounded,
           foreground: AppColors.brand,
           background: AppColors.brandLight,
         );
       case 'Completed':
-        return const _OrderStatusStyle(
-          label: 'Hoàn thành',
+        return _OrderStatusStyle(
+          label: 'od_status_completed'.tr,
           icon: Icons.task_alt_rounded,
           foreground: Color(0xFF15803D),
           background: Color(0xFFE8F8EF),
         );
       case 'Cancelled':
-        return const _OrderStatusStyle(
-          label: 'Đã hủy',
+        return _OrderStatusStyle(
+          label: 'pt_cancelled'.tr,
           icon: Icons.cancel_rounded,
           foreground: AppColors.error,
           background: Color(0xFFFEE2E2),
         );
-      case 'Request to Cancelled':
-        return const _OrderStatusStyle(
-          label: 'Yêu cầu hủy',
+      case 'Request to cancel':
+        return _OrderStatusStyle(
+          label: 'pt_cancel_req'.tr,
           icon: Icons.pending_actions_rounded,
           foreground: Color(0xFFC2410C),
           background: Color(0xFFFFF7ED),
         );
       default:
         return _OrderStatusStyle(
-          label: status ?? 'Không xác định',
+          label: status ?? 'od_status_unknown'.tr,
           icon: Icons.info_outline_rounded,
           foreground: AppColors.textSecondary,
           background: AppColors.surfaceGrouped,
@@ -2200,7 +2257,7 @@ class _EmptySchedule extends StatelessWidget {
         const Icon(Icons.event_busy_rounded, color: AppColors.textSecondary),
         const SizedBox(width: 10),
         Text(
-          'Chưa có thông tin lịch khởi hành',
+          'od_no_departure_info'.tr,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
@@ -2234,12 +2291,12 @@ class _OrderNotFound extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Không tìm thấy đơn',
+              'od_order_not_found'.tr,
               style: AppTextStyles.textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              'Đơn có thể đã bị xóa hoặc bạn không có quyền truy cập.',
+              'od_order_deleted_or_no_access'.tr,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),

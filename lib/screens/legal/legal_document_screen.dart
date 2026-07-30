@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../legal/legal_section.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/ios_grouped.dart';
+import '../../services/system_setting_service.dart';
 
-class LegalDocumentScreen extends StatelessWidget {
+class LegalDocumentScreen extends StatefulWidget {
   const LegalDocumentScreen({
     super.key,
     this.title,
     this.lastUpdated,
     this.sections,
+    this.settingKey,
     this.relatedRoute,
     this.relatedLabel,
     this.relatedDocuments,
@@ -20,23 +23,63 @@ class LegalDocumentScreen extends StatelessWidget {
   final String? title;
   final String? lastUpdated;
   final List<LegalSection>? sections;
+  final String? settingKey;
   final String? relatedRoute;
   final String? relatedLabel;
   final List<Map<String, String>>? relatedDocuments;
 
   @override
+  State<LegalDocumentScreen> createState() => _LegalDocumentScreenState();
+}
+
+class _LegalDocumentScreenState extends State<LegalDocumentScreen> {
+  bool _isLoading = false;
+  String? _htmlContent;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final key = widget.settingKey ?? Get.arguments?['settingKey'] as String?;
+    if (key == null || key.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      if (!Get.isRegistered<SystemSettingService>()) {
+        Get.put(SystemSettingService());
+      }
+      final service = Get.find<SystemSettingService>();
+
+      final localeCode = Get.locale?.languageCode ?? 'vi';
+      final fetchKey = localeCode == 'vi' ? key : '${key}_en';
+
+      var content = await service.getSetting(fetchKey);
+      if (content == null || content.isEmpty) {
+        content = await service.getSetting(key);
+      }
+
+      if (mounted) {
+        setState(() {
+          _htmlContent = content?.replaceAll('&nbsp;', ' ');
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final args = Get.arguments as Map<String, dynamic>? ?? {};
-    final resolvedTitle =
-        title ?? args['title'] as String? ?? 'Văn bản pháp lý';
-    final resolvedUpdated = lastUpdated ?? args['lastUpdated'] as String? ?? '';
-    final resolvedSections =
-        sections ?? (args['sections'] as List<LegalSection>?) ?? [];
-    final resolvedRelatedRoute =
-        relatedRoute ?? args['relatedRoute'] as String?;
-    final resolvedRelatedLabel =
-        relatedLabel ?? args['relatedLabel'] as String?;
-    final resolvedRelatedDocs = relatedDocuments ??
+    final resolvedTitle = widget.title ?? args['title'] as String? ?? 'Văn bản pháp lý';
+    final resolvedUpdated = widget.lastUpdated ?? args['lastUpdated'] as String? ?? '';
+    final resolvedSections = widget.sections ?? (args['sections'] as List<LegalSection>?) ?? [];
+    final resolvedRelatedRoute = widget.relatedRoute ?? args['relatedRoute'] as String?;
+    final resolvedRelatedLabel = widget.relatedLabel ?? args['relatedLabel'] as String?;
+    final resolvedRelatedDocs = widget.relatedDocuments ??
         (args['relatedDocuments'] as List<Map<String, String>>?) ??
         [
           if (resolvedRelatedRoute != null && resolvedRelatedLabel != null)
@@ -91,7 +134,21 @@ class LegalDocumentScreen extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          ...resolvedSections.map(_SectionCard.new),
+          if (_isLoading)
+            const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+          else if (_htmlContent != null && _htmlContent!.isNotEmpty)
+            IosSurfaceCard(
+              margin: EdgeInsets.zero,
+              child: HtmlWidget(
+                _htmlContent!,
+                textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                      color: AppColors.textPrimary,
+                    ),
+              ),
+            )
+          else
+            ...resolvedSections.map(_SectionCard.new),
         ],
       ),
     );

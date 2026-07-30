@@ -57,14 +57,14 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen>
               bottom: BorderSide(color: AppColors.brand, width: 2.5),
             ),
           ),
-          tabs: const [
+          tabs: [
             Tab(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.chat_bubble_outline, size: 18),
-                  SizedBox(width: 8),
-                  Text('Chatbot'),
+                  const Icon(Icons.chat_bubble_outline, size: 18),
+                  const SizedBox(width: 8),
+                  Text('ai_tab_chatbot'.tr),
                 ],
               ),
             ),
@@ -72,9 +72,9 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.assignment_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text('Tư vấn Form'),
+                  const Icon(Icons.assignment_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Text('ai_tab_form'.tr),
                 ],
               ),
             ),
@@ -236,7 +236,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
   Widget build(BuildContext context) {
     return Obx(() {
       if (_ai.questionnaireLoading.value && _ai.questionnaire.value == null) {
-        return const LoadingWidget(message: 'Đang tải khảo sát...');
+        return LoadingWidget(message: 'ai_loading_questionnaire'.tr);
       }
       final questions = _ai.questionnaire.value?.questions ?? [];
       if (questions.isEmpty) {
@@ -246,11 +246,11 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Không tải được khảo sát AI'),
+                Text('ai_error_loading'.tr),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _ai.loadQuestionnaire,
-                  child: const Text('Thử lại'),
+                  child: Text('ai_retry'.tr),
                 ),
               ],
             ),
@@ -274,7 +274,10 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                     const Icon(Icons.auto_awesome, color: AppColors.brand),
                     const SizedBox(width: 8),
                     Text(
-                      'Bước ${_step + 1}/$total',
+                      'ai_step'.trParams({
+                        'current': (_step + 1).toString(),
+                        'total': total.toString(),
+                      }),
                       style: AppTextStyles.textTheme.titleSmall,
                     ),
                     const Spacer(),
@@ -310,7 +313,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         _step--;
                         _errors.clear();
                       }),
-                      child: const Text('Quay lại'),
+                      child: Text('ai_back'.tr),
                     ),
                   ),
                 if (_step > 0) const SizedBox(width: 12),
@@ -318,7 +321,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   flex: 2,
                   child: Obx(
                     () => CustomButton(
-                      label: _isLastStep ? 'Nhận gợi ý tour' : 'Tiếp tục',
+                      label: _isLastStep ? 'ai_get_recommendations'.tr : 'ai_continue'.tr,
                       isLoading: _ai.questionnaireSubmitting.value,
                       onPressed: _next,
                     ),
@@ -367,30 +370,76 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         fontSize: 13, color: AppColors.textSecondary)),
               ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: field.options.map((o) {
-                final on = selectedValue == o.value;
-                return ChoiceChip(
-                  label: Text(o.label),
-                  selected: on,
-                  selectedColor: AppColors.brandLight,
-                  labelStyle: TextStyle(
-                    color: on ? AppColors.brand : AppColors.textSecondary,
-                    fontWeight: on ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  side: BorderSide(
-                      color: on ? AppColors.brand : AppColors.border),
-                  backgroundColor: AppColors.surfaceGrouped,
-                  onSelected: (v) => setState(() {
-                    if (v) {
-                      _values[field.fieldKey] = o.value;
-                      _errors.remove(field.fieldKey);
-                    }
-                  }),
+            Builder(
+              builder: (context) {
+                final queryKey = 'search_query_${field.fieldKey}';
+                final query = _values[queryKey] as String? ?? '';
+                final showSearch = field.options.length > 8;
+                final filteredOptions = showSearch
+                    ? field.options
+                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .toList()
+                    : field.options;
+
+                final optionsList = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: filteredOptions.map((o) {
+                    final on = selectedValue == o.value;
+                    return ChoiceChip(
+                      label: Text(o.label),
+                      selected: on,
+                      selectedColor: AppColors.brandLight,
+                      labelStyle: TextStyle(
+                        color: on ? AppColors.brand : AppColors.textSecondary,
+                        fontWeight: on ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      side: BorderSide(
+                          color: on ? AppColors.brand : AppColors.border),
+                      backgroundColor: AppColors.surfaceGrouped,
+                      onSelected: (v) => setState(() {
+                        if (v) {
+                          _values[field.fieldKey] = o.value;
+                          _errors.remove(field.fieldKey);
+                        }
+                      }),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showSearch) ...[
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm địa điểm...',
+                          prefixIcon: const Icon(Icons.search, size: 16),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        onChanged: (val) => setState(() {
+                          _values[queryKey] = val;
+                        }),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    showSearch
+                        ? Container(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: optionsList,
+                            ),
+                          )
+                        : optionsList,
+                  ],
+                );
+              },
             ),
             if (err != null)
               Padding(
@@ -431,35 +480,81 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         fontSize: 13, color: AppColors.textSecondary)),
               ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: field.options.map((o) {
-                final on = selected.contains(o.value);
-                return FilterChip(
-                  label: Text(o.label),
-                  selected: on,
-                  selectedColor: AppColors.brandLight,
-                  checkmarkColor: AppColors.brand,
-                  labelStyle: TextStyle(
-                    color: on ? AppColors.brand : AppColors.textSecondary,
-                    fontWeight: on ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  side: BorderSide(
-                      color: on ? AppColors.brand : AppColors.border),
-                  backgroundColor: AppColors.surfaceGrouped,
-                  onSelected: (v) => setState(() {
-                    final list = List<String>.from(selected);
-                    if (v) {
-                      list.add(o.value);
-                    } else {
-                      list.remove(o.value);
-                    }
-                    _values[field.fieldKey] = list;
-                    _errors.remove(field.fieldKey);
-                  }),
+            Builder(
+              builder: (context) {
+                final queryKey = 'search_query_${field.fieldKey}';
+                final query = _values[queryKey] as String? ?? '';
+                final showSearch = field.options.length > 8;
+                final filteredOptions = showSearch
+                    ? field.options
+                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .toList()
+                    : field.options;
+
+                final optionsList = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: filteredOptions.map((o) {
+                    final on = selected.contains(o.value);
+                    return FilterChip(
+                      label: Text(o.label),
+                      selected: on,
+                      selectedColor: AppColors.brandLight,
+                      checkmarkColor: AppColors.brand,
+                      labelStyle: TextStyle(
+                        color: on ? AppColors.brand : AppColors.textSecondary,
+                        fontWeight: on ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      side: BorderSide(
+                          color: on ? AppColors.brand : AppColors.border),
+                      backgroundColor: AppColors.surfaceGrouped,
+                      onSelected: (v) => setState(() {
+                        final list = List<String>.from(selected);
+                        if (v) {
+                          list.add(o.value);
+                        } else {
+                          list.remove(o.value);
+                        }
+                        _values[field.fieldKey] = list;
+                        _errors.remove(field.fieldKey);
+                      }),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showSearch) ...[
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm lựa chọn...',
+                          prefixIcon: const Icon(Icons.search, size: 16),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        onChanged: (val) => setState(() {
+                          _values[queryKey] = val;
+                        }),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    showSearch
+                        ? Container(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            child: SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: optionsList,
+                            ),
+                          )
+                        : optionsList,
+                  ],
+                );
+              },
             ),
             if (err != null)
               Padding(
@@ -550,7 +645,7 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
               double.tryParse(_values[field.fieldKey]?.toString() ?? '0') ?? 0;
           final displayValue = numericValue > 0
               ? NumberFormat('#,###').format(numericValue)
-              : 'Không giới hạn';
+              : 'ai_unlimited'.tr;
           input = Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -619,15 +714,15 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Không giới hạn',
-                        style: TextStyle(
+                    Text('ai_unlimited'.tr,
+                        style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textSecondary)),
-                    Text('20,000,000+ VND',
+                    const Text('20,000,000+ VND',
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,

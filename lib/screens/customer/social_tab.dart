@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
@@ -10,6 +12,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/shell_layout.dart';
 import '../../widgets/comment_bottom_sheet.dart';
 import '../../widgets/moment_card.dart';
+import '../../widgets/safe_avatar.dart';
 import '../../utils/snackbar_helper.dart';
 import 'friend_management_panel.dart';
 import 'my_profile_panel.dart';
@@ -27,15 +30,25 @@ class _SocialTabState extends State<SocialTab>
   late final TabController _tabController;
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
+  
+  bool _isFeedLight = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
     _social.fetchFriends();
     _social.fetchPendingRequests();
     _social.fetchChatRooms();
     Get.find<OrderController>().fetchEligibleSchedules();
+  }
+
+  Color get _headerColor {
+    if (_tabController.index != 0) return Colors.black87;
+    return _isFeedLight ? Colors.black87 : Colors.white;
   }
 
   @override
@@ -48,67 +61,72 @@ class _SocialTabState extends State<SocialTab>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: _headerColor),
+        titleTextStyle: TextStyle(
+          color: _headerColor,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
         leading: IconButton(
-          tooltip: 'Add Moment',
+          tooltip: 'sc_tooltip_add_moment'.tr,
           icon: const Icon(Icons.camera_alt_outlined),
           onPressed: () => Get.toNamed(AppRoutes.shareMoment),
         ),
-        title: const Text('Social'),
+        title: Text('sc_title'.tr),
         actions: [
           IconButton(
-            tooltip: 'Social Map',
-            onPressed: () => Get.find<ShellController>().changeTab(0),
-            icon: const Icon(Icons.map_outlined),
-          ),
-          IconButton(
-            tooltip: 'Messages',
+            tooltip: 'sc_tooltip_messages'.tr,
             onPressed: () => Get.toNamed(AppRoutes.chatInbox),
             icon: const Icon(Icons.forum_outlined),
           ),
           const SizedBox(width: 6),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Container(
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                dividerColor: Colors.transparent,
-                indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  color: AppColors.brand,
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textSecondary,
-                splashBorderRadius: BorderRadius.circular(AppRadius.lg),
-                tabs: const [
-                  Tab(text: 'Lướt'),
-                  Tab(text: 'Bạn bè'),
-                  Tab(text: 'Cá nhân'),
-                ],
-              ),
-            ),
-          ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: _headerColor,
+          indicatorWeight: 3,
+          labelColor: _headerColor,
+          unselectedLabelColor: _headerColor.withValues(alpha: 0.6),
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          tabs: [
+            Tab(text: 'sc_tab_feed'.tr),
+            Tab(text: 'sc_tab_friends'.tr),
+            Tab(text: 'sc_tab_profile'.tr),
+          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _MomentsPanel(social: _social),
-          FriendManagementPanel(
+          _MomentsPanel(
             social: _social,
-            searchController: _searchController,
+            onThemeChanged: (isLight) {
+              if (_isFeedLight != isLight) {
+                setState(() => _isFeedLight = isLight);
+              }
+            },
           ),
-          const MyProfilePanel(),
+          Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight + 48,
+            ),
+            child: FriendManagementPanel(
+              social: _social,
+              searchController: _searchController,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight + 48,
+            ),
+            child: const MyProfilePanel(),
+          ),
         ],
       ),
     );
@@ -117,8 +135,9 @@ class _SocialTabState extends State<SocialTab>
 
 class _MomentsPanel extends StatefulWidget {
   final SocialController social;
+  final Function(bool isLight) onThemeChanged;
 
-  const _MomentsPanel({required this.social});
+  const _MomentsPanel({required this.social, required this.onThemeChanged});
 
   @override
   State<_MomentsPanel> createState() => _MomentsPanelState();
@@ -126,6 +145,8 @@ class _MomentsPanel extends StatefulWidget {
 
 class _MomentsPanelState extends State<_MomentsPanel> {
   final _pageController = PageController();
+  int _currentFeedIndex = 0;
+  final Map<int, bool> _isFeedLightMap = {};
 
   @override
   void initState() {
@@ -136,13 +157,53 @@ class _MomentsPanelState extends State<_MomentsPanel> {
           _pageController.position.maxScrollExtent - 200) {
         widget.social.loadMoreFeed();
       }
+      int newIndex = _pageController.page?.round() ?? 0;
+      if (newIndex != _currentFeedIndex) {
+        _currentFeedIndex = newIndex;
+        _checkImageColor(newIndex);
+      }
     });
+
+    ever(widget.social.moments, (_) {
+      if (widget.social.moments.isNotEmpty && !_isFeedLightMap.containsKey(0) && _currentFeedIndex == 0) {
+        _checkImageColor(0);
+      }
+    });
+  }
+
+  Future<void> _checkImageColor(int index) async {
+    if (index >= widget.social.moments.length) return;
+    
+    if (_isFeedLightMap.containsKey(index)) {
+      widget.onThemeChanged(_isFeedLightMap[index]!);
+      return;
+    }
+    
+    final imageUrl = widget.social.moments[index].imageUrl;
+    if (imageUrl.isEmpty) return;
+
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(
+        CachedNetworkImageProvider(imageUrl),
+      );
+      final dominantColor = palette.dominantColor?.color ?? palette.mutedColor?.color ?? Colors.black;
+      final isLight = dominantColor.computeLuminance() > 0.5;
+      
+      if (mounted) {
+        _isFeedLightMap[index] = isLight;
+        if (_currentFeedIndex == index) {
+          widget.onThemeChanged(isLight);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   void _shareMoment(MomentModel moment) {
     final rooms = widget.social.chatRooms;
     if (rooms.isEmpty) {
-      SnackbarHelper.error('No conversation found to share.');
+      SnackbarHelper.error('sc_share_no_conv'.tr);
       return;
     }
 
@@ -160,8 +221,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Send to',
+                Text(
+                  'sc_share_send_to'.tr,
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -173,7 +234,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Flexible(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -183,17 +244,14 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                   final roomName =
                       (room.name != null && room.name!.trim().isNotEmpty)
                           ? room.name!
-                          : 'Conversation';
+                          : 'sc_share_conversation'.tr;
 
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       backgroundColor: AppColors.brandLight,
-                      backgroundImage:
-                          (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
-                              ? CachedNetworkImageProvider(room.avatarUrl!)
-                              : null,
-                      child: (room.avatarUrl == null || room.avatarUrl!.isEmpty)
+                      backgroundImage: safeAvatarImageProvider(room.avatarUrl),
+                      child: safeAvatarImageProvider(room.avatarUrl) == null
                           ? const Icon(Icons.chat_bubble_outline_rounded,
                               color: AppColors.brand)
                           : null,
@@ -204,7 +262,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
-                      room.isGroup ? 'Tour Group' : 'Direct Chat',
+                      room.isGroup ? 'sc_share_tour_group'.tr : 'sc_share_direct_chat'.tr,
                       style: const TextStyle(
                           fontSize: 11, color: AppColors.textTertiary),
                     ),
@@ -219,7 +277,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           })}]';
 
                       await widget.social.sendChatMessage(room.id, shareText);
-                      SnackbarHelper.success('Moment shared successfully');
+                      SnackbarHelper.success('sc_share_success'.tr);
                     },
                   );
                 },
@@ -255,9 +313,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
 
         if (widget.social.moments.isEmpty) {
           return ListView(
-            children: const [
+            children: [
               SizedBox(height: 120),
-              Center(child: Text('No moments yet. Share your journey!')),
+              Center(child: Text('sc_moment_empty'.tr)),
             ],
           );
         }
@@ -269,7 +327,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               (widget.social.isMomentsLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == widget.social.moments.length) {
-              return const Padding(
+              return Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(child: CircularProgressIndicator()));
             }
@@ -302,87 +360,114 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     final detailsController = TextEditingController();
     var isSending = false;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
-              content: SingleChildScrollView(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+
+                    Text(
+                      '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(
-                          labelText: 'Reason for reporting'),
-                      items: const [
+                      decoration: InputDecoration(
+                          labelText: 'sc_report_reason'.tr,
+                          border: const OutlineInputBorder()),
+                      items: [
                         DropdownMenuItem(
-                            value: 'Spam', child: Text('Spam / Advertisement')),
+                            value: 'Spam', child: Text('sc_report_spam'.tr)),
                         DropdownMenuItem(
-                            value: 'Hate Speech', child: Text('Hate Speech')),
+                            value: 'sc_report_hate'.tr, child: Text('sc_report_hate'.tr)),
                         DropdownMenuItem(
                             value: 'Harassment',
-                            child: Text('Harassment / Threats')),
+                            child: Text('sc_report_harassment'.tr)),
                         DropdownMenuItem(
-                            value: 'Violence', child: Text('Violence / Gore')),
+                            value: 'Violence', child: Text('sc_report_violence'.tr)),
                         DropdownMenuItem(
-                            value: 'Other', child: Text('Other reason')),
+                            value: 'Other', child: Text('sc_report_other'.tr)),
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setDialogState(() => selectedReason = val);
+                          setSheetState(() => selectedReason = val);
                         }
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: detailsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Details (Optional)',
-                        hintText: 'Enter violation details...',
+                      decoration: InputDecoration(
+                        labelText: 'sc_report_details'.tr,
+                        hintText: 'sc_report_details_hint'.tr,
                         alignLabelWithHint: true,
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 3,
                     ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: isSending ? null : () => Navigator.pop(context),
+                            child: Text('sc_report_cancel'.tr),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: isSending
+                                ? null
+                                : () async {
+                                    setSheetState(() => isSending = true);
+                                    final ok = await social.reportContent(
+                                      contentType: contentType,
+                                      targetId: targetId,
+                                      reason: selectedReason,
+                                      details: detailsController.text.trim().isNotEmpty
+                                          ? detailsController.text.trim()
+                                          : null,
+                                    );
+                                    setSheetState(() => isSending = false);
+                                    if (ok) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.brand),
+                            child: isSending
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                  )
+                                : Text('sc_report_submit'.tr),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: isSending
-                      ? null
-                      : () async {
-                          setDialogState(() => isSending = true);
-                          final ok = await social.reportContent(
-                            contentType: contentType,
-                            targetId: targetId,
-                            reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty
-                                ? detailsController.text.trim()
-                                : null,
-                          );
-                          setDialogState(() => isSending = false);
-                          if (ok) {
-                            Navigator.pop(context);
-                          }
-                        },
-                  child: isSending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Submit Report'),
-                ),
-              ],
             );
           },
         );

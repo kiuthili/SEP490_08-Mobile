@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 import '../../constants/api_constants.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
-import '../../models/social_models.dart'; // Đã thêm
+import '../../models/social_models.dart'; // -É+ú th+¬m
 import '../../models/tour_model.dart';
+import '../../widgets/comment_bottom_sheet.dart';
 import '../../routes/app_routes.dart';
 import '../../services/signalr_service.dart';
 import '../../services/social_service.dart';
@@ -50,7 +51,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   var _historySkip = 0;
   static const _pageSize = 40;
   int? _roomId;
-  String _roomTitle = 'Tin nhắn';
+  String _roomTitle = 'sc_sds_chat'.tr;
   bool _isGroup = false;
   String? _avatarUrl;
   int? _scheduleId;
@@ -132,7 +133,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         await _socialController.fetchChatRooms();
         final enriched = _socialController.chatRooms
             .firstWhereOrNull((r) => r.id == room.id);
-        _roomTitle = enriched?.name ?? room.name ?? 'Tin nhắn riêng';
+        _roomTitle = enriched?.name ?? room.name ?? 'sc_sds_direct_message'.tr;
         _avatarUrl = enriched?.avatarUrl ?? room.avatarUrl;
       }
 
@@ -165,7 +166,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         });
         _scrollToBottom(jump: true);
       } else {
-        _error = 'Không xác định được cuộc trò chuyện';
+        _error = 'sc_sds_chat_not_found'.tr;
       }
     } catch (e) {
       _error = e.toString();
@@ -215,17 +216,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     try {
       final token = await _socialService.generateTrackingToken();
       if (token.isNotEmpty) {
-        // URL động: dùng ApiConstants.baseUrl để tương thích với tunnel đang chạy.
-        // URL động: dùng ApiConstants.webUrl để chia sẻ cùng domain với web frontend.
+        // URL -æß+Öng: d+¦ng ApiConstants.webUrl -æß+â t¦¦¦íng th+¡ch vß+¢i tunnel -æang chß¦íy.
+        // Khi deploy production th+¼ chß+ë cß¦ºn thay baseUrl trong api_constants.dart.
         final trackingUrl = '${ApiConstants.webUrl}/track/$token';
-        final shareText = '📍 Vị trí hiện tại của tôi: [LocationShare:${jsonEncode({'token': token, 'url': trackingUrl})}]';
+        final shareText =
+            'sc_sds_live_location_prefix'.tr + '[LocationShare:${jsonEncode({
+              'token': token,
+              'url': trackingUrl
+            })}]';
         await _socialController.sendChatMessage(roomId, shareText);
-        SnackbarHelper.success('Đã chia sẻ vị trí thành công');
+        SnackbarHelper.success('sc_sds_location_shared'.tr);
       } else {
-        SnackbarHelper.error('Không thể chia sẻ vị trí lúc này.');
+        SnackbarHelper.error('sc_sds_location_share_failed'.tr);
       }
     } catch (_) {
-      SnackbarHelper.error('Lỗi khi chia sẻ vị trí.');
+      SnackbarHelper.error('sc_sds_location_share_error'.tr);
     } finally {
       setState(() => _sending = false);
     }
@@ -261,7 +266,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _messageController.selection = TextSelection.collapsed(
         offset: _messageController.text.length,
       );
-      SnackbarHelper.error('Không gửi được tin nhắn. ${e.toString()}');
+      SnackbarHelper.error('sc_sds_failed_send_message_prefix'.tr + e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -329,7 +334,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  _isGroup ? 'Nhóm trò chuyện tour' : 'Đang hoạt động',
+                  _isGroup ? 'sc_sds_tour_group_chat'.tr : 'sc_sds_active_now'.tr,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -354,14 +359,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 Get.back();
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'leave',
                 child: Row(
                   children: [
                     Icon(Icons.logout_rounded, color: AppColors.error),
                     SizedBox(width: 10),
-                    Text('Rời nhóm'),
+                    Text('sc_sds_leave_group'.tr),
                   ],
                 ),
               ),
@@ -371,79 +376,90 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           const SizedBox(width: 8),
       ],
       body: _loading
-          ? const LoadingWidget(message: 'Đang kết nối cuộc trò chuyện...')
+          ? LoadingWidget(message: 'sc_sds_connecting_chat'.tr)
           : _error != null
-          ? _ChatError(message: _error!, onRetry: _initRoom)
-          : Column(
-        children: [
-          if (_isGroup && _scheduleId != null)
-            _GroupScheduleCard(
-              scheduleId: _scheduleId!,
-              fallbackTitle: _roomTitle,
-              fallbackAvatarUrl: _avatarUrl,
-              schedule: _schedule,
-              loading: _loadingSchedule,
-              hasError: _scheduleError != null,
-              onRetry: _loadSchedule,
-            ),
-          if (_loadingOlder)
-            const Padding(
-              padding: EdgeInsets.all(8),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
-          Expanded(
-            child: _messages.isEmpty
-                ? _EmptyConversation(isGroup: _isGroup)
-                : ListView.builder(
-              controller: _scrollController,
-              keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
-              padding:
-              const EdgeInsets.fromLTRB(14, 16, 14, 18),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final m = _messages[index];
-                final previous = index > 0 ? _messages[index - 1] : null;
-                final next = index < _messages.length - 1 ? _messages[index + 1] : null;
-                final showDate = previous == null || !_sameDay(previous.sentAt, m.sentAt);
-                
-                bool isLastInBlock = true;
-                if (next != null && next.senderId == m.senderId && m.sentAt != null && next.sentAt != null) {
-                   final diff = next.sentAt!.difference(m.sentAt!).inMinutes.abs();
-                   if (diff < 1) {
-                      isLastInBlock = false;
-                   }
-                }
-
-                return Column(
+              ? _ChatError(message: _error!, onRetry: _initRoom)
+              : Column(
                   children: [
-                    if (showDate) _DateDivider(date: m.sentAt),
-                    _MessageBubble(
-                      message: m,
-                      isMe: m.senderId == myId,
-                      showSender: _isGroup,
-                      showAvatar: m.senderId != myId && isLastInBlock,
+                    if (_isGroup && _scheduleId != null)
+                      _GroupScheduleCard(
+                        scheduleId: _scheduleId!,
+                        fallbackTitle: _roomTitle,
+                        fallbackAvatarUrl: _avatarUrl,
+                        schedule: _schedule,
+                        loading: _loadingSchedule,
+                        hasError: _scheduleError != null,
+                        onRetry: _loadSchedule,
+                      ),
+                    if (_loadingOlder)
+                      const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: _messages.isEmpty
+                          ? _EmptyConversation(isGroup: _isGroup)
+                          : ListView.builder(
+                              controller: _scrollController,
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              padding:
+                                  const EdgeInsets.fromLTRB(14, 16, 14, 18),
+                              itemCount: _messages.length,
+                              itemBuilder: (context, index) {
+                                final m = _messages[index];
+                                final previous =
+                                    index > 0 ? _messages[index - 1] : null;
+                                final next = index < _messages.length - 1
+                                    ? _messages[index + 1]
+                                    : null;
+                                final showDate = previous == null ||
+                                    !_sameDay(previous.sentAt, m.sentAt);
+
+                                bool isLastInBlock = true;
+                                if (next != null &&
+                                    next.senderId == m.senderId &&
+                                    m.sentAt != null &&
+                                    next.sentAt != null) {
+                                  final diff = next.sentAt!
+                                      .difference(m.sentAt!)
+                                      .inMinutes
+                                      .abs();
+                                  if (diff < 1) {
+                                    isLastInBlock = false;
+                                  }
+                                }
+
+                                return Column(
+                                  children: [
+                                    if (showDate) _DateDivider(date: m.sentAt),
+                                    _MessageBubble(
+                                      message: m,
+                                      isMe: m.senderId == myId,
+                                      showSender: _isGroup,
+                                      showAvatar:
+                                          m.senderId != myId && isLastInBlock,
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                    ),
+                    _MessageComposer(
+                      controller: _messageController,
+                      focusNode: _inputFocus,
+                      sending: _sending,
+                      onSend: _send,
+                      onShareLocation: _shareLocation,
                     ),
                   ],
-                );
-              },
-            ),
-          ),
-          _MessageComposer(
-            controller: _messageController,
-            focusNode: _inputFocus,
-            sending: _sending,
-            onSend: _send,
-            onShareLocation: _shareLocation,
-          ),
-        ],
-      ),
+                ),
     );
   }
 
@@ -454,7 +470,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }
-
 
 class _GroupScheduleCard extends StatelessWidget {
   const _GroupScheduleCard({
@@ -478,8 +493,11 @@ class _GroupScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tour = schedule?.tour;
-    final title = tour?.name.trim().isNotEmpty == true ? tour!.name : fallbackTitle;
-    final imageUrl = tour?.imageUrl?.trim().isNotEmpty == true ? tour!.imageUrl : fallbackAvatarUrl;
+    final title =
+        tour?.name.trim().isNotEmpty == true ? tour!.name : fallbackTitle;
+    final imageUrl = tour?.imageUrl?.trim().isNotEmpty == true
+        ? tour!.imageUrl
+        : fallbackAvatarUrl;
     final canOpenTour = tour != null && tour.id > 0;
 
     return Container(
@@ -494,7 +512,9 @@ class _GroupScheduleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: canOpenTour ? () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id) : null,
+          onTap: canOpenTour
+              ? () => Get.toNamed(AppRoutes.tourDetail, arguments: tour.id)
+              : null,
           child: Ink(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -523,24 +543,36 @@ class _GroupScheduleCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.brand,
                               borderRadius: BorderRadius.circular(99),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.groups_2_rounded, size: 12, color: Colors.white),
+                                Icon(Icons.groups_2_rounded,
+                                    size: 12, color: Colors.white),
                                 SizedBox(width: 4),
-                                Text('NHÓM TOUR', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
+                                Text('sc_sds_tour_group_caps'.tr,
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.6)),
                               ],
                             ),
                           ),
                           const Spacer(),
                           Text(
                             '#$scheduleId',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.brand, fontWeight: FontWeight.w700),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                    color: AppColors.brand,
+                                    fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -549,7 +581,8 @@ class _GroupScheduleCard extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.navy, fontWeight: FontWeight.w800),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: AppColors.navy, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 6),
                       if (loading && schedule == null)
@@ -557,15 +590,17 @@ class _GroupScheduleCard extends StatelessWidget {
                       else if (hasError && schedule == null)
                         _ScheduleLoadError(onRetry: onRetry)
                       else if (schedule != null)
-                          _ScheduleMetadata(schedule: schedule!)
-                        else
-                          Text('Không có thông tin lịch khởi hành', style: Theme.of(context).textTheme.labelSmall),
+                        _ScheduleMetadata(schedule: schedule!)
+                      else
+                        Text('sc_sds_no_schedule_info'.tr,
+                            style: Theme.of(context).textTheme.labelSmall),
                     ],
                   ),
                 ),
                 if (canOpenTour) ...[
                   const SizedBox(width: 7),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.brand),
+                  const Icon(Icons.arrow_forward_ios_rounded,
+                      size: 14, color: AppColors.brand),
                 ],
               ],
             ),
@@ -588,7 +623,7 @@ class _ScheduleCover extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: AppColors.brandGradient,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: AppColors.brand.withValues(alpha: 0.18),
@@ -598,12 +633,16 @@ class _ScheduleCover extends StatelessWidget {
         ],
       ),
       child: imageUrl?.isNotEmpty == true
-          ? CachedNetworkImage(imageUrl: imageUrl!, fit: BoxFit.cover, errorWidget: (_, __, ___) => _fallback())
+          ? CachedNetworkImage(
+              imageUrl: imageUrl!,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => _fallback())
           : _fallback(),
     );
   }
 
-  Widget _fallback() => const Icon(Icons.luggage_rounded, color: Colors.white, size: 30);
+  Widget _fallback() =>
+      const Icon(Icons.luggage_rounded, color: Colors.white, size: 30);
 }
 
 class _ScheduleMetadata extends StatelessWidget {
@@ -614,19 +653,23 @@ class _ScheduleMetadata extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final location = schedule.tour?.locationLabel;
-    final days = schedule.returnDate.difference(schedule.departureDate).inDays.abs() + 1;
+    final days =
+        schedule.returnDate.difference(schedule.departureDate).inDays.abs() + 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ScheduleMetaLine(
           icon: Icons.calendar_month_rounded,
-          text: '${dateFormat.format(schedule.departureDate.toLocal())} - ${dateFormat.format(schedule.returnDate.toLocal())}',
+          text:
+              '${dateFormat.format(schedule.departureDate.toLocal())} - ${dateFormat.format(schedule.returnDate.toLocal())}',
         ),
         const SizedBox(height: 4),
         _ScheduleMetaLine(
           icon: Icons.location_on_rounded,
-          text: location?.trim().isNotEmpty == true ? '$location • $days ngày' : '$days ngày',
+          text: location?.trim().isNotEmpty == true
+              ? '$location GÇó $days ' + 'sc_sds_days'.tr
+              : days.toString() + 'sc_sds_days'.tr,
         ),
       ],
     );
@@ -645,7 +688,11 @@ class _ScheduleMetaLine extends StatelessWidget {
         Icon(icon, size: 14, color: AppColors.accent),
         const SizedBox(width: 5),
         Expanded(
-          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+          child: Text(text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
         ),
       ],
     );
@@ -657,11 +704,18 @@ class _ScheduleLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
-        SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+        SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2)),
         SizedBox(width: 8),
-        Text('Đang tải thông tin lịch...', style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+        Text('sc_sds_loading_schedule'.tr,
+            style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -675,13 +729,22 @@ class _ScheduleLoadError extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Text('Chưa tải được lịch khởi hành', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.error))),
+        Expanded(
+            child: Text('sc_sds_failed_load_schedule'.tr,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: AppColors.error))),
         InkWell(
           onTap: onRetry,
           borderRadius: BorderRadius.circular(99),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            child: Text('Thử lại', style: TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w700)),
+            child: Text('sc_sds_retry'.tr,
+                style: TextStyle(
+                    color: AppColors.brand,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700)),
           ),
         ),
       ],
@@ -716,10 +779,14 @@ class _EmptyConversation extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(isGroup ? 'Chào cả đoàn nào!' : 'Bắt đầu cuộc trò chuyện', style: AppTextStyles.textTheme.titleMedium, textAlign: TextAlign.center),
+            Text(isGroup ? 'sc_sds_hello_group'.tr : 'sc_sds_start_chat'.tr,
+                style: AppTextStyles.textTheme.titleMedium,
+                textAlign: TextAlign.center),
             const SizedBox(height: 7),
             Text(
-              isGroup ? 'Trao đổi lịch trình và kết nối với những người cùng chuyến đi.' : 'Gửi một lời chào để bắt đầu nhắn tin trên StayHub.',
+              isGroup
+                  ? 'sc_sds_group_chat_desc'.tr
+                  : 'sc_sds_direct_chat_desc'.tr,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -736,14 +803,19 @@ class _DateDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = date == null ? 'Tin nhắn' : DateFormat('dd/MM/yyyy').format(date!.toLocal());
+    final label = date == null
+        ? 'sc_sds_chat'.tr
+        : DateFormat('dd/MM/yyyy').format(date!.toLocal());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          const Expanded(child: Divider()),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(label, style: Theme.of(context).textTheme.labelSmall)),
-          const Expanded(child: Divider()),
+          Expanded(child: Divider()),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child:
+                  Text(label, style: Theme.of(context).textTheme.labelSmall)),
+          Expanded(child: Divider()),
         ],
       ),
     );
@@ -765,7 +837,7 @@ class _MessageBubble extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     final content = message.content;
-    
+
     // 1) Moment Share
     if (content.contains('[MomentShare:')) {
       try {
@@ -775,7 +847,7 @@ class _MessageBubble extends StatelessWidget {
           final int id = data['id'];
           final String imageUrl = data['imageUrl'];
           final String? caption = data['caption'];
-          
+
           return GestureDetector(
             onTap: () {
               Get.toNamed(AppRoutes.momentDetail, arguments: id);
@@ -783,9 +855,12 @@ class _MessageBubble extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.only(top: 4, bottom: 4),
               decoration: BoxDecoration(
-                color: isMe ? Colors.blue.shade900.withOpacity(0.4) : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isMe ? Colors.blue.shade800 : Colors.grey.shade300),
+                color: isMe
+                    ? Colors.blue.shade900.withOpacity(0.4)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: isMe ? Colors.blue.shade800 : Colors.grey.shade300),
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -793,14 +868,21 @@ class _MessageBubble extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    color: isMe ? Colors.blue.shade900.withOpacity(0.6) : Colors.grey.shade200,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    color: isMe
+                        ? Colors.blue.shade900.withOpacity(0.6)
+                        : Colors.grey.shade200,
                     child: Row(
                       children: [
-                        Icon(Icons.camera_alt, size: 14, color: isMe ? Colors.yellow.shade200 : AppColors.brand),
+                        Icon(Icons.camera_alt,
+                            size: 14,
+                            color: isMe
+                                ? Colors.yellow.shade200
+                                : AppColors.brand),
                         const SizedBox(width: 6),
                         Text(
-                          'KHOẢNH KHẮC',
+                          'sc_sds_moment_caps'.tr,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
@@ -817,11 +899,17 @@ class _MessageBubble extends StatelessWidget {
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
                         color: Colors.grey.shade100,
-                        child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                        child: const Center(
+                            child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))),
                       ),
                       errorWidget: (context, url, error) => Container(
                         color: Colors.grey.shade300,
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                        child:
+                            const Icon(Icons.broken_image, color: Colors.grey),
                       ),
                     ),
                   ),
@@ -855,23 +943,27 @@ class _MessageBubble extends StatelessWidget {
         if (match != null) {
           final data = jsonDecode(match.group(1)!);
           final String token = data['token'] as String? ?? '';
-          // url được lưu trong payload hoặc xây lại từ ApiConstants.baseUrl động
-          final String trackingUrl = (data['url'] as String?)?.isNotEmpty == true
-              ? data['url'] as String
-              : '${ApiConstants.webUrl}/track/$token';
-          
+          // url -æ¦¦ß+úc l¦¦u trong payload hoß¦+c x+óy lß¦íi tß+½ ApiConstants.webUrl -æß+Öng
+          final String trackingUrl =
+              (data['url'] as String?)?.isNotEmpty == true
+                  ? data['url'] as String
+                  : '${ApiConstants.webUrl}/track/$token';
+
           return GestureDetector(
             onTap: () {
-              // Mở URL theo dõi động (ngóc/tunnel/production)
+              // Mß+ƒ URL theo d+¦i -æß+Öng (ng+¦c/tunnel/production)
               Get.toNamed('/track/$token');
             },
             child: Container(
               margin: const EdgeInsets.only(top: 4, bottom: 4),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isMe ? Colors.blue.shade900.withOpacity(0.4) : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isMe ? Colors.blue.shade800 : Colors.grey.shade300),
+                color: isMe
+                    ? Colors.blue.shade900.withOpacity(0.4)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: isMe ? Colors.blue.shade800 : Colors.grey.shade300),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -883,13 +975,13 @@ class _MessageBubble extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: const BoxDecoration(
-                          color: Colors.red,
+                          color: AppColors.error,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'VỊ TRÍ TRỰC TIẾP',
+                        'sc_sds_live_location_caps'.tr,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -900,7 +992,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Bấm để theo dõi lộ trình di chuyển trực tuyến của tôi.',
+                    'sc_sds_track_location_desc'.tr,
                     style: TextStyle(
                       fontSize: 11,
                       color: isMe ? Colors.white70 : AppColors.textSecondary,
@@ -912,11 +1004,11 @@ class _MessageBubble extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.brand,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'Xem vị trí',
+                    child: Text(
+                      'sc_sds_view_location'.tr,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -954,7 +1046,8 @@ class _MessageBubble extends StatelessWidget {
     }
 
     final bubble = Container(
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
+      constraints:
+          BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
       padding: const EdgeInsets.fromLTRB(13, 10, 13, 8),
       decoration: BoxDecoration(
         color: isMe ? AppColors.brand : AppColors.surfaceElevated,
@@ -966,15 +1059,24 @@ class _MessageBubble extends StatelessWidget {
         ),
         border: isMe ? null : Border.all(color: AppColors.border),
         boxShadow: [
-          BoxShadow(color: AppColors.navy.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: AppColors.navy.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (!isMe && showSender && message.senderName?.isNotEmpty == true) ...[
-            Text(message.senderName!, style: const TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w800)),
+          if (!isMe &&
+              showSender &&
+              message.senderName?.isNotEmpty == true) ...[
+            Text(message.senderName!,
+                style: const TextStyle(
+                    color: AppColors.brand,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800)),
             const SizedBox(height: 3),
           ],
           Wrap(
@@ -989,7 +1091,9 @@ class _MessageBubble extends StatelessWidget {
                   child: Text(
                     DateFormat('HH:mm').format(message.sentAt!.toLocal()),
                     style: TextStyle(
-                      color: isMe ? Colors.white.withValues(alpha: 0.75) : AppColors.textTertiary,
+                      color: isMe
+                          ? Colors.white.withValues(alpha: 0.75)
+                          : AppColors.textTertiary,
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1005,11 +1109,15 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            if (showAvatar) _MessageAvatar(message: message) else const SizedBox(width: 28),
+            if (showAvatar)
+              _MessageAvatar(message: message)
+            else
+              const SizedBox(width: 28),
             const SizedBox(width: 7),
           ],
           bubble,
@@ -1029,11 +1137,12 @@ class _SystemMessageNotice extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 6, 24, 14),
       child: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
+          constraints:
+              BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             color: AppColors.surfaceGrouped,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
           ),
           child: Column(
@@ -1042,20 +1151,28 @@ class _SystemMessageNotice extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.textTertiary),
+                  const Icon(Icons.info_outline_rounded,
+                      size: 15, color: AppColors.textTertiary),
                   const SizedBox(width: 7),
                   Flexible(
                     child: Text(
                       message.content,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600, height: 1.35),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35),
                     ),
                   ),
                 ],
               ),
               if (message.sentAt != null) ...[
                 const SizedBox(height: 3),
-                Text(DateFormat('HH:mm').format(message.sentAt!.toLocal()), style: const TextStyle(color: AppColors.textTertiary, fontSize: 9, fontWeight: FontWeight.w600)),
+                Text(DateFormat('HH:mm').format(message.sentAt!.toLocal()),
+                    style: const TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600)),
               ],
             ],
           ),
@@ -1077,10 +1194,19 @@ class _MessageAvatar extends StatelessWidget {
       width: 28,
       height: 28,
       clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(color: AppColors.brandLight, shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+          color: AppColors.brandLight, shape: BoxShape.circle),
       child: message.senderAvatar?.isNotEmpty == true
-          ? CachedNetworkImage(imageUrl: message.senderAvatar!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Center(child: Text(initial)))
-          : Center(child: Text(initial, style: const TextStyle(color: AppColors.brand, fontSize: 11, fontWeight: FontWeight.w800))),
+          ? CachedNetworkImage(
+              imageUrl: message.senderAvatar!,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Center(child: Text(initial)))
+          : Center(
+              child: Text(initial,
+                  style: const TextStyle(
+                      color: AppColors.brand,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800))),
     );
   }
 }
@@ -1121,17 +1247,19 @@ class _MessageComposer extends StatelessWidget {
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
-                hintText: 'Nhập tin nhắn...',
+                hintText: 'sc_sds_input_message'.tr,
                 filled: true,
                 fillColor: AppColors.surfaceGrouped,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   borderSide: BorderSide.none,
                 ),
                 suffixIcon: onShareLocation != null
                     ? IconButton(
-                        icon: const Icon(Icons.location_on_rounded, color: AppColors.brand),
+                        icon: const Icon(Icons.location_on_rounded,
+                            color: AppColors.brand),
                         onPressed: onShareLocation,
                       )
                     : null,
@@ -1143,19 +1271,25 @@ class _MessageComposer extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: sending ? null : onSend,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: Ink(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
                   gradient: sending ? null : AppColors.brandGradient,
-                  color: sending ? AppColors.brand.withValues(alpha: 0.35) : null,
+                  color:
+                      sending ? AppColors.brand.withValues(alpha: 0.35) : null,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: sending
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.send_rounded, color: Colors.white, size: 21),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send_rounded,
+                          color: Colors.white, size: 21),
                 ),
               ),
             ),
@@ -1187,7 +1321,7 @@ class _ChatError extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Không kết nối được chat',
+              'sc_sds_failed_connect_chat'.tr,
               style: AppTextStyles.textTheme.titleMedium,
             ),
             const SizedBox(height: 7),
@@ -1202,7 +1336,7 @@ class _ChatError extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
+              label: Text('sc_sds_retry'.tr),
             ),
           ],
         ),
@@ -1210,7 +1344,6 @@ class _ChatError extends StatelessWidget {
     );
   }
 }
-
 
 class MomentDetailScreen extends StatefulWidget {
   const MomentDetailScreen({super.key});
@@ -1221,16 +1354,9 @@ class MomentDetailScreen extends StatefulWidget {
 
 class _MomentDetailScreenState extends State<MomentDetailScreen> {
   final _socialController = Get.find<SocialController>();
-  final _storage = Get.find<StorageService>();
-  final _commentController = TextEditingController();
-  final FocusNode _commentFocusNode = FocusNode();
-
   MomentModel? _moment;
-  List<SocialCommentModel> _comments = [];
   bool _loading = true;
-  bool _sendingComment = false;
   String? _error;
-  int? _editingCommentId;
 
   @override
   void initState() {
@@ -1247,8 +1373,6 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     return null;
   }
 
-  /// Backend KHÔNG có GET /moments/{id} và GET comments => lấy moment + comments
-  /// trực tiếp từ feed (đã chứa comments inline), tránh gọi endpoint 404.
   Future<void> _loadMoment() async {
     setState(() {
       _loading = true;
@@ -1258,7 +1382,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     final arg = Get.arguments;
     MomentModel? moment = arg is MomentModel ? arg : null;
     final int? momentId =
-    arg is MomentModel ? arg.id : (arg is int ? arg : null);
+        arg is MomentModel ? arg.id : (arg is int ? arg : null);
 
     if (momentId == null) {
       setState(() {
@@ -1269,107 +1393,46 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     }
 
     try {
-      // Ưu tiên lấy từ feed; nếu chưa có thì gọi API lấy trực tiếp theo ID.
       moment = _findInFeed(momentId) ?? moment;
-      if (moment == null) {
-        moment = await _socialController.getMomentById(momentId);
-      }
-
-      if (moment == null) {
-        setState(() => _error = 'Moment does not exist or has been deleted');
-      } else {
+      if (moment != null) {
         setState(() {
           _moment = moment;
-          _comments = List<SocialCommentModel>.from(moment!.comments);
+          _loading = false;
+        });
+      }
+
+      final latest = await _socialController.getMomentById(momentId);
+      if (mounted) {
+        setState(() {
+          _moment = latest;
+          _error = null;
         });
       }
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (moment == null && mounted) {
+        setState(() => _error = e.toString());
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _editComment(SocialCommentModel c) {
-    setState(() {
-      _editingCommentId = c.id;
-      _commentController.text = c.comment;
-    });
-    _commentFocusNode.requestFocus();
-  }
-
-  String get _myName {
-    try {
-      final dynamic u = _storage.user; // truy cập động: không phụ thuộc field cụ thể
-      final dynamic n = u?.fullName;
-      if (n is String && n.trim().isNotEmpty) return n;
-    } catch (_) {}
-    return 'You';
-  }
-
-  Future<void> _submitComment() async {
-    final text = _commentController.text.trim();
-    if (text.isEmpty || _moment == null) return;
-
-    setState(() => _sendingComment = true);
-    try {
-      if (_editingCommentId != null) {
-        final editingId = _editingCommentId!;
-        if (editingId > 0) {
-          await _socialController.updateComment(editingId, text);
-        }
-        // Cập nhật ngay trên UI (không có GET comments để reload).
-        setState(() {
-          _comments = _comments
-              .map((c) => c.id == editingId
-              ? SocialCommentModel(
-            id: c.id,
-            momentId: c.momentId,
-            userId: c.userId,
-            userName: c.userName,
-            avatarUrl: c.avatarUrl,
-            comment: text,
-            timestamp: c.timestamp,
-          )
-              : c)
-              .toList();
-          _editingCommentId = null;
-        });
-      } else {
-        // commentMoment() tra ve bool (thanh cong/that bai). Tu dung comment tai cho
-        // tu thong tin user hien tai de hien thi ngay (id am = chua dong bo server).
-        final ok = await _socialController.commentMoment(_moment!.id, text);
-        if (ok != null) {
-          final added = SocialCommentModel(
-            id: -DateTime.now().millisecondsSinceEpoch,
-            momentId: _moment!.id,
-            userId: _currentUserId,
-            userName: _myName,
-            avatarUrl: _storage.user?.avatarUrl,
-            comment: text,
-            timestamp: DateTime.now(),
-          );
-          setState(() {
-            _comments = [..._comments, added];
-            _moment = _moment!.copyWith(comments: _comments);
-          });
+  void _showCommentBottomSheet(BuildContext context, MomentModel moment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentBottomSheet(
+        moment: moment,
+      ),
+    ).then((_) async {
+      if (mounted) {
+        final updated = _findInFeed(moment.id) ?? await _socialController.getMomentById(moment.id);
+        if (updated != null && mounted) {
+          setState(() => _moment = updated);
         }
       }
-      _commentController.clear();
-      if (mounted) FocusScope.of(context).unfocus();
-    } finally {
-      if (mounted) setState(() => _sendingComment = false);
-    }
-  }
-
-  Future<void> _deleteComment(SocialCommentModel c) async {
-    // id<=0 là comment lạc quan chưa biết id server => chỉ xóa cục bộ.
-    if (c.id > 0) {
-      await _socialController.deleteComment(c.id);
-    }
-    if (mounted) {
-      setState(() => _comments.removeWhere((x) => x.id == c.id));
-    }
+    });
   }
 
   void _shareMoment(MomentModel moment) {
@@ -1395,7 +1458,10 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
               children: [
                 const Text(
                   'Send to',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
                 ),
                 IconButton(
                   onPressed: () => Get.back(),
@@ -1406,41 +1472,50 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
             const SizedBox(height: 12),
             Flexible(
               child: ListView.builder(
-                shrinkWrap: true,
+                shrinkWrap: true, 
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
-                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'Conversation';
-                  
+                  final roomName =
+                      (room.name != null && room.name!.trim().isNotEmpty)
+                          ? room.name!
+                          : 'Conversation';
+
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       backgroundColor: AppColors.brandLight,
-                      backgroundImage: (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
-                          ? CachedNetworkImageProvider(room.avatarUrl!)
-                          : null,
+                      backgroundImage:
+                          (room.avatarUrl != null && room.avatarUrl!.isNotEmpty)
+                              ? CachedNetworkImageProvider(room.avatarUrl!)
+                              : null,
                       child: (room.avatarUrl == null || room.avatarUrl!.isEmpty)
-                          ? const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.brand)
+                          ? const Icon(Icons.chat_bubble_outline_rounded,
+                              color: AppColors.brand)
                           : null,
                     ),
                     title: Text(
                       roomName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
                       room.isGroup ? 'Tour Group' : 'Direct Chat',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textTertiary),
                     ),
-                    trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
+                    trailing: const Icon(Icons.send_rounded,
+                        color: AppColors.brand, size: 20),
                     onTap: () async {
-                      Get.back(); // Đóng bottom sheet
+                      Get.back(); // -É+¦ng bottom sheet
                       final shareText = '[MomentShare:${jsonEncode({
-                        'id': moment.id,
-                        'imageUrl': moment.imageUrl,
-                        'caption': moment.caption ?? '',
-                      })}]';
-                      
-                      await _socialController.sendChatMessage(room.id, shareText);
+                            'id': moment.id,
+                            'imageUrl': moment.imageUrl,
+                            'caption': moment.caption ?? '',
+                          })}]';
+
+                      await _socialController.sendChatMessage(
+                          room.id, shareText);
                       SnackbarHelper.success('Moment shared successfully');
                     },
                   );
@@ -1456,201 +1531,101 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
 
   @override
   void dispose() {
-    _commentController.dispose();
-    _commentFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AppScreen(
-      title: 'Moment Details',
+    return Scaffold(
+      backgroundColor: Colors.black,
       body: _loading
-          ? const LoadingWidget(message: 'Loading moment...')
+          ? const Center(child: CircularProgressIndicator(color: AppColors.brand))
           : _error != null || _moment == null
-          ? Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_error ?? 'Moment does not exist or has been deleted'),
-            const SizedBox(height: 16),
-            FilledButton(
-                onPressed: _loadMoment,
-                child: const Text('Retry')),
-          ],
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: _loadMoment,
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                children: [
-                  MomentCard(
-                    moment: _moment!,
-                    currentUserId: _currentUserId,
-                    onDelete: (id) async {
-                      await _socialController.deleteMoment(id);
-                      Get.back();
-                    },
-                    onShare: () => _shareMoment(_moment!),
-                    onLike: (isLike) async {
-                      // Bỏ qua nếu trạng thái không đổi (chống đếm sai).
-                      if (_moment!.isLikedByMe == isLike) return;
-
-                      // Cập nhật lạc quan NGAY trên màn chi tiết, kể cả khi
-                      // moment không nằm trong feed đã nạp (idx < 0 ở controller).
-                      final newCount = (_moment!.reactionCount + (isLike ? 1 : -1))
-                          .clamp(0, 1 << 30)
-                          .toInt();
-                      setState(() {
-                        _moment = _moment!.copyWith(
-                          isLikedByMe: isLike,
-                          reactionCount: newCount,
-                        );
-                      });
-
-                      await _socialController.reactMoment(_moment!.id, isLike);
-
-                      // Nếu moment có trong feed, đồng bộ lại cho khớp controller.
-                      final updated = _findInFeed(_moment!.id);
-                      if (updated != null && mounted) {
-                        setState(() => _moment = updated);
-                      }
-                    },
-                    onReport: (id) => _showReportDialog(context, 'Moment', id, _socialController),
-                    isDetail: true,
-                  ),
-                  const Divider(),
-                  Text('Comments (${_comments.length})',
-                      style:
-                      Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  if (_comments.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        'No comments yet. Be the first to comment!',
-                        style: TextStyle(
-                            color: AppColors.textTertiary),
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _error ?? 'Moment does not exist or has been deleted',
+                        style: const TextStyle(color: Colors.white),
                       ),
-                    ),
-                  ..._comments.map((c) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.brandLight,
-                      backgroundImage: (c.avatarUrl != null &&
-                          c.avatarUrl!.isNotEmpty)
-                          ? CachedNetworkImageProvider(
-                          c.avatarUrl!)
-                          : null,
-                      child: (c.avatarUrl == null ||
-                          c.avatarUrl!.isEmpty)
-                          ? const Icon(Icons.person,
-                          size: 20,
-                          color: AppColors.brand)
-                          : null,
-                    ),
-                    title: Text(c.userName ?? 'User',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13)),
-                    subtitle: Text(c.comment),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (val) async {
-                        if (val == 'edit') {
-                          _editComment(c);
-                        } else if (val == 'delete') {
-                          await _deleteComment(c);
-                        } else if (val == 'report') {
-                          _showReportDialog(context, 'Comment', c.id, _socialController);
+                      const SizedBox(height: 16),
+                      FilledButton(
+                          onPressed: _loadMoment, child: const Text('Retry')),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('Go Back', style: TextStyle(color: Colors.white70)),
+                      )
+                    ],
+                  ),
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    MomentCard(
+                      moment: _moment!,
+                      currentUserId: _currentUserId,
+                      isDetail: true,
+                      onDelete: (id) async {
+                        await _socialController.deleteMoment(id);
+                        Get.back();
+                      },
+                      onShare: () {
+                        if (_moment != null) {
+                          _shareMoment(_moment!);
                         }
                       },
-                      itemBuilder: (_) => [
-                        if (c.userId == _currentUserId) ...const [
-                          PopupMenuItem(
-                              value: 'edit',
-                              child: Text('Edit')),
-                          PopupMenuItem(
-                              value: 'delete',
-                              child: Text('Delete',
-                                  style: TextStyle(
-                                      color:
-                                      AppColors.error))),
-                        ],
-                        if (c.userId != _currentUserId)
-                          const PopupMenuItem(
-                              value: 'report',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.flag_outlined, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Report Violation'),
-                                ],
-                              )),
-                      ],
+                      onLike: (isLike) async {
+                        if (_moment == null) return;
+                        if (_moment!.isLikedByMe == isLike) return;
+
+                        final newCount =
+                            (_moment!.reactionCount + (isLike ? 1 : -1))
+                                .clamp(0, 1 << 30)
+                                .toInt();
+                        setState(() {
+                          _moment = _moment!.copyWith(
+                            isLikedByMe: isLike,
+                            reactionCount: newCount,
+                          );
+                        });
+
+                        await _socialController.reactMoment(
+                            _moment!.id, isLike);
+
+                        final updated = _findInFeed(_moment!.id);
+                        if (updated != null && mounted) {
+                          setState(() => _moment = updated);
+                        }
+                      },
+                      onReport: (id) => _showReportDialog(
+                          context, 'Moment', id, _socialController),
+                      onComment: () {
+                        if (_moment != null) {
+                          _showCommentBottomSheet(context, _moment!);
+                        }
+                      },
                     ),
-                  )),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.fromLTRB(16, 8, 16,
-                  MediaQuery.paddingOf(context).bottom + 8),
-              decoration: const BoxDecoration(
-                  color: AppColors.surfaceElevated,
-                  border: Border(
-                      top: BorderSide(color: AppColors.separator))),
-              child: Row(
-                children: [
-                  if (_editingCommentId != null)
-                    IconButton(
-                        icon: const Icon(Icons.close,
-                            color: AppColors.error),
-                        onPressed: () {
-                          setState(() {
-                            _editingCommentId = null;
-                            _commentController.clear();
-                            FocusScope.of(context).unfocus();
-                          });
-                        }),
-                  Expanded(
-                    child: TextField(
-                        controller: _commentController,
-                        focusNode: _commentFocusNode,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _submitComment(),
-                        decoration: InputDecoration(
-                            hintText: _editingCommentId != null
-                                ? 'Edit comment...'
-                                : 'Add a comment...',
-                            border: InputBorder.none)),
-                  ),
-                  _sendingComment
-                      ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2)))
-                      : IconButton(
-                      icon: const Icon(Icons.send,
-                          color: AppColors.brand),
-                      onPressed: _submitComment),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: SafeArea(
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black45,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () => Get.back(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
-
-  void _showReportDialog(BuildContext context, String contentType, int targetId, SocialController social) {
+  void _showReportDialog(BuildContext context, String contentType, int targetId,
+      SocialController social) {
     String selectedReason = 'Spam';
     final detailsController = TextEditingController();
     var isSending = false;
@@ -1661,20 +1636,28 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
+              title: Text(
+                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
                       value: selectedReason,
-                      decoration: const InputDecoration(labelText: 'Reason for reporting'),
+                      decoration: const InputDecoration(
+                          labelText: 'Reason for reporting'),
                       items: const [
-                        DropdownMenuItem(value: 'Spam', child: Text('Spam / Advertisement')),
-                        DropdownMenuItem(value: 'Hate Speech', child: Text('Hate Speech')),
-                        DropdownMenuItem(value: 'Harassment', child: Text('Harassment / Threats')),
-                        DropdownMenuItem(value: 'Violence', child: Text('Violence / Gore')),
-                        DropdownMenuItem(value: 'Other', child: Text('Other reason')),
+                        DropdownMenuItem(
+                            value: 'Spam', child: Text('Spam / Advertisement')),
+                        DropdownMenuItem(
+                            value: 'Hate Speech', child: Text('Hate Speech')),
+                        DropdownMenuItem(
+                            value: 'Harassment',
+                            child: Text('Harassment / Threats')),
+                        DropdownMenuItem(
+                            value: 'Violence', child: Text('Violence / Gore')),
+                        DropdownMenuItem(
+                            value: 'Other', child: Text('Other reason')),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -1709,7 +1692,9 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                             contentType: contentType,
                             targetId: targetId,
                             reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty ? detailsController.text.trim() : null,
+                            details: detailsController.text.trim().isNotEmpty
+                                ? detailsController.text.trim()
+                                : null,
                           );
                           setDialogState(() => isSending = false);
                           if (ok) {
@@ -1720,7 +1705,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Submit Report'),
                 ),
@@ -1732,7 +1718,6 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     );
   }
 }
-
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -1753,23 +1738,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _load();
   }
 
-  Future<void> _load() async {
-    final id = Get.arguments as int?;
-    try {
-      if (id != null) {
-        _user = await _social.getUserProfile(id);
-        await Future.wait([
-          _socialController.fetchFriends(),
-          _socialController.fetchPendingRequests(),
-        ]);
-      }
-    } catch (_) {
-      SnackbarHelper.error('Không thể tải hồ sơ người dùng');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _openChat() async {
     final user = _user;
     if (user == null) return;
@@ -1780,35 +1748,460 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       arguments: {
         'roomId': room.id,
         'title':
-        room.name?.trim().isNotEmpty == true ? room.name : user.fullName,
+            room.name?.trim().isNotEmpty == true ? room.name : user.fullName,
         'isGroup': false,
         'avatarUrl': room.avatarUrl ?? user.avatarUrl,
       },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AppScreen(
-      title: 'Hồ sơ người dùng',
-      body: _loading
-          ? const LoadingWidget()
-          : _user == null
-          ? const Center(child: Text('Không tìm thấy'))
-          : RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            _buildProfileHeader(_user!),
-            const SizedBox(height: 18),
-            _buildActions(_user!),
-            const SizedBox(height: 18),
-            _buildProfileInformation(_user!),
-          ],
+  // moments fetched for this user
+  List<MomentModel> _moments = [];
+  bool _momentsLoading = false;
+
+  Future<void> _load() async {
+    final id = Get.arguments as int?;
+    try {
+      if (id != null) {
+        _user = await _social.getUserProfile(id);
+        await Future.wait([
+          _socialController.fetchFriends(),
+          _socialController.fetchPendingRequests(),
+          _loadMoments(id),
+        ]);
+      }
+    } catch (_) {
+      SnackbarHelper.error('sc_sds_failed_load_profile'.tr);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadMoments(int userId, {bool silent = false}) async {
+    try {
+      if (!silent) setState(() => _momentsLoading = true);
+      _moments = await _social.getUserMoments(userId);
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _momentsLoading = false);
+    }
+  }
+
+  void _openFeedAtIndex(int index) async {
+    if (_user == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _OtherUserFeedScreen(
+          user: _user!,
+          moments: _moments,
+          initialIndex: index,
+          currentUserId: _socialController.currentUserId,
+          socialController: _socialController,
         ),
       ),
+    );
+    final id = Get.arguments as int?;
+    if (id != null) {
+      _loadMoments(id, silent: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = _user;
+    return AppScreen(
+      title: user?.fullName.isNotEmpty == true ? user!.fullName : 'sc_sds_profile'.tr,
+      body: _loading
+          ? const LoadingWidget()
+          : user == null
+              ? Center(child: Text('sc_sds_not_found'.tr))
+              : RefreshIndicator(
+                  color: AppColors.brand,
+                  onRefresh: _load,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(child: _buildIgHeader(user)),
+                      SliverToBoxAdapter(child: _buildIgActions(user)),
+                      const SliverToBoxAdapter(
+                        child: Divider(
+                            height: 0.5,
+                            thickness: 0.5,
+                            color: AppColors.separator),
+                      ),
+                      SliverToBoxAdapter(child: _buildTabRow()),
+                      const SliverToBoxAdapter(
+                        child: Divider(
+                            height: 0.5,
+                            thickness: 0.5,
+                            color: AppColors.separator),
+                      ),
+                      if (_momentsLoading)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: EdgeInsets.all(60),
+                            child:
+                                LoadingWidget(message: 'sc_sds_loading_posts'.tr),
+                          ),
+                        )
+                      else if (_moments.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: _buildEmptyMoments(),
+                        )
+                      else
+                        _buildPhotoGrid(),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 32),
+                      ),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildIgHeader(UserSearchModel user) {
+    final initial = user.fullName.trim().isEmpty
+        ? '?'
+        : user.fullName.trim()[0].toUpperCase();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar vß+¢i gradient ring
+              _buildAvatarRing(user, initial),
+              const SizedBox(width: 24),
+              // Stats
+              Expanded(
+                child: Obx(() {
+                  final isFriend = _socialController.isFriend(user.id);
+                  return Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceGrouped,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.separator),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStat(_moments.length.toString(), 'sc_sds_posts'.tr),
+                        Container(
+                            width: 1, height: 28, color: AppColors.separator),
+                        _buildStat(
+                          isFriend ? 'sc_sds_friends'.tr : 'sc_sds_member'.tr,
+                          'sc_sds_relationship'.tr,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            user.fullName.isEmpty ? 'StayHub User' : user.fullName,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (user.email?.isNotEmpty == true) ...[
+            const SizedBox(height: 2),
+            Text(
+              user.email!,
+              style:
+                  const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarRing(UserSearchModel user, String initial) {
+    return Stack(
+      children: [
+        Container(
+          width: 92,
+          height: 92,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [AppColors.navy, AppColors.brand, Color(0xFF34C3FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 3,
+          left: 3,
+          right: 3,
+          bottom: 3,
+          child: Container(
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          left: 4,
+          right: 4,
+          bottom: 4,
+          child: CircleAvatar(
+            backgroundColor: AppColors.brandLight,
+            backgroundImage: user.avatarUrl?.isNotEmpty == true
+                ? CachedNetworkImageProvider(user.avatarUrl!)
+                : null,
+            child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+                ? Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.brand,
+                    ),
+                  )
+                : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStat(String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIgActions(UserSearchModel user) {
+    return Obx(() {
+      final isFriend = _socialController.isFriend(user.id);
+      final hasIncoming = _socialController.hasIncomingRequest(user.id);
+      final sent = _socialController.sentRequestUserIds.contains(user.id);
+      final busy = _socialController.processingUserIds.contains(user.id);
+
+      String friendLabel;
+      IconData friendIcon;
+      Color friendBg;
+      Color friendFg;
+      VoidCallback? friendAction;
+
+      if (isFriend) {
+        friendLabel = 'sc_sds_friends'.tr;
+        friendIcon = Icons.people_rounded;
+        friendBg = AppColors.brandLight;
+        friendFg = AppColors.brand;
+        friendAction = null;
+      } else if (hasIncoming) {
+        final req = _socialController.pendingRequests
+            .firstWhere((r) => r.senderId == user.id);
+        friendLabel = 'sc_sds_accept'.tr;
+        friendIcon = Icons.person_add_alt_1_rounded;
+        friendBg = AppColors.brand;
+        friendFg = Colors.white;
+        friendAction =
+            busy ? null : () => _socialController.respondRequest(req.id, true);
+      } else {
+        friendLabel = sent ? 'sc_sds_sent'.tr : 'sc_sds_add_friend'.tr;
+        friendIcon = sent ? Icons.schedule_rounded : Icons.person_add_rounded;
+        friendBg = AppColors.brand;
+        friendFg = Colors.white;
+        friendAction = busy || sent
+            ? null
+            : () => _socialController.sendFriendRequest(user.id);
+      }
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: friendAction,
+                child: Container(
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: friendBg,
+                    border: Border.all(
+                      color: isFriend
+                          ? AppColors.brand.withValues(alpha: 0.3)
+                          : AppColors.brand,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(friendIcon, size: 15, color: friendFg),
+                      const SizedBox(width: 6),
+                      Text(
+                        friendLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: friendFg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                onTap: busy ? null : _openChat,
+                child: Container(
+                  height: 34,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.separator, width: 1),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline_rounded,
+                          size: 15, color: AppColors.textPrimary),
+                      SizedBox(width: 6),
+                      Text(
+                        'sc_sds_message_action'.tr,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildTabRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Icon(Icons.grid_on_rounded, size: 26, color: AppColors.navy),
+          Icon(Icons.map_outlined, size: 26, color: AppColors.textTertiary),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoGrid() {
+    return SliverGrid.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 1.5,
+        mainAxisSpacing: 1.5,
+      ),
+      itemCount: _moments.length,
+      itemBuilder: (context, index) {
+        final moment = _moments[index];
+        return GestureDetector(
+          onTap: () => _openFeedAtIndex(index),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: moment.imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    Container(color: AppColors.surfaceElevated),
+                errorWidget: (_, __, ___) => Container(
+                  color: AppColors.surfaceElevated,
+                  child: const Icon(Icons.broken_image_outlined,
+                      color: AppColors.border),
+                ),
+              ),
+              if (moment.reactionCount > 0)
+                Positioned(
+                  bottom: 6,
+                  right: 6,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.favorite,
+                            color: Colors.white, size: 11),
+                        const SizedBox(width: 3),
+                        Text(
+                          moment.reactionCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyMoments() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.photo_library_outlined,
+            size: 56, color: AppColors.textTertiary),
+        SizedBox(height: 16),
+        Text(
+          'sc_sds_no_posts_yet'.tr,
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary),
+        ),
+      ],
     );
   }
 
@@ -1864,12 +2257,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.14),
                                 borderRadius:
-                                BorderRadius.circular(AppRadius.pill),
+                                    BorderRadius.circular(AppRadius.pill),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.14),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -1912,11 +2305,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     child: ClipOval(
                       child: user.avatarUrl?.isNotEmpty == true
                           ? CachedNetworkImage(
-                        imageUrl: user.avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) =>
-                            _profileInitial(initial),
-                      )
+                              imageUrl: user.avatarUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) =>
+                                  _profileInitial(initial),
+                            )
                           : _profileInitial(initial),
                     ),
                   ),
@@ -1929,7 +2322,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 children: [
                   Text(
                     user.fullName.isEmpty
-                        ? 'Người dùng StayHub'
+                        ? 'sc_sds_stayhub_user'.tr
                         : user.fullName,
                     textAlign: TextAlign.center,
                     style: AppTextStyles.textTheme.headlineMedium?.copyWith(
@@ -1981,7 +2374,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isFriend ? 'Bạn bè' : 'Thành viên StayHub',
+                            isFriend ? 'sc_sds_friends'.tr : 'sc_sds_stayhub_member'.tr,
                             style: TextStyle(
                               color: isFriend
                                   ? AppColors.brand
@@ -2037,7 +2430,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         relationshipButton = FilledButton.icon(
           onPressed: null,
           icon: const Icon(Icons.people_rounded),
-          label: const Text('Đã là bạn bè'),
+          label: Text('sc_sds_already_friends'.tr),
           style: FilledButton.styleFrom(
             disabledBackgroundColor: AppColors.brandLight,
             disabledForegroundColor: AppColors.brand,
@@ -2051,7 +2444,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ? null
               : () => _socialController.respondRequest(request.id, true),
           icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text('Chấp nhận'),
+          label: Text('sc_sds_accept'.tr),
           style: _profilePrimaryButtonStyle(),
         );
       } else {
@@ -2062,7 +2455,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           icon: Icon(
             sent ? Icons.schedule_rounded : Icons.person_add_rounded,
           ),
-          label: Text(sent ? 'Đã gửi lời mời' : 'Kết bạn'),
+          label: Text(sent ? 'sc_sds_request_sent'.tr : 'sc_sds_add_friend'.tr),
           style: _profilePrimaryButtonStyle(),
         );
       }
@@ -2072,7 +2465,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           final chatButton = OutlinedButton.icon(
             onPressed: busy ? null : _openChat,
             icon: const Icon(Icons.chat_bubble_outline_rounded),
-            label: const Text('Nhắn tin'),
+            label: Text('sc_sds_message_action'.tr),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.brand,
               side: const BorderSide(color: AppColors.brand),
@@ -2112,7 +2505,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Widget _buildProfileInformation(UserSearchModel user) {
     final joinedAt = user.createdAt == null
-        ? 'Chưa cập nhật'
+        ? 'sc_sds_not_updated'.tr
         : DateFormat('MM/yyyy').format(user.createdAt!.toLocal());
     return IosSurfaceCard(
       padding: EdgeInsets.zero,
@@ -2138,7 +2531,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
                 const SizedBox(width: 11),
                 Text(
-                  'Thông tin cá nhân',
+                  'sc_sds_personal_info'.tr,
                   style: AppTextStyles.textTheme.titleMedium,
                 ),
               ],
@@ -2147,22 +2540,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           const Divider(height: 1),
           _profileInfoRow(
             icon: Icons.person_outline_rounded,
-            label: 'Họ và tên',
+            label: 'sc_sds_full_name'.tr,
             value: user.fullName,
           ),
           _profileInfoRow(
             icon: Icons.people_outline_rounded,
-            label: 'Giới tính',
+            label: 'sc_sds_gender'.tr,
             value: user.gender,
           ),
           _profileInfoRow(
             icon: Icons.cake_outlined,
-            label: 'Ngày sinh',
+            label: 'sc_sds_dob'.tr,
             value: user.dateOfBirth,
           ),
           _profileInfoRow(
             icon: Icons.calendar_month_outlined,
-            label: 'Tham gia từ',
+            label: 'sc_sds_joined_since'.tr,
             value: joinedAt,
             showDivider: false,
           ),
@@ -2178,7 +2571,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     bool showDivider = true,
   }) {
     final displayValue =
-    value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa cập nhật';
+        value?.trim().isNotEmpty == true ? value!.trim() : 'sc_sds_not_updated'.tr;
     return Column(
       children: [
         Padding(
@@ -2190,7 +2583,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: AppColors.brandLight,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(icon, size: 20, color: AppColors.brand),
               ),
@@ -2226,3 +2619,262 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 }
+
+// GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+// Full-screen vertical feed for other user's posts
+// GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+class _OtherUserFeedScreen extends StatefulWidget {
+  const _OtherUserFeedScreen({
+    required this.user,
+    required this.moments,
+    required this.initialIndex,
+    required this.currentUserId,
+    required this.socialController,
+  });
+  final UserSearchModel user;
+  final List<MomentModel> moments;
+  final int initialIndex;
+  final int currentUserId;
+  final SocialController socialController;
+
+  @override
+  State<_OtherUserFeedScreen> createState() => _OtherUserFeedScreenState();
+}
+
+class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
+  late List<MomentModel> _moments;
+
+  @override
+  void initState() {
+    super.initState();
+    // Bß¦»t -æß¦ºu tß+½ b+ái -æ¦¦ß+úc chß+ìn
+    _moments = widget.moments.sublist(widget.initialIndex);
+    _loadFullMoments();
+  }
+
+  Future<void> _loadFullMoments() async {
+    for (int i = 0; i < _moments.length; i++) {
+      try {
+        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        if (mounted) {
+          setState(() {
+            _moments[i] = fullData;
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  Future<void> _toggleLike(int index) async {
+    final m = _moments[index];
+    final newVal = !m.isLikedByMe;
+    setState(() {
+      _moments[index] = m.copyWith(
+        isLikedByMe: newVal,
+        reactionCount: (m.reactionCount + (newVal ? 1 : -1)).clamp(0, 1 << 30),
+      );
+    });
+    await widget.socialController.reactMoment(m.id, newVal);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        title: Text(
+          'sc_sds_posts'.tr,
+          style: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        elevation: 0,
+        centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.5),
+          child: Container(color: Colors.black12, height: 0.5),
+        ),
+      ),
+      body: ListView.separated(
+        itemCount: _moments.length,
+        separatorBuilder: (_, __) =>
+            Container(height: 8, color: const Color(0xFFF0F0F0)),
+        itemBuilder: (context, index) {
+          final moment = _moments[index];
+          return _OtherFeedItem(
+            user: widget.user,
+            moment: moment,
+            currentUserId: widget.currentUserId,
+            onLike: () => _toggleLike(index),
+            onComment: () {
+              Get.toNamed(AppRoutes.momentDetail, arguments: moment);
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _OtherFeedItem extends StatelessWidget {
+  const _OtherFeedItem({
+    required this.user,
+    required this.moment,
+    required this.currentUserId,
+    required this.onLike,
+    required this.onComment,
+  });
+  final UserSearchModel user;
+  final MomentModel moment;
+  final int currentUserId;
+  final VoidCallback onLike;
+  final VoidCallback onComment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppColors.brandLight,
+                  backgroundImage: user.avatarUrl?.isNotEmpty == true &&
+                          !user.avatarUrl!.toLowerCase().endsWith('.svg')
+                      ? CachedNetworkImageProvider(user.avatarUrl!)
+                      : null,
+                  child: user.avatarUrl == null ||
+                          user.avatarUrl!.isEmpty ||
+                          user.avatarUrl!.toLowerCase().endsWith('.svg')
+                      ? Text(
+                          (user.fullName?.isNotEmpty == true
+                                  ? user.fullName![0]
+                                  : '?')
+                              .toUpperCase(),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.brand,
+                              fontSize: 14),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    user.fullName ?? 'StayHub User',
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onComment,
+            child: Hero(
+              tag: 'moment_image_${moment.id}',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: moment.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) =>
+                      Container(height: 300, color: Colors.black12),
+                  errorWidget: (_, __, ___) => Container(
+                    height: 300,
+                    color: Colors.black12,
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined,
+                            color: Colors.black38, size: 48)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (moment.caption?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+              child: Text(
+                moment.caption!,
+                style: const TextStyle(color: Colors.black87, fontSize: 14),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    moment.isLikedByMe
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color:
+                        moment.isLikedByMe ? AppColors.error : Colors.black87,
+                    size: 28,
+                  ),
+                  onPressed: onLike,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline_rounded,
+                      color: Colors.black87, size: 26),
+                  onPressed: onComment,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              Get.locale?.languageCode == 'vi'
+                  ? '${moment.reactionCount} l¦¦ß+út th+¡ch'
+                  : '${moment.reactionCount} likes',
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+            child: GestureDetector(
+              onTap: onComment,
+              child: Text(
+                moment.comments.isNotEmpty
+                    ? (Get.locale?.languageCode == 'vi'
+                        ? 'Xem tß¦Ñt cß¦ú ${moment.comments.length} b+¼nh luß¦¡n'
+                        : 'View all ${moment.comments.length} comments')
+                    : (Get.locale?.languageCode == 'vi'
+                        ? 'Th+¬m b+¼nh luß¦¡n...'
+                        : 'Add a comment...'),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+            child: Text(
+              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+      

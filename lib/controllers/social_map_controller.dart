@@ -68,6 +68,7 @@ class SocialMapController extends GetxController {
   final OrderController _orderController;
 
   /// MapController dùng để fit camera / điều khiển zoom.
+
   mb.MapboxMap? mapboxMap;
   mb.PointAnnotationManager? liveLocManager;
   mb.PointAnnotationManager? momentManager;
@@ -350,6 +351,9 @@ class SocialMapController extends GetxController {
           preset == 'dark' ? mb.MapboxStyles.DARK : mb.MapboxStyles.STANDARD);
     }
   }
+
+
+
 
   int get currentUserId => _storage.user?.id ?? 0;
 

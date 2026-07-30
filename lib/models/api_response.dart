@@ -20,6 +20,7 @@ class ApiResponse<T> {
 
 class ApiError {
   static const String silent401Message = 'Phiên đăng nhập đã hết hạn';
+  static const String silentTimeoutMessage = 'Kết nối quá hạn (silent)';
 
   final String message;
   final int? statusCode;
@@ -36,10 +37,22 @@ class ApiError {
   factory ApiError.fromJson(Map<String, dynamic>? json, {int? statusCode}) {
     final rawRetryAfter = json?['retryAfterSeconds'];
     final is401 = statusCode == 401;
+    String message = json?['message'] as String? ?? 
+        (is401 ? silent401Message : 'Đã xảy ra lỗi');
+
+    if (json != null && json.containsKey('errors')) {
+      final errors = json['errors'];
+      if (errors is Map && errors.isNotEmpty) {
+        final firstKey = errors.keys.first;
+        final firstList = errors[firstKey];
+        if (firstList is List && firstList.isNotEmpty) {
+          message = firstList.first.toString();
+        }
+      }
+    }
+
     return ApiError(
-      message: is401
-          ? silent401Message
-          : (json?['message'] as String? ?? 'Đã xảy ra lỗi'),
+      message: message,
       statusCode: statusCode,
       retryAfterSeconds: rawRetryAfter is int
           ? rawRetryAfter

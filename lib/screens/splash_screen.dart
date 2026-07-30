@@ -44,14 +44,16 @@ class _SplashScreenState extends State<SplashScreen>
     final storage = Get.find<StorageService>();
     final user = storage.user;
     if (storage.isLoggedIn && user?.isCustomerOnly == true) {
-      Get.offAllNamed(
-        user!.requirePasswordChange ? AppRoutes.changePassword : AppRoutes.home,
-      );
+      if (user!.requirePasswordChange) {
+        Get.offAllNamed(AppRoutes.changePassword);
+      } else {
+        Get.offAllNamed(AppRoutes.home, arguments: {'initialTab': 2}); // 2 is nav_home for customers
+      }
     } else {
       if (storage.isLoggedIn) {
         await storage.clearSession();
       }
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed(AppRoutes.home); // 0 is nav_home for guests
     }
   }
 
@@ -92,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 10),
               Text(
-                'Khám phá tour du lịch sang trọng',
+                'splash_subtitle'.tr,
                 style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                   color: Colors.white.withValues(alpha: 0.88),
                 ),

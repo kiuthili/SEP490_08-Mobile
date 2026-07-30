@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:stayhub_mobile/firebase_options.dart';
-import 'package:stayhub_mobile/constants/api_constants.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/push_notification_service.dart';
 import 'package:stayhub_mobile/services/review_service.dart';
@@ -28,6 +27,8 @@ import 'services/storage_service.dart';
 import 'services/tour_service.dart';
 import 'services/ai_trend_service.dart';
 import 'services/user_study_service.dart';
+import 'services/system_setting_service.dart';
+import 'constants/api_constants.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/home_controller.dart';
 
@@ -67,10 +68,12 @@ Future<void> main() async {
   Get.put(WishlistService(), permanent: true);
   Get.put(AiService(), permanent: true);
   Get.put(UserStudyService(), permanent: true);
+  Get.put(SystemSettingService(), permanent: true);
   Get.put(SocialService(), permanent: true);
   Get.put(SignalRService(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(HomeController(), permanent: true);
+  Get.put(AiController(), permanent: true);
   Get.put(AiTrendService(), permanent: true);
   Get.put(StaffScheduleService(), permanent: true);
   Get.lazyPut<SocialService>(() => SocialService());
