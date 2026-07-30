@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -25,6 +25,7 @@ import '../../widgets/app_screen.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/moment_card.dart';
+import 'my_profile_panel.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   const ChatRoomScreen({super.key});
@@ -266,7 +267,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _messageController.selection = TextSelection.collapsed(
         offset: _messageController.text.length,
       );
-      SnackbarHelper.error('sc_sds_failed_send_message_prefix'.tr + e.toString());
+      SnackbarHelper.error(
+          'sc_sds_failed_send_message_prefix'.tr + e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -334,7 +336,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  _isGroup ? 'sc_sds_tour_group_chat'.tr : 'sc_sds_active_now'.tr,
+                  _isGroup
+                      ? 'sc_sds_tour_group_chat'.tr
+                      : 'sc_sds_active_now'.tr,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -527,7 +531,7 @@ class _GroupScheduleCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: AppRadius.button,
               border: Border.all(
                 color: AppColors.brand.withValues(alpha: 0.14),
               ),
@@ -547,7 +551,7 @@ class _GroupScheduleCard extends StatelessWidget {
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.brand,
-                              borderRadius: BorderRadius.circular(99),
+                              borderRadius: AppRadius.button,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -737,7 +741,7 @@ class _ScheduleLoadError extends StatelessWidget {
                     ?.copyWith(color: AppColors.error))),
         InkWell(
           onTap: onRetry,
-          borderRadius: BorderRadius.circular(99),
+          borderRadius: AppRadius.button,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             child: Text('sc_sds_retry'.tr,
@@ -1050,20 +1054,13 @@ class _MessageBubble extends StatelessWidget {
           BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
       padding: const EdgeInsets.fromLTRB(13, 10, 13, 8),
       decoration: BoxDecoration(
-        color: isMe ? AppColors.brand : AppColors.surfaceElevated,
+        color: isMe ? AppColors.brand : Colors.grey.shade200,
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(18),
           topRight: const Radius.circular(18),
           bottomLeft: Radius.circular(isMe ? 18 : 5),
           bottomRight: Radius.circular(isMe ? 5 : 18),
         ),
-        border: isMe ? null : Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.navy.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4)),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1235,66 +1232,70 @@ class _MessageComposer extends StatelessWidget {
         color: AppColors.surfaceElevated,
         border: Border(top: BorderSide(color: AppColors.separator)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              minLines: 1,
-              maxLines: 5,
-              textCapitalization: TextCapitalization.sentences,
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: 'sc_sds_input_message'.tr,
-                filled: true,
-                fillColor: AppColors.surfaceGrouped,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  borderSide: BorderSide.none,
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        minLines: 1,
+        maxLines: 5,
+        textCapitalization: TextCapitalization.sentences,
+        textInputAction: TextInputAction.newline,
+        decoration: InputDecoration(
+          hintText: 'sc_sds_input_message'.tr,
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 6, top: 4, bottom: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onShareLocation != null)
+                  IconButton(
+                    icon: const Icon(Icons.location_on_rounded, color: AppColors.brand),
+                    onPressed: onShareLocation,
+                  ),
+                const SizedBox(width: 4),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: sending ? null : onSend,
+                    borderRadius: BorderRadius.circular(100),
+                    child: Ink(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: sending ? AppColors.brand.withValues(alpha: 0.35) : AppColors.brand,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: sending
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
                 ),
-                suffixIcon: onShareLocation != null
-                    ? IconButton(
-                        icon: const Icon(Icons.location_on_rounded,
-                            color: AppColors.brand),
-                        onPressed: onShareLocation,
-                      )
-                    : null,
-              ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: sending ? null : onSend,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: Ink(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: sending ? null : AppColors.brandGradient,
-                  color:
-                      sending ? AppColors.brand.withValues(alpha: 0.35) : null,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: sending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 21),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1427,7 +1428,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
       ),
     ).then((_) async {
       if (mounted) {
-        final updated = _findInFeed(moment.id) ?? await _socialController.getMomentById(moment.id);
+        final updated = _findInFeed(moment.id) ??
+            await _socialController.getMomentById(moment.id);
         if (updated != null && mounted) {
           setState(() => _moment = updated);
         }
@@ -1472,7 +1474,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
             const SizedBox(height: 12),
             Flexible(
               child: ListView.builder(
-                shrinkWrap: true, 
+                shrinkWrap: true,
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
@@ -1539,7 +1541,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.brand))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.brand))
           : _error != null || _moment == null
               ? Center(
                   child: Column(
@@ -1555,7 +1558,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: const Text('Go Back', style: TextStyle(color: Colors.white70)),
+                        child: const Text('Go Back',
+                            style: TextStyle(color: Colors.white70)),
                       )
                     ],
                   ),
@@ -1614,7 +1618,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                         child: CircleAvatar(
                           backgroundColor: Colors.black45,
                           child: IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            icon: const Icon(Icons.arrow_back,
+                                color: Colors.white),
                             onPressed: () => Get.back(),
                           ),
                         ),
@@ -1624,6 +1629,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                 ),
     );
   }
+
   void _showReportDialog(BuildContext context, String contentType, int targetId,
       SocialController social) {
     String selectedReason = 'Spam';
@@ -1808,9 +1814,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final id = Get.arguments as int?;
+    if (id != null && id == _socialController.currentUserId) {
+      return AppScreen(
+        title: 'sc_mp_my_profile'.tr,
+        body: const MyProfilePanel(),
+      );
+    }
+
     final user = _user;
     return AppScreen(
-      title: user?.fullName.isNotEmpty == true ? user!.fullName : 'sc_sds_profile'.tr,
+      title: user?.fullName.isNotEmpty == true
+          ? user!.fullName
+          : 'sc_sds_profile'.tr,
       body: _loading
           ? const LoadingWidget()
           : user == null
@@ -1829,20 +1845,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             thickness: 0.5,
                             color: AppColors.separator),
                       ),
-                      SliverToBoxAdapter(child: _buildTabRow()),
-                      const SliverToBoxAdapter(
-                        child: Divider(
-                            height: 0.5,
-                            thickness: 0.5,
-                            color: AppColors.separator),
-                      ),
                       if (_momentsLoading)
                         SliverFillRemaining(
                           hasScrollBody: false,
                           child: Padding(
                             padding: EdgeInsets.all(60),
-                            child:
-                                LoadingWidget(message: 'sc_sds_loading_posts'.tr),
+                            child: LoadingWidget(
+                                message: 'sc_sds_loading_posts'.tr),
                           ),
                         )
                       else if (_moments.isEmpty)
@@ -1885,14 +1894,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     padding:
                         const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceGrouped,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.separator),
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_moments.length.toString(), 'sc_sds_posts'.tr),
+                        _buildStat(
+                            _moments.length.toString(), 'sc_sds_posts'.tr),
                         Container(
                             width: 1, height: 28, color: AppColors.separator),
                         _buildStat(
@@ -2018,8 +2027,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (isFriend) {
         friendLabel = 'sc_sds_friends'.tr;
         friendIcon = Icons.people_rounded;
-        friendBg = AppColors.brandLight;
-        friendFg = AppColors.brand;
+        friendBg = Colors.grey.shade200;
+        friendFg = Colors.black87;
         friendAction = null;
       } else if (hasIncoming) {
         final req = _socialController.pendingRequests
@@ -2033,8 +2042,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       } else {
         friendLabel = sent ? 'sc_sds_sent'.tr : 'sc_sds_add_friend'.tr;
         friendIcon = sent ? Icons.schedule_rounded : Icons.person_add_rounded;
-        friendBg = AppColors.brand;
-        friendFg = Colors.white;
+        friendBg = sent ? Colors.grey.shade200 : AppColors.brand;
+        friendFg = sent ? Colors.black87 : Colors.white;
         friendAction = busy || sent
             ? null
             : () => _socialController.sendFriendRequest(user.id);
@@ -2048,16 +2057,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               child: GestureDetector(
                 onTap: friendAction,
                 child: Container(
-                  height: 34,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: friendBg,
-                    border: Border.all(
-                      color: isFriend
-                          ? AppColors.brand.withValues(alpha: 0.3)
-                          : AppColors.brand,
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2082,10 +2085,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               child: GestureDetector(
                 onTap: busy ? null : _openChat,
                 child: Container(
-                  height: 34,
+                  height: 36,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.separator, width: 1),
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2374,7 +2377,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isFriend ? 'sc_sds_friends'.tr : 'sc_sds_stayhub_member'.tr,
+                            isFriend
+                                ? 'sc_sds_friends'.tr
+                                : 'sc_sds_stayhub_member'.tr,
                             style: TextStyle(
                               color: isFriend
                                   ? AppColors.brand
@@ -2570,8 +2575,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     String? value,
     bool showDivider = true,
   }) {
-    final displayValue =
-        value?.trim().isNotEmpty == true ? value!.trim() : 'sc_sds_not_updated'.tr;
+    final displayValue = value?.trim().isNotEmpty == true
+        ? value!.trim()
+        : 'sc_sds_not_updated'.tr;
     return Column(
       children: [
         Padding(
@@ -2655,7 +2661,8 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
   Future<void> _loadFullMoments() async {
     for (int i = 0; i < _moments.length; i++) {
       try {
-        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        final fullData =
+            await widget.socialController.getMomentById(_moments[i].id);
         if (mounted) {
           setState(() {
             _moments[i] = fullData;
@@ -2682,14 +2689,14 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         title: Text(
           'sc_sds_posts'.tr,
           style: TextStyle(
-              color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18),
+              color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700, fontSize: 18),
         ),
         elevation: 0,
         centerTitle: true,
@@ -2841,7 +2848,7 @@ class _OtherFeedItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Text(
               Get.locale?.languageCode == 'vi'
-                  ? '${moment.reactionCount} l¦¦ß+út th+¡ch'
+                  ? '${moment.reactionCount} lượt thích'
                   : '${moment.reactionCount} likes',
               style: const TextStyle(
                   color: Colors.black,
@@ -2856,10 +2863,10 @@ class _OtherFeedItem extends StatelessWidget {
               child: Text(
                 moment.comments.isNotEmpty
                     ? (Get.locale?.languageCode == 'vi'
-                        ? 'Xem tß¦Ñt cß¦ú ${moment.comments.length} b+¼nh luß¦¡n'
+                        ? 'Xem tất cả ${moment.comments.length} bình luận'
                         : 'View all ${moment.comments.length} comments')
                     : (Get.locale?.languageCode == 'vi'
-                        ? 'Th+¬m b+¼nh luß¦¡n...'
+                        ? 'Thêm bình luận...'
                         : 'Add a comment...'),
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
@@ -2868,7 +2875,8 @@ class _OtherFeedItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              DateFormat('HH:mm - dd/MM/yyyy')
+                  .format(moment.createdAt.toLocal()),
               style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),

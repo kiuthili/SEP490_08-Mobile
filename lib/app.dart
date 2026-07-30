@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'constants/app_constants.dart';
+import 'controllers/theme_controller.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'theme/app_theme.dart';
@@ -11,18 +12,23 @@ class StayHubApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      scrollBehavior: const _IosScrollBehavior(),
-      defaultTransition: Transition.cupertino,
-      transitionDuration: const Duration(milliseconds: 280),
-      initialRoute: AppRoutes.splash,
-      getPages: AppPages.routes,
-      translations: AppTranslations(),
-      locale: const Locale('en', 'US'), // Default to English as requested
-      fallbackLocale: const Locale('en', 'US'),
+    final themeCtrl = Get.find<ThemeController>();
+    return Obx(
+      () => GetMaterialApp(
+        title: AppConstants.appName,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeCtrl.themeMode.value,
+        scrollBehavior: const _IosScrollBehavior(),
+        defaultTransition: Transition.cupertino,
+        transitionDuration: const Duration(milliseconds: 280),
+        initialRoute: AppRoutes.splash,
+        getPages: AppPages.routes,
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        fallbackLocale: const Locale('en', 'US'),
+      ),
     );
   }
 }

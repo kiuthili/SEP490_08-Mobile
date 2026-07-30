@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import 'package:stayhub_mobile/theme/app_colors.dart';
 import 'package:stayhub_mobile/theme/app_radius.dart';
+import 'package:stayhub_mobile/theme/app_text_styles.dart';
 import 'package:stayhub_mobile/widgets/app_screen.dart';
 import 'package:stayhub_mobile/widgets/empty_state_widget.dart';
 import 'package:stayhub_mobile/widgets/loading_widget.dart';
@@ -15,9 +16,8 @@ class NotificationsScreen extends GetView<NotificationController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.pageGradient),
-        child: Column(
+      backgroundColor: AppColors.surfaceGrouped,
+      body: Column(
           children: [
             _buildHeader(context),
             Expanded(
@@ -69,22 +69,14 @@ class NotificationsScreen extends GetView<NotificationController> {
             ),
           ],
         ),
-      ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
     return Container(
-      padding: EdgeInsets.fromLTRB(20, topInset + 10, 20, 24),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF05073C), Color(0xFF0048B0)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
+      padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 16),
+      color: AppColors.surfaceGrouped,
       child: Column(
         children: [
           Row(
@@ -92,50 +84,38 @@ class NotificationsScreen extends GetView<NotificationController> {
               IconButton(
                 onPressed: () => Get.back(),
                 icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
-                ),
+                    color: AppColors.textPrimary, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
               Expanded(
                 child: Text(
                   'nt_title'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               // Badge số lượng chưa đọc kết hợp icon chuông
               SizedBox(
-                width: 48,
+                width: 32,
                 child: Obx(() {
                   final count = controller.unreadCount;
                   return Align(
                     alignment: Alignment.centerRight,
                     child: Badge(
-                      label: Text(count > 99 ? '99+' : '$count'),
+                      label: Text(count > 99 ? '99+' : '$count', style: const TextStyle(fontSize: 10)),
                       isLabelVisible: count > 0,
                       backgroundColor: AppColors.error,
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      largeSize: 18,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          count > 0
-                              ? Icons.notifications_active_rounded
-                              : Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                      child: Icon(
+                        count > 0
+                            ? Icons.notifications_active_rounded
+                            : Icons.notifications_none_rounded,
+                        color: AppColors.textSecondary,
+                        size: 24,
                       ),
                     ),
                   );
@@ -168,28 +148,13 @@ class _NotificationCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        // Đã đọc thì nền trong suốt, Chưa đọc thì nền trắng
-        color: isRead ? Colors.white.withValues(alpha: 0.4) : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        // Chưa đọc thì nổi bóng lên, đã đọc thì phẳng
-        boxShadow: isRead
-            ? []
-            : [
-                BoxShadow(
-                  color: AppColors.navy.withValues(alpha: 0.08),
-                  blurRadius: 15,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-        border: Border.all(
-          color: isRead
-              ? Colors.transparent
-              : AppColors.brand.withValues(alpha: 0.15),
-        ),
+        color: isRead ? Colors.white.withValues(alpha: 0.6) : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
+          borderRadius: AppRadius.button,
           onTap: isRead ? null : onRead,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),

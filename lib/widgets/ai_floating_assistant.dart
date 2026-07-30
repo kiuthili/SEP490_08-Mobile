@@ -119,7 +119,7 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet>
             margin: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
             decoration: BoxDecoration(
-              gradient: AppColors.brandGradient,
+              color: AppColors.brand,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Row(

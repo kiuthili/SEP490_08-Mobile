@@ -19,6 +19,20 @@ class AppTextStyles {
     }
   }
 
+  static TextStyle get _baseDark {
+    try {
+      return GoogleFonts.inter(
+        color: AppColorsDark.textPrimary,
+        letterSpacing: -0.2,
+      );
+    } catch (_) {
+      return const TextStyle(
+        color: AppColorsDark.textPrimary,
+        letterSpacing: -0.2,
+      );
+    }
+  }
+
   static TextTheme get textTheme => TextTheme(
         displaySmall: _base.copyWith(
           fontSize: 34,
@@ -75,6 +89,67 @@ class AppTextStyles {
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: AppColors.textTertiary,
+          letterSpacing: 0.2,
+        ),
+      );
+
+  /// Dark version of text theme — same sizes/weights, different colors.
+  static TextTheme get darkTextTheme => TextTheme(
+        displaySmall: _baseDark.copyWith(
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.8,
+          height: 1.1,
+        ),
+        headlineLarge: _baseDark.copyWith(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+        ),
+        headlineMedium: _baseDark.copyWith(
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.4,
+        ),
+        titleLarge: _baseDark.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: _baseDark.copyWith(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+        ),
+        titleSmall: _baseDark.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: _baseDark.copyWith(
+          fontSize: 17,
+          fontWeight: FontWeight.w400,
+          height: 1.35,
+        ),
+        bodyMedium: _baseDark.copyWith(
+          fontSize: 15,
+          height: 1.4,
+        ),
+        bodySmall: _baseDark.copyWith(
+          fontSize: 13,
+          color: AppColorsDark.textSecondary,
+          height: 1.35,
+        ),
+        labelLarge: _baseDark.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+        labelMedium: _baseDark.copyWith(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppColorsDark.textSecondary,
+        ),
+        labelSmall: _baseDark.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: AppColorsDark.textTertiary,
           letterSpacing: 0.2,
         ),
       );

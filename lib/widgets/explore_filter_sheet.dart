@@ -99,7 +99,7 @@ class _ExploreFilterSheetState extends State<ExploreFilterSheet> {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        gradient: AppColors.brandGradient,
+                        color: AppColors.brand,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: const Icon(

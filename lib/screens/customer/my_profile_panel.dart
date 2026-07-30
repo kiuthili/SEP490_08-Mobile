@@ -115,14 +115,14 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                     padding:
                         const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceGrouped,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.separator),
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_myMoments.length.toString(), 'sc_mp_posts'.tr),
+                        _buildStat(
+                            _myMoments.length.toString(), 'sc_mp_posts'.tr),
                         Container(
                           width: 1,
                           height: 28,
@@ -255,10 +255,10 @@ class _MyProfilePanelState extends State<MyProfilePanel>
             child: GestureDetector(
               onTap: () => Get.toNamed(AppRoutes.profile),
               child: Container(
-                height: 34,
+                height: 36,
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.separator, width: 1),
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -276,11 +276,11 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           GestureDetector(
             onTap: () => Get.toNamed(AppRoutes.shareMoment),
             child: Container(
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.separator, width: 1),
-                borderRadius: BorderRadius.circular(AppRadius.xs),
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(100),
               ),
               alignment: Alignment.center,
               child: const Icon(Icons.add_photo_alternate_outlined,
@@ -461,7 +461,8 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
   Future<void> _loadFullMoments() async {
     for (int i = 0; i < _moments.length; i++) {
       try {
-        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        final fullData =
+            await widget.socialController.getMomentById(_moments[i].id);
         if (mounted) {
           setState(() {
             _moments[i] = fullData;
@@ -488,9 +489,9 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Colors.black,
         title: Text(
           'sc_mp_posts'.tr,
@@ -585,7 +586,9 @@ class _FeedItem extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    currentUser.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : currentUser.fullName,
+                    currentUser.fullName.isEmpty
+                        ? 'sc_mp_stayhub_user'.tr
+                        : currentUser.fullName,
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
@@ -603,7 +606,8 @@ class _FeedItem extends StatelessWidget {
 
           // ── Image ──
           GestureDetector(
-            onTap: onComment, // Re-use onComment to navigate to MomentDetailScreen
+            onTap:
+                onComment, // Re-use onComment to navigate to MomentDetailScreen
             child: Hero(
               tag: 'moment_image_${moment.id}',
               child: ConstrainedBox(
@@ -613,7 +617,8 @@ class _FeedItem extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: moment.imageUrl,
                   width: double.infinity,
-                  fit: BoxFit.contain, // Fit contain to avoid cropping vertical images
+                  fit: BoxFit
+                      .contain, // Fit contain to avoid cropping vertical images
                   placeholder: (_, __) =>
                       Container(height: 300, color: Colors.black12),
                   errorWidget: (_, __, ___) => Container(
@@ -697,7 +702,8 @@ class _FeedItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              DateFormat('HH:mm - dd/MM/yyyy')
+                  .format(moment.createdAt.toLocal()),
               style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),
@@ -709,7 +715,7 @@ class _FeedItem extends StatelessWidget {
   void _showOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => SafeArea(

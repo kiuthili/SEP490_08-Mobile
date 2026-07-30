@@ -15,7 +15,8 @@ class StaffCustomerDetailScreen extends StatefulWidget {
   final int scheduleId;
 
   @override
-  State<StaffCustomerDetailScreen> createState() => _StaffCustomerDetailScreenState();
+  State<StaffCustomerDetailScreen> createState() =>
+      _StaffCustomerDetailScreenState();
 }
 
 class _StaffCustomerDetailScreenState extends State<StaffCustomerDetailScreen> {
@@ -51,7 +52,8 @@ class _StaffCustomerDetailScreenState extends State<StaffCustomerDetailScreen> {
         ),
         body: TabBarView(
           children: [
-            _CustomersTab(controller: controller, scheduleId: widget.scheduleId),
+            _CustomersTab(
+                controller: controller, scheduleId: widget.scheduleId),
             _MapTab(controller: controller),
           ],
         ),
@@ -102,21 +104,29 @@ class _CustomersTabState extends State<_CustomersTab> {
                       icon: const Icon(Icons.close_rounded, size: 18),
                       onPressed: () {
                         _searchController.clear();
-                        widget.controller.applyCustomerFilter(widget.scheduleId, '');
+                        widget.controller
+                            .applyCustomerFilter(widget.scheduleId, '');
                         setState(() {});
                       },
                     )
                   : null,
               isDense: true,
+              filled: true,
+              fillColor: Colors.grey.shade100,
               contentPadding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppColors.brand, width: 1.5),
               ),
             ),
           ),
@@ -230,7 +240,9 @@ class _CustomerCard extends StatelessWidget {
                 children: [
                   if (phone != null && phone.isNotEmpty)
                     _InfoRow(
-                        icon: Icons.phone_rounded, label: 'st_phone'.tr, value: phone),
+                        icon: Icons.phone_rounded,
+                        label: 'st_phone'.tr,
+                        value: phone),
                   _InfoRow(
                       icon: Icons.badge_rounded,
                       label: 'st_id_passport'.tr,

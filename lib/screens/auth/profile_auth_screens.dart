@@ -49,7 +49,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: user?.fullName);
     _emailController = TextEditingController(text: user?.email);
     _phoneController = TextEditingController(text: user?.phoneNumber);
-    _gender = user?.gender?.isNotEmpty == true ? user!.gender : 'Male';
+    final rawGender = user?.gender;
+    if (rawGender != null && rawGender.isNotEmpty) {
+      if (rawGender.toLowerCase() == 'female') {
+        _gender = 'Female';
+      } else if (rawGender.toLowerCase() == 'other') {
+        _gender = 'Other';
+      } else {
+        _gender = 'Male';
+      }
+    } else {
+      _gender = 'Male';
+    }
     _dateOfBirth = DateTime.tryParse(user?.dateOfBirth ?? '');
   }
 
@@ -62,32 +73,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickAvatar() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      imageQuality: 90,
-    );
-    if (picked != null) {
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: picked.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Image',
-            toolbarColor: AppColors.brand,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Crop Image',
-            aspectRatioLockEnabled: true,
-          ),
-        ],
+    try {
+      final picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 90,
       );
-      if (croppedFile != null) {
-        setState(() => _avatarFile = File(croppedFile.path));
+      if (picked != null) {
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: picked.path,
+          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Crop Image',
+              toolbarColor: Colors.white,
+              toolbarWidgetColor: Colors.black87,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true,
+              hideBottomControls: true,
+            ),
+            IOSUiSettings(
+              title: 'Crop Image',
+              aspectRatioLockEnabled: true,
+              resetButtonHidden: true,
+              aspectRatioPickerButtonHidden: true,
+            ),
+          ],
+        );
+        if (croppedFile != null) {
+          setState(() => _avatarFile = File(croppedFile.path));
+        }
       }
+    } catch (e) {
+      SnackbarHelper.error('Không thể xử lý ảnh: $e');
+      debugPrint('Error picking/cropping avatar: $e');
     }
   }
 
@@ -136,6 +155,68 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return CachedNetworkImageProvider(user.avatarUrl!);
     }
     return null;
+  }
+
+  Widget _buildRow({
+    required BuildContext context,
+    required String label,
+    Widget? trailing,
+    String? value,
+    VoidCallback? onTap,
+    bool isAction = false,
+    bool showBorder = true,
+    Color? valueColor,
+  }) {
+    final textTheme = Theme.of(context).textTheme;
+    return InkWell(
+      borderRadius: AppRadius.button,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          border: showBorder
+              ? const Border(
+                  bottom: BorderSide(color: Color(0xFFF0F0F0), width: 1))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Text(label,
+                style: textTheme.bodyMedium?.copyWith(color: Colors.black87)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: trailing ??
+                  (value != null
+                      ? Text(
+                          value,
+                          textAlign: TextAlign.right,
+                          style: textTheme.bodyMedium
+                              ?.copyWith(color: valueColor ?? Colors.black87),
+                        )
+                      : const SizedBox()),
+            ),
+            if (isAction) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: Colors.black38),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(List<Widget> children) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Column(
+        children: children,
+      ),
+    );
   }
 
   @override
@@ -205,96 +286,92 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              
-              IosSurfaceCard(
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      controller: _nameController,
-                      label: 'name'.tr,
-                      validator: Validators.fullName,
-                      prefixIcon: Icons.person_outline,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _phoneController,
-                      label: 'phone_number'.tr,
-                      keyboardType: TextInputType.phone,
-                      prefixIcon: Icons.phone_outlined,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) return null;
-                        return Validators.phone(value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Email',
-                      enabled: false,
-                      prefixIcon: Icons.email_outlined,
-                    ),
-                  ],
-                ),
+
+              Column(
+                children: [
+                  CustomTextField(
+                    controller: _nameController,
+                    label: 'name'.tr,
+                    validator: Validators.fullName,
+                    prefixIcon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _phoneController,
+                    label: 'phone_number'.tr,
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: Icons.phone_outlined,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return null;
+                      return Validators.phone(value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _emailController,
+                    label: 'Email',
+                    enabled: false,
+                    prefixIcon: Icons.email_outlined,
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              
-              IosSurfaceCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('gender'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('gender'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _gender,
+                        isExpanded: true,
+                        icon: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                        style: textTheme.bodyLarge?.copyWith(color: Colors.black87),
+                        items: [
+                          DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
+                          DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
+                          DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
+                        ],
+                        onChanged: (value) => setState(() => _gender = value),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text('date_of_birth'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: _pickBirthDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.inputFill,
-                        borderRadius: AppRadius.input,
-                        border: Border.all(color: AppColors.separator),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _gender,
-                          isExpanded: true,
-                          icon: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-                          style: textTheme.bodyLarge?.copyWith(color: Colors.black87),
-                          items: [
-                            DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
-                            DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
-                            DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
-                          ],
-                          onChanged: (value) => setState(() => _gender = value),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Text('date_of_birth'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickBirthDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.inputFill,
-                          borderRadius: AppRadius.input,
-                          border: Border.all(color: AppColors.separator),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _dateOfBirth == null ? 'set_now'.tr : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: _dateOfBirth == null ? AppColors.textSecondary : Colors.black87,
-                              ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _dateOfBirth == null ? 'set_now'.tr : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: _dateOfBirth == null ? AppColors.textSecondary : Colors.black87,
                             ),
-                            const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondary),
-                          ],
-                        ),
+                          ),
+                          const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondary),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const SizedBox(height: 40),
             ],
@@ -468,8 +545,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (result.retryAfterSeconds != null) {
         _startCountdown(result.retryAfterSeconds!);
         SnackbarHelper.error(
-          result.message ??
-              '${'please_wait'.tr} ${result.retryAfterSeconds}s',
+          result.message ?? '${'please_wait'.tr} ${result.retryAfterSeconds}s',
         );
         return;
       }

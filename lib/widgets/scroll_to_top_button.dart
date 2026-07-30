@@ -38,7 +38,7 @@ class ScrollToTopButton extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: AppColors.brandGradient,
+                    color: AppColors.brand,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.35),

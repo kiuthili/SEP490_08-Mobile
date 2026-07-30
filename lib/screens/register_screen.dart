@@ -90,8 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!fullNameRegex.hasMatch(fullName)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('fullname_invalid'.tr),
+          content: Text('fullname_invalid'.tr),
         ),
       );
       return;
@@ -174,7 +173,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return AuthPageLayout(
       showBack: true,
       headerSubtitle: 'app_tagline'.tr,
-      title: _step == _RegisterStep.info ? 'register_title_info'.tr : 'register_title_otp'.tr,
+      title: _step == _RegisterStep.info
+          ? 'register_title_info'.tr
+          : 'register_title_otp'.tr,
       subtitle: _step == _RegisterStep.info
           ? 'register_subtitle_info'.tr
           : 'register_subtitle_otp'.tr,
@@ -441,65 +442,58 @@ class _PhoneInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'phone_label'.tr,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: TextInputType.phone,
-          textInputAction: TextInputAction.next,
-          maxLength: 15,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9+()\- ]')),
-          ],
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          validator: Validators.phone,
-          style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-          cursorColor: AppColors.brand,
-          decoration: InputDecoration(
-            counterText: '',
-            hintText: 'phone_hint'.tr,
-            hintStyle: TextStyle(fontSize: 15, color: Colors.grey.shade400),
-            prefixIcon: Icon(Icons.phone_outlined,
-                size: 20, color: Colors.grey.shade400),
-            filled: true,
-            fillColor: const Color(0xFFF8F9FF),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-            ),
-          ),
-        ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.next,
+      maxLength: 15,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9+()\- ]')),
       ],
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: Validators.phone,
+      style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+      cursorColor: AppColors.brand,
+      decoration: InputDecoration(
+        labelText: 'phone_label'.tr,
+        counterText: '',
+        hintText: 'phone_hint'.tr,
+        alignLabelWithHint: true,
+        hintStyle: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+        prefixIcon: const Icon(Icons.phone_outlined,
+            size: 22, color: AppColors.textSecondary),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 52,
+          maxWidth: 52,
+          minHeight: 48,
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+      ),
     );
   }
 }
@@ -536,7 +530,8 @@ class _TermsCheckbox extends StatelessWidget {
             children: [
               Text(
                 'agree_to'.tr,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.terms),
@@ -551,7 +546,8 @@ class _TermsCheckbox extends StatelessWidget {
               ),
               Text(
                 'and'.tr,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.privacy),
@@ -638,7 +634,7 @@ class _LoginFooter extends StatelessWidget {
               backgroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderRadius: BorderRadius.circular(100),
                 side: const BorderSide(color: AppColors.brand, width: 1.2),
               ),
             ),

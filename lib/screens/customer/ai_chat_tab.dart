@@ -143,18 +143,18 @@ class _AiChatTabState extends State<AiChatTab> {
                   ),
                   if (widget.onSwitchToGuide != null) ...[
                     const SizedBox(height: 20),
-                    Container(
+                      Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.brand.withOpacity(0.06),
-                            Colors.indigo.withOpacity(0.06),
+                            AppColors.brand.withValues(alpha: 0.06),
+                            Colors.indigo.withValues(alpha: 0.06),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.brand.withOpacity(0.25),
+                          color: AppColors.brand.withValues(alpha: 0.25),
                         ),
                       ),
                       child: Column(
@@ -202,12 +202,9 @@ class _AiChatTabState extends State<AiChatTab> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.brand,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
-                                ),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 10),
+                                shape: const StadiumBorder(),
                               ),
                               child: Text(
                                 'ai_switch_to_form'.tr,
@@ -230,7 +227,10 @@ class _AiChatTabState extends State<AiChatTab> {
                     children: _suggestions
                         .map(
                           (q) => ActionChip(
-                            label: Text(q),
+                            label: Text(q, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.brand)),
+                            shape: const StadiumBorder(side: BorderSide.none),
+                            backgroundColor: AppColors.brand.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             onPressed: () => _send(q),
                           ),
                         )
@@ -271,45 +271,47 @@ class _AiChatTabState extends State<AiChatTab> {
                   onSubmitted: (_) => _send(),
                   decoration: InputDecoration(
                     hintText: 'ai_input_hint'.tr,
-                    prefixIcon: const Icon(Icons.auto_awesome_outlined),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      borderSide:
-                          const BorderSide(color: AppColors.brand, width: 1.5),
+                    prefixIcon: const Icon(Icons.auto_awesome_outlined, size: 20),
+                    suffixIcon: Obx(
+                      () => Padding(
+                        padding: const EdgeInsets.only(right: 6, top: 4, bottom: 4),
+                        child: IconButton.filled(
+                          onPressed: _ai.isSendingChat.value ? null : () => _send(),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.brand,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: const CircleBorder(),
+                          ),
+                          icon: _ai.isSendingChat.value
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.send_rounded, size: 16),
+                        ),
+                      ),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.only(left: 16, right: 8, top: 12, bottom: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                      borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Obx(
-                () => IconButton.filled(
-                  onPressed: _ai.isSendingChat.value ? null : () => _send(),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.brand,
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: _ai.isSendingChat.value
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.send_rounded),
                 ),
               ),
             ],
@@ -345,7 +347,7 @@ class _ChatBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isUser ? AppColors.brand : AppColors.surfaceGrouped,
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: isUser
                   ? Text(
@@ -376,14 +378,23 @@ class _ChatBubble extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Column(
                   children: response.recommendedTours.take(3).map((t) {
-                    return IosSurfaceCard(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: EdgeInsets.zero,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: ListTile(
                         dense: true,
-                        title: Text(t.name),
-                        subtitle: Text(t.reason ?? t.city ?? ''),
-                        trailing: const Icon(Icons.chevron_right),
+                        title: Text(
+                          t.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          t.reason ?? t.city ?? '',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
                         onTap: () {
                           Navigator.of(context)
                               .popUntil((route) => route.isFirst);
@@ -403,7 +414,9 @@ class _ChatBubble extends StatelessWidget {
                   runSpacing: 6,
                   children: response.suggestedQuestions.take(3).map((q) {
                     return ActionChip(
-                      label: Text(q),
+                      label: Text(q, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.brand)),
+                      shape: const StadiumBorder(side: BorderSide.none),
+                      backgroundColor: AppColors.brand.withValues(alpha: 0.1),
                       onPressed: () => onAsk(q),
                     );
                   }).toList(),
@@ -428,7 +441,7 @@ class _TypingBubble extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surfaceGrouped,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: const SizedBox(
           width: 20,

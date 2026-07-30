@@ -202,13 +202,21 @@ class _BookingScreenState extends State<BookingScreen> {
       final type = ticket.ticketTypeName ?? 'sc_bk_this_ticket'.tr;
 
       if (minAge > 0 && age < minAge) {
-        SnackbarHelper.error(
-            'sc_bk_age_too_young'.trParams({'num': (i + 1).toString(), 'name': name, 'minAge': minAge.toString(), 'type': type}));
+        SnackbarHelper.error('sc_bk_age_too_young'.trParams({
+          'num': (i + 1).toString(),
+          'name': name,
+          'minAge': minAge.toString(),
+          'type': type
+        }));
         return;
       }
       if (maxAge > 0 && age > maxAge) {
-        SnackbarHelper.error(
-            'sc_bk_age_too_old'.trParams({'num': (i + 1).toString(), 'name': name, 'maxAge': maxAge.toString(), 'type': type}));
+        SnackbarHelper.error('sc_bk_age_too_old'.trParams({
+          'num': (i + 1).toString(),
+          'name': name,
+          'maxAge': maxAge.toString(),
+          'type': type
+        }));
         return;
       }
     }
@@ -346,394 +354,370 @@ class _BookingScreenState extends State<BookingScreen> {
 
     return AppScreen(
       title: 'sc_bk_book_tour'.tr,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildOrderSummaryHeader(),
-              if (_isSummaryExpanded) _buildOrderSummaryContent(),
-              _buildVoucherRow(),
-              _buildTermsCheckbox(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'sc_bk_total_price'.tr,
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          CurrencyFormatter.format(_booking.finalAmount),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE31837),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE31837),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                        ),
-                      ),
-                      onPressed: _booking.totalPassengers == 0 ? null : _submit,
-                      child: _booking.isLoading.value
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              'sc_bk_book_now'.tr,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      body: Stack(
+        children: [
+          // Background Color
+          Container(
+            color: AppColors.surfaceGrouped,
+            width: double.infinity,
+            height: double.infinity,
           ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- Tour summary card ---
-              _CheckoutSummaryCard(
-                tourName: _booking.checkoutTourName,
-                imageUrl: _booking.checkoutTourImageUrl,
-                location: _booking.checkoutTourLocation,
-                departure: schedule.departureDate,
-                returnDate: schedule.returnDate,
-              ),
-              const SizedBox(height: 20),
-
-              // --- Section label: Chọn vé ---
-              Text(
-                'sc_bk_ticket_type'.tr,
-                style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.navy,
-                ),
-              ),
-              const SizedBox(height: 10),
-              if (_booking.ticketsLoading.value)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child:
-                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                )
-              else
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- Tour summary card ---
+                  _CheckoutSummaryCard(
+                    tourName: _booking.checkoutTourName,
+                    imageUrl: _booking.checkoutTourImageUrl,
+                    location: _booking.checkoutTourLocation,
+                    departure: schedule.departureDate,
+                    returnDate: schedule.returnDate,
                   ),
-                  child: Column(
-                    children: [
-                      for (var i = 0;
-                          i < _booking.activeTickets.length;
-                          i++) ...[
-                        if (i > 0)
-                          const Divider(height: 1, color: AppColors.border),
-                        Builder(builder: (ctx) {
-                          final t = _booking.activeTickets[i];
-                          final qty = _booking.ticketQty(t.id);
+                  const SizedBox(height: 24),
 
-                          String fullName =
-                              _booking.ticketTypeName(t.ticketTypeId);
-                          String name = fullName;
-                          String subtitle = '';
-                          if (fullName.contains(' (')) {
-                            final parts = fullName.split(' (');
-                            name = parts[0];
-                            subtitle = parts
-                                .sublist(1)
-                                .join(' (')
-                                .replaceAll(')', '')
-                                .trim();
-                          }
+                  // --- Section label: Chọn vé ---
+                  _buildSectionLabel('sc_bk_ticket_type'.tr.toUpperCase()),
+                  const SizedBox(height: 8),
+                  if (_booking.ticketsLoading.value)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < _booking.activeTickets.length; i++) ...[
+                            if (i > 0) const Divider(height: 1, color: AppColors.border, indent: 16),
+                            Builder(builder: (ctx) {
+                              final t = _booking.activeTickets[i];
+                              final qty = _booking.ticketQty(t.id);
 
-                          return _TicketQuantityRow(
-                            name: name,
-                            subtitle: subtitle,
-                            price: t.effectivePrice,
-                            originalPrice: t.price,
-                            available: t.availableQuantity,
-                            quantity: qty,
-                            onDecrease: qty > 0
-                                ? () => _booking.decrementTicket(t.id)
-                                : null,
-                            onIncrease: qty < t.availableQuantity
-                                ? () => _booking.incrementTicket(t.id)
-                                : null,
-                          );
-                        }),
-                      ],
-                    ],
-                  ),
-                ),
+                              String fullName = _booking.ticketTypeName(t.ticketTypeId);
+                              String name = fullName;
+                              String subtitle = '';
+                              if (fullName.contains(' (')) {
+                                final parts = fullName.split(' (');
+                                name = parts[0];
+                                subtitle = parts.sublist(1).join(' (').replaceAll(')', '').trim();
+                              }
 
-              // --- Section label: Hành khách ---
-              if (_booking.totalPassengers > 0) ...[
-                const SizedBox(height: 20),
-                _buildSectionLabel(
-                  'sc_bk_passenger_info'.tr,
-                  subtitle:
-                      _booking.totalPassengers.toString() + ' ' + 'sc_bk_people_ebill'.tr,
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < _passengers.length; i++) ...[
-                        if (i > 0)
-                          const Divider(height: 1, color: AppColors.border),
-                        Builder(
-                          builder: (ctx) {
-                            final p = _passengers[i];
-                            return InkWell(
-                              borderRadius: i == 0
-                                  ? const BorderRadius.vertical(
-                                      top: Radius.circular(16))
-                                  : (i == _passengers.length - 1
-                                      ? const BorderRadius.vertical(
-                                          bottom: Radius.circular(16))
-                                      : BorderRadius.zero),
-                              onTap: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  useSafeArea: true,
-                                  builder: (context) => _PassengerFormSheet(
-                                    passengerIndex: i,
-                                    form: p,
-                                    onPickDate: () => _pickDateOfBirth(p),
-                                    onSave: () {
-                                      setState(() {
-                                        p.isFilled = true;
-                                      });
-                                    },
+                              return _TicketQuantityRow(
+                                name: name,
+                                subtitle: subtitle,
+                                price: t.effectivePrice,
+                                originalPrice: t.price,
+                                available: t.availableQuantity,
+                                quantity: qty,
+                                onDecrease: qty > 0 ? () => _booking.decrementTicket(t.id) : null,
+                                onIncrease: qty < t.availableQuantity ? () => _booking.incrementTicket(t.id) : null,
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                  // --- Section label: Hành khách ---
+                  if (_booking.totalPassengers > 0) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionLabel(
+                      'sc_bk_passenger_info'.tr.toUpperCase(),
+                      subtitle: '${_booking.totalPassengers} ${'sc_bk_people_ebill'.tr}',
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < _passengers.length; i++) ...[
+                            if (i > 0) const Divider(height: 1, color: AppColors.border, indent: 64),
+                            Builder(
+                              builder: (ctx) {
+                                final p = _passengers[i];
+                                return InkWell(
+                                  borderRadius: i == 0
+                                      ? const BorderRadius.vertical(top: Radius.circular(16))
+                                      : (i == _passengers.length - 1
+                                          ? const BorderRadius.vertical(bottom: Radius.circular(16))
+                                          : BorderRadius.zero),
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      useSafeArea: true,
+                                      builder: (context) => _PassengerFormSheet(
+                                        passengerIndex: i,
+                                        form: p,
+                                        onPickDate: () => _pickDateOfBirth(p),
+                                        onSave: () {
+                                          setState(() {
+                                            p.isFilled = true;
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 32,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: p.isFilled ? AppColors.brand : AppColors.brandLight.withValues(alpha: 0.5),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: p.isFilled
+                                              ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                                              : Text(
+                                                  '${i + 1}',
+                                                  style: const TextStyle(color: AppColors.brand, fontWeight: FontWeight.w800),
+                                                ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                p.isFilled
+                                                    ? p.nameController.text.toUpperCase()
+                                                    : 'sc_bk_passenger_num'.trParams({'num': (i + 1).toString()}),
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 15,
+                                                  color: p.isFilled ? AppColors.textPrimary : AppColors.brand,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                p.isFilled
+                                                    ? '${p.slot.ticketLabel} • ${p.idCardController.text}'
+                                                    : 'sc_bk_tap_to_fill'.tr,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: p.isFilled ? AppColors.textSecondary : AppColors.brand.withValues(alpha: 0.7),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: p.isFilled ? AppColors.textSecondary.withValues(alpha: 0.5) : AppColors.brand,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: p.isFilled
-                                            ? AppColors.brand
-                                            : Colors.orange,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: p.isFilled
-                                          ? const Icon(Icons.check_rounded,
-                                              color: Colors.white, size: 18)
-                                          : Text(
-                                              '${i + 1}',
-                                              style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w800),
-                                            ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            p.isFilled
-                                                ? p.nameController.text
-                                                    .toUpperCase()
-                                                : 'sc_bk_passenger_num'.trParams({'num': (i + 1).toString()}),
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                              color: p.isFilled
-                                                  ? AppColors.textPrimary
-                                                  : Colors.orange,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            p.isFilled
-                                                ? '${p.slot.ticketLabel} • ${p.idCardController.text}'
-                                                : 'sc_bk_tap_to_fill'.tr,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      color: p.isFilled
-                                          ? AppColors.textSecondary
-                                          : Colors.orange,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-
-              // --- Ghi chú ---
-              const SizedBox(height: 20),
-              Text(
-                'sc_bk_note'.tr,
-                style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.navy,
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _noteController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'sc_bk_note_hint'.tr,
-                  hintStyle: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 14),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.all(16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide:
-                        const BorderSide(color: AppColors.brand, width: 1.5),
-                  ),
-                ),
-              ),
-
-              // --- Phương thức thanh toán ---
-              const SizedBox(height: 20),
-              _buildSectionLabel('sc_bk_payment_method'.tr),
-              const SizedBox(height: 10),
-              /* MoMo Temporarily disabled
-              SegmentedButton<PaymentProvider>(...);
-              */
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border:
-                      Border.all(color: AppColors.brand.withValues(alpha: 0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.brand.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  onTap: () {
-                    // Currently VNPay is the only option, already selected.
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Row(
+
+                  // --- Ghi chú ---
+                  const SizedBox(height: 24),
+                  _buildSectionLabel('sc_bk_note'.tr.toUpperCase()),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: TextField(
+                      controller: _noteController,
+                      maxLines: 3,
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: 'sc_bk_note_hint'.tr,
+                        hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  ),
+
+                  // --- Phương thức thanh toán ---
+                  const SizedBox(height: 24),
+                  _buildSectionLabel('sc_bk_payment_method'.tr.toUpperCase()),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        // Currently VNPay is the only option, already selected.
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0F5FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.credit_card_rounded, color: AppColors.brand),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'sc_bk_vnpay'.tr,
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'sc_bk_vnpay_desc'.tr,
+                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.check_circle_rounded, color: AppColors.brand),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // --- Order Summary & Voucher ---
+                  const SizedBox(height: 24),
+                  _buildSectionLabel('sc_bk_order_summary'.tr.toUpperCase()),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0F5FF),
-                            borderRadius: BorderRadius.circular(AppRadius.xs),
-                          ),
-                          child: const Icon(Icons.credit_card_rounded,
-                              color: AppColors.brand),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'sc_bk_vnpay'.tr,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 15),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'sc_bk_vnpay_desc'.tr,
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.check_circle_rounded,
-                            color: AppColors.brand),
+                        _buildOrderSummaryContent(),
+                        const Divider(height: 1, color: AppColors.border, indent: 16),
+                        _buildVoucherRow(),
                       ],
                     ),
                   ),
+
+                  // --- Terms ---
+                  const SizedBox(height: 24),
+                  _buildTermsCheckbox(),
+                ],
+              ),
+            ),
+          ),
+          
+          // --- Floating Checkout Bar ---
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildFloatingCheckoutBar(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingCheckoutBar() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'sc_bk_total_price'.tr,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        CurrencyFormatter.format(_booking.finalAmount),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.brand,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brand,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: _booking.totalPassengers == 0 ? null : _submit,
+                child: _booking.isLoading.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        'sc_bk_book_now'.tr,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
               ),
             ],
           ),
@@ -746,59 +730,28 @@ class _BookingScreenState extends State<BookingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: AppTextStyles.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            title,
+            style: AppTextStyles.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+              fontSize: 12,
+            ),
           ),
         ),
         if (subtitle != null) ...[
           const SizedBox(height: 2),
-          Text(subtitle,
-              style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 12)),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(subtitle,
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12)),
+          ),
         ],
       ],
-    );
-  }
-
-  Widget _buildOrderSummaryHeader() {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _isSummaryExpanded = !_isSummaryExpanded;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 0),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: const BoxDecoration(
-          color: Color(0xFF0055A5),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'sc_bk_order_summary'.tr,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-            Icon(
-              _isSummaryExpanded
-                  ? Icons.keyboard_arrow_down
-                  : Icons.keyboard_arrow_up,
-              color: Colors.white,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -808,9 +761,8 @@ class _BookingScreenState extends State<BookingScreen> {
     final activeTickets =
         tickets.where((t) => (quantities[t.id] ?? 0) > 0).toList();
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Column(
         children: [
           Row(
@@ -818,15 +770,15 @@ class _BookingScreenState extends State<BookingScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.people_outline,
-                      color: Color(0xFF0055A5), size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.receipt_long_rounded,
+                      color: AppColors.textPrimary, size: 20),
+                  const SizedBox(width: 8),
                   Text(
                     'sc_bk_customer_caps'.tr,
-                    style: TextStyle(
-                      color: Color(0xFF0055A5),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -834,9 +786,9 @@ class _BookingScreenState extends State<BookingScreen> {
               Text(
                 CurrencyFormatter.format(_booking.subtotal),
                 style: const TextStyle(
-                  color: Color(0xFFE31837),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
                 ),
               ),
             ],
@@ -852,77 +804,70 @@ class _BookingScreenState extends State<BookingScreen> {
                   Text(
                     _booking.ticketTypeName(t.ticketTypeId),
                     style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                        fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
                   ),
                   Text(
                     '$q x ${CurrencyFormatter.format(t.effectivePrice)}',
                     style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                        fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                   ),
                 ],
               ),
             );
           }).toList(),
-          const SizedBox(height: 4),
-          Row(
-            children: List.generate(
-              150 ~/ 3,
-              (index) => Expanded(
-                child: Container(
-                  color: index % 2 == 0 ? Colors.transparent : AppColors.border,
-                  height: 1,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildVoucherRow() {
-    // We can use _usableSavedVouchers if we add it back, but wait, the previous code had `_usableSavedVouchers` property.
-    // I can just access it.
     final saved = _usableSavedVouchers;
     final selectedCode = _booking.voucherCode.value;
     return InkWell(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
       onTap: () => _showVoucherSheet(saved, selectedCode),
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
-            const Icon(Icons.local_offer_outlined,
-                size: 20, color: Colors.black54),
-            const SizedBox(width: 8),
+            const Icon(Icons.local_offer_rounded,
+                size: 20, color: AppColors.brand),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'sc_bk_discount_code'.tr,
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
             _booking.discountAmount.value > 0
-                ? Text(
-                    '-${CurrencyFormatter.format(_booking.discountAmount.value)}',
-                    style: const TextStyle(
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      '-${CurrencyFormatter.format(_booking.discountAmount.value)}',
+                      style: const TextStyle(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
                     ),
                   )
                 : Row(
                     children: [
                       Text(
                         'sc_bk_add_discount'.tr,
-                        style: TextStyle(
-                          color: Color(0xFF0055A5),
-                          fontWeight: FontWeight.w600,
+                        style: const TextStyle(
+                          color: AppColors.brand,
+                          fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.add_circle_outline,
-                          color: Color(0xFF0055A5), size: 16),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: AppColors.textSecondary, size: 18),
                     ],
                   ),
           ],
@@ -932,9 +877,8 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildTermsCheckbox() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -943,9 +887,10 @@ class _BookingScreenState extends State<BookingScreen> {
             height: 24,
             child: Checkbox(
               value: _agreedToTerms,
-              activeColor: const Color(0xFF0055A5),
+              activeColor: AppColors.brand,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.xs)),
+                  borderRadius: BorderRadius.circular(6)),
+              side: const BorderSide(color: AppColors.textSecondary, width: 1.5),
               onChanged: (val) {
                 setState(() {
                   _agreedToTerms = val ?? false;
@@ -953,18 +898,18 @@ class _BookingScreenState extends State<BookingScreen> {
               },
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: RichText(
               text: TextSpan(
                 style: const TextStyle(
-                    color: Colors.black87, fontSize: 13, height: 1.4),
+                    color: AppColors.textSecondary, fontSize: 13, height: 1.4),
                 children: [
                   TextSpan(text: 'sc_bk_i_agree_with'.tr),
                   TextSpan(
                     text: 'sc_bk_policy'.tr,
                     style: const TextStyle(
-                        color: Color(0xFF0055A5), fontWeight: FontWeight.bold),
+                        color: AppColors.brand, fontWeight: FontWeight.bold),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () => Get.toNamed(AppRoutes.bookingTerms),
                   ),
@@ -972,7 +917,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   TextSpan(
                     text: 'sc_bk_terms'.tr,
                     style: const TextStyle(
-                        color: Color(0xFF0055A5), fontWeight: FontWeight.bold),
+                        color: AppColors.brand, fontWeight: FontWeight.bold),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () => Get.toNamed(AppRoutes.bookingTerms),
                   ),
@@ -989,10 +934,11 @@ class _BookingScreenState extends State<BookingScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       useSafeArea: true,
       builder: (ctx) => _KeyboardAvoidingPadding(
         child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
           decoration: const BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1001,6 +947,17 @@ class _BookingScreenState extends State<BookingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1046,7 +1003,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                const Divider(height: 1),
+                const Divider(height: 1, color: AppColors.border),
                 const SizedBox(height: 16),
               ],
               Column(
@@ -1054,7 +1011,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 children: [
                   Text(
                     'sc_bk_enter_voucher'.tr,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppColors.navy,
                         fontSize: 13),
@@ -1074,13 +1031,16 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               SizedBox(
-                height: 46,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brand,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                   onPressed: _booking.isApplyingVoucher.value
@@ -1091,13 +1051,13 @@ class _BookingScreenState extends State<BookingScreen> {
                         },
                   child: _booking.isApplyingVoucher.value
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
                       : Text('sc_bk_apply'.tr,
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                 ),
               ),
             ],
@@ -1188,17 +1148,10 @@ class _TicketQuantityRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 if (subtitle.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.info_outline_rounded,
-                          size: 14, color: AppColors.textSecondary),
-                    ],
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                 ],
@@ -1228,8 +1181,8 @@ class _TicketQuantityRow extends StatelessWidget {
           ),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F4F7),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              color: AppColors.surfaceGrouped,
+              borderRadius: BorderRadius.circular(100),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
@@ -1237,53 +1190,53 @@ class _TicketQuantityRow extends StatelessWidget {
               children: [
                 InkWell(
                   onTap: onDecrease,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  borderRadius: BorderRadius.circular(100),
                   child: Container(
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                             color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2))
+                            blurRadius: 2,
+                            offset: const Offset(0, 1))
                       ],
                     ),
                     child: Icon(Icons.remove_rounded,
-                        size: 18,
-                        color: onDecrease != null ? Colors.black : Colors.grey),
+                        size: 20,
+                        color: onDecrease != null ? AppColors.textPrimary : AppColors.textSecondary.withValues(alpha: 0.5)),
                   ),
                 ),
                 SizedBox(
-                  width: 32,
+                  width: 36,
                   child: Text(
                     '$quantity',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
+                        fontWeight: FontWeight.w800, fontSize: 15),
                   ),
                 ),
                 InkWell(
                   onTap: onIncrease,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  borderRadius: BorderRadius.circular(100),
                   child: Container(
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                             color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2))
+                            blurRadius: 2,
+                            offset: const Offset(0, 1))
                       ],
                     ),
                     child: Icon(Icons.add_rounded,
-                        size: 18,
-                        color: onIncrease != null ? Colors.black : Colors.grey),
+                        size: 20,
+                        color: onIncrease != null ? AppColors.textPrimary : AppColors.textSecondary.withValues(alpha: 0.5)),
                   ),
                 ),
               ],
@@ -1565,7 +1518,7 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
   Widget build(BuildContext context) {
     return _KeyboardAvoidingPadding(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
         decoration: const BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -1577,12 +1530,24 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: Text(
-                        'sc_bk_passenger_num'.trParams({'num': (widget.passengerIndex + 1).toString()}),
+                        'sc_bk_passenger_num'.trParams(
+                            {'num': (widget.passengerIndex + 1).toString()}),
                         style: AppTextStyles.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: AppColors.navy,
@@ -1638,7 +1603,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                           }
                           final d = DateTime.tryParse(v.trim());
                           if (d == null) return 'sc_bk_invalid_format'.tr;
-                          if (d.isAfter(DateTime.now())) return 'sc_bk_error'.tr;
+                          if (d.isAfter(DateTime.now()))
+                            return 'sc_bk_error'.tr;
                           return null;
                         },
                       ),
@@ -1737,20 +1703,23 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                               }
                             },
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'sc_bk_required'.tr;
+                              if (v == null || v.isEmpty)
+                                return 'sc_bk_required'.tr;
                               return null;
                             },
                           ),
                   ],
                 ),
                 const SizedBox(height: 24),
+                const SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brand,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 52),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                   onPressed: () {
@@ -1761,7 +1730,7 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                   },
                   child: Text(
                     'sc_bk_save_info'.tr,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                 ),
               ],
@@ -1813,30 +1782,22 @@ InputDecoration _popupInputDecoration({String? hint, IconData? prefixIcon}) {
     prefixIcon: prefixIcon != null
         ? Icon(prefixIcon, color: AppColors.textSecondary, size: 20)
         : null,
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     counterText: '',
+    filled: true,
+    fillColor: AppColors.surfaceGrouped,
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide.none,
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide.none,
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: AppColors.brand, width: 2),
     ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: AppColors.error),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-    ),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
   );
 }
 

@@ -40,4 +40,13 @@ class AppShadows {
           offset: const Offset(0, 8),
         ),
       ];
+
+  /// Dark mode nav bar shadow — subtle white glow on top edge
+  static List<BoxShadow> get navBarDark => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.4),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
+        ),
+      ];
 }

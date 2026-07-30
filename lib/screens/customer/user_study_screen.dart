@@ -165,7 +165,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
                   _resetSurvey();
                   _controller.loadComparison(scenario.scenarioId);
                 },
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderRadius: AppRadius.button,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -180,7 +180,7 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.brandLight,
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: AppRadius.button,
                             ),
                             child: Text(
                               'Nhóm: ${scenario.groupType.toUpperCase()}',
@@ -521,7 +521,6 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
         DropdownButtonFormField<String>(
           decoration: const InputDecoration(
             labelText: 'Nhóm tuổi',
-            border: OutlineInputBorder(),
           ),
           value: _ageGroup,
           items: _ageGroups
@@ -536,7 +535,6 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
         DropdownButtonFormField<String>(
           decoration: const InputDecoration(
             labelText: 'Tần suất đi du lịch',
-            border: OutlineInputBorder(),
           ),
           value: _travelExperience,
           items: _experiences
@@ -553,7 +551,6 @@ class _UserStudyScreenState extends State<UserStudyScreen> {
           maxLines: 3,
           decoration: const InputDecoration(
             labelText: 'Ý kiến đóng góp khác',
-            border: OutlineInputBorder(),
             hintText: 'Nhập chia sẻ của bạn về gợi ý tour...',
           ),
         ),

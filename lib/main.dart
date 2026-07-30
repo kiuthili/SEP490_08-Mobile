@@ -14,6 +14,7 @@ import 'package:stayhub_mobile/services/review_service.dart';
 import 'package:stayhub_mobile/services/staff_service.dart';
 import 'app.dart';
 import 'controllers/feature_controllers.dart';
+import 'controllers/theme_controller.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/feature_services.dart';
@@ -71,6 +72,7 @@ Future<void> main() async {
   Get.put(SystemSettingService(), permanent: true);
   Get.put(SocialService(), permanent: true);
   Get.put(SignalRService(), permanent: true);
+  Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(HomeController(), permanent: true);
   Get.put(AiController(), permanent: true);

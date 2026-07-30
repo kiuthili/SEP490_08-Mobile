@@ -72,3 +72,59 @@ class AppColors {
     end: Alignment.bottomCenter,
   );
 }
+
+/// Dark palette — iOS-style dark mode colors.
+class AppColorsDark {
+  AppColorsDark._();
+
+  static const Color brand = AppColors.brand;
+  static const Color brandHover = Color(0xFF3D8FFF);
+  static const Color brandDeep = Color(0xFF1A7AFF);
+  static const Color brandLight = Color(0xFF1C3A6E);
+
+  static const Color accent = AppColors.accent;
+  static const Color accentLight = Color(0xFF3D2010);
+
+  static const Color navy = Color(0xFF05073C);
+
+  /// iOS dark: nền hoàn toàn đen
+  static const Color background = Color(0xFF000000);
+  static const Color backgroundSecondary = Color(0xFF1C1C1E);
+
+  static const Color surface = Color(0xFF1C1C1E);
+  static const Color surfaceElevated = Color(0xFF2C2C2E);
+  static const Color surfaceGrouped = Color(0xFF000000);
+
+  static const Color glassFill = Color(0xD91C1C1E);
+  static const Color glassBorder = Color(0x33FFFFFF);
+
+  static const Color inputFill = Color(0xFF2C2C2E);
+  static const Color separator = Color(0x5C545458);
+  static const Color fillTertiary = Color(0x3D767680);
+
+  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color textSecondary = Color(0xFF8E8E93);
+  static const Color textTertiary = Color(0xFF636366);
+
+  static const Color error = Color(0xFFFF453A);
+  static const Color success = Color(0xFF30D158);
+
+  static const Color border = Color(0x33FFFFFF);
+
+  static const LinearGradient brandGradient = AppColors.brandGradient;
+
+  static const LinearGradient homeHeroGradient = LinearGradient(
+    colors: [Color(0xFF000000), Color(0xFF0A1628), Color(0xFF003399)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: [0, 0.58, 1],
+  );
+
+  static const LinearGradient authHeroGradient = AppColors.authHeroGradient;
+
+  static const LinearGradient pageGradient = LinearGradient(
+    colors: [Color(0xFF0A0A0F), background],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+}

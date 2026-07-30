@@ -25,89 +25,89 @@ class MainShellScreen extends GetView<ShellController> {
   const MainShellScreen({super.key});
 
   static List<IosBottomNavItem> get _customerNav => [
-    IosBottomNavItem(
-      icon: Icons.map_outlined,
-      selectedIcon: Icons.map_rounded,
-      label: 'nav_map'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.people_outline_rounded,
-      selectedIcon: Icons.people_rounded,
-      label: 'nav_social'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'nav_home'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.auto_awesome_outlined,
-      selectedIcon: Icons.auto_awesome_rounded,
-      label: 'nav_ai_guide'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-      label: 'nav_profile'.tr,
-    ),
-  ];
+        IosBottomNavItem(
+          icon: Icons.map_outlined,
+          selectedIcon: Icons.map_rounded,
+          label: 'nav_map'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.people_outline_rounded,
+          selectedIcon: Icons.people_rounded,
+          label: 'nav_social'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home_rounded,
+          label: 'nav_home'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.auto_awesome_outlined,
+          selectedIcon: Icons.auto_awesome_rounded,
+          label: 'nav_ai_guide'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.person_outline_rounded,
+          selectedIcon: Icons.person_rounded,
+          label: 'nav_profile'.tr,
+        ),
+      ];
 
   static List<IosBottomNavItem> get _guestNav => [
-    IosBottomNavItem(
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'nav_home'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.travel_explore_outlined,
-      selectedIcon: Icons.travel_explore_rounded,
-      label: 'nav_explore'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.people_outline_rounded,
-      selectedIcon: Icons.people_rounded,
-      label: 'nav_social'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.receipt_long_outlined,
-      selectedIcon: Icons.receipt_long_rounded,
-      label: 'nav_book_tour'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.login_rounded,
-      selectedIcon: Icons.login_rounded,
-      label: 'nav_login'.tr,
-    ),
-  ];
+        IosBottomNavItem(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home_rounded,
+          label: 'nav_home'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.travel_explore_outlined,
+          selectedIcon: Icons.travel_explore_rounded,
+          label: 'nav_explore'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.people_outline_rounded,
+          selectedIcon: Icons.people_rounded,
+          label: 'nav_social'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.receipt_long_outlined,
+          selectedIcon: Icons.receipt_long_rounded,
+          label: 'nav_book_tour'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.login_rounded,
+          selectedIcon: Icons.login_rounded,
+          label: 'nav_login'.tr,
+        ),
+      ];
 
   static List<IosBottomNavItem> get _staffNav => [
-    IosBottomNavItem(
-      icon: Icons.calendar_month_outlined,
-      selectedIcon: Icons.calendar_month_rounded,
-      label: 'nav_schedule'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.confirmation_number_outlined,
-      selectedIcon: Icons.confirmation_number_rounded,
-      label: 'nav_tickets'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.qr_code_scanner_outlined,
-      selectedIcon: Icons.qr_code_scanner_rounded,
-      label: 'nav_checkin'.tr,
-      isProminent: true,
-    ),
-    IosBottomNavItem(
-      icon: Icons.groups_outlined,
-      selectedIcon: Icons.groups_rounded,
-      label: 'nav_guests'.tr,
-    ),
-    IosBottomNavItem(
-      icon: Icons.person_outline_rounded,
-      selectedIcon: Icons.person_rounded,
-      label: 'nav_profile'.tr,
-    ),
-  ];
+        IosBottomNavItem(
+          icon: Icons.calendar_month_outlined,
+          selectedIcon: Icons.calendar_month_rounded,
+          label: 'nav_schedule'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.confirmation_number_outlined,
+          selectedIcon: Icons.confirmation_number_rounded,
+          label: 'nav_tickets'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.qr_code_scanner_outlined,
+          selectedIcon: Icons.qr_code_scanner_rounded,
+          label: 'nav_checkin'.tr,
+          isProminent: true,
+        ),
+        IosBottomNavItem(
+          icon: Icons.groups_outlined,
+          selectedIcon: Icons.groups_rounded,
+          label: 'nav_guests'.tr,
+        ),
+        IosBottomNavItem(
+          icon: Icons.person_outline_rounded,
+          selectedIcon: Icons.person_rounded,
+          label: 'nav_profile'.tr,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +146,7 @@ class MainShellScreen extends GetView<ShellController> {
       final index = controller.selectedIndex.value.clamp(0, maxIndex);
 
       return PageScaffold(
-        extendBody: false,
+        extendBody: true,
         body: IndexedStack(
           index: index.clamp(0, pages.length - 1),
           children: pages,

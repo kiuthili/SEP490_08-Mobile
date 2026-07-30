@@ -55,7 +55,7 @@ class _AuthScaffoldState extends State<AuthScaffold> {
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           Container(
@@ -222,7 +222,7 @@ class _FormCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            decoration: AppDecorations.card(),
+            decoration: AppDecorations.cardFromContext(context),
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -230,7 +230,7 @@ class _FormCard extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyles.textTheme.headlineMedium?.copyWith(
-                    color: AppColors.navy,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),

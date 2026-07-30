@@ -1,8 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_decorations.dart';
-import '../theme/app_radius.dart';
 import '../utils/platform_ui.dart';
 
 class IosBottomNavItem {
@@ -35,90 +33,156 @@ class IosBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Nền đặc hơn để nổi bật khỏi content phía sau
+    final navBgColor = isDark
+        ? const Color(0xFF1C1C1E).withValues(alpha: 0.96)
+        : Colors.white.withValues(alpha: 0.97);
 
     final nav = Container(
-      height: 64,
-      decoration: useGlassBlur
-          ? AppDecorations.glass(opacity: 0.82)
-          : AppDecorations.card(),
+      height: 72,
+      decoration: BoxDecoration(
+        color: navBgColor,
+        // Border trên & toàn viền rõ hơn
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : const Color(0xFF0068E0).withValues(alpha: 0.08),
+            width: 0.5,
+          ),
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  blurRadius: 32,
+                  spreadRadius: -4,
+                  offset: const Offset(0, -8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: const Color(0xFF05073C).withValues(alpha: 0.10),
+                  blurRadius: 32,
+                  spreadRadius: -4,
+                  offset: const Offset(0, -8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF05073C).withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(items.length, (i) {
           final item = items[i];
           final selected = i == selectedIndex;
-          return Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onSelect(i),
-                borderRadius: AppRadius.navBar,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (item.isProminent)
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.brandGradient,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.brand.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          selected ? item.selectedIcon : item.icon,
-                          size: 24,
-                          color: Colors.white,
-                        ),
-                      )
-                    else
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 4,
-                        ),
-                        decoration: selected
-                            ? BoxDecoration(
-                                color:
-                                    AppColors.brandLight.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
-                                ),
-                              )
-                            : null,
-                        child: Icon(
-                          selected ? item.selectedIcon : item.icon,
-                          size: 22,
-                          color: selected
-                              ? AppColors.brand
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    if (!item.isProminent) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        item.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.w500,
-                          color: selected
-                              ? AppColors.brand
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+
+          if (item.isProminent) {
+            return GestureDetector(
+              onTap: () => onSelect(i),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                transform: Matrix4.identity()
+                  ..scale(selected ? 1.08 : 1.0),
+                transformAlignment: Alignment.center,
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: AppColors.brandGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.brand
+                          .withValues(alpha: selected ? 0.55 : 0.30),
+                      blurRadius: selected ? 20 : 10,
+                      spreadRadius: selected ? 1 : 0,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
+                child: Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  size: 28,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          }
+
+          return GestureDetector(
+            onTap: () => onSelect(i),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                horizontal: selected ? 16 : 12,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppColors.brand.withValues(alpha: isDark ? 0.20 : 0.10)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+                border: selected
+                    ? Border.all(
+                        color: AppColors.brand
+                            .withValues(alpha: isDark ? 0.30 : 0.15),
+                        width: 1,
+                      )
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    ),
+                    child: Icon(
+                      selected ? item.selectedIcon : item.icon,
+                      key: ValueKey(selected),
+                      size: 24,
+                      color: selected
+                          ? AppColors.brand
+                          : (isDark
+                              ? const Color(0xFF636366)
+                              : const Color(0xFFAEAEB2)),
+                    ),
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    child: selected
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Text(
+                              item.label,
+                              style: const TextStyle(
+                                color: AppColors.brand,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ),
             ),
           );
@@ -126,17 +190,23 @@ class IosBottomNav extends StatelessWidget {
       ),
     );
 
+    final borderRadius = BorderRadius.circular(28);
+
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottom > 0 ? bottom : 16),
+      padding:
+          EdgeInsets.fromLTRB(12, 0, 12, (bottom > 0 ? bottom : 12) + 10),
       child: useGlassBlur
           ? ClipRRect(
-              borderRadius: AppRadius.navBar,
+              borderRadius: borderRadius,
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-                child: nav,
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: ClipRRect(
+                  borderRadius: borderRadius,
+                  child: nav,
+                ),
               ),
             )
-          : ClipRRect(borderRadius: AppRadius.navBar, child: nav),
+          : ClipRRect(borderRadius: borderRadius, child: nav),
     );
   }
 }

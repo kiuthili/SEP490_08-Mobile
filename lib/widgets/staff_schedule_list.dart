@@ -151,15 +151,22 @@ class _FilterBarState extends State<_FilterBar> {
                     )
                   : null,
               isDense: true,
+              filled: true,
+              fillColor: Colors.grey.shade100,
               contentPadding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppColors.brand, width: 1.5),
               ),
             ),
           ),
@@ -322,19 +329,17 @@ class StaffActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(100),
         child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
             color: isPrimary
                 ? AppColors.brand
-                : AppColors.brand.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(
-              color: isPrimary
-                  ? AppColors.brand
-                  : AppColors.brand.withValues(alpha: 0.2),
-            ),
+                : AppColors.brand.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(100),
+            border: isPrimary
+                ? null
+                : Border.all(color: AppColors.brand.withValues(alpha: 0.2)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

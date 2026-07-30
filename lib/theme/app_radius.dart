@@ -15,6 +15,6 @@ class AppRadius {
   static const BorderRadius sheet =
       BorderRadius.vertical(top: Radius.circular(xl));
   static const BorderRadius button = BorderRadius.all(Radius.circular(xs));
-  static const BorderRadius input = BorderRadius.all(Radius.circular(sm));
+  static const BorderRadius input = BorderRadius.all(Radius.circular(xs));
   static const BorderRadius navBar = BorderRadius.all(Radius.circular(28));
 }

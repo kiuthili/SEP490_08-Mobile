@@ -62,15 +62,7 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
               onChanged: (value) => setState(() => _query = value),
               decoration: InputDecoration(
                 hintText: 'sc_nm_search_hint'.tr,
-                filled: true,
-                fillColor: AppColors.surfaceGrouped,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  borderSide: BorderSide.none,
-                ),
-                prefixIcon: const Icon(Icons.search_rounded),
+                prefixIcon: const Icon(Icons.search_rounded, color: Colors.black54),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
@@ -78,16 +70,31 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
                           _searchController.clear();
                           setState(() => _query = '');
                         },
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 20),
                       ),
+                filled: true,
+                fillColor: Colors.grey.shade200,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                isDense: true,
               ),
             ),
           ),
           Expanded(
             child: Obx(() {
               if (_social.isLoading.value && _social.friends.isEmpty) {
-                return LoadingWidget(
-                    message: 'sc_nm_loading'.tr);
+                return LoadingWidget(message: 'sc_nm_loading'.tr);
               }
               if (_social.friends.isEmpty) {
                 return EmptyStateWidget(
@@ -144,13 +151,11 @@ class _FriendListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: AppRadius.button,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
         ),
         child: Row(
           children: [
@@ -190,13 +195,13 @@ class _FriendListTile extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: const BoxDecoration(
-                color: AppColors.brandLight,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.chat_bubble_rounded,
-                color: AppColors.brand,
+                color: Colors.black87,
                 size: 18,
               ),
             ),

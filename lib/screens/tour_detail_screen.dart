@@ -267,8 +267,10 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     // 2. Nhóm theo tháng
     final Map<String, List<TourScheduleModel>> schedulesByMonth = {};
     for (final s in futureSchedules) {
-      final monthKey =
-          'td_month_year'.trParams({'m': s.departureDate.month.toString(), 'y': s.departureDate.year.toString()});
+      final monthKey = 'td_month_year'.trParams({
+        'm': s.departureDate.month.toString(),
+        'y': s.departureDate.year.toString()
+      });
       if (!schedulesByMonth.containsKey(monthKey)) {
         schedulesByMonth[monthKey] = [];
       }
@@ -315,6 +317,30 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     final formKey = GlobalKey<FormState>();
     final isSubmitting = false.obs;
 
+    InputDecoration buildInputDeco(String label, IconData icon, [String? hint]) {
+      return InputDecoration(
+        labelText: label,
+        hintText: hint,
+        alignLabelWithHint: hint != null,
+        prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 22),
+        filled: true,
+        fillColor: AppColors.surfaceGrouped,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      );
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -336,29 +362,30 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // iOS Drag Handle
                   Center(
                     child: Container(
-                      width: 40,
-                      height: 4,
+                      width: 44,
+                      height: 5,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.brandLight,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(Icons.support_agent_rounded,
-                            color: AppColors.brand, size: 24),
+                            color: AppColors.brand, size: 26),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,11 +394,11 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                               'td_consultation_form'.tr,
                               style:
                                   AppTextStyles.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                                 fontSize: 18,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               tour.name,
                               maxLines: 1,
@@ -379,6 +406,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                               style: const TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 13,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -386,49 +414,28 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   TextFormField(
                     controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'td_full_name'.tr,
-                      prefixIcon: const Icon(Icons.person_outline_rounded),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                    ),
+                    decoration: buildInputDeco('td_full_name'.tr, Icons.person_outline_rounded),
                     validator: (v) => v == null || v.trim().isEmpty
                         ? 'td_enter_name'.tr
                         : null,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: 'td_phone'.tr,
-                      prefixIcon: const Icon(Icons.phone_outlined),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                    ),
+                    decoration: buildInputDeco('td_phone'.tr, Icons.phone_outlined),
                     validator: (v) => v == null || v.trim().isEmpty
                         ? 'td_enter_phone'.tr
                         : null,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'td_email'.tr,
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                    ),
+                    decoration: buildInputDeco('td_email'.tr, Icons.email_outlined),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty)
                         return 'td_enter_email'.tr;
@@ -437,26 +444,24 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: noteController,
                     maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: 'td_note_optional'.tr,
-                      hintText:
-                          'td_note_hint'.tr,
-                      alignLabelWithHint: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                    ),
+                    decoration: buildInputDeco('td_note_optional'.tr, Icons.notes_rounded, 'td_note_hint'.tr),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   Obx(() {
-                    return CustomButton(
-                      label: 'td_submit_consultation'.tr,
-                      isLoading: isSubmitting.value,
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brand,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        elevation: 0,
+                      ),
                       onPressed: isSubmitting.value
                           ? null
                           : () async {
@@ -475,6 +480,22 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                                 Navigator.pop(sheetContext);
                               }
                             },
+                      child: isSubmitting.value
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Text(
+                              'td_submit_consultation'.tr,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
                     );
                   }),
                 ],
@@ -516,128 +537,129 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     final hasSchedules = _tourController.detailSchedules.isNotEmpty;
     return SafeArea(
       top: false,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'td_price'.tr,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.surface, // White background
+            borderRadius: BorderRadius.circular(100),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textPrimary.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              // Price Section
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (originalPrice != null &&
-                        originalPrice > (minPrice ?? 0))
-                      Text(
-                        CurrencyFormatter.format(originalPrice),
-                        style: const TextStyle(
-                          decoration: TextDecoration.lineThrough,
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
+                    Text(
+                      'td_price'.tr.toUpperCase(),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
                       ),
-                    Row(
-                      children: [
-                        Text(
-                          minPrice != null
-                              ? CurrencyFormatter.format(minPrice)
-                              : schedule != null
-                                  ? 'td_updating'.tr
-                                  : 'td_cannot_book'.tr,
-                          style: TextStyle(
-                            color: minPrice != null
-                                ? AppColors.brand
-                                : AppColors.textSecondary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 20,
-                          ),
-                        ),
-                        if (minPrice != null)
+                    ),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
                           Text(
-                            'td_per_pax'.tr,
-                            style: TextStyle(color: AppColors.textPrimary),
+                            minPrice != null
+                                ? CurrencyFormatter.format(minPrice)
+                                : schedule != null
+                                    ? 'td_updating'.tr
+                                    : 'td_cannot_book'.tr,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                      ],
+                          if (minPrice != null)
+                            const Text(
+                              ' /pax',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
+              ),
+              const SizedBox(width: 4),
+              // Phone Icon
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                decoration: const BoxDecoration(
+                  color: AppColors.brandLight,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.headset_mic_rounded, color: AppColors.brand, size: 20),
+                  onPressed: _showConsultationSheet,
+                  constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              // Date Icon
+              if (hasSchedules)
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: const BoxDecoration(
+                    color: AppColors.brandLight,
+                    shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.phone_in_talk_rounded,
-                        color: Colors.blue.shade700),
-                    onPressed: _showConsultationSheet,
+                    icon: const Icon(Icons.calendar_month_rounded, color: AppColors.brand, size: 20),
+                    onPressed: _showSchedulePicker,
+                    constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                    padding: EdgeInsets.zero,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
-                    ),
-                    onPressed: hasSchedules ? _showSchedulePicker : null,
-                    child: Text(
-                      'td_other_dates'.tr,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: hasSchedules
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
+              // Book Button
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brand,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: schedule != null && _scheduleAvailable(schedule)
+                    ? () => _proceedToBooking(tour)
+                    : null,
+                child: Text(
+                  'td_book_now'.tr,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.brand,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
-                    ),
-                    onPressed: schedule != null && _scheduleAvailable(schedule)
-                        ? () => _proceedToBooking(tour)
-                        : null,
-                    child: Text(
-                      'td_book_now'.tr,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -687,8 +709,17 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
             },
           ),
       ],
-      bottomNavigationBar: _buildCheckoutBar(),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildCheckoutBar() ?? const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -705,8 +736,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       return EmptyStateWidget(
         icon: Icons.error_outline_rounded,
         title: 'td_cannot_load_tour'.tr,
-        subtitle: _tourController.detailError.value ??
-            'td_tour_inactive'.tr,
+        subtitle: _tourController.detailError.value ?? 'td_tour_inactive'.tr,
         onRetry: () => _tourController.fetchTourDetail(_tourId!),
       );
     }
@@ -774,7 +804,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       title: 'td_detailed_itinerary'.tr,
                       subtitle: _itineraryLoading
                           ? 'td_preparing_itinerary'.tr
-                          : 'td_activities_in_journey'.trParams({'count': _itineraries.length.toString()}),
+                          : 'td_activities_in_journey'.trParams(
+                              {'count': _itineraries.length.toString()}),
                       trailing: _itineraries.isEmpty
                           ? null
                           : TextButton.icon(
@@ -814,7 +845,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     title: 'td_reviews'.tr,
                     subtitle: _reviewController.reviews.isEmpty
                         ? 'td_no_reviews'.tr
-                        : 'td_recent_reviews'.trParams({'count': _reviewController.reviews.length.toString()}),
+                        : 'td_recent_reviews'.trParams({
+                            'count': _reviewController.reviews.length.toString()
+                          }),
                     child: _reviewController.reviews.isEmpty
                         ? Text(
                             'td_be_first_review'.tr,
@@ -875,79 +908,104 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       images.addAll(tour.tourImages!);
     }
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 260,
+          height: 320,
           width: double.infinity,
-          child: images.isNotEmpty
-              ? PageView.builder(
-                  controller: _pageController,
-                  itemCount: images.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentImageIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    return Hero(
-                      tag: 'tour-image-${tour.id}-$index',
-                      child: CachedNetworkImage(
-                        imageUrl: images[index],
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => _heroFallback(),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: images.isNotEmpty
+                    ? PageView.builder(
+                        controller: _pageController,
+                        itemCount: images.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return Hero(
+                            tag: 'tour-image-${tour.id}-$index',
+                            child: CachedNetworkImage(
+                              imageUrl: images[index],
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => _heroFallback(),
+                            ),
+                          );
+                        },
+                      )
+                    : Hero(
+                        tag: 'tour-image-${tour.id}',
+                        child: _heroFallback(),
                       ),
-                    );
-                  },
-                )
-              : Hero(
-                  tag: 'tour-image-${tour.id}',
-                  child: _heroFallback(),
-                ),
-        ),
-        const Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Color(0xCC05073C),
-                  ],
-                  stops: [0.0, 0.45, 1.0],
-                ),
               ),
-            ),
+              if (images.length > 1)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 16,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(images.length, (index) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                        width: _currentImageIndex == index ? 24.0 : 8.0,
+                        height: 8.0,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          color: _currentImageIndex == index
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.6),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                            )
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+            ],
           ),
         ),
-        Positioned(
-          left: 20,
-          right: 20,
-          bottom: 18,
+        
+        // ── Title & Location (Apple Large Title Style) ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 tour.name,
                 style: AppTextStyles.textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.0,
+                  height: 1.25,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Icon(Icons.place_rounded,
-                      size: 16, color: Colors.white70),
-                  const SizedBox(width: 4),
+                      size: 18, color: AppColors.brand),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       tour.locationLabel,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -957,22 +1015,22 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black45,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white30, width: 0.5),
+                        color: AppColors.surfaceGrouped,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             _getTransportIcon(tour.transportationType!),
                             size: 14,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             tour.transportationType!,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -983,25 +1041,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   ],
                 ],
               ),
-              if (images.length > 1) ...[
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(images.length, (index) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 3.0),
-                      width: _currentImageIndex == index ? 8.0 : 6.0,
-                      height: _currentImageIndex == index ? 8.0 : 6.0,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentImageIndex == index
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.5),
-                      ),
-                    );
-                  }),
-                ),
-              ],
             ],
           ),
         ),
@@ -1065,7 +1104,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       const SizedBox(height: 4),
                       Text(
                         available
-                            ? 'td_seats_left'.trParams({'seats': seats.toString()})
+                            ? 'td_seats_left'
+                                .trParams({'seats': seats.toString()})
                             : schedule.tickets.isEmpty
                                 ? 'td_tickets_not_open'.tr
                                 : 'td_sold_out'.tr,
@@ -1082,7 +1122,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('td_from'.tr, style: AppTextStyles.textTheme.labelSmall),
+                      Text('td_from'.tr,
+                          style: AppTextStyles.textTheme.labelSmall),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
@@ -1213,22 +1254,14 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       duration: const Duration(milliseconds: 240),
       margin: EdgeInsets.only(bottom: isLastDay ? 0 : 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceGrouped,
+        color: expanded ? AppColors.surface : AppColors.surfaceGrouped,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: expanded
-              ? AppColors.brand.withValues(alpha: 0.2)
+              ? AppColors.brand.withValues(alpha: 0.3)
               : AppColors.border,
+          width: expanded ? 1.5 : 1,
         ),
-        boxShadow: expanded
-            ? [
-                BoxShadow(
-                  color: AppColors.navy.withValues(alpha: 0.06),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1236,6 +1269,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
           Material(
             color: Colors.transparent,
             child: InkWell(
+              borderRadius: AppRadius.button,
               onTap: () {
                 setState(() {
                   if (expanded) {
@@ -1248,9 +1282,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.brandLight, AppColors.surface],
-                  ),
+                  color: AppColors.surface,
                 ),
                 child: Row(
                   children: [
@@ -1259,7 +1291,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       height: 42,
                       alignment: Alignment.center,
                       decoration: const BoxDecoration(
-                        gradient: AppColors.brandGradient,
+                        color: AppColors.brand,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
@@ -1285,8 +1317,12 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           const SizedBox(height: 2),
                           Text(
                             heritageCount > 0
-                                ? 'td_activities_heritages'.trParams({'a': activities.length.toString(), 'h': heritageCount.toString()})
-                                : 'td_activities_count'.trParams({'count': activities.length.toString()}),
+                                ? 'td_activities_heritages'.trParams({
+                                    'a': activities.length.toString(),
+                                    'h': heritageCount.toString()
+                                  })
+                                : 'td_activities_count'.trParams(
+                                    {'count': activities.length.toString()}),
                             style: AppTextStyles.textTheme.bodySmall,
                           ),
                         ],
@@ -1379,7 +1415,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(existing != null ? 'td_edit_review'.tr : 'td_write_review'.tr),
+        title:
+            Text(existing != null ? 'td_edit_review'.tr : 'td_write_review'.tr),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -2403,36 +2440,55 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // iOS Drag Handle
+          const SizedBox(height: 12),
+          Container(
+            width: 44,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'td_select_departure_date'.tr,
                   style: AppTextStyles.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.pop(context),
+                Container(
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceGrouped,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
                 ),
               ],
             ),
           ),
           SizedBox(
-            height: 100,
+            height: 90,
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               scrollDirection: Axis.horizontal,
               itemCount: widget.schedulesByMonth.keys.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -2442,34 +2498,32 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                 final lines = monthKey.split(' - ');
                 return GestureDetector(
                   onTap: () => setState(() => _selectedMonth = monthKey),
-                  child: Container(
-                    width: 90,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 100,
                     decoration: BoxDecoration(
-                      color:
-                          isSelected ? Colors.blue.shade50 : AppColors.surface,
+                      color: isSelected ? AppColors.brand : AppColors.surfaceGrouped,
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? Colors.blue : AppColors.border,
-                        width: isSelected ? 2 : 1,
+                        color: isSelected ? AppColors.brand : Colors.transparent,
+                        width: 1,
                       ),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.calendar_month_rounded,
-                          color: isSelected
-                              ? Colors.blue
-                              : AppColors.textSecondary,
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          size: 24,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           lines.first,
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? Colors.blue
-                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
                         if (lines.length > 1)
@@ -2477,9 +2531,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                             lines[1],
                             style: TextStyle(
                               fontSize: 12,
-                              color: isSelected
-                                  ? Colors.blue
-                                  : AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected ? Colors.white70 : AppColors.textSecondary,
                             ),
                           ),
                       ],
@@ -2489,10 +2542,11 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
               },
             ),
           ),
-          const Divider(height: 24),
+          const SizedBox(height: 16),
+          const Divider(height: 1, thickness: 0.5),
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               itemCount: widget.schedulesByMonth[_selectedMonth]!.length,
               separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
@@ -2502,16 +2556,16 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
 
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.brandLight.withValues(alpha: 0.5)
+                        ? AppColors.brandLight.withValues(alpha: 0.3)
                         : AppColors.surface,
                     border: Border.all(
-                      color: isSelected ? AppColors.brand : AppColors.border,
-                      width: isSelected ? 2 : 1,
+                      color: isSelected ? AppColors.brand.withValues(alpha: 0.5) : AppColors.border.withValues(alpha: 0.5),
+                      width: isSelected ? 1.5 : 1,
                     ),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2528,10 +2582,12 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                   children: [
                                     const SizedBox(width: 4),
                                     Text(
-                                      'td_depart_date'.trParams({'date': DateFormatter.display(schedule.departureDate)}),
-                                      style: AppTextStyles.textTheme.labelMedium
-                                          ?.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                      'td_depart_date'.trParams({
+                                        'date': DateFormatter.display(
+                                            schedule.departureDate)
+                                      }),
+                                      style: AppTextStyles.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                   ],
@@ -2541,10 +2597,13 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                   children: [
                                     const SizedBox(width: 4),
                                     Text(
-                                      'td_return_date'.trParams({'date': DateFormatter.display(schedule.returnDate)}),
-                                      style: AppTextStyles.textTheme.labelMedium
-                                          ?.copyWith(
+                                      'td_return_date'.trParams({
+                                        'date': DateFormatter.display(
+                                            schedule.returnDate)
+                                      }),
+                                      style: AppTextStyles.textTheme.bodySmall?.copyWith(
                                         color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ],
@@ -2553,30 +2612,41 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                             ),
                           ),
                           if (isSelected)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                'td_selecting'.tr,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.brand),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.brand,
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_rounded, color: Colors.white, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'td_selecting'.tr,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           else
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.brand,
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppColors.surfaceGrouped,
+                                foregroundColor: AppColors.brand,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.xs),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                minimumSize: Size.zero,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                                minimumSize: const Size(0, 36),
+                                elevation: 0,
                               ),
                               onPressed: () => widget.onSelect(schedule),
-                              child: Text('td_select'.tr),
+                              child: Text('td_select'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
                             ),
                         ],
                       ),
@@ -2601,7 +2671,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                 ? 'td_adult'.tr
                                 : t.ticketTypeId == 2
                                     ? 'td_child'.tr
-                                    : 'td_ticket_type_id'.trParams({'id': t.ticketTypeId.toString()}));
+                                    : 'td_ticket_type_id'.trParams(
+                                        {'id': t.ticketTypeId.toString()}));
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 6),
@@ -2632,19 +2703,22 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                     const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: AppColors.accent
                                             .withValues(alpha: 0.1),
                                         borderRadius:
-                                            BorderRadius.circular(AppRadius.xs),
+                                            BorderRadius.circular(100),
                                       ),
                                       child: Text(
-                                        'td_remaining_seats'.trParams({'count': t.availableQuantity.toString()}),
+                                        'td_remaining_seats'.trParams({
+                                          'count':
+                                              t.availableQuantity.toString()
+                                        }),
                                         style: const TextStyle(
-                                          fontSize: 10,
+                                          fontSize: 11,
                                           color: AppColors.accent,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w800,
                                         ),
                                       ),
                                     ),

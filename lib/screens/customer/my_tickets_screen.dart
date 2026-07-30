@@ -160,7 +160,8 @@ class OrderTicketsPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'mt_tickets_ready'.trParams({'count': tickets.length.toString()}),
+                    'mt_tickets_ready'
+                        .trParams({'count': tickets.length.toString()}),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -172,7 +173,8 @@ class OrderTicketsPanel extends StatelessWidget {
         ...tickets.map((t) {
           final statusStr = t.checkInStatus?.toLowerCase() ?? '';
           Color statusColor = AppColors.textSecondary;
-          if (statusStr.contains('checked') || statusStr.contains('mt_already'.tr)) {
+          if (statusStr.contains('checked') ||
+              statusStr.contains('mt_already'.tr)) {
             statusColor = AppColors.success;
           } else if (statusStr.contains('pending') ||
               statusStr.contains('mt_wait'.tr)) {
