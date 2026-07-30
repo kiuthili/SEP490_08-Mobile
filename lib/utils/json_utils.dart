@@ -41,7 +41,10 @@ class JsonUtils {
 
   static List<Map<String, dynamic>> readMapList(dynamic value) {
     if (value is! List) return [];
-    return value.whereType<Map<String, dynamic>>().toList();
+    return value
+        .where((e) => e is Map)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
   }
 
   static dynamic pick(Map<String, dynamic> json, List<String> keys) {
@@ -54,11 +57,12 @@ class JsonUtils {
   }
 
   static Map<String, dynamic>? extractDataMap(dynamic body) {
-    if (body is Map<String, dynamic>) {
-      if (body['data'] is Map<String, dynamic>) {
-        return body['data'] as Map<String, dynamic>;
+    if (body is Map) {
+      final map = Map<String, dynamic>.from(body);
+      if (map['data'] is Map) {
+        return Map<String, dynamic>.from(map['data'] as Map);
       }
-      return body;
+      return map;
     }
     return null;
   }

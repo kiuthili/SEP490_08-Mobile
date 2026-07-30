@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../constants/api_constants.dart';
 import 'package:stayhub_mobile/theme/app_radius.dart';
 import 'package:stayhub_mobile/theme/app_text_styles.dart';
@@ -12,7 +10,7 @@ class VisitedLocation {
   final String name;
   final String country;
   final String date;
-  final LatLng gps;
+  final mb.Position gps;
   final IconData icon;
   final Color themeColor;
 
@@ -34,7 +32,11 @@ class FootprintScreen extends StatefulWidget {
 }
 
 class _FootprintScreenState extends State<FootprintScreen> {
-  final MapController _mapController = MapController();
+  mb.MapboxMap? _mapboxMap;
+  mb.PolygonAnnotationManager? _polygonAnnotationManager;
+  mb.PointAnnotationManager? _pointAnnotationManager;
+  final List<mb.PointAnnotation> _pointAnnotations = [];
+
   int _activeLocationIndex = 0;
 
   final List<VisitedLocation> _locations = [
@@ -42,7 +44,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Vịnh Hạ Long',
       country: 'Việt Nam',
       date: 'Tháng 7, 2026',
-      gps: const LatLng(20.9101, 107.1839),
+      gps: mb.Position(107.1839, 20.9101),
       icon: Icons.sailing_outlined,
       themeColor: const Color(0xFF00FFCC),
     ),
@@ -50,7 +52,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Hà Nội',
       country: 'Việt Nam',
       date: 'Tháng 6, 2026',
-      gps: const LatLng(21.0285, 105.8542),
+      gps: mb.Position(105.8542, 21.0285),
       icon: Icons.location_city_outlined,
       themeColor: const Color(0xFF00E5FF),
     ),
@@ -58,7 +60,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Phố cổ Hội An',
       country: 'Việt Nam',
       date: 'Tháng 5, 2026',
-      gps: const LatLng(15.8801, 108.3380),
+      gps: mb.Position(108.3380, 15.8801),
       icon: Icons.temple_buddhist_outlined,
       themeColor: const Color(0xFFFFCC00),
     ),
@@ -66,7 +68,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Singapore',
       country: 'Singapore',
       date: 'Tháng 2, 2026',
-      gps: const LatLng(1.3521, 103.8198),
+      gps: mb.Position(103.8198, 1.3521),
       icon: Icons.apartment_outlined,
       themeColor: const Color(0xFFFF3366),
     ),
@@ -74,7 +76,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Kyoto',
       country: 'Nhật Bản',
       date: 'Tháng 11, 2025',
-      gps: const LatLng(35.0116, 135.7681),
+      gps: mb.Position(135.7681, 35.0116),
       icon: Icons.castle_outlined,
       themeColor: const Color(0xFFFF9900),
     ),
@@ -82,7 +84,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Tokyo',
       country: 'Nhật Bản',
       date: 'Tháng 10, 2025',
-      gps: const LatLng(35.6762, 139.6503),
+      gps: mb.Position(139.6503, 35.6762),
       icon: Icons.webhook_outlined,
       themeColor: const Color(0xFF3399FF),
     ),
@@ -90,7 +92,7 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Rome',
       country: 'Ý',
       date: 'Tháng 7, 2025',
-      gps: const LatLng(41.9028, 12.4964),
+      gps: mb.Position(12.4964, 41.9028),
       icon: Icons.account_balance_outlined,
       themeColor: const Color(0xFFA352FF),
     ),
@@ -98,23 +100,34 @@ class _FootprintScreenState extends State<FootprintScreen> {
       name: 'Paris',
       country: 'Pháp',
       date: 'Tháng 6, 2025',
-      gps: const LatLng(48.8566, 2.3522),
+      gps: mb.Position(2.3522, 48.8566),
       icon: Icons.museum_outlined,
       themeColor: const Color(0xFF00FF66),
     ),
   ];
 
-  List<LatLng> _generateCirclePoints(LatLng center, double radiusInDegrees,
+  @override
+  void initState() {
+    super.initState();
+    mb.MapboxOptions.setAccessToken(ApiConstants.mapboxAccessToken);
+  }
+
+  List<mb.Position> _generateCirclePoints(
+      mb.Position center, double radiusInDegrees,
       {int segments = 36}) {
-    final List<LatLng> points = [];
+    final List<mb.Position> points = [];
+    final lat = center.lat as double;
+    final lng = center.lng as double;
     for (int i = 0; i < segments; i++) {
       final double angle = (i * 360 / segments) * math.pi / 180;
-      final double lat = center.latitude + radiusInDegrees * math.sin(angle);
-      final double cosLat = math.cos(center.latitude * math.pi / 180);
-      final double lng = center.longitude +
+      final double pLat = lat + radiusInDegrees * math.sin(angle);
+      final double cosLat = math.cos(lat * math.pi / 180);
+      final double pLng = lng +
           radiusInDegrees * math.cos(angle) / (cosLat == 0 ? 1.0 : cosLat);
-      points.add(LatLng(lat, lng));
+      points.add(mb.Position(pLng, pLat));
     }
+    // Đóng kín lỗ bằng cách thêm điểm đầu tiên vào cuối
+    points.add(points.first);
     return points;
   }
 
@@ -122,7 +135,99 @@ class _FootprintScreenState extends State<FootprintScreen> {
     setState(() {
       _activeLocationIndex = index;
     });
-    _mapController.move(_locations[index].gps, 8.0);
+    if (_mapboxMap != null) {
+      _mapboxMap!.flyTo(
+          mb.CameraOptions(
+            center: mb.Point(coordinates: _locations[index].gps),
+            zoom: 6.0,
+          ),
+          mb.MapAnimationOptions(duration: 800));
+      _drawFogOfWar();
+      _syncMarkers();
+    }
+  }
+
+  void _onMapCreated(mb.MapboxMap mapboxMap) {
+    _mapboxMap = mapboxMap;
+    mapboxMap.annotations.createPointAnnotationManager().then((manager) {
+      _pointAnnotationManager = manager;
+      _syncMarkers();
+    });
+    mapboxMap.annotations.createPolygonAnnotationManager().then((manager) {
+      _polygonAnnotationManager = manager;
+      _drawFogOfWar();
+    });
+  }
+
+  void _drawFogOfWar() {
+    if (_polygonAnnotationManager == null) return;
+
+    _polygonAnnotationManager!.deleteAll();
+
+    // The outer boundary covering the whole world
+    final outerBoundary = [
+      mb.Position(-180.0, 85.0),
+      mb.Position(180.0, 85.0),
+      mb.Position(180.0, -85.0),
+      mb.Position(-180.0, -85.0),
+      mb.Position(-180.0, 85.0),
+    ];
+
+    // Generate circular cutout hole coordinates for all visited places
+    final List<List<mb.Position>> coordinates = [outerBoundary];
+
+    for (int i = 0; i < _locations.length; i++) {
+      final loc = _locations[i];
+      final isSelected = i == _activeLocationIndex;
+      final double radius = isSelected ? 1.2 : 0.6;
+      coordinates.add(_generateCirclePoints(loc.gps, radius));
+    }
+
+    _polygonAnnotationManager!.create(mb.PolygonAnnotationOptions(
+      geometry: mb.Polygon(coordinates: coordinates),
+      fillColor: Colors.black.withValues(alpha: 0.6).value,
+      fillOutlineColor: Colors.transparent.value,
+    ));
+  }
+
+  void _syncMarkers() async {
+    if (_mapboxMap == null || _pointAnnotationManager == null) return;
+
+    await _pointAnnotationManager!.deleteAll();
+    _pointAnnotations.clear();
+
+    final options = <mb.PointAnnotationOptions>[];
+    for (int i = 0; i < _locations.length; i++) {
+      final loc = _locations[i];
+      final isSelected = i == _activeLocationIndex;
+
+      options.add(mb.PointAnnotationOptions(
+        geometry: mb.Point(coordinates: loc.gps),
+        textField: loc.name,
+        textSize: isSelected ? 16.0 : 12.0,
+        textColor: isSelected ? loc.themeColor.value : Colors.white.value,
+        textHaloColor: Colors.black.value,
+        textHaloWidth: 1.0,
+        textOffset: [0.0, -1.0],
+      ));
+    }
+
+    try {
+      final annotations = await _pointAnnotationManager!.createMulti(options);
+      _pointAnnotations.addAll(
+          annotations.where((a) => a != null).cast<mb.PointAnnotation>());
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    if (_pointAnnotationManager != null) {
+      _pointAnnotationManager!.deleteAll();
+    }
+    if (_polygonAnnotationManager != null) {
+      _polygonAnnotationManager!.deleteAll();
+    }
+    super.dispose();
   }
 
   @override
@@ -131,86 +236,20 @@ class _FootprintScreenState extends State<FootprintScreen> {
     const int cityCount = 7;
     final int placeCount = _locations.length;
 
-    // Generate circular cutout hole coordinates for all visited places
-    final List<List<LatLng>> holes = _locations.map((loc) {
-      final isSelected = loc == _locations[_activeLocationIndex];
-      // Selected place gets a slightly larger cutout radius
-      final double radius = isSelected ? 1.2 : 0.6;
-      return _generateCirclePoints(loc.gps, radius);
-    }).toList();
-
     return Scaffold(
       body: Stack(
         children: [
           // 1. Live Map with custom Fog of War Polygon Mask Layer
           Positioned.fill(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _locations[_activeLocationIndex].gps,
-                initialZoom: 6,
-                minZoom: 2,
-                maxZoom: 18,
+            child: mb.MapWidget(
+              key: const ValueKey('footprint_map'),
+              onMapCreated: _onMapCreated,
+              styleUri: mb.MapboxStyles.DARK,
+              cameraOptions: mb.CameraOptions(
+                center:
+                    mb.Point(coordinates: _locations[_activeLocationIndex].gps),
+                zoom: 6.0,
               ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${ApiConstants.mapboxAccessToken}',
-                  userAgentPackageName: 'com.stayhub.stayhub_mobile',
-                  maxZoom: 18,
-                ),
-                PolygonLayer(
-                  polygons: [
-                    Polygon(
-                      points: const [
-                        LatLng(85.0, -180.0), // Đổi 90 thành 85.0
-                        LatLng(85.0, 180.0), // Đổi 90 thành 85.0
-                        LatLng(-85.0, 180.0), // Đổi -90 thành -85.0
-                        LatLng(-85.0, -180.0),
-                      ],
-                      holePointsList: holes,
-                      color: Colors.black
-                          .withValues(alpha: 0.6), // The dark fog overlay
-                      borderStrokeWidth: 0,
-                    ),
-                  ],
-                ),
-                MarkerLayer(
-                  markers: _locations.map((loc) {
-                    final isSelected = loc == _locations[_activeLocationIndex];
-                    return Marker(
-                      point: loc.gps,
-                      width: 40,
-                      height: 40,
-                      child: GestureDetector(
-                        onTap: () {
-                          final idx = _locations.indexOf(loc);
-                          _onLocationTap(idx);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          decoration: BoxDecoration(
-                            color: isSelected ? loc.themeColor : Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: loc.themeColor.withValues(alpha: 0.5),
-                                blurRadius: isSelected ? 8 : 4,
-                                spreadRadius: isSelected ? 2 : 1,
-                              )
-                            ],
-                          ),
-                          child: Icon(
-                            loc.icon,
-                            color: isSelected ? Colors.black : loc.themeColor,
-                            size: isSelected ? 24 : 18,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
             ),
           ),
 

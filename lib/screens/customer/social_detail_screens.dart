@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import '../../constants/api_constants.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../models/feature_models.dart';
-import '../../models/social_models.dart'; // Đã thêm
+import '../../models/social_models.dart'; // -É+ú th+¬m
 import '../../models/tour_model.dart';
 import '../../widgets/comment_bottom_sheet.dart';
 import '../../routes/app_routes.dart';
@@ -216,9 +216,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     try {
       final token = await _socialService.generateTrackingToken();
       if (token.isNotEmpty) {
-        // URL động: dùng ApiConstants.baseUrl để tương thích với tunnel đang chạy.
-        // Khi deploy production thì chỉ cần thay baseUrl trong api_constants.dart.
-        final trackingUrl = '${ApiConstants.baseUrl}/track/$token';
+        // URL -æß+Öng: d+¦ng ApiConstants.webUrl -æß+â t¦¦¦íng th+¡ch vß+¢i tunnel -æang chß¦íy.
+        // Khi deploy production th+¼ chß+ë cß¦ºn thay baseUrl trong api_constants.dart.
+        final trackingUrl = '${ApiConstants.webUrl}/track/$token';
         final shareText =
             'sc_sds_live_location_prefix'.tr + '[LocationShare:${jsonEncode({
               'token': token,
@@ -668,7 +668,7 @@ class _ScheduleMetadata extends StatelessWidget {
         _ScheduleMetaLine(
           icon: Icons.location_on_rounded,
           text: location?.trim().isNotEmpty == true
-              ? '$location • $days ' + 'sc_sds_days'.tr
+              ? '$location GÇó $days ' + 'sc_sds_days'.tr
               : days.toString() + 'sc_sds_days'.tr,
         ),
       ],
@@ -943,15 +943,15 @@ class _MessageBubble extends StatelessWidget {
         if (match != null) {
           final data = jsonDecode(match.group(1)!);
           final String token = data['token'] as String? ?? '';
-          // url được lưu trong payload hoặc xây lại từ ApiConstants.baseUrl động
+          // url -æ¦¦ß+úc l¦¦u trong payload hoß¦+c x+óy lß¦íi tß+½ ApiConstants.webUrl -æß+Öng
           final String trackingUrl =
               (data['url'] as String?)?.isNotEmpty == true
                   ? data['url'] as String
-                  : '${ApiConstants.baseUrl}/track/$token';
+                  : '${ApiConstants.webUrl}/track/$token';
 
           return GestureDetector(
             onTap: () {
-              // Mở URL theo dõi động (ngóc/tunnel/production)
+              // Mß+ƒ URL theo d+¦i -æß+Öng (ng+¦c/tunnel/production)
               Get.toNamed('/track/$token');
             },
             child: Container(
@@ -1507,7 +1507,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                     trailing: const Icon(Icons.send_rounded,
                         color: AppColors.brand, size: 20),
                     onTap: () async {
-                      Get.back(); // Đóng bottom sheet
+                      Get.back(); // -É+¦ng bottom sheet
                       final shareText = '[MomentShare:${jsonEncode({
                             'id': moment.id,
                             'imageUrl': moment.imageUrl,
@@ -1873,7 +1873,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar với gradient ring
+              // Avatar vß+¢i gradient ring
               _buildAvatarRing(user, initial),
               const SizedBox(width: 24),
               // Stats
@@ -2620,9 +2620,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────
+// GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 // Full-screen vertical feed for other user's posts
-// ─────────────────────────────────────────────────
+// GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
 class _OtherUserFeedScreen extends StatefulWidget {
   const _OtherUserFeedScreen({
     required this.user,
@@ -2647,7 +2647,7 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
   @override
   void initState() {
     super.initState();
-    // Bắt đầu từ bài được chọn
+    // Bß¦»t -æß¦ºu tß+½ b+ái -æ¦¦ß+úc chß+ìn
     _moments = widget.moments.sublist(widget.initialIndex);
     _loadFullMoments();
   }
@@ -2841,7 +2841,7 @@ class _OtherFeedItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Text(
               Get.locale?.languageCode == 'vi'
-                  ? '${moment.reactionCount} lượt thích'
+                  ? '${moment.reactionCount} l¦¦ß+út th+¡ch'
                   : '${moment.reactionCount} likes',
               style: const TextStyle(
                   color: Colors.black,
@@ -2856,10 +2856,10 @@ class _OtherFeedItem extends StatelessWidget {
               child: Text(
                 moment.comments.isNotEmpty
                     ? (Get.locale?.languageCode == 'vi'
-                        ? 'Xem tất cả ${moment.comments.length} bình luận'
+                        ? 'Xem tß¦Ñt cß¦ú ${moment.comments.length} b+¼nh luß¦¡n'
                         : 'View all ${moment.comments.length} comments')
                     : (Get.locale?.languageCode == 'vi'
-                        ? 'Thêm bình luận...'
+                        ? 'Th+¬m b+¼nh luß¦¡n...'
                         : 'Add a comment...'),
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),

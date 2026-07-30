@@ -9,10 +9,8 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-      return 'https://028xpj74-7010.asse.devtunnels.ms';
-      // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
-      // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-      // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
+      // return 'https://028xpj74-7010.asse.devtunnels.ms';
+      return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
@@ -21,13 +19,13 @@ class ApiConstants {
     }
 
     // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-    // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-     // return 'https://028xpj74-7010.asse.devtunnels.ms';
-     // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-     return 'https://028xpj74-7010.asse.devtunnels.ms';
-     // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
-     //   return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
-    // return 'https://localhost:7010';
+    return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
+  }
+
+  static String get webUrl {
+    const override = String.fromEnvironment('WEB_URL');
+    if (override.isNotEmpty) return override;
+    return 'https://stayhub.vercel.app';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`

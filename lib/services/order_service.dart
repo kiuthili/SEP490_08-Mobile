@@ -110,9 +110,15 @@ class OrderService extends GetxService with BaseServiceMixin {
       if (user == null) return <EligibleScheduleModel>[];
 
       String url = '${ApiConstants.orders}/me/eligible-schedules';
-      if (user.roles.any((r) => r.toLowerCase() == 'manager')) {
+      final isManagerOrAdmin = user.roles.any((r) {
+        final role = r.toLowerCase();
+        return role == 'manager' || role == 'admin' || role == 'operator';
+      });
+      final isStaff = user.roles.any((r) => r.toLowerCase() == 'staff');
+
+      if (isManagerOrAdmin) {
         url = '${ApiConstants.tourSchedules}/my?page=1&pageSize=100';
-      } else if (user.roles.any((r) => r.toLowerCase() == 'staff')) {
+      } else if (isStaff) {
         url = '${ApiConstants.tourScheduleStaffs}/assigned?page=1&pageSize=100';
       }
 
@@ -144,13 +150,12 @@ class OrderService extends GetxService with BaseServiceMixin {
       }
 
       final resultList = list
-          .whereType<Map<String, dynamic>>()
-          .map((e) => EligibleScheduleModel.fromJson(e))
+          .where((e) => e is Map)
+          .map((e) => EligibleScheduleModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
 
-      // Format tour names with departure dates for Manager and Staff:
-      if (user.roles.any(
-          (r) => r.toLowerCase() == 'manager' || r.toLowerCase() == 'staff')) {
+      // Format tour names with departure dates for Manager, Admin, and Staff:
+      if (isManagerOrAdmin || isStaff) {
         for (var i = 0; i < resultList.length; i++) {
           final item = resultList[i];
           final dateStr =
