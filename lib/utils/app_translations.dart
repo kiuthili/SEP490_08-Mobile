@@ -1,4 +1,4 @@
-﻿import 'package:get/get.dart';
+import 'package:get/get.dart';
 
 class AppTranslations extends Translations {
   @override
@@ -79,7 +79,7 @@ class AppTranslations extends Translations {
           'otp_required': 'Please enter the verification code',
 
           // --- Profile / Edit Profile ---
-          'edit_profile': 'Edit Profile',
+          'edit_profile': 'Update Profile',
           'profile_updated_success': 'Profile updated successfully',
           'profile_update_failed': 'Failed to update profile. Please try again.',
           'name': 'Name',
@@ -96,6 +96,7 @@ class AppTranslations extends Translations {
           'current_password': 'Current Password',
           'new_password': 'New Password',
           'change_password_success': 'Password changed successfully',
+          'change_password_success_relogin': 'Password changed successfully. Please login again.',
           'change_password_failed': 'Failed to change password',
           
           // --- Forgot Password ---
@@ -996,7 +997,7 @@ class AppTranslations extends Translations {
           'otp_required': 'Vui lòng nhập mã xác minh',
 
           // --- Profile / Edit Profile ---
-          'edit_profile': 'Sửa hồ sơ',
+          'edit_profile': 'Cập nhật hồ sơ',
           'profile_updated_success': 'Cập nhật hồ sơ thành công',
           'profile_update_failed': 'Không cập nhật được hồ sơ. Vui lòng thử lại.',
           'name': 'Tên',
@@ -1013,6 +1014,7 @@ class AppTranslations extends Translations {
           'current_password': 'Mật khẩu hiện tại',
           'new_password': 'Mật khẩu mới',
           'change_password_success': 'Đổi mật khẩu thành công',
+          'change_password_success_relogin': 'Thay đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
           'change_password_failed': 'Đổi mật khẩu thất bại',
           
           // --- Forgot Password ---

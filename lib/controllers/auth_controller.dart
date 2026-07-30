@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:get/get.dart';
 import '../models/api_response.dart';
@@ -196,8 +196,7 @@ class AuthController extends GetxController {
       newPassword: newPassword,
     );
   }
-
-  Future<void> logout() async {
+  Future<void> logout([bool redirectToHome = true]) async {
     if (Get.isRegistered<SignalRService>()) {
       await Get.find<SignalRService>().disconnectAll();
     }
@@ -212,7 +211,9 @@ class AuthController extends GetxController {
     }
     await _authService.logout();
     currentUser.value = null;
-    Get.offAllNamed(AppRoutes.home);
+    if (redirectToHome) {
+      Get.offAllNamed(AppRoutes.home);
+    }
   }
 
   Future<void> handleSessionExpiredCleanly() async {
