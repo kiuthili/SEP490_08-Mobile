@@ -90,8 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!fullNameRegex.hasMatch(fullName)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('fullname_invalid'.tr),
+          content: Text('fullname_invalid'.tr),
         ),
       );
       return;
@@ -174,7 +173,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return AuthPageLayout(
       showBack: true,
       headerSubtitle: 'app_tagline'.tr,
-      title: _step == _RegisterStep.info ? 'register_title_info'.tr : 'register_title_otp'.tr,
+      title: _step == _RegisterStep.info
+          ? 'register_title_info'.tr
+          : 'register_title_otp'.tr,
       subtitle: _step == _RegisterStep.info
           ? 'register_subtitle_info'.tr
           : 'register_subtitle_otp'.tr,
@@ -536,7 +537,8 @@ class _TermsCheckbox extends StatelessWidget {
             children: [
               Text(
                 'agree_to'.tr,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.terms),
@@ -551,7 +553,8 @@ class _TermsCheckbox extends StatelessWidget {
               ),
               Text(
                 'and'.tr,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoutes.privacy),

@@ -202,13 +202,21 @@ class _BookingScreenState extends State<BookingScreen> {
       final type = ticket.ticketTypeName ?? 'sc_bk_this_ticket'.tr;
 
       if (minAge > 0 && age < minAge) {
-        SnackbarHelper.error(
-            'sc_bk_age_too_young'.trParams({'num': (i + 1).toString(), 'name': name, 'minAge': minAge.toString(), 'type': type}));
+        SnackbarHelper.error('sc_bk_age_too_young'.trParams({
+          'num': (i + 1).toString(),
+          'name': name,
+          'minAge': minAge.toString(),
+          'type': type
+        }));
         return;
       }
       if (maxAge > 0 && age > maxAge) {
-        SnackbarHelper.error(
-            'sc_bk_age_too_old'.trParams({'num': (i + 1).toString(), 'name': name, 'maxAge': maxAge.toString(), 'type': type}));
+        SnackbarHelper.error('sc_bk_age_too_old'.trParams({
+          'num': (i + 1).toString(),
+          'name': name,
+          'maxAge': maxAge.toString(),
+          'type': type
+        }));
         return;
       }
     }
@@ -514,8 +522,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 const SizedBox(height: 20),
                 _buildSectionLabel(
                   'sc_bk_passenger_info'.tr,
-                  subtitle:
-                      _booking.totalPassengers.toString() + ' ' + 'sc_bk_people_ebill'.tr,
+                  subtitle: _booking.totalPassengers.toString() +
+                      ' ' +
+                      'sc_bk_people_ebill'.tr,
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -592,7 +601,10 @@ class _BookingScreenState extends State<BookingScreen> {
                                             p.isFilled
                                                 ? p.nameController.text
                                                     .toUpperCase()
-                                                : 'sc_bk_passenger_num'.trParams({'num': (i + 1).toString()}),
+                                                : 'sc_bk_passenger_num'
+                                                    .trParams({
+                                                    'num': (i + 1).toString()
+                                                  }),
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
@@ -649,22 +661,6 @@ class _BookingScreenState extends State<BookingScreen> {
                   hintText: 'sc_bk_note_hint'.tr,
                   hintStyle: const TextStyle(
                       color: AppColors.textSecondary, fontSize: 14),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.all(16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide:
-                        const BorderSide(color: AppColors.brand, width: 1.5),
-                  ),
                 ),
               ),
 
@@ -886,6 +882,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final saved = _usableSavedVouchers;
     final selectedCode = _booking.voucherCode.value;
     return InkWell(
+      borderRadius: AppRadius.button,
       onTap: () => _showVoucherSheet(saved, selectedCode),
       child: Container(
         color: Colors.white,
@@ -1582,7 +1579,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        'sc_bk_passenger_num'.trParams({'num': (widget.passengerIndex + 1).toString()}),
+                        'sc_bk_passenger_num'.trParams(
+                            {'num': (widget.passengerIndex + 1).toString()}),
                         style: AppTextStyles.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: AppColors.navy,
@@ -1638,7 +1636,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                           }
                           final d = DateTime.tryParse(v.trim());
                           if (d == null) return 'sc_bk_invalid_format'.tr;
-                          if (d.isAfter(DateTime.now())) return 'sc_bk_error'.tr;
+                          if (d.isAfter(DateTime.now()))
+                            return 'sc_bk_error'.tr;
                           return null;
                         },
                       ),
@@ -1737,7 +1736,8 @@ class _PassengerFormSheetState extends State<_PassengerFormSheet> {
                               }
                             },
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'sc_bk_required'.tr;
+                              if (v == null || v.isEmpty)
+                                return 'sc_bk_required'.tr;
                               return null;
                             },
                           ),
@@ -1813,30 +1813,7 @@ InputDecoration _popupInputDecoration({String? hint, IconData? prefixIcon}) {
     prefixIcon: prefixIcon != null
         ? Icon(prefixIcon, color: AppColors.textSecondary, size: 20)
         : null,
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     counterText: '',
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: AppColors.error),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-    ),
   );
 }
 

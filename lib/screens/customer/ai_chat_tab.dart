@@ -202,10 +202,7 @@ class _AiChatTabState extends State<AiChatTab> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.brand,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
-                                ),
+
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 10),
                               ),
@@ -272,23 +269,6 @@ class _AiChatTabState extends State<AiChatTab> {
                   decoration: InputDecoration(
                     hintText: 'ai_input_hint'.tr,
                     prefixIcon: const Icon(Icons.auto_awesome_outlined),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      borderSide:
-                          const BorderSide(color: AppColors.brand, width: 1.5),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
                   ),
                 ),
               ),

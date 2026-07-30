@@ -122,7 +122,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_myMoments.length.toString(), 'sc_mp_posts'.tr),
+                        _buildStat(
+                            _myMoments.length.toString(), 'sc_mp_posts'.tr),
                         Container(
                           width: 1,
                           height: 28,
@@ -461,7 +462,8 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
   Future<void> _loadFullMoments() async {
     for (int i = 0; i < _moments.length; i++) {
       try {
-        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        final fullData =
+            await widget.socialController.getMomentById(_moments[i].id);
         if (mounted) {
           setState(() {
             _moments[i] = fullData;
@@ -585,7 +587,9 @@ class _FeedItem extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    currentUser.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : currentUser.fullName,
+                    currentUser.fullName.isEmpty
+                        ? 'sc_mp_stayhub_user'.tr
+                        : currentUser.fullName,
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
@@ -603,7 +607,8 @@ class _FeedItem extends StatelessWidget {
 
           // ── Image ──
           GestureDetector(
-            onTap: onComment, // Re-use onComment to navigate to MomentDetailScreen
+            onTap:
+                onComment, // Re-use onComment to navigate to MomentDetailScreen
             child: Hero(
               tag: 'moment_image_${moment.id}',
               child: ConstrainedBox(
@@ -613,7 +618,8 @@ class _FeedItem extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: moment.imageUrl,
                   width: double.infinity,
-                  fit: BoxFit.contain, // Fit contain to avoid cropping vertical images
+                  fit: BoxFit
+                      .contain, // Fit contain to avoid cropping vertical images
                   placeholder: (_, __) =>
                       Container(height: 300, color: Colors.black12),
                   errorWidget: (_, __, ___) => Container(
@@ -697,7 +703,8 @@ class _FeedItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              DateFormat('HH:mm - dd/MM/yyyy')
+                  .format(moment.createdAt.toLocal()),
               style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),

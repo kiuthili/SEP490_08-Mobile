@@ -215,9 +215,7 @@ class _QrScanScreenState extends State<QrScanScreen>
                       color: Colors.white54, size: 28),
                 const SizedBox(height: 12),
                 Text(
-                  _processed
-                      ? 'st_processing'.tr
-                      : 'st_point_camera_qr'.tr,
+                  _processed ? 'st_processing'.tr : 'st_point_camera_qr'.tr,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,

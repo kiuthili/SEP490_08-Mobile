@@ -256,7 +256,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: _capturedImage != null
-          ? SafeArea(child: _buildReviewScreen())
+          ? _buildReviewScreen()
           : _buildCameraScreen(schedules),
     );
   }
@@ -431,14 +431,14 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
     final size = MediaQuery.of(context).size;
     var cameraRatio = cam.value.aspectRatio;
-    
+
     // Ensure camera ratio is in portrait (width < height)
     if (cameraRatio > 1) {
       cameraRatio = 1 / cameraRatio;
     }
 
     final deviceRatio = size.width / size.height;
-    
+
     // Calculate scale to cover the screen
     double scale = 1.0;
     if (deviceRatio < cameraRatio) {
@@ -461,217 +461,293 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   // ── REVIEW SCREEN (after capture) ────────────────────────────────────────
 
   Widget _buildReviewScreen() {
-    return Column(
+    final topPad = MediaQuery.of(context).padding.top;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final isVi = Get.locale?.languageCode == 'vi';
+    final schedules = _ongoingSchedules;
+
+    return Stack(
       children: [
-        // Top bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: _retake,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.05),
-                  ),
-                  child: const Icon(Icons.arrow_back_rounded,
-                      color: Colors.black, size: 20),
+        // ── Full-screen photo ───────────────────────────────────────
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
+            ),
+            child: Image.file(
+              _capturedImage!,
+              fit: BoxFit.cover,
+              cacheWidth: 1080,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey.shade900,
+                child: const Center(
+                  child: Icon(Icons.broken_image_rounded,
+                      color: Colors.white30, size: 56),
                 ),
               ),
-              const Spacer(),
-              const Text(
-                'Preview',
-                style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 17),
-              ),
-              const Spacer(),
-              const SizedBox(width: 36),
-            ],
+            ),
           ),
         ),
 
-        // Preview image
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.file(
-                    _capturedImage!,
-                    fit: BoxFit.cover,
-                    cacheWidth: 800,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey.shade900,
-                      child: const Center(
-                        child: Icon(Icons.broken_image_rounded,
-                            color: Colors.white30, size: 48),
-                      ),
-                    ),
-                  ),
-
-                  // Caption overlay at bottom of image
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.65),
-                            Colors.transparent
-                          ],
-                        ),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-                      child: TextField(
-                        controller: _captionController,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          shadows: [
-                            Shadow(color: Colors.black54, blurRadius: 4)
-                          ],
-                        ),
-                        maxLines: 2,
-                        maxLength: _kMaxCaption,
-                        textInputAction: TextInputAction.done,
-                        decoration: InputDecoration(
-                          hintText: Get.locale?.languageCode == 'vi'
-                              ? 'Thêm dòng trạng thái...'
-                              : 'Add a caption...',
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            shadows: const [
-                              Shadow(color: Colors.black54, blurRadius: 4)
-                            ],
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          counterStyle:
-                              const TextStyle(color: Colors.white54, fontSize: 11),
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                          filled: false,
-                          fillColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                  ),
+        // ── Top gradient + back button ──────────────────────────────
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.55),
+                  Colors.transparent,
                 ],
               ),
             ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Privacy chips
-        SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: _privacyOptions
-                .where((opt) =>
-                    opt.value != 'Tour' || (_selectedScheduleId ?? 0) != 0)
-                .map((opt) {
-              final sel = _privacy == opt.value;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _privacy = opt.value);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: EdgeInsets.fromLTRB(16, topPad + 12, 16, 40),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: _retake,
+                  child: Container(
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      color: sel ? AppColors.brand : Colors.grey.shade100,
-                      border: Border.all(
-                        color: sel ? AppColors.brand : Colors.grey.shade300,
-                        width: 1.2,
-                      ),
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.35),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(opt.icon,
-                            size: 13,
-                            color: sel ? Colors.white : Colors.black54),
-                        const SizedBox(width: 5),
-                        Text(
-                          opt.label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: sel ? Colors.white : Colors.black54,
-                          ),
-                        ),
-                      ],
+                    child: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.30),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isVi ? 'Xem trước' : 'Preview',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Send button
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: FilledButton(
-              onPressed: _isUploading ? null : _submitMoment,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.brand,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32)),
-                elevation: 0,
-              ),
-              child: _isUploading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white),
-                    )
-                  : const Text(
-                      'Send Moment',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          letterSpacing: 0.3),
-                    ),
+                const Spacer(),
+                const SizedBox(width: 40),
+              ],
             ),
           ),
         ),
 
-        const SizedBox(height: 16),
+        // ── Bottom gradient + controls ──────────────────────────────
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.95),
+                  Colors.black.withValues(alpha: 0.70),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.65, 1.0],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            padding: EdgeInsets.fromLTRB(20, 48, 20, bottomPad + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Caption input ─────────────────────────────────
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.edit_rounded,
+                          color: Colors.white60, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _captionController,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          maxLength: _kMaxCaption,
+                          textInputAction: TextInputAction.done,
+                          decoration: InputDecoration(
+                            hintText: isVi
+                                ? 'Thêm dòng trạng thái...'
+                                : 'Add a caption...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            counterStyle: const TextStyle(
+                                color: Colors.white54, fontSize: 11),
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            filled: false,
+                            fillColor: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Tour selector + Privacy chips ─────────────────
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      if (schedules.length > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _TourPill(
+                            schedules: schedules,
+                            selectedId: _selectedScheduleId,
+                            onChanged: (id) => setState(() {
+                              _selectedScheduleId = id;
+                              if (id == 0 && _privacy == 'Tour') {
+                                _privacy = 'Public';
+                              }
+                            }),
+                          ),
+                        ),
+                      ..._privacyOptions
+                          .where((opt) =>
+                              opt.value != 'Tour' ||
+                              (_selectedScheduleId ?? 0) != 0)
+                          .map((opt) {
+                        final sel = _privacy == opt.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _privacy = opt.value);
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
+                                color: sel
+                                    ? AppColors.brand
+                                    : Colors.white.withValues(alpha: 0.15),
+                                border: Border.all(
+                                  color: sel
+                                      ? AppColors.brand
+                                      : Colors.white.withValues(alpha: 0.35),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(opt.icon,
+                                      size: 13,
+                                      color: Colors.white.withValues(
+                                          alpha: sel ? 1.0 : 0.80)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    opt.label,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white.withValues(
+                                          alpha: sel ? 1.0 : 0.80),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Send button ───────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton.icon(
+                    onPressed: _isUploading ? null : _submitMoment,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.button,
+                      ),
+                    ),
+                    icon: _isUploading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5, color: Colors.white),
+                          )
+                        : const Icon(Icons.send_rounded, size: 18),
+                    label: _isUploading
+                        ? const SizedBox.shrink()
+                        : Text(
+                            isVi ? 'Chia sẻ Moment' : 'Share Moment',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -801,8 +877,9 @@ class _TourPill extends StatelessWidget {
               Icon(
                 s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
                 size: 16,
-                color:
-                    s.scheduleId == selectedId ? AppColors.brand : Colors.white54,
+                color: s.scheduleId == selectedId
+                    ? AppColors.brand
+                    : Colors.white54,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -822,7 +899,8 @@ class _TourPill extends StatelessWidget {
                 ),
               ),
               if (s.scheduleId == selectedId)
-                const Icon(Icons.check_rounded, size: 14, color: AppColors.brand),
+                const Icon(Icons.check_rounded,
+                    size: 14, color: AppColors.brand),
             ],
           ),
           onTap: () => onChanged(s.scheduleId),

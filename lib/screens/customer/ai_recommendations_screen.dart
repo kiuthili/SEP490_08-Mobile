@@ -156,7 +156,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     String activeFilter = _tourFilter;
     if (!showExactSection && showNearbySection) {
       activeFilter = 'nearby';
-    } else if (showExactSection && _tourFilter == 'nearby' && !showNearbySection) {
+    } else if (showExactSection &&
+        _tourFilter == 'nearby' &&
+        !showNearbySection) {
       activeFilter = 'exact';
     }
 
@@ -170,7 +172,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
           // Filter chips matching web visibility rules
-          if ((showExactSection && showNearbySection) || showExactSection || showNearbySection)
+          if ((showExactSection && showNearbySection) ||
+              showExactSection ||
+              showNearbySection)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: SingleChildScrollView(
@@ -179,7 +183,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                   children: [
                     if (showExactSection && showNearbySection) ...[
                       ChoiceChip(
-                        label: Text('ai_filter_all'.trParams({'count': '${exactTours.length + nearbyTours.length}'})),
+                        label: Text('ai_filter_all'.trParams({
+                          'count': '${exactTours.length + nearbyTours.length}'
+                        })),
                         selected: activeFilter == 'all',
                         onSelected: (val) {
                           if (val) setState(() => _tourFilter = 'all');
@@ -189,7 +195,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     ],
                     if (showExactSection) ...[
                       ChoiceChip(
-                        label: Text('ai_filter_exact'.trParams({'count': '${exactTours.length}'})),
+                        label: Text('ai_filter_exact'
+                            .trParams({'count': '${exactTours.length}'})),
                         selected: activeFilter == 'exact',
                         onSelected: (val) {
                           if (val) setState(() => _tourFilter = 'exact');
@@ -199,7 +206,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     ],
                     if (showNearbySection) ...[
                       ChoiceChip(
-                        label: Text('ai_filter_nearby'.trParams({'count': '${nearbyTours.length}'})),
+                        label: Text('ai_filter_nearby'
+                            .trParams({'count': '${nearbyTours.length}'})),
                         selected: activeFilter == 'nearby',
                         onSelected: (val) {
                           if (val) setState(() => _tourFilter = 'nearby');
@@ -266,7 +274,9 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
     );
   }
 
-  Widget _buildTourList(BuildContext context, List<TourRecommendationModel> tours, {bool nearby = false}) {
+  Widget _buildTourList(
+      BuildContext context, List<TourRecommendationModel> tours,
+      {bool nearby = false}) {
     final width = MediaQuery.of(context).size.width;
     final isWide = width > 600;
 
@@ -296,11 +306,13 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       );
     } else {
       return Column(
-        children: tours.map((rec) => _RecommendationCard(
-          rec: rec,
-          nearby: nearby,
-          onShowDetails: () => _showAiMatchDetailsSheet(context, rec),
-        )).toList(),
+        children: tours
+            .map((rec) => _RecommendationCard(
+                  rec: rec,
+                  nearby: nearby,
+                  onShowDetails: () => _showAiMatchDetailsSheet(context, rec),
+                ))
+            .toList(),
       );
     }
   }
@@ -388,7 +400,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
       if (profile.preferredEndDate != null &&
           profile.preferredEndDate!.isNotEmpty)
         _formatDateStr(profile.preferredEndDate),
-    ].join(' - ');    final companion = profile.companionType;
+    ].join(' - ');
+    final companion = profile.companionType;
     final companionLabel = 'ai_companion_$companion'.tr;
 
     final companionDetails = [
@@ -565,8 +578,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                     ),
                     child: Text(
                       'ai_close'.tr,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
                 ],
@@ -766,7 +779,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                                       size: 14, color: AppColors.textSecondary),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'ai_days'.trParams({'days': '${rec.durationDays}'}),
+                                    'ai_days'.trParams(
+                                        {'days': '${rec.durationDays}'}),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -1102,7 +1116,7 @@ class _RecommendationCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: InkWell(
         onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: rec.tourId),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: AppRadius.button,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -1112,7 +1126,7 @@ class _RecommendationCard extends StatelessWidget {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                    borderRadius: AppRadius.button,
                     child: SizedBox(
                       width: 100,
                       height: 100,
@@ -1136,7 +1150,7 @@ class _RecommendationCard extends StatelessWidget {
                             horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: AppColors.brand.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: AppRadius.button,
                         ),
                         child: Text(
                           '${(rec.score! * 100).round()}%',
@@ -1158,7 +1172,7 @@ class _RecommendationCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.accent.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
+                          borderRadius: AppRadius.button,
                         ),
                         child: Center(
                           child: Text(
@@ -1279,7 +1293,8 @@ class _RecommendationCard extends StatelessWidget {
                                         color: AppColors.brand, size: 11),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'ai_days'.trParams({'days': '${rec.durationDays}'}),
+                                      'ai_days'.trParams(
+                                          {'days': '${rec.durationDays}'}),
                                       style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -1292,7 +1307,10 @@ class _RecommendationCard extends StatelessWidget {
                               // Price
                               if (rec.minPrice != null && rec.minPrice! > 0)
                                 Text(
-                                  'ai_price_from'.trParams({'price': CurrencyFormatter.format(rec.minPrice!)}),
+                                  'ai_price_from'.trParams({
+                                    'price':
+                                        CurrencyFormatter.format(rec.minPrice!)
+                                  }),
                                   style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -1310,8 +1328,8 @@ class _RecommendationCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
-                                color: AppColors.brandLight,
-                                borderRadius: BorderRadius.circular(6),
+                              color: AppColors.brandLight,
+                              borderRadius: AppRadius.button,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1526,7 +1544,8 @@ class _WeatherAdviceContent extends StatelessWidget {
                           color: AppColors.textPrimary),
                     ),
                     Text(
-                      'ai_min_temp_prefix'.trParams({'temp': '${weather.avgMinTempC?.round() ?? 0}'}),
+                      'ai_min_temp_prefix'.trParams(
+                          {'temp': '${weather.avgMinTempC?.round() ?? 0}'}),
                       style: const TextStyle(
                           fontSize: 10, color: AppColors.textSecondary),
                     ),
@@ -1552,7 +1571,8 @@ class _WeatherAdviceContent extends StatelessWidget {
                           size: 12, color: AppColors.brand),
                       const SizedBox(width: 4),
                       Text(
-                        'ai_rain_prefix'.trParams({'rain': weather.totalRainMm!.toStringAsFixed(1)}),
+                        'ai_rain_prefix'.trParams(
+                            {'rain': weather.totalRainMm!.toStringAsFixed(1)}),
                         style: const TextStyle(
                             fontSize: 11, fontWeight: FontWeight.w600),
                       ),
@@ -2085,8 +2105,10 @@ class _RecommenderTransparencyContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Technical summary
-        _buildMetaRow(Icons.memory_rounded, 'ai_algorithm_label'.tr, meta.modelFamily),
-        _buildMetaRow(Icons.verified_outlined, 'ai_version_label'.tr, meta.modelVersion),
+        _buildMetaRow(
+            Icons.memory_rounded, 'ai_algorithm_label'.tr, meta.modelFamily),
+        _buildMetaRow(
+            Icons.verified_outlined, 'ai_version_label'.tr, meta.modelVersion),
         _buildMetaRow(Icons.groups_rounded, 'ai_fairness_label'.tr,
             meta.fairnessAlpha.toStringAsFixed(2)),
 

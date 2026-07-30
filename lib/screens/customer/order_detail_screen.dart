@@ -226,7 +226,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Obx(() {
       final order = _controller.selectedOrder.value;
       return AppScreen(
-        title: order == null ? 'od_order_detail'.tr : 'od_order_id'.trParams({'id': order.id.toString()}),
+        title: order == null
+            ? 'od_order_detail'.tr
+            : 'od_order_id'.trParams({'id': order.id.toString()}),
         actions: order == null
             ? null
             : [
@@ -399,14 +401,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                    color: AppColors.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'od_cancel_policy_error'.tr,
-                  style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5),
+                  style: const TextStyle(
+                      fontSize: 15, color: AppColors.textPrimary, height: 1.5),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -415,7 +418,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.brand,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.button),
                   ),
                   child: Text('od_understood'.tr),
                 ),
@@ -457,8 +461,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'od_days_until_departure'.trParams({'days': daysUntilDeparture.toString()}),
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                'od_days_until_departure'
+                    .trParams({'days': daysUntilDeparture.toString()}),
+                style:
+                    const TextStyle(fontSize: 15, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
@@ -466,12 +472,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   'percent': feePercent.toString(),
                   'amount': CurrencyFormatter.format(cancellationFee),
                 }),
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                style:
+                    const TextStyle(fontSize: 15, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
-                'od_estimated_refund'.trParams({'amount': CurrencyFormatter.format(estimatedRefund)}),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.accent),
+                'od_estimated_refund'.trParams(
+                    {'amount': CurrencyFormatter.format(estimatedRefund)}),
+                style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.accent),
               ),
               const SizedBox(height: 24),
               Row(
@@ -481,7 +492,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       onPressed: () => Navigator.pop(sheetContext, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.button),
                       ),
                       child: Text('od_later'.tr),
                     ),
@@ -493,7 +505,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.brand,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.button),
                       ),
                       child: Text('od_continue'.tr),
                     ),
@@ -755,7 +768,13 @@ class _TripTimeline extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'od_duration_days'.trParams({'days': (schedule.returnDate.difference(schedule.departureDate).inDays + 1).toString()}),
+                        'od_duration_days'.trParams({
+                          'days': (schedule.returnDate
+                                      .difference(schedule.departureDate)
+                                      .inDays +
+                                  1)
+                              .toString()
+                        }),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -846,7 +865,10 @@ class _ScheduleItineraryPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'od_days_activities'.trParams({'d': days.length.toString(), 'a': itineraries.length.toString()}),
+                        'od_days_activities'.trParams({
+                          'd': days.length.toString(),
+                          'a': itineraries.length.toString()
+                        }),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -962,7 +984,8 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                           Row(
                             children: [
                               Text(
-                                'td_day_index'.trParams({'day': widget.day.toString()}),
+                                'td_day_index'
+                                    .trParams({'day': widget.day.toString()}),
                                 style: AppTextStyles.textTheme.titleSmall
                                     ?.copyWith(
                                   fontWeight: FontWeight.w800,
@@ -980,8 +1003,7 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: AppColors.brand,
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.pill),
+                                    borderRadius: AppRadius.button,
                                   ),
                                   child: Text(
                                     'od_today'.tr,
@@ -999,8 +1021,13 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                           const SizedBox(height: 2),
                           Text(
                             date == null
-                                ? 'td_activities_count'.trParams({'count': widget.activities.length.toString()})
-                                : 'od_date_activities'.trParams({'date': DateFormatter.display(date), 'a': widget.activities.length.toString()}),
+                                ? 'td_activities_count'.trParams({
+                                    'count': widget.activities.length.toString()
+                                  })
+                                : 'od_date_activities'.trParams({
+                                    'date': DateFormatter.display(date),
+                                    'a': widget.activities.length.toString()
+                                  }),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -1407,12 +1434,12 @@ class _HeritageSourceLink extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openSource(context),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: AppRadius.button,
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
             color: AppColors.brandLight.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderRadius: AppRadius.button,
             border: Border.all(
               color: AppColors.brand.withValues(alpha: 0.12),
             ),
@@ -1908,7 +1935,8 @@ class _TicketBreakdownRow extends StatelessWidget {
                 Text(
                   hasPrice
                       ? '$quantity x ${CurrencyFormatter.format(unitPrice)}'
-                      : 'ot_tickets_count'.trParams({'count': quantity.toString()}),
+                      : 'ot_tickets_count'
+                          .trParams({'count': quantity.toString()}),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -2051,9 +2079,7 @@ class _PostPaymentActions extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            completed
-                ? 'od_review_prompt'.tr
-                : 'od_qr_ready'.tr,
+            completed ? 'od_review_prompt'.tr : 'od_qr_ready'.tr,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 14),
@@ -2123,9 +2149,7 @@ class _InactiveOrderNotice extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              requested
-                  ? 'od_cancel_processing'.tr
-                  : 'od_order_cancelled'.tr,
+              requested ? 'od_cancel_processing'.tr : 'od_order_cancelled'.tr,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.navy,
                     height: 1.4,

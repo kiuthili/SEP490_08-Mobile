@@ -34,7 +34,6 @@ class _HomeTabState extends State<HomeTab> {
   final _notificationController = Get.find<NotificationController>();
   final _scrollController = ScrollController();
 
-
   // Language popup state
   String _selectedLang = 'vi';
 
@@ -47,7 +46,6 @@ class _HomeTabState extends State<HomeTab> {
       Get.put(HomeController());
     }
     _home = Get.find<HomeController>();
-
 
     _scrollController.addListener(() {
       // no-op, reserved for future use
@@ -107,7 +105,6 @@ class _HomeTabState extends State<HomeTab> {
                   child: _HeroSection(
                       onSearchTap: () => Get.toNamed(AppRoutes.tourSearch)),
                 ),
-
 
                 // ── Tour Hot section ──
                 SliverToBoxAdapter(
@@ -950,7 +947,6 @@ class _HeroSection extends StatelessWidget {
     );
   }
 }
-
 
 // ─────────────────────────────────────────────────────────────
 // Language bottom sheet

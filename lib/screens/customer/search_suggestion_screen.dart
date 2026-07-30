@@ -71,7 +71,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
+          borderRadius: AppRadius.input,
         ),
         child: Row(
           children: [
@@ -296,7 +296,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                                             const ColoredBox(
                                                 color: AppColors.brandLight),
                                       )
-                                    : const ColoredBox(color: AppColors.brandLight),
+                                    : const ColoredBox(
+                                        color: AppColors.brandLight),
                               ),
                             ),
                             Positioned(

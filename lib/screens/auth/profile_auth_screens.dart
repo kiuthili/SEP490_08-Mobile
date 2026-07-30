@@ -128,6 +128,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }) {
     final textTheme = Theme.of(context).textTheme;
     return InkWell(
+      borderRadius: AppRadius.button,
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -308,8 +309,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           textTheme.bodyMedium?.copyWith(color: Colors.black87),
                       items: [
                         DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
-                        DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
-                        DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
+                        DropdownMenuItem(
+                            value: 'Female', child: Text('female'.tr)),
+                        DropdownMenuItem(
+                            value: 'Other', child: Text('other'.tr)),
                       ],
                       onChanged: (value) => setState(() => _gender = value),
                     ),
@@ -543,8 +546,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (result.retryAfterSeconds != null) {
         _startCountdown(result.retryAfterSeconds!);
         SnackbarHelper.error(
-          result.message ??
-              '${'please_wait'.tr} ${result.retryAfterSeconds}s',
+          result.message ?? '${'please_wait'.tr} ${result.retryAfterSeconds}s',
         );
         return;
       }
@@ -747,8 +749,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('invalid') ||
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
-        SnackbarHelper.error(
-            'otp_invalid_or_expired'.tr);
+        SnackbarHelper.error('otp_invalid_or_expired'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -781,8 +782,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           e.message.toLowerCase().contains('invalid') ||
           e.message.toLowerCase().contains('expired') ||
           e.message.toLowerCase().contains('otp')) {
-        SnackbarHelper.error(
-            'otp_invalid_or_expired'.tr);
+        SnackbarHelper.error('otp_invalid_or_expired'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }

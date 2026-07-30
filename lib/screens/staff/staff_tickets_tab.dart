@@ -17,7 +17,8 @@ class StaffTicketsTab extends GetView<StaffController> {
           label: 'st_view_ticket'.tr,
           icon: Icons.confirmation_number_rounded,
           onTap: () {
-            Get.to(() => StaffTicketDetailScreen(scheduleId: schedule.scheduleId));
+            Get.to(
+                () => StaffTicketDetailScreen(scheduleId: schedule.scheduleId));
           },
         ),
       ),

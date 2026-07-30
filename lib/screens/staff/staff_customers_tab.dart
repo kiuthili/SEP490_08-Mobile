@@ -17,7 +17,8 @@ class StaffCustomersTab extends GetView<StaffController> {
           label: 'st_customer_list'.tr,
           icon: Icons.people_alt_rounded,
           onTap: () {
-            Get.to(() => StaffCustomerDetailScreen(scheduleId: schedule.scheduleId));
+            Get.to(() =>
+                StaffCustomerDetailScreen(scheduleId: schedule.scheduleId));
           },
         ),
       ),

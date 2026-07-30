@@ -15,7 +15,8 @@ class StaffTicketDetailScreen extends StatefulWidget {
   final int scheduleId;
 
   @override
-  State<StaffTicketDetailScreen> createState() => _StaffTicketDetailScreenState();
+  State<StaffTicketDetailScreen> createState() =>
+      _StaffTicketDetailScreenState();
 }
 
 class _StaffTicketDetailScreenState extends State<StaffTicketDetailScreen> {
@@ -48,12 +49,14 @@ class _StaffTicketDetailScreenState extends State<StaffTicketDetailScreen> {
       body: Column(
         children: [
           // Filter bar
-          _TicketFilterBar(controller: controller, scheduleId: widget.scheduleId),
+          _TicketFilterBar(
+              controller: controller, scheduleId: widget.scheduleId),
 
           // Content
           Expanded(
             child: Obx(() {
-              if (controller.isLoadingTickets.value && controller.tickets.isEmpty) {
+              if (controller.isLoadingTickets.value &&
+                  controller.tickets.isEmpty) {
                 return const LoadingWidget();
               }
               if (controller.tickets.isEmpty) {
@@ -73,7 +76,8 @@ class _StaffTicketDetailScreenState extends State<StaffTicketDetailScreen> {
               }
 
               final total = controller.tickets.length;
-              final checkedIn = controller.tickets.where((t) => t.isCheckedIn).length;
+              final checkedIn =
+                  controller.tickets.where((t) => t.isCheckedIn).length;
 
               return Column(
                 children: [
@@ -83,7 +87,8 @@ class _StaffTicketDetailScreenState extends State<StaffTicketDetailScreen> {
                       onRefresh: _refresh,
                       child: ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32).copyWith(
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 12, 16, 32).copyWith(
                           bottom: ShellLayout.bottomInset(context),
                         ),
                         itemCount: controller.tickets.length,
@@ -119,10 +124,10 @@ class _TicketFilterBarState extends State<_TicketFilterBar> {
   String? _selectedStatus;
 
   Map<String?, String> get _statusOptions => {
-    null: 'st_all'.tr,
-    'Pending': 'st_not_checked_in'.tr,
-    'CheckedIn': 'st_checked_in'.tr,
-  };
+        null: 'st_all'.tr,
+        'Pending': 'st_not_checked_in'.tr,
+        'CheckedIn': 'st_checked_in'.tr,
+      };
 
   @override
   void dispose() {
@@ -167,17 +172,6 @@ class _TicketFilterBarState extends State<_TicketFilterBar> {
                       },
                     )
                   : null,
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
-              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -253,13 +247,14 @@ class _SummaryBar extends StatelessWidget {
               size: 16, color: AppColors.brand),
           const SizedBox(width: 8),
           Text(
-                'st_checked_in'.tr,
-                style: AppTextStyles.textTheme.bodySmall
+            'st_checked_in'.tr,
+            style: AppTextStyles.textTheme.bodySmall
                 ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(width: 4),
           Text(
-            'st_tickets_count'.trParams({'checkedIn': checkedIn.toString(), 'total': total.toString()}),
+            'st_tickets_count'.trParams(
+                {'checkedIn': checkedIn.toString(), 'total': total.toString()}),
             style: AppTextStyles.textTheme.bodySmall?.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -430,7 +425,9 @@ class _TicketCard extends StatelessWidget {
     final cells = <_InfoCellData>[];
 
     cells.add(_InfoCellData(
-        icon: Icons.badge_outlined, label: 'st_id_card'.tr, value: ticket.idCard));
+        icon: Icons.badge_outlined,
+        label: 'st_id_card'.tr,
+        value: ticket.idCard));
 
     if (ticket.dateOfBirth != null) {
       cells.add(_InfoCellData(

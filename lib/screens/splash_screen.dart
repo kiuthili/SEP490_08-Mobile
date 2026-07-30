@@ -47,7 +47,8 @@ class _SplashScreenState extends State<SplashScreen>
       if (user!.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);
       } else {
-        Get.offAllNamed(AppRoutes.home, arguments: {'initialTab': 2}); // 2 is nav_home for customers
+        Get.offAllNamed(AppRoutes.home,
+            arguments: {'initialTab': 2}); // 2 is nav_home for customers
       }
     } else {
       if (storage.isLoggedIn) {

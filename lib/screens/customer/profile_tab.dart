@@ -83,9 +83,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     value: 'edit',
                     child: Row(
                       children: [
-                        const Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
+                        const Icon(Icons.edit_outlined,
+                            size: 20, color: AppColors.textPrimary),
                         const SizedBox(width: 8),
-                        Text('edit_profile'.tr, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                        Text('edit_profile'.tr,
+                            style: const TextStyle(
+                                color: AppColors.textPrimary, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -93,9 +96,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     value: 'password',
                     child: Row(
                       children: [
-                        const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textPrimary),
+                        const Icon(Icons.lock_outline_rounded,
+                            size: 20, color: AppColors.textPrimary),
                         const SizedBox(width: 8),
-                        Text('change_password'.tr, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                        Text('change_password'.tr,
+                            style: const TextStyle(
+                                color: AppColors.textPrimary, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -189,7 +195,7 @@ class _ProfileTabState extends State<ProfileTab> {
       {Color iconColor = AppColors.brand}) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.xs),
+      borderRadius: AppRadius.button,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -235,6 +241,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
               if (viewAllText.isNotEmpty)
                 InkWell(
+                  borderRadius: AppRadius.button,
                   onTap: onViewAll,
                   child: Row(
                     children: [
@@ -307,7 +314,8 @@ class _ProfileTabState extends State<ProfileTab> {
             child: _buildIconGridItem(
               Icons.assignment_return_outlined,
               'pt_cancel_req'.tr,
-              () => Get.toNamed(AppRoutes.orders, arguments: 'Request to cancel'),
+              () =>
+                  Get.toNamed(AppRoutes.orders, arguments: 'Request to cancel'),
             ),
           ),
         ],
@@ -443,16 +451,14 @@ class _ProfileTabState extends State<ProfileTab> {
                     _buildSupportTile(
                       icon: Icons.notifications_active_outlined,
                       title: 'pt_notif_settings'.tr,
-                      onTap: () =>
-                          SnackbarHelper.info('pt_feature_dev'.tr),
+                      onTap: () => SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
                     _buildSupportTile(
                       icon: Icons.location_on_outlined,
                       title: 'pt_privacy_location'.tr,
-                      onTap: () =>
-                          SnackbarHelper.info('pt_feature_dev'.tr),
+                      onTap: () => SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
                     const Divider(
                         height: 1, indent: 40, color: Color(0xFFF0F0F0)),
@@ -522,34 +528,50 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildCompanyInfo() {
     return Obx(() {
-      final service = Get.isRegistered<SystemSettingService>() 
-          ? Get.find<SystemSettingService>() 
+      final service = Get.isRegistered<SystemSettingService>()
+          ? Get.find<SystemSettingService>()
           : null;
-          
+
       final _ = service?.isLoading.value;
-      
-      final name = service?.getSettingSync('CompanyName') ?? 'pt_company_name'.tr;
+
+      final name =
+          service?.getSettingSync('CompanyName') ?? 'pt_company_name'.tr;
       final address = service?.getSettingSync('CompanyAddress') ?? '';
       final phone = service?.getSettingSync('CompanyPhone') ?? '';
       final email = service?.getSettingSync('CompanyEmail') ?? '';
-      
+
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const StayHubLogo(variant: StayHubLogoVariant.full, iconSize: 32),
           const SizedBox(height: 12),
-          Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textSecondary)),
+          Text(name,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: AppColors.textSecondary)),
           if (address.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4, left: 32, right: 32),
-              child: Text(address, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
+              child: Text(address,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.4)),
             ),
           const SizedBox(height: 4),
           if (phone.isNotEmpty || email.isNotEmpty)
-            Text('${phone.isNotEmpty ? "Hotline: $phone" : ""}${phone.isNotEmpty && email.isNotEmpty ? " • " : ""}${email.isNotEmpty ? "Email: $email" : ""}', 
-                 textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            Text(
+                '${phone.isNotEmpty ? "Hotline: $phone" : ""}${phone.isNotEmpty && email.isNotEmpty ? " • " : ""}${email.isNotEmpty ? "Email: $email" : ""}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(height: 16),
-          Text('${'pt_version'.tr} 1.0.0', style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withValues(alpha: 0.5))),
+          Text('${'pt_version'.tr} 1.0.0',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary.withValues(alpha: 0.5))),
         ],
       );
     });

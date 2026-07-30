@@ -86,6 +86,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
+            borderRadius: AppRadius.button,
             onTap: () => Get.toNamed(
               AppRoutes.tourDetail,
               arguments: item.tourId,
@@ -165,6 +166,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               ],
                             ),
                             InkWell(
+                              borderRadius: AppRadius.button,
                               onTap: () => _controller.toggleWishlist(
                                 item.tourId,
                                 isInWishlist: true,

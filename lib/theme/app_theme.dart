@@ -71,6 +71,10 @@ class AppTheme {
           borderRadius: AppRadius.input,
           borderSide: const BorderSide(color: AppColors.error),
         ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: AppRadius.input,
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -111,6 +115,11 @@ class AppTheme {
           textStyle: AppTextStyles.textTheme.labelLarge?.copyWith(
             color: AppColors.brand,
           ),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.button),
         ),
       ),
       cardTheme: CardThemeData(

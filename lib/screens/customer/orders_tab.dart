@@ -26,11 +26,11 @@ class _OrdersTabState extends State<OrdersTab>
   final OrderController controller = Get.find<OrderController>();
 
   static Map<String, String> get _filters => {
-    '': 'pt_all'.tr,
-    'Paid': 'pt_paid'.tr,
-    'Cancelled': 'pt_cancelled'.tr,
-    'Request to cancel': 'pt_cancel_req'.tr,
-  };
+        '': 'pt_all'.tr,
+        'Paid': 'pt_paid'.tr,
+        'Cancelled': 'pt_cancelled'.tr,
+        'Request to cancel': 'pt_cancel_req'.tr,
+      };
 
   late final TabController _tabController;
 
@@ -214,12 +214,12 @@ class _OrderCard extends StatelessWidget {
       borderRadius: AppRadius.card,
       child: InkWell(
         onTap: onTap,
-        borderRadius: AppRadius.card,
+        borderRadius: AppRadius.button,
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.surfaceElevated,
             border: Border.all(color: AppColors.border),
-            borderRadius: AppRadius.card,
+            borderRadius: AppRadius.button,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -276,7 +276,7 @@ class _OrderCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            borderRadius: AppRadius.button,
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.15),
                             ),
@@ -297,7 +297,9 @@ class _OrderCard extends StatelessWidget {
                         right: 14,
                         bottom: 12,
                         child: Text(
-                          order.tour?.name ?? 'ot_order_id'.trParams({'id': order.id.toString()}),
+                          order.tour?.name ??
+                              'ot_order_id'
+                                  .trParams({'id': order.id.toString()}),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -334,7 +336,8 @@ class _OrderCard extends StatelessWidget {
                         Expanded(
                           child: _OrderMeta(
                             icon: Icons.confirmation_number_outlined,
-                            label: 'ot_tickets_count'.trParams({'count': _quantity.toString()}),
+                            label: 'ot_tickets_count'
+                                .trParams({'count': _quantity.toString()}),
                           ),
                         ),
                         if (_location.isNotEmpty) ...[
@@ -385,7 +388,7 @@ class _OrderCard extends StatelessWidget {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            borderRadius: AppRadius.button,
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.brand.withValues(alpha: 0.3),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_radius.dart';
+
 import '../theme/app_text_styles.dart';
 
 /// Ô nhập liệu chuẩn StayHub — có label, icon, validation inline, ẩn/hiện mật khẩu.
@@ -120,30 +120,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             prefixIconColor: AppColors.textSecondary,
             suffixIcon: suffix,
-            filled: true,
-            fillColor: AppColors.inputFill,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: const OutlineInputBorder(
-              borderRadius: AppRadius.input,
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.input,
-              borderSide: BorderSide(color: AppColors.separator),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.input,
-              borderSide: BorderSide(color: AppColors.brand, width: 1.5),
-            ),
-            errorBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.input,
-              borderSide: BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.input,
-              borderSide: BorderSide(color: AppColors.error, width: 1.5),
-            ),
           ),
         ),
       ],

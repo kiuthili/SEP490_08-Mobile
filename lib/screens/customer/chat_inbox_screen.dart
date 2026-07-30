@@ -127,14 +127,6 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                     onChanged: (value) => setState(() => _query = value),
                     decoration: InputDecoration(
                       hintText: 'sc_ib_search'.tr,
-                      filled: true,
-                      fillColor: AppColors.surfaceGrouped,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 0, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        borderSide: BorderSide.none,
-                      ),
                       prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _query.isEmpty
                           ? null
@@ -221,7 +213,8 @@ class _ConversationCard extends StatelessWidget {
     final title = room.name?.trim().isNotEmpty == true
         ? room.name!
         : room.isGroup
-            ? 'sc_ib_tour_group_id'.trParams({'id': (room.scheduleId ?? room.id).toString()})
+            ? 'sc_ib_tour_group_id'
+                .trParams({'id': (room.scheduleId ?? room.id).toString()})
             : 'sc_ib_chat_id'.trParams({'id': room.id.toString()});
     final hasUnread = room.unreadCount > 0;
 
@@ -240,7 +233,7 @@ class _ConversationCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderRadius: AppRadius.button,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(

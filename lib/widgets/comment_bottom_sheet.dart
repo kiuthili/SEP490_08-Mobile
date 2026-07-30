@@ -493,7 +493,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                   decoration: InputDecoration(
                                     hintText: _editingCommentId != null
                                         ? 'sc_cmt_edit_hint'.tr
-                                        : 'Thêm bình luận...',
+                                        : 'sc_cmt_add_hint'.tr,
                                     border: InputBorder.none,
                                     focusedBorder: InputBorder.none,
                                     enabledBorder: InputBorder.none,

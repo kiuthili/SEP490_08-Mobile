@@ -109,7 +109,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Obx(() => Text(
-                      'search_results_count'.trParams({'count': _controller.tours.length.toString()}),
+                      'search_results_count'.trParams(
+                          {'count': _controller.tours.length.toString()}),
                       style: AppTextStyles.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -132,7 +133,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                         items: [
-                          DropdownMenuItem(value: '', child: Text('sort_recommended'.tr)),
+                          DropdownMenuItem(
+                              value: '', child: Text('sort_recommended'.tr)),
                           DropdownMenuItem(
                               value: 'price_asc',
                               child: Text('sort_price_asc'.tr)),
@@ -140,7 +142,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                               value: 'price_desc',
                               child: Text('sort_price_desc'.tr)),
                           DropdownMenuItem(
-                              value: 'date_desc', child: Text('sort_newest'.tr)),
+                              value: 'date_desc',
+                              child: Text('sort_newest'.tr)),
                           DropdownMenuItem(
                               value: 'date_asc', child: Text('sort_oldest'.tr)),
                         ],

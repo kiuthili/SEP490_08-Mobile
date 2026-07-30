@@ -302,7 +302,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
         24,
         24,
         24,
-        MediaQuery.viewInsetsOf(context).bottom + 24,
+        24,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,

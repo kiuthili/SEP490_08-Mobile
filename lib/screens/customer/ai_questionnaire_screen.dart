@@ -321,7 +321,9 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   flex: 2,
                   child: Obx(
                     () => CustomButton(
-                      label: _isLastStep ? 'ai_get_recommendations'.tr : 'ai_continue'.tr,
+                      label: _isLastStep
+                          ? 'ai_get_recommendations'.tr
+                          : 'ai_continue'.tr,
                       isLoading: _ai.questionnaireSubmitting.value,
                       onPressed: _next,
                     ),
@@ -377,7 +379,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 final showSearch = field.options.length > 8;
                 final filteredOptions = showSearch
                     ? field.options
-                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .where((o) =>
+                            o.label.toLowerCase().contains(query.toLowerCase()))
                         .toList()
                     : field.options;
 
@@ -415,12 +418,6 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm địa điểm...',
                           prefixIcon: const Icon(Icons.search, size: 16),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.border),
-                          ),
                         ),
                         onChanged: (val) => setState(() {
                           _values[queryKey] = val;
@@ -487,7 +484,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 final showSearch = field.options.length > 8;
                 final filteredOptions = showSearch
                     ? field.options
-                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .where((o) =>
+                            o.label.toLowerCase().contains(query.toLowerCase()))
                         .toList()
                     : field.options;
 
@@ -531,10 +529,12 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                           hintText: 'Tìm kiếm lựa chọn...',
                           prefixIcon: const Icon(Icons.search, size: 16),
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
                           ),
                         ),
                         onChanged: (val) => setState(() {

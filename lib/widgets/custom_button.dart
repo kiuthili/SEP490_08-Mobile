@@ -45,8 +45,8 @@ class CustomButton extends StatelessWidget {
           borderRadius: AppRadius.button,
           child: Ink(
             decoration: BoxDecoration(
-              gradient: disabled ? null : AppColors.brandGradient,
-              color: disabled ? AppColors.brand.withValues(alpha: 0.4) : null,
+              gradient: null,
+              color: disabled ? AppColors.brand.withValues(alpha: 0.4) : AppColors.brand,
               borderRadius: AppRadius.button,
               boxShadow: disabled ? null : AppShadows.soft,
             ),

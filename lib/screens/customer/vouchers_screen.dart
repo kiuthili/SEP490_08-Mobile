@@ -200,7 +200,10 @@ class _VouchersScreenState extends State<VouchersScreen> {
                       const SizedBox(height: 4),
                       if (v.minOrderAmount != null && v.minOrderAmount! > 0)
                         Text(
-                          'vc_min_order'.trParams({'amount': CurrencyFormatter.format(v.minOrderAmount!)}),
+                          'vc_min_order'.trParams({
+                            'amount':
+                                CurrencyFormatter.format(v.minOrderAmount!)
+                          }),
                           style: const TextStyle(
                               fontSize: 12, color: Colors.black54),
                           maxLines: 1,
@@ -287,11 +290,14 @@ class _VouchersScreenState extends State<VouchersScreen> {
   String _discountText(VoucherModel voucher) {
     final value = voucher.discountValue ?? 0;
     final type = voucher.discountType?.toLowerCase() ?? '';
-    if (type.contains('percent')) return 'vc_discount_percent'.trParams({'val': value.toString()});
+    if (type.contains('percent'))
+      return 'vc_discount_percent'.trParams({'val': value.toString()});
     if (value >= 1000) {
-      return 'vc_discount_k'.trParams({'val': (value / 1000).toStringAsFixed(0)});
+      return 'vc_discount_k'
+          .trParams({'val': (value / 1000).toStringAsFixed(0)});
     }
-    return 'vc_discount_amount'.trParams({'val': CurrencyFormatter.format(value)});
+    return 'vc_discount_amount'
+        .trParams({'val': CurrencyFormatter.format(value)});
   }
 
   String _statusLabel(String? userStatus, String? voucherStatus) {

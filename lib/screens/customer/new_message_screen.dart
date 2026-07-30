@@ -62,14 +62,6 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
               onChanged: (value) => setState(() => _query = value),
               decoration: InputDecoration(
                 hintText: 'sc_nm_search_hint'.tr,
-                filled: true,
-                fillColor: AppColors.surfaceGrouped,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  borderSide: BorderSide.none,
-                ),
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _query.isEmpty
                     ? null
@@ -86,8 +78,7 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
           Expanded(
             child: Obx(() {
               if (_social.isLoading.value && _social.friends.isEmpty) {
-                return LoadingWidget(
-                    message: 'sc_nm_loading'.tr);
+                return LoadingWidget(message: 'sc_nm_loading'.tr);
               }
               if (_social.friends.isEmpty) {
                 return EmptyStateWidget(
@@ -144,12 +135,12 @@ class _FriendListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: AppRadius.button,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: AppRadius.button,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(

@@ -1049,7 +1049,7 @@ class _CtrlBtn extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: AppRadius.button,
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
@@ -1221,14 +1221,14 @@ Widget _buildTypeOption(SocialMapController c, String type, String label) {
       c.heatmapType.value = type;
       c.loadHeatmap();
     },
-    borderRadius: BorderRadius.circular(AppRadius.xs),
+    borderRadius: AppRadius.button,
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color:
             isSelected ? _kBrand.withValues(alpha: 0.1) : Colors.grey.shade100,
         border: Border.all(color: isSelected ? _kBrand : Colors.transparent),
-        borderRadius: BorderRadius.circular(AppRadius.xs),
+        borderRadius: AppRadius.button,
       ),
       alignment: Alignment.center,
       child: Text(label,
@@ -1261,7 +1261,7 @@ class _LayerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = active ? _kBrand : Colors.grey.shade500;
     return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderRadius: AppRadius.button,
       onTap: loading
           ? null
           : () {
@@ -1283,7 +1283,7 @@ class _LayerButton extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 1),
         decoration: BoxDecoration(
           color: active ? _kBrand.withValues(alpha: 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderRadius: AppRadius.button,
         ),
         child: Column(
           children: [
@@ -1374,7 +1374,7 @@ class _CaptureMomentButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: AppRadius.button,
         onTap: () async {
           HapticFeedback.mediumImpact();
           await Get.toNamed(AppRoutes.shareMoment);
@@ -1384,9 +1384,7 @@ class _CaptureMomentButton extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [_kBrand, Color(0xFF34C3FF)],
-            ),
+            color: _kBrand,
             boxShadow: [
               BoxShadow(
                 color: _kBrand.withValues(alpha: 0.4),
@@ -1807,12 +1805,12 @@ class _TimelinePanelState extends State<_TimelinePanel> {
               // Speed control badge
               InkWell(
                 onTap: _toggleSpeed,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderRadius: AppRadius.button,
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: AppRadius.button,
                     color: Colors.white.withValues(alpha: 0.15),
                     border: Border.all(color: Colors.white24),
                   ),

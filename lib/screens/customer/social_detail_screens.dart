@@ -219,11 +219,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         // URL động: dùng ApiConstants.baseUrl để tương thích với tunnel đang chạy.
         // Khi deploy production thì chỉ cần thay baseUrl trong api_constants.dart.
         final trackingUrl = '${ApiConstants.baseUrl}/track/$token';
-        final shareText =
-            'sc_sds_live_location_prefix'.tr + '[LocationShare:${jsonEncode({
-              'token': token,
-              'url': trackingUrl
-            })}]';
+        final shareText = 'sc_sds_live_location_prefix'.tr +
+            '[LocationShare:${jsonEncode({
+                  'token': token,
+                  'url': trackingUrl
+                })}]';
         await _socialController.sendChatMessage(roomId, shareText);
         SnackbarHelper.success('sc_sds_location_shared'.tr);
       } else {
@@ -266,7 +266,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _messageController.selection = TextSelection.collapsed(
         offset: _messageController.text.length,
       );
-      SnackbarHelper.error('sc_sds_failed_send_message_prefix'.tr + e.toString());
+      SnackbarHelper.error(
+          'sc_sds_failed_send_message_prefix'.tr + e.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -334,7 +335,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  _isGroup ? 'sc_sds_tour_group_chat'.tr : 'sc_sds_active_now'.tr,
+                  _isGroup
+                      ? 'sc_sds_tour_group_chat'.tr
+                      : 'sc_sds_active_now'.tr,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -527,7 +530,7 @@ class _GroupScheduleCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: AppRadius.button,
               border: Border.all(
                 color: AppColors.brand.withValues(alpha: 0.14),
               ),
@@ -547,7 +550,7 @@ class _GroupScheduleCard extends StatelessWidget {
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.brand,
-                              borderRadius: BorderRadius.circular(99),
+                              borderRadius: AppRadius.button,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -737,7 +740,7 @@ class _ScheduleLoadError extends StatelessWidget {
                     ?.copyWith(color: AppColors.error))),
         InkWell(
           onTap: onRetry,
-          borderRadius: BorderRadius.circular(99),
+          borderRadius: AppRadius.button,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             child: Text('sc_sds_retry'.tr,
@@ -1248,14 +1251,6 @@ class _MessageComposer extends StatelessWidget {
               textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
                 hintText: 'sc_sds_input_message'.tr,
-                filled: true,
-                fillColor: AppColors.surfaceGrouped,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  borderSide: BorderSide.none,
-                ),
                 suffixIcon: onShareLocation != null
                     ? IconButton(
                         icon: const Icon(Icons.location_on_rounded,
@@ -1271,14 +1266,13 @@ class _MessageComposer extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: sending ? null : onSend,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderRadius: AppRadius.button,
               child: Ink(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: sending ? null : AppColors.brandGradient,
-                  color:
-                      sending ? AppColors.brand.withValues(alpha: 0.35) : null,
+                  gradient: null,
+                  color: sending ? AppColors.brand.withValues(alpha: 0.35) : AppColors.brand,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -1427,7 +1421,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
       ),
     ).then((_) async {
       if (mounted) {
-        final updated = _findInFeed(moment.id) ?? await _socialController.getMomentById(moment.id);
+        final updated = _findInFeed(moment.id) ??
+            await _socialController.getMomentById(moment.id);
         if (updated != null && mounted) {
           setState(() => _moment = updated);
         }
@@ -1472,7 +1467,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
             const SizedBox(height: 12),
             Flexible(
               child: ListView.builder(
-                shrinkWrap: true, 
+                shrinkWrap: true,
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
@@ -1539,7 +1534,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.brand))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.brand))
           : _error != null || _moment == null
               ? Center(
                   child: Column(
@@ -1555,7 +1551,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: const Text('Go Back', style: TextStyle(color: Colors.white70)),
+                        child: const Text('Go Back',
+                            style: TextStyle(color: Colors.white70)),
                       )
                     ],
                   ),
@@ -1614,7 +1611,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                         child: CircleAvatar(
                           backgroundColor: Colors.black45,
                           child: IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            icon: const Icon(Icons.arrow_back,
+                                color: Colors.white),
                             onPressed: () => Get.back(),
                           ),
                         ),
@@ -1624,6 +1622,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                 ),
     );
   }
+
   void _showReportDialog(BuildContext context, String contentType, int targetId,
       SocialController social) {
     String selectedReason = 'Spam';
@@ -1810,7 +1809,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final user = _user;
     return AppScreen(
-      title: user?.fullName.isNotEmpty == true ? user!.fullName : 'sc_sds_profile'.tr,
+      title: user?.fullName.isNotEmpty == true
+          ? user!.fullName
+          : 'sc_sds_profile'.tr,
       body: _loading
           ? const LoadingWidget()
           : user == null
@@ -1841,8 +1842,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           hasScrollBody: false,
                           child: Padding(
                             padding: EdgeInsets.all(60),
-                            child:
-                                LoadingWidget(message: 'sc_sds_loading_posts'.tr),
+                            child: LoadingWidget(
+                                message: 'sc_sds_loading_posts'.tr),
                           ),
                         )
                       else if (_moments.isEmpty)
@@ -1892,7 +1893,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat(_moments.length.toString(), 'sc_sds_posts'.tr),
+                        _buildStat(
+                            _moments.length.toString(), 'sc_sds_posts'.tr),
                         Container(
                             width: 1, height: 28, color: AppColors.separator),
                         _buildStat(
@@ -2374,7 +2376,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            isFriend ? 'sc_sds_friends'.tr : 'sc_sds_stayhub_member'.tr,
+                            isFriend
+                                ? 'sc_sds_friends'.tr
+                                : 'sc_sds_stayhub_member'.tr,
                             style: TextStyle(
                               color: isFriend
                                   ? AppColors.brand
@@ -2570,8 +2574,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     String? value,
     bool showDivider = true,
   }) {
-    final displayValue =
-        value?.trim().isNotEmpty == true ? value!.trim() : 'sc_sds_not_updated'.tr;
+    final displayValue = value?.trim().isNotEmpty == true
+        ? value!.trim()
+        : 'sc_sds_not_updated'.tr;
     return Column(
       children: [
         Padding(
@@ -2655,7 +2660,8 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
   Future<void> _loadFullMoments() async {
     for (int i = 0; i < _moments.length; i++) {
       try {
-        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        final fullData =
+            await widget.socialController.getMomentById(_moments[i].id);
         if (mounted) {
           setState(() {
             _moments[i] = fullData;
@@ -2868,7 +2874,8 @@ class _OtherFeedItem extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              DateFormat('HH:mm - dd/MM/yyyy')
+                  .format(moment.createdAt.toLocal()),
               style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),
@@ -2877,4 +2884,3 @@ class _OtherFeedItem extends StatelessWidget {
     );
   }
 }
-      

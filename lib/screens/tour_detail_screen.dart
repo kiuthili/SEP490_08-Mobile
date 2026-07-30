@@ -267,8 +267,10 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     // 2. Nhóm theo tháng
     final Map<String, List<TourScheduleModel>> schedulesByMonth = {};
     for (final s in futureSchedules) {
-      final monthKey =
-          'td_month_year'.trParams({'m': s.departureDate.month.toString(), 'y': s.departureDate.year.toString()});
+      final monthKey = 'td_month_year'.trParams({
+        'm': s.departureDate.month.toString(),
+        'y': s.departureDate.year.toString()
+      });
       if (!schedulesByMonth.containsKey(monthKey)) {
         schedulesByMonth[monthKey] = [];
       }
@@ -392,10 +394,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     decoration: InputDecoration(
                       labelText: 'td_full_name'.tr,
                       prefixIcon: const Icon(Icons.person_outline_rounded),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
                         ? 'td_enter_name'.tr
@@ -408,10 +406,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     decoration: InputDecoration(
                       labelText: 'td_phone'.tr,
                       prefixIcon: const Icon(Icons.phone_outlined),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
                         ? 'td_enter_phone'.tr
@@ -424,10 +418,6 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     decoration: InputDecoration(
                       labelText: 'td_email'.tr,
                       prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
                     ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty)
@@ -443,13 +433,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'td_note_optional'.tr,
-                      hintText:
-                          'td_note_hint'.tr,
+                      hintText: 'td_note_hint'.tr,
                       alignLabelWithHint: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -705,8 +690,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
       return EmptyStateWidget(
         icon: Icons.error_outline_rounded,
         title: 'td_cannot_load_tour'.tr,
-        subtitle: _tourController.detailError.value ??
-            'td_tour_inactive'.tr,
+        subtitle: _tourController.detailError.value ?? 'td_tour_inactive'.tr,
         onRetry: () => _tourController.fetchTourDetail(_tourId!),
       );
     }
@@ -774,7 +758,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       title: 'td_detailed_itinerary'.tr,
                       subtitle: _itineraryLoading
                           ? 'td_preparing_itinerary'.tr
-                          : 'td_activities_in_journey'.trParams({'count': _itineraries.length.toString()}),
+                          : 'td_activities_in_journey'.trParams(
+                              {'count': _itineraries.length.toString()}),
                       trailing: _itineraries.isEmpty
                           ? null
                           : TextButton.icon(
@@ -814,7 +799,9 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                     title: 'td_reviews'.tr,
                     subtitle: _reviewController.reviews.isEmpty
                         ? 'td_no_reviews'.tr
-                        : 'td_recent_reviews'.trParams({'count': _reviewController.reviews.length.toString()}),
+                        : 'td_recent_reviews'.trParams({
+                            'count': _reviewController.reviews.length.toString()
+                          }),
                     child: _reviewController.reviews.isEmpty
                         ? Text(
                             'td_be_first_review'.tr,
@@ -1065,7 +1052,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       const SizedBox(height: 4),
                       Text(
                         available
-                            ? 'td_seats_left'.trParams({'seats': seats.toString()})
+                            ? 'td_seats_left'
+                                .trParams({'seats': seats.toString()})
                             : schedule.tickets.isEmpty
                                 ? 'td_tickets_not_open'.tr
                                 : 'td_sold_out'.tr,
@@ -1082,7 +1070,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('td_from'.tr, style: AppTextStyles.textTheme.labelSmall),
+                      Text('td_from'.tr,
+                          style: AppTextStyles.textTheme.labelSmall),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
@@ -1236,6 +1225,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
           Material(
             color: Colors.transparent,
             child: InkWell(
+              borderRadius: AppRadius.button,
               onTap: () {
                 setState(() {
                   if (expanded) {
@@ -1248,9 +1238,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.brandLight, AppColors.surface],
-                  ),
+                  color: AppColors.surface,
                 ),
                 child: Row(
                   children: [
@@ -1259,7 +1247,7 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                       height: 42,
                       alignment: Alignment.center,
                       decoration: const BoxDecoration(
-                        gradient: AppColors.brandGradient,
+                        color: AppColors.brand,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
@@ -1285,8 +1273,12 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
                           const SizedBox(height: 2),
                           Text(
                             heritageCount > 0
-                                ? 'td_activities_heritages'.trParams({'a': activities.length.toString(), 'h': heritageCount.toString()})
-                                : 'td_activities_count'.trParams({'count': activities.length.toString()}),
+                                ? 'td_activities_heritages'.trParams({
+                                    'a': activities.length.toString(),
+                                    'h': heritageCount.toString()
+                                  })
+                                : 'td_activities_count'.trParams(
+                                    {'count': activities.length.toString()}),
                             style: AppTextStyles.textTheme.bodySmall,
                           ),
                         ],
@@ -1379,7 +1371,8 @@ class _TourDetailScreenState extends State<TourDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(existing != null ? 'td_edit_review'.tr : 'td_write_review'.tr),
+        title:
+            Text(existing != null ? 'td_edit_review'.tr : 'td_write_review'.tr),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -2528,7 +2521,10 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                   children: [
                                     const SizedBox(width: 4),
                                     Text(
-                                      'td_depart_date'.trParams({'date': DateFormatter.display(schedule.departureDate)}),
+                                      'td_depart_date'.trParams({
+                                        'date': DateFormatter.display(
+                                            schedule.departureDate)
+                                      }),
                                       style: AppTextStyles.textTheme.labelMedium
                                           ?.copyWith(
                                         fontWeight: FontWeight.bold,
@@ -2541,7 +2537,10 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                   children: [
                                     const SizedBox(width: 4),
                                     Text(
-                                      'td_return_date'.trParams({'date': DateFormatter.display(schedule.returnDate)}),
+                                      'td_return_date'.trParams({
+                                        'date': DateFormatter.display(
+                                            schedule.returnDate)
+                                      }),
                                       style: AppTextStyles.textTheme.labelMedium
                                           ?.copyWith(
                                         color: AppColors.textSecondary,
@@ -2554,7 +2553,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                           ),
                           if (isSelected)
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 'td_selecting'.tr,
                                 style: TextStyle(
@@ -2601,7 +2601,8 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                 ? 'td_adult'.tr
                                 : t.ticketTypeId == 2
                                     ? 'td_child'.tr
-                                    : 'td_ticket_type_id'.trParams({'id': t.ticketTypeId.toString()}));
+                                    : 'td_ticket_type_id'.trParams(
+                                        {'id': t.ticketTypeId.toString()}));
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 6),
@@ -2640,7 +2641,10 @@ class _SchedulePickerSheetState extends State<_SchedulePickerSheet> {
                                             BorderRadius.circular(AppRadius.xs),
                                       ),
                                       child: Text(
-                                        'td_remaining_seats'.trParams({'count': t.availableQuantity.toString()}),
+                                        'td_remaining_seats'.trParams({
+                                          'count':
+                                              t.availableQuantity.toString()
+                                        }),
                                         style: const TextStyle(
                                           fontSize: 10,
                                           color: AppColors.accent,

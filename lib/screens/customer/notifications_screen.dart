@@ -190,6 +190,7 @@ class _NotificationCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: InkWell(
+          borderRadius: AppRadius.button,
           onTap: isRead ? null : onRead,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
