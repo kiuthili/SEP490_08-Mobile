@@ -209,6 +209,8 @@ class AppTranslations extends Translations {
           'thousands_tours': 'Thousands of tours await you at the best prices',
           'explore_now': 'Explore now',
           'choose_language': 'Select language',
+          'promo_banner_badge': 'STAYHUB',
+          'promo_banner_title': 'The Smartest &\nMost Convenient Travel App',
           
           'region_north': 'North',
           'region_central': 'Central',
@@ -1129,6 +1131,8 @@ class AppTranslations extends Translations {
           'thousands_tours': 'Hàng nghìn tour đang chờ bạn với giá tốt nhất',
           'explore_now': 'Khám phá ngay',
           'choose_language': 'Chọn ngôn ngữ',
+          'promo_banner_badge': 'STAYHUB',
+          'promo_banner_title': 'Nền tảng du lịch\nThông minh & Tiện lợi nhất',
           'booking_terms_title': 'Điều khoản đặt tour & Thanh toán',
           'booking_terms_content': '...',
 

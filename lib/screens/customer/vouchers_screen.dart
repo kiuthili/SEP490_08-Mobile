@@ -7,11 +7,9 @@ import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
-import '../../widgets/ios_grouped.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/validators.dart';
 import '../../widgets/loading_widget.dart';
-import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class VouchersScreen extends StatefulWidget {
   const VouchersScreen({super.key});
@@ -41,38 +39,83 @@ class _VouchersScreenState extends State<VouchersScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: 'vc_my_vouchers'.tr,
-      body: Column(
+      body: ColoredBox(
+        color: AppColors.surfaceGrouped,
+        child: Column(
         children: [
+          // ── Redeem code bar ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _codeController,
+                    textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
                       hintText: 'vc_enter_code'.tr,
-                      prefixIcon: Icon(Icons.local_offer_outlined),
+                      prefixIcon: const Icon(
+                        Icons.confirmation_number_outlined,
+                        size: 20,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 13,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(100),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(100),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(100),
+                        borderSide: const BorderSide(
+                          color: AppColors.brand,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
                     onSubmitted: (_) => _save(),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Obx(
                   () => FilledButton(
                     onPressed: _controller.isSaving.value ? null : _save,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.brand,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 13,
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
                     child: _controller.isSaving.value
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : Text('vc_save'.tr),
+                        : Text(
+                            'vc_save'.tr,
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
                   ),
                 ),
               ],
             ),
           ),
+
+          // ── List ──
           Expanded(
             child: RefreshIndicator(
               onRefresh: _controller.fetchVouchers,
@@ -80,6 +123,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -91,7 +135,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
       return ListView(
         physics: physics,
         children: [
-          SizedBox(height: 120),
+          const SizedBox(height: 120),
           LoadingWidget(message: 'vc_loading_vouchers'.tr),
         ],
       );
@@ -101,7 +145,7 @@ class _VouchersScreenState extends State<VouchersScreen> {
       return ListView(
         physics: physics,
         children: [
-          SizedBox(height: 80),
+          const SizedBox(height: 80),
           EmptyStateWidget(
             title: 'vc_no_vouchers'.tr,
             subtitle: 'vc_save_to_use'.tr,
@@ -112,176 +156,14 @@ class _VouchersScreenState extends State<VouchersScreen> {
 
     return ListView.builder(
       physics: physics,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       itemCount: _controller.vouchers.length,
       itemBuilder: (context, index) {
         final v = _controller.vouchers[index];
-        final statusLabel = _statusLabel(v.status, v.voucherStatus);
-        final discountText = _discountText(v);
-        final isAvailable = v.isAvailable;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          height: 115,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 110,
-                decoration: BoxDecoration(
-                  color:
-                      isAvailable ? AppColors.brand : const Color(0xFFE0E0E0),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: FittedBox(
-                        child: Text(
-                          discountText,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: isAvailable ? Colors.white : Colors.black45,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'VOUCHER',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isAvailable ? Colors.white70 : Colors.black38,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 1,
-                color: const Color(0xFFF0F0F0),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        v.code,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isAvailable ? Colors.black87 : Colors.black45,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      if (v.minOrderAmount != null && v.minOrderAmount! > 0)
-                        Text(
-                          'vc_min_order'.trParams({
-                            'amount':
-                                CurrencyFormatter.format(v.minOrderAmount!)
-                          }),
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.black54),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isAvailable
-                                      ? const Color(0xFFE8F5E9)
-                                      : const Color(0xFFFFEBEE),
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.xs),
-                                ),
-                                child: Text(
-                                  statusLabel,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: isAvailable
-                                        ? const Color(0xFF2E7D32)
-                                        : const Color(0xFFC62828),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              if (v.endDate != null)
-                                Text(
-                                  'HSD: ${DateFormatter.display(v.endDate)}',
-                                  style: const TextStyle(
-                                      fontSize: 10, color: Colors.black45),
-                                ),
-                            ],
-                          ),
-                          if (isAvailable)
-                            OutlinedButton(
-                              onPressed: () {
-                                if (v.tourId != null && v.tourId! > 0) {
-                                  Get.toNamed(AppRoutes.tourDetail,
-                                      arguments: v.tourId);
-                                } else {
-                                  Get.toNamed(AppRoutes.tourSearch);
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.brand,
-                                side: const BorderSide(
-                                    color: AppColors.brand, width: 1),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 4),
-                                minimumSize: const Size(0, 26),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.lg)),
-                              ),
-                              child: Text('vc_use_now'.tr,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+        return _VoucherCard(
+          voucher: v,
+          discountText: _discountText(v),
+          statusLabel: _statusLabel(v.status, v.voucherStatus),
         );
       },
     );
@@ -290,8 +172,9 @@ class _VouchersScreenState extends State<VouchersScreen> {
   String _discountText(VoucherModel voucher) {
     final value = voucher.discountValue ?? 0;
     final type = voucher.discountType?.toLowerCase() ?? '';
-    if (type.contains('percent'))
+    if (type.contains('percent')) {
       return 'vc_discount_percent'.trParams({'val': value.toString()});
+    }
     if (value >= 1000) {
       return 'vc_discount_k'
           .trParams({'val': (value / 1000).toStringAsFixed(0)});
@@ -317,10 +200,258 @@ class _VouchersScreenState extends State<VouchersScreen> {
     final code = _codeController.text.trim();
     final err = Validators.voucherCode(code);
     if (err != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
       return;
     }
     final ok = await _controller.saveVoucher(code);
     if (ok) _codeController.clear();
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Voucher Card — iOS-style ticket shape
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _VoucherCard extends StatelessWidget {
+  const _VoucherCard({
+    required this.voucher,
+    required this.discountText,
+    required this.statusLabel,
+  });
+
+  final VoucherModel voucher;
+  final String discountText;
+  final String statusLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = voucher.isAvailable;
+    final accentColor = isAvailable ? AppColors.brand : AppColors.textTertiary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          color: AppColors.surface,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Left accent panel ──────────────────────────────────────
+                Container(
+                  width: 100,
+                  color: isAvailable
+                      ? AppColors.brand
+                      : AppColors.surfaceGrouped,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FittedBox(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            discountText,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: isAvailable
+                                  ? Colors.white
+                                  : AppColors.textSecondary,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'VOUCHER',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                          color: isAvailable
+                              ? Colors.white.withValues(alpha: 0.7)
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Dashed divider notch ───────────────────────────────────
+                _TicketDivider(color: accentColor),
+
+                // ── Right content ──────────────────────────────────────────
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Code + status
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              voucher.code,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: isAvailable
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                                letterSpacing: 0.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            if (voucher.minOrderAmount != null &&
+                                voucher.minOrderAmount! > 0)
+                              Text(
+                                'vc_min_order'.trParams({
+                                  'amount': CurrencyFormatter.format(
+                                      voucher.minOrderAmount!)
+                                }),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+
+                        // Bottom row: status badge + use button / expiry
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Status pill
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isAvailable
+                                        ? AppColors.brand.withValues(alpha: 0.1)
+                                        : AppColors.surfaceGrouped,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Text(
+                                    statusLabel,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: isAvailable
+                                          ? AppColors.brand
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                if (voucher.endDate != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'HSD: ${DateFormatter.display(voucher.endDate)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textTertiary,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (isAvailable)
+                              GestureDetector(
+                                onTap: () {
+                                  if (voucher.tourId != null &&
+                                      voucher.tourId! > 0) {
+                                    Get.toNamed(AppRoutes.tourDetail,
+                                        arguments: voucher.tourId);
+                                  } else {
+                                    Get.toNamed(AppRoutes.tourSearch);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.brand,
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Text(
+                                    'vc_use_now'.tr,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Dashed ticket notch divider
+class _TicketDivider extends StatelessWidget {
+  const _TicketDivider({required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 16,
+      child: CustomPaint(
+        painter: _DashPainter(color: color.withValues(alpha: 0.2)),
+      ),
+    );
+  }
+}
+
+class _DashPainter extends CustomPainter {
+  _DashPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    const dashHeight = 6.0;
+    const gap = 4.0;
+    double y = 0;
+    while (y < size.height) {
+      canvas.drawLine(
+        Offset(size.width / 2, y),
+        Offset(size.width / 2, y + dashHeight),
+        paint,
+      );
+      y += dashHeight + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashPainter old) => old.color != color;
 }

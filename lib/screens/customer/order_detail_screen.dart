@@ -254,41 +254,44 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     return DefaultTabController(
       length: 3,
-      child: RefreshIndicator(
-        onRefresh: () => _refreshOrder(order.id),
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _OrderHero(order: order),
-                    ],
+      child: Container(
+        color: AppColors.surfaceGrouped,
+        child: RefreshIndicator(
+          onRefresh: () => _refreshOrder(order.id),
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _OrderHero(order: order),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SliverAppBarDelegate(
-                  TabBar(
-                    labelColor: AppColors.brand,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    indicatorColor: AppColors.brand,
-                    indicatorWeight: 3,
-                    labelStyle: TextStyle(fontWeight: FontWeight.w700),
-                    unselectedLabelStyle:
-                        TextStyle(fontWeight: FontWeight.w500),
-                    tabs: [
-                      Tab(text: 'od_info_tab'.tr),
-                      Tab(text: 'od_itinerary_tab'.tr),
-                      Tab(text: 'od_ticket_tab'.tr),
-                    ],
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverAppBarDelegate(
+                    TabBar(
+                      labelColor: AppColors.textPrimary,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      indicatorColor: AppColors.textPrimary,
+                      indicatorWeight: 2,
+                      dividerColor: AppColors.separator,
+                      labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      unselectedLabelStyle:
+                          TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                      tabs: [
+                        Tab(text: 'od_info_tab'.tr),
+                        Tab(text: 'od_itinerary_tab'.tr),
+                        Tab(text: 'od_ticket_tab'.tr),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ];
           },
           body: TabBarView(
@@ -364,6 +367,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -384,13 +388,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (feePercent == null || daysUntilDeparture == null) {
       await showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         builder: (sheetContext) => SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -417,11 +422,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   onPressed: () => Navigator.pop(sheetContext),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.brand,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.button),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: const StadiumBorder(),
                   ),
-                  child: Text('od_understood'.tr),
+                  child: Text(
+                    'od_understood'.tr,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
                 ),
               ],
             ),
@@ -438,13 +446,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         (order.finalAmount - cancellationFee).clamp(0, 1 << 31);
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -491,11 +500,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(sheetContext, false),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: const RoundedRectangleBorder(
-                            borderRadius: AppRadius.button),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: const StadiumBorder(),
+                        side: const BorderSide(color: AppColors.separator, width: 1.5),
+                        foregroundColor: AppColors.textPrimary,
                       ),
-                      child: Text('od_later'.tr),
+                      child: Text(
+                        'od_later'.tr,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -503,12 +516,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: FilledButton(
                       onPressed: () => Navigator.pop(sheetContext, true),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.brand,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: const RoundedRectangleBorder(
-                            borderRadius: AppRadius.button),
+                        backgroundColor: AppColors.error,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: const StadiumBorder(),
                       ),
-                      child: Text('od_continue'.tr),
+                      child: Text(
+                        'od_continue'.tr,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                 ],
@@ -532,70 +548,156 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   void _showReviewDialog(OrderModel order) {
     final commentController = TextEditingController();
+    // `rating` is declared here — outside all builder closures — so it is
+    // never inadvertently reset when a builder re-runs.
     var rating = 5;
-    showDialog<void>(
+    // Cache screenHeight from the parent context BEFORE opening the sheet to
+    // avoid registering sheetContext as a MediaQuery dependent (which causes
+    // the '_dependents.isEmpty' crash when the user swipes the sheet down).
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final bodyTextStyle = Theme.of(context).textTheme.bodyMedium;
+
+    showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('od_review_trip'.tr),
-        content: StatefulBuilder(
-          builder: (context, setDialogState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'od_how_was_experience'.tr,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < rating
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: const Color(0xFFFFB020),
-                      size: 30,
-                    ),
-                    onPressed: () {
-                      setDialogState(() => rating = index + 1);
-                    },
-                  );
-                }),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: commentController,
-                decoration: InputDecoration(
-                  hintText: 'od_share_feelings'.tr,
-                  prefixIcon: Icon(Icons.rate_review_outlined),
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      // A single StatefulBuilder wraps all content so that MediaQuery reads
+      // (for keyboard insets) and rating-state rebuilds both happen on
+      // `dialogContext` — a stable element that is properly disposed before
+      // the sheet's outer context is torn down, preventing the
+      // '_dependents.isEmpty' assertion crash on swipe-to-dismiss.
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final bottomInset = MediaQuery.viewInsetsOf(dialogContext).bottom;
+          return Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: screenHeight * 0.50),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'od_review_trip'.tr,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'od_how_was_experience'.tr,
+                        style: bodyTextStyle?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(5, (index) {
+                          return IconButton(
+                            icon: Icon(
+                              index < rating
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              color: const Color(0xFFFFB020),
+                              size: 34,
+                            ),
+                            onPressed: () {
+                              setDialogState(() => rating = index + 1);
+                            },
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: commentController,
+                        decoration: InputDecoration(
+                          hintText: 'od_share_feelings'.tr,
+                          prefixIcon: const Icon(Icons.rate_review_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: AppColors.brand, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.surfaceGrouped,
+                        ),
+                        maxLines: 2,
+                        minLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(sheetContext),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: const StadiumBorder(),
+                                side: const BorderSide(color: AppColors.separator, width: 1.5),
+                                foregroundColor: AppColors.textPrimary,
+                              ),
+                              child: Text(
+                                'od_later'.tr,
+                                style: const TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: FilledButton.icon(
+                              onPressed: () async {
+                                final reviewController = Get.find<ReviewController>();
+                                await reviewController.submitReview(
+                                  tourId: order.tour?.id ?? 0,
+                                  rating: rating,
+                                  comment: commentController.text,
+                                );
+                                if (sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.brand,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                shape: const StadiumBorder(),
+                              ),
+                              icon: const Icon(Icons.send_rounded, size: 18),
+                              label: Text(
+                                'od_submit_review'.tr,
+                                style: const TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                maxLines: 3,
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('od_later'.tr),
-          ),
-          FilledButton.icon(
-            onPressed: () async {
-              final reviewController = Get.find<ReviewController>();
-              await reviewController.submitReview(
-                tourId: order.tour?.id ?? 0,
-                rating: rating,
-                comment: commentController.text,
-              );
-              if (dialogContext.mounted) {
-                Navigator.pop(dialogContext);
-              }
-            },
-            icon: const Icon(Icons.send_rounded, size: 18),
-            label: Text('od_submit_review'.tr),
-          ),
-        ],
+            ),
+          );
+        },
       ),
     ).whenComplete(commentController.dispose);
   }
@@ -622,14 +724,7 @@ class _OrderHero extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.brandLight,
-        borderRadius: AppRadius.card,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.15),
-            blurRadius: 26,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Stack(
         fit: StackFit.expand,
@@ -648,8 +743,8 @@ class _OrderHero extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   Color(0x1505073C),
-                  Color(0x4D05073C),
-                  Color(0xED05073C),
+                  Color(0x3305073C),
+                  Color(0x9905073C),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -684,8 +779,7 @@ class _OrderHero extends StatelessWidget {
             left: 18,
             right: 18,
             bottom: 18,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   order.tour?.name ?? 'od_your_trip'.tr,
@@ -743,9 +837,8 @@ class _TripTimeline extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: schedule == null
           ? const _EmptySchedule()
@@ -831,9 +924,8 @@ class _ScheduleItineraryPanel extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -841,9 +933,9 @@ class _ScheduleItineraryPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: AppColors.surfaceGrouped,
+              color: AppColors.surface,
               border: Border(
-                bottom: BorderSide(color: AppColors.border),
+                bottom: BorderSide(color: AppColors.separator),
               ),
             ),
             child: Row(
@@ -854,8 +946,7 @@ class _ScheduleItineraryPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 11),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'td_detailed_itinerary'.tr,
@@ -978,8 +1069,7 @@ class _ItineraryDayCardState extends State<_ItineraryDayCard> {
                     ),
                     const SizedBox(width: 11),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
@@ -1163,8 +1253,7 @@ class _ScheduleActivity extends StatelessWidget {
                       : null,
                 ),
                 clipBehavior: heritage != null ? Clip.antiAlias : Clip.none,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (imageUrl?.isNotEmpty == true)
                       Stack(
@@ -1206,8 +1295,7 @@ class _ScheduleActivity extends StatelessWidget {
                       ),
                     Padding(
                       padding: EdgeInsets.all(heritage != null ? 12 : 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
@@ -1492,9 +1580,8 @@ class _ItineraryLoadingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -1521,9 +1608,8 @@ class _ItineraryErrorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -1545,9 +1631,8 @@ class _EmptyItineraryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceGrouped,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -1647,16 +1732,8 @@ class _OrderInformationCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1770,8 +1847,7 @@ class _OrderInformationCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'od_note'.tr,
@@ -1920,6 +1996,7 @@ class _TicketBreakdownRow extends StatelessWidget {
         children: [
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -2026,10 +2103,7 @@ class _PendingOrderNotice extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.1),
-        borderRadius: AppRadius.card,
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.25),
-        ),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2066,9 +2140,8 @@ class _PostPaymentActions extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.border),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2083,19 +2156,18 @@ class _PostPaymentActions extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 14),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
+          FilledButton(
+            style: FilledButton.styleFrom(
               backgroundColor: AppColors.brand,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: const StadiumBorder(),
             ),
             onPressed: onReview,
             child: Text(
               'td_write_review'.tr,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
             ),
@@ -2104,18 +2176,16 @@ class _PostPaymentActions extends StatelessWidget {
             const SizedBox(height: 10),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                ),
-                side: const BorderSide(color: AppColors.brand),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: const StadiumBorder(),
+                side: const BorderSide(color: AppColors.separator, width: 1.5),
+                foregroundColor: AppColors.textPrimary,
               ),
               onPressed: onCancellation,
               child: Text(
                 'od_request_cancel_tour'.tr,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.brand,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -2138,7 +2208,7 @@ class _InactiveOrderNotice extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: requested ? const Color(0xFFFFF7ED) : const Color(0xFFFEE2E2),
-        borderRadius: AppRadius.card,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -2345,13 +2415,14 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: AppColors.surface,
       child: _tabBar,
     );
   }
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
+    return true;
   }
 }
+

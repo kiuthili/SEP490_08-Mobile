@@ -146,7 +146,7 @@ class MainShellScreen extends GetView<ShellController> {
       final index = controller.selectedIndex.value.clamp(0, maxIndex);
 
       return PageScaffold(
-        extendBody: false,
+        extendBody: true,
         body: IndexedStack(
           index: index.clamp(0, pages.length - 1),
           children: pages,

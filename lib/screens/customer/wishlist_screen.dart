@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../routes/app_routes.dart';
+import '../../theme/app_colors.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/empty_state_widget.dart';
-import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
-import 'package:stayhub_mobile/theme/app_colors.dart';
-import 'package:stayhub_mobile/theme/app_radius.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -31,9 +29,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: 'wl_title'.tr,
-      body: RefreshIndicator(
-        onRefresh: _controller.fetchWishlist,
-        child: Obx(() => _buildBody()),
+      body: ColoredBox(
+        color: AppColors.surfaceGrouped,
+        child: RefreshIndicator(
+          onRefresh: _controller.fetchWishlist,
+          child: Obx(() => _buildBody()),
+        ),
       ),
     );
   }
@@ -45,7 +46,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       return ListView(
         physics: physics,
         children: [
-          SizedBox(height: 120),
+          const SizedBox(height: 120),
           LoadingWidget(message: 'wl_loading'.tr),
         ],
       );
@@ -55,7 +56,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       return ListView(
         physics: physics,
         children: [
-          SizedBox(height: 80),
+          const SizedBox(height: 80),
           EmptyStateWidget(
             title: 'wl_empty_title'.tr,
             subtitle: 'wl_empty_desc'.tr,
@@ -66,128 +67,155 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
     return ListView.builder(
       physics: physics,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       itemCount: _controller.items.length,
       itemBuilder: (context, index) {
         final item = _controller.items[index];
         final tour = item.tour;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+        return _WishlistCard(
+          tour: tour,
+          onTap: () => Get.toNamed(AppRoutes.tourDetail, arguments: item.tourId),
+          onRemove: () =>
+              _controller.toggleWishlist(item.tourId, isInWishlist: true),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WishlistCard extends StatelessWidget {
+  const _WishlistCard({
+    required this.tour,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final dynamic tour;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Thumbnail ────────────────────────────────────────────────
+              SizedBox(
+                width: 112,
+                height: 112,
+                child: (tour.imageUrl != null && tour.imageUrl!.isNotEmpty)
+                    ? CachedNetworkImage(
+                        imageUrl: tour.imageUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const ColoredBox(
+                          color: AppColors.surfaceGrouped,
+                        ),
+                        errorWidget: (_, __, ___) => const ColoredBox(
+                          color: AppColors.surfaceGrouped,
+                          child: Icon(
+                            Icons.image_outlined,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      )
+                    : const ColoredBox(
+                        color: AppColors.surfaceGrouped,
+                        child: Icon(
+                          Icons.image_outlined,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
               ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            borderRadius: AppRadius.button,
-            onTap: () => Get.toNamed(
-              AppRoutes.tourDetail,
-              arguments: item.tourId,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: tour.imageUrl != null && tour.imageUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: tour.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => const ColoredBox(
-                            color: Color(0xFFF0F0F0),
-                            child:
-                                Icon(Icons.image_outlined, color: Colors.grey),
-                          ),
-                        )
-                      : const ColoredBox(
-                          color: Color(0xFFF0F0F0),
-                          child: Icon(Icons.image_outlined, color: Colors.grey),
+
+              // ── Content ──────────────────────────────────────────────────
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name
+                      Text(
+                        tour.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          height: 1.3,
                         ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tour.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 4),
-                        if (tour.city != null)
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on,
-                                  size: 14, color: Colors.black54),
-                              SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  tour.city!,
-                                  style: const TextStyle(
-                                      fontSize: 13, color: Colors.black54),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        SizedBox(height: 8),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      // City
+                      if (tour.city != null) ...[
+                        const SizedBox(height: 5),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.star_rounded,
-                                    color: Color(0xFFFFB800), size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  tour.averageStar?.toStringAsFixed(1) ?? 'N/A',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 13,
+                              color: AppColors.textTertiary,
                             ),
-                            InkWell(
-                              borderRadius: AppRadius.button,
-                              onTap: () => _controller.toggleWishlist(
-                                item.tourId,
-                                isInWishlist: true,
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(4),
-                                child: Icon(Icons.favorite_rounded,
-                                    color: AppColors.error, size: 24),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                tour.city!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                       ],
-                    ),
+
+                      const SizedBox(height: 10),
+
+                      // Rating + remove button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Empty space to push the remove button to the right
+                          const Spacer(),
+
+                          // Remove (unfavourite) button
+                          GestureDetector(
+                            onTap: onRemove,
+                            behavior: HitTestBehavior.opaque,
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.favorite_rounded,
+                                color: AppColors.error,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

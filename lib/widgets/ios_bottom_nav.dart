@@ -37,88 +37,99 @@ class IosBottomNav extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     final nav = Container(
-      height: 64,
+      height: 72,
       decoration: useGlassBlur
-          ? AppDecorations.glass(opacity: 0.82)
+          ? AppDecorations.glass(opacity: 0.85)
           : AppDecorations.card(),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(items.length, (i) {
           final item = items[i];
           final selected = i == selectedIndex;
-          return Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onSelect(i),
-                borderRadius: AppRadius.navBar,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (item.isProminent)
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.brandGradient,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.brand.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          selected ? item.selectedIcon : item.icon,
-                          size: 24,
-                          color: Colors.white,
-                        ),
-                      )
-                    else
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 4,
-                        ),
-                        decoration: selected
-                            ? BoxDecoration(
-                                color:
-                                    AppColors.brandLight.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
-                                ),
-                              )
-                            : null,
-                        child: Icon(
-                          selected ? item.selectedIcon : item.icon,
-                          size: 22,
-                          color: selected
-                              ? AppColors.brand
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    if (!item.isProminent) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        item.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.w500,
-                          color: selected
-                              ? AppColors.brand
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+          
+          if (item.isProminent) {
+            return GestureDetector(
+              onTap: () => onSelect(i),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                transform: Matrix4.identity()..scale(selected ? 1.05 : 1.0),
+                transformAlignment: Alignment.center,
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: AppColors.brandGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.brand.withValues(alpha: selected ? 0.5 : 0.3),
+                      blurRadius: selected ? 16 : 8,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
+                child: Icon(
+                  selected ? item.selectedIcon : item.icon,
+                  size: 28,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          }
+
+          return GestureDetector(
+            onTap: () => onSelect(i),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                horizontal: selected ? 16 : 12,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppColors.brand.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    ),
+                    child: Icon(
+                      selected ? item.selectedIcon : item.icon,
+                      key: ValueKey(selected),
+                      size: 24,
+                      color: selected
+                          ? AppColors.brand
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    child: selected
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Text(
+                              item.label,
+                              style: const TextStyle(
+                                color: AppColors.brand,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ),
             ),
           );
@@ -127,16 +138,16 @@ class IosBottomNav extends StatelessWidget {
     );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottom > 0 ? bottom : 16),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, (bottom > 0 ? bottom : 16) + 10),
       child: useGlassBlur
           ? ClipRRect(
-              borderRadius: AppRadius.navBar,
+              borderRadius: BorderRadius.circular(36),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
                 child: nav,
               ),
             )
-          : ClipRRect(borderRadius: AppRadius.navBar, child: nav),
+          : ClipRRect(borderRadius: BorderRadius.circular(36), child: nav),
     );
   }
 }

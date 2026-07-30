@@ -49,7 +49,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: user?.fullName);
     _emailController = TextEditingController(text: user?.email);
     _phoneController = TextEditingController(text: user?.phoneNumber);
-    _gender = user?.gender?.isNotEmpty == true ? user!.gender : 'Male';
+    final rawGender = user?.gender;
+    if (rawGender != null && rawGender.isNotEmpty) {
+      if (rawGender.toLowerCase() == 'female') {
+        _gender = 'Female';
+      } else if (rawGender.toLowerCase() == 'other') {
+        _gender = 'Other';
+      } else {
+        _gender = 'Male';
+      }
+    } else {
+      _gender = 'Male';
+    }
     _dateOfBirth = DateTime.tryParse(user?.dateOfBirth ?? '');
   }
 
@@ -62,32 +73,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickAvatar() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      imageQuality: 90,
-    );
-    if (picked != null) {
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: picked.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Image',
-            toolbarColor: AppColors.brand,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Crop Image',
-            aspectRatioLockEnabled: true,
-          ),
-        ],
+    try {
+      final picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 90,
       );
-      if (croppedFile != null) {
-        setState(() => _avatarFile = File(croppedFile.path));
+      if (picked != null) {
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: picked.path,
+          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Crop Image',
+              toolbarColor: AppColors.brand,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true,
+            ),
+            IOSUiSettings(
+              title: 'Crop Image',
+              aspectRatioLockEnabled: true,
+            ),
+          ],
+        );
+        if (croppedFile != null) {
+          setState(() => _avatarFile = File(croppedFile.path));
+        }
       }
+    } catch (e) {
+      SnackbarHelper.error('Không thể xử lý ảnh: $e');
+      debugPrint('Error picking/cropping avatar: $e');
     }
   }
 

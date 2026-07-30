@@ -29,6 +29,11 @@ class CustomButton extends StatelessWidget {
         width: double.infinity,
         height: height,
         child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
           onPressed: disabled ? null : onPressed,
           child: _label(AppColors.brand),
         ),
@@ -42,13 +47,13 @@ class CustomButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: disabled ? null : onPressed,
-          borderRadius: AppRadius.button,
+          borderRadius: BorderRadius.circular(100),
           child: Ink(
             decoration: BoxDecoration(
               gradient: null,
               color: disabled ? AppColors.brand.withValues(alpha: 0.4) : AppColors.brand,
-              borderRadius: AppRadius.button,
-              boxShadow: disabled ? null : AppShadows.soft,
+              borderRadius: BorderRadius.circular(100),
+              boxShadow: null,
             ),
             child: Center(
               child: isLoading
