@@ -298,13 +298,7 @@ class ApiClient {
       );
     }
 
-    if (status == 401) {
-      return ApiError(
-        message: ApiError.silent401Message,
-        statusCode: 401,
-        isSilent: true,
-      );
-    }
+    // Removed the unconditional 401 override to allow parsing backend message from JSON.
 
     if (data is String &&
         (data.contains('405 Not Allowed') || data.contains('nginx'))) {
@@ -337,6 +331,14 @@ class ApiClient {
         retryAfterSeconds: retryAfter,
       );
     }
+    if (status == 401) {
+      return ApiError(
+        message: ApiError.silent401Message,
+        statusCode: 401,
+        isSilent: true,
+      );
+    }
+
     return ApiError(
       message: e.message ?? 'Không thể kết nối máy chủ',
       statusCode: status,
