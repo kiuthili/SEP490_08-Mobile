@@ -16,35 +16,57 @@ class FilterBottomSheet extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceGrouped,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Handle
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+          ),
           // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                const SizedBox(width: 24), // Balance
-                Text(
-                  'filter'.tr,
-                  style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.navy,
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    'filter'.tr,
+                    style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => Get.back(),
-                  child:
-                      const Icon(Icons.close, color: AppColors.textSecondary),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: AppColors.textSecondary,
+                    onPressed: () => Get.back(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                      shape: const CircleBorder(),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
 
           // Body
           Flexible(
@@ -82,9 +104,8 @@ class FilterBottomSheet extends StatelessWidget {
           Container(
             padding:
                 const EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 26),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey[200]!)),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceGrouped,
             ),
             child: Row(
               children: [
@@ -97,9 +118,7 @@ class FilterBottomSheet extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: Color(0xFFE5E7EB)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: Text('filter_clear'.tr,
                         style: const TextStyle(color: AppColors.textPrimary)),
@@ -117,9 +136,7 @@ class FilterBottomSheet extends StatelessWidget {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: Text('filter_apply'.tr,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -155,19 +172,19 @@ class FilterBottomSheet extends StatelessWidget {
           hintStyle:
               const TextStyle(color: AppColors.textSecondary, fontSize: 14),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.surface,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
           ),
         ),
@@ -198,19 +215,19 @@ class FilterBottomSheet extends StatelessWidget {
           hintStyle:
               const TextStyle(color: AppColors.textSecondary, fontSize: 14),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.surface,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
           ),
         ),
@@ -270,9 +287,8 @@ class FilterBottomSheet extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -302,30 +318,37 @@ class FilterBottomSheet extends StatelessWidget {
       final formatCurrency =
           NumberFormat.compactCurrency(symbol: 'đ', locale: 'vi_VN');
 
-      return Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(formatCurrency.format(minP),
-                  style: AppTextStyles.textTheme.bodySmall),
-              Text(maxP >= 100000000 ? 'filter_max'.tr : formatCurrency.format(maxP),
-                  style: AppTextStyles.textTheme.bodySmall),
-            ],
-          ),
-          RangeSlider(
-            values: RangeValues(minP, maxP),
-            min: 0,
-            max: 100000000,
-            divisions: 200,
-            activeColor: AppColors.brand,
-            inactiveColor: Colors.grey[300],
-            onChanged: (values) {
-              controller.minPrice.value = values.start.round();
-              controller.maxPrice.value = values.end.round();
-            },
-          ),
-        ],
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(formatCurrency.format(minP),
+                    style: AppTextStyles.textTheme.bodySmall),
+                Text(maxP >= 100000000 ? 'filter_max'.tr : formatCurrency.format(maxP),
+                    style: AppTextStyles.textTheme.bodySmall),
+              ],
+            ),
+            RangeSlider(
+              values: RangeValues(minP, maxP),
+              min: 0,
+              max: 100000000,
+              divisions: 200,
+              activeColor: AppColors.brand,
+              inactiveColor: Colors.grey[300],
+              onChanged: (values) {
+                controller.minPrice.value = values.start.round();
+                controller.maxPrice.value = values.end.round();
+              },
+            ),
+          ],
+        ),
       );
     });
   }
@@ -334,28 +357,35 @@ class FilterBottomSheet extends StatelessWidget {
     return Obx(() {
       final val = controller.duration.value.toDouble();
 
-      return Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(val == 0 ? 'filter_any'.tr : 'filter_up_to_days'.trParams({'days': val.round().toString()}),
-                  style: AppTextStyles.textTheme.bodySmall),
-              Text('filter_days'.trParams({'days': '30'}), style: AppTextStyles.textTheme.bodySmall),
-            ],
-          ),
-          Slider(
-            value: val,
-            min: 0,
-            max: 30,
-            divisions: 30,
-            activeColor: AppColors.brand,
-            inactiveColor: Colors.grey[300],
-            onChanged: (value) {
-              controller.duration.value = value.round();
-            },
-          ),
-        ],
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(val == 0 ? 'filter_any'.tr : 'filter_up_to_days'.trParams({'days': val.round().toString()}),
+                    style: AppTextStyles.textTheme.bodySmall),
+                Text('filter_days'.trParams({'days': '30'}), style: AppTextStyles.textTheme.bodySmall),
+              ],
+            ),
+            Slider(
+              value: val,
+              min: 0,
+              max: 30,
+              divisions: 30,
+              activeColor: AppColors.brand,
+              inactiveColor: Colors.grey[300],
+              onChanged: (value) {
+                controller.duration.value = value.round();
+              },
+            ),
+          ],
+        ),
       );
     });
   }

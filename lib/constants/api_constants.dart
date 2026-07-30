@@ -26,6 +26,13 @@ class ApiConstants {
     // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     //   return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
     // return 'https://localhost:7010';
+    return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
+  }
+
+  static String get webUrl {
+    const override = String.fromEnvironment('WEB_URL');
+    if (override.isNotEmpty) return override;
+    return 'https://stayhub.vercel.app';
   }
 
   /// SignalR hubs qua Gateway — route `social-signalr-route` → `/hubs/*`

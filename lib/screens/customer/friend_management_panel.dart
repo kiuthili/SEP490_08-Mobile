@@ -211,6 +211,22 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                   icon: const Icon(Icons.close_rounded,
                       color: Colors.black54, size: 20),
                 ),
+          filled: true,
+          fillColor: Colors.grey.shade200,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          isDense: true,
         ),
       ),
     );
@@ -509,10 +525,10 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           IconButton.filled(
             tooltip: 'sc_fm_btn_message'.tr,
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.brandLight,
-              disabledForegroundColor: AppColors.textTertiary,
+              backgroundColor: Colors.grey.shade200,
+              foregroundColor: Colors.black87,
+              disabledBackgroundColor: Colors.grey.shade100,
+              disabledForegroundColor: Colors.black45,
             ),
             onPressed: busy
                 ? null
@@ -545,6 +561,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       disabledForegroundColor: Colors.white.withValues(alpha: 0.85),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       minimumSize: const Size(0, 32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
     );
   }
@@ -557,6 +574,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       disabledForegroundColor: Colors.black45,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
       minimumSize: const Size(0, 32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
     );
   }

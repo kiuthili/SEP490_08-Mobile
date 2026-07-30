@@ -1,8 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_decorations.dart';
-import '../theme/app_radius.dart';
 import '../utils/platform_ui.dart';
 
 class IosBottomNavItem {
@@ -35,18 +33,60 @@ class IosBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Nền đặc hơn để nổi bật khỏi content phía sau
+    final navBgColor = isDark
+        ? const Color(0xFF1C1C1E).withValues(alpha: 0.96)
+        : Colors.white.withValues(alpha: 0.97);
 
     final nav = Container(
       height: 72,
-      decoration: useGlassBlur
-          ? AppDecorations.glass(opacity: 0.85)
-          : AppDecorations.card(),
+      decoration: BoxDecoration(
+        color: navBgColor,
+        // Border trên & toàn viền rõ hơn
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : const Color(0xFF0068E0).withValues(alpha: 0.08),
+            width: 0.5,
+          ),
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  blurRadius: 32,
+                  spreadRadius: -4,
+                  offset: const Offset(0, -8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: const Color(0xFF05073C).withValues(alpha: 0.10),
+                  blurRadius: 32,
+                  spreadRadius: -4,
+                  offset: const Offset(0, -8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF05073C).withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(items.length, (i) {
           final item = items[i];
           final selected = i == selectedIndex;
-          
+
           if (item.isProminent) {
             return GestureDetector(
               onTap: () => onSelect(i),
@@ -54,7 +94,8 @@ class IosBottomNav extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
-                transform: Matrix4.identity()..scale(selected ? 1.05 : 1.0),
+                transform: Matrix4.identity()
+                  ..scale(selected ? 1.08 : 1.0),
                 transformAlignment: Alignment.center,
                 width: 56,
                 height: 56,
@@ -63,8 +104,10 @@ class IosBottomNav extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.brand.withValues(alpha: selected ? 0.5 : 0.3),
-                      blurRadius: selected ? 16 : 8,
+                      color: AppColors.brand
+                          .withValues(alpha: selected ? 0.55 : 0.30),
+                      blurRadius: selected ? 20 : 10,
+                      spreadRadius: selected ? 1 : 0,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -90,15 +133,22 @@ class IosBottomNav extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: selected
-                    ? AppColors.brand.withValues(alpha: 0.12)
+                    ? AppColors.brand.withValues(alpha: isDark ? 0.20 : 0.10)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
+                border: selected
+                    ? Border.all(
+                        color: AppColors.brand
+                            .withValues(alpha: isDark ? 0.30 : 0.15),
+                        width: 1,
+                      )
+                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
+                    duration: const Duration(milliseconds: 200),
                     transitionBuilder: (child, animation) => FadeTransition(
                       opacity: animation,
                       child: ScaleTransition(scale: animation, child: child),
@@ -109,7 +159,9 @@ class IosBottomNav extends StatelessWidget {
                       size: 24,
                       color: selected
                           ? AppColors.brand
-                          : AppColors.textSecondary,
+                          : (isDark
+                              ? const Color(0xFF636366)
+                              : const Color(0xFFAEAEB2)),
                     ),
                   ),
                   AnimatedSize(
@@ -117,13 +169,14 @@ class IosBottomNav extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                     child: selected
                         ? Padding(
-                            padding: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.only(left: 6),
                             child: Text(
                               item.label,
                               style: const TextStyle(
                                 color: AppColors.brand,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                letterSpacing: -0.2,
                               ),
                             ),
                           )
@@ -137,17 +190,23 @@ class IosBottomNav extends StatelessWidget {
       ),
     );
 
+    final borderRadius = BorderRadius.circular(28);
+
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, (bottom > 0 ? bottom : 16) + 10),
+      padding:
+          EdgeInsets.fromLTRB(12, 0, 12, (bottom > 0 ? bottom : 12) + 10),
       child: useGlassBlur
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(36),
+              borderRadius: borderRadius,
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                child: nav,
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: ClipRRect(
+                  borderRadius: borderRadius,
+                  child: nav,
+                ),
               ),
             )
-          : ClipRRect(borderRadius: BorderRadius.circular(36), child: nav),
+          : ClipRRect(borderRadius: borderRadius, child: nav),
     );
   }
 }

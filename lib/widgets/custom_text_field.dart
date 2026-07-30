@@ -71,58 +71,62 @@ class _CustomTextFieldState extends State<CustomTextField> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label.toUpperCase(),
-          style: AppTextStyles.textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
-            letterSpacing: 0.6,
-          ),
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: _obscured,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
+      enabled: widget.enabled,
+      maxLength: widget.maxLength,
+      maxLines: widget.obscureText ? 1 : widget.maxLines,
+      inputFormatters: widget.inputFormatters,
+      textInputAction: widget.textInputAction,
+      textCapitalization: widget.textCapitalization,
+      onChanged: widget.onChanged,
+      onFieldSubmitted: widget.onSubmitted,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      textAlignVertical:
+          isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
+      style: AppTextStyles.textTheme.bodyLarge,
+      cursorColor: AppColors.brand,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hint,
+        alignLabelWithHint: widget.hint != null,
+        counterText: '',
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: widget.controller,
-          obscureText: _obscured,
-          keyboardType: widget.keyboardType,
-          validator: widget.validator,
-          enabled: widget.enabled,
-          maxLength: widget.maxLength,
-          maxLines: widget.obscureText ? 1 : widget.maxLines,
-          inputFormatters: widget.inputFormatters,
-          textInputAction: widget.textInputAction,
-          textCapitalization: widget.textCapitalization,
-          onChanged: widget.onChanged,
-          onFieldSubmitted: widget.onSubmitted,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          textAlignVertical:
-              isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
-          style: AppTextStyles.textTheme.bodyLarge,
-          cursorColor: AppColors.brand,
-          decoration: InputDecoration(
-            hintText: widget.hint ?? widget.label,
-            counterText: '',
-            prefixIcon: widget.prefixIcon != null
-                ? Align(
-                    alignment:
-                        isMultiline ? Alignment.topCenter : Alignment.center,
-                    child: Padding(
-                      padding: EdgeInsets.only(top: isMultiline ? 16 : 0),
-                      child: Icon(widget.prefixIcon, size: 20),
-                    ),
-                  )
-                : null,
-            prefixIconConstraints: const BoxConstraints(
-              minWidth: 48,
-              maxWidth: 48,
-              minHeight: 48,
-            ),
-            prefixIconColor: AppColors.textSecondary,
-            suffixIcon: suffix,
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
         ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+        ),
+        prefixIcon: widget.prefixIcon != null
+            ? Align(
+                alignment:
+                    isMultiline ? Alignment.topCenter : Alignment.center,
+                child: Padding(
+                  padding: EdgeInsets.only(top: isMultiline ? 16 : 0),
+                  child: Icon(widget.prefixIcon, size: 22),
+                ),
+              )
+            : null,
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 52,
+          maxWidth: 52,
+          minHeight: 48,
+        ),
+        prefixIconColor: AppColors.textSecondary,
+        suffixIcon: suffix,
+      ),
     );
   }
 }

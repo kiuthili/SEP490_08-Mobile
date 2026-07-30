@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/shell_controller.dart';
+import '../../controllers/theme_controller.dart';
 import '../../models/user_model.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_radius.dart';
 import '../../theme/shell_layout.dart';
 import '../../theme/app_text_styles.dart';
-import '../../widgets/custom_button.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../services/system_setting_service.dart';
 import '../../widgets/stayhub_logo.dart';
@@ -44,6 +43,9 @@ class _ProfileTabState extends State<ProfileTab> {
     final initial = user.fullName.trim().isNotEmpty
         ? user.fullName.trim()[0].toUpperCase()
         : '?';
+    final cs = Theme.of(context).colorScheme;
+    final textPrimary = cs.onSurface;
+    final textSecondary = AppColors.textSecondary;
 
     return Container(
       padding: EdgeInsets.only(
@@ -59,11 +61,10 @@ class _ProfileTabState extends State<ProfileTab> {
             children: [
               IconButton(
                 onPressed: () => Get.toNamed(AppRoutes.notifications),
-                icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary),
+                icon: Icon(Icons.notifications_none_rounded, color: textPrimary),
               ),
               PopupMenuButton<String>(
-                icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
-                color: Colors.white,
+                icon: Icon(Icons.settings_outlined, color: textPrimary),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -79,10 +80,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     value: 'edit',
                     child: Row(
                       children: [
-                        const Icon(Icons.edit_outlined, size: 20, color: AppColors.textPrimary),
+                        Icon(Icons.edit_outlined,
+                            size: 20, color: textPrimary),
                         const SizedBox(width: 8),
                         Text('edit_profile'.tr,
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                            style:
+                                TextStyle(color: textPrimary, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -90,10 +93,12 @@ class _ProfileTabState extends State<ProfileTab> {
                     value: 'password',
                     child: Row(
                       children: [
-                        const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textPrimary),
+                        Icon(Icons.lock_outline_rounded,
+                            size: 20, color: textPrimary),
                         const SizedBox(width: 8),
                         Text('change_password'.tr,
-                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                            style:
+                                TextStyle(color: textPrimary, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -121,7 +126,7 @@ class _ProfileTabState extends State<ProfileTab> {
           Text(
             user.fullName,
             style: AppTextStyles.textTheme.titleLarge?.copyWith(
-              color: AppColors.textPrimary,
+              color: textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: 22,
             ),
@@ -130,12 +135,13 @@ class _ProfileTabState extends State<ProfileTab> {
           Text(
             user.email,
             style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
+              color: textSecondary,
             ),
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.brandLight.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(100),
@@ -143,7 +149,8 @@ class _ProfileTabState extends State<ProfileTab> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.verified_rounded, size: 16, color: AppColors.brand),
+                const Icon(Icons.verified_rounded,
+                    size: 16, color: AppColors.brand),
                 const SizedBox(width: 4),
                 Text(
                   'pt_member'.tr,
@@ -163,6 +170,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Widget _buildIconGridItem(IconData icon, String label, VoidCallback onTap,
       {Color iconColor = AppColors.brand}) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -176,10 +184,10 @@ class _ProfileTabState extends State<ProfileTab> {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary),
+                  color: textColor),
             ),
           ],
         ),
@@ -192,12 +200,14 @@ class _ProfileTabState extends State<ProfileTab> {
       required String viewAllText,
       required VoidCallback onViewAll,
       required Widget child}) {
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: surfaceColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -211,7 +221,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   style: AppTextStyles.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
-                    color: AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
                 if (viewAllText.isNotEmpty)
@@ -223,7 +233,8 @@ class _ProfileTabState extends State<ProfileTab> {
                         Text(
                           viewAllText,
                           style: const TextStyle(
-                              fontSize: 13, color: AppColors.textSecondary),
+                              fontSize: 13,
+                              color: AppColors.textSecondary),
                         ),
                         const Icon(Icons.chevron_right_rounded,
                             size: 18, color: AppColors.textSecondary),
@@ -244,12 +255,16 @@ class _ProfileTabState extends State<ProfileTab> {
       {required IconData icon,
       required String title,
       required VoidCallback onTap}) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       visualDensity: const VisualDensity(vertical: -2),
       leading: Icon(icon, color: AppColors.textSecondary),
       title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+          style: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+              color: textColor)),
       trailing: const Icon(Icons.chevron_right_rounded,
           size: 20, color: AppColors.textSecondary),
       onTap: onTap,
@@ -401,10 +416,82 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
+  /// Dark Mode toggle tile
+  Widget _buildDarkModeToggle() {
+    final themeCtrl = Get.find<ThemeController>();
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final dividerColor = Theme.of(context).dividerColor;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Obx(() {
+          final isDark = themeCtrl.isDark;
+          return Column(
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                visualDensity: const VisualDensity(vertical: -2),
+                leading: Icon(
+                  isDark
+                      ? Icons.dark_mode_rounded
+                      : Icons.light_mode_rounded,
+                  color: isDark
+                      ? const Color(0xFFAC8FFF)
+                      : Colors.amber.shade600,
+                ),
+                title: Text(
+                  'pt_dark_mode'.tr,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    color: textColor,
+                  ),
+                ),
+                trailing: Switch.adaptive(
+                  value: isDark,
+                  activeColor: AppColors.brand,
+                  onChanged: (_) => themeCtrl.toggleTheme(),
+                ),
+              ),
+              Divider(height: 1, indent: 0, color: dividerColor),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                visualDensity: const VisualDensity(vertical: -2),
+                leading:
+                    const Icon(Icons.contrast_rounded, color: AppColors.textSecondary),
+                title: Text(
+                  'pt_theme_system'.tr,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    color: textColor,
+                  ),
+                ),
+                trailing: themeCtrl.themeMode.value == ThemeMode.system
+                    ? const Icon(Icons.check_circle_rounded,
+                        color: AppColors.brand, size: 22)
+                    : null,
+                onTap: themeCtrl.setSystem,
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final dividerColor = Theme.of(context).dividerColor;
     return Scaffold(
-      backgroundColor: AppColors.surfaceGrouped,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       body: Obx(() {
         final user = _controller.currentUser.value;
         if (user == null) {
@@ -418,10 +505,12 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
             children: [
               _buildHeader(user),
-              
+
               _buildMyBookings(),
               _buildMyUtilities(),
               _buildCommunityAndExplore(),
+
+              _buildDarkModeToggle(),
 
               _buildSectionCard(
                 title: 'pt_support_others'.tr,
@@ -434,13 +523,13 @@ class _ProfileTabState extends State<ProfileTab> {
                       title: 'pt_notif_settings'.tr,
                       onTap: () => SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
-                    const Divider(height: 1, indent: 0, color: Color(0xFFF0F0F0)),
+                    Divider(height: 1, indent: 0, color: dividerColor),
                     _buildSupportTile(
                       icon: Icons.location_on_outlined,
                       title: 'pt_privacy_location'.tr,
                       onTap: () => SnackbarHelper.info('pt_feature_dev'.tr),
                     ),
-                    const Divider(height: 1, indent: 0, color: Color(0xFFF0F0F0)),
+                    Divider(height: 1, indent: 0, color: dividerColor),
                     _buildSupportTile(
                       icon: Icons.language_rounded,
                       title: 'pt_language_settings'.tr,
@@ -462,19 +551,19 @@ class _ProfileTabState extends State<ProfileTab> {
                         );
                       },
                     ),
-                    const Divider(height: 1, indent: 0, color: Color(0xFFF0F0F0)),
+                    Divider(height: 1, indent: 0, color: dividerColor),
                     _buildSupportTile(
                       icon: Icons.policy_outlined,
                       title: 'pt_refund_policy'.tr,
                       onTap: () => Get.toNamed(AppRoutes.bookingTerms),
                     ),
-                    const Divider(height: 1, indent: 0, color: Color(0xFFF0F0F0)),
+                    Divider(height: 1, indent: 0, color: dividerColor),
                     _buildSupportTile(
                       icon: Icons.description_outlined,
                       title: 'pt_terms'.tr,
                       onTap: () => Get.toNamed(AppRoutes.terms),
                     ),
-                    const Divider(height: 1, indent: 0, color: Color(0xFFF0F0F0)),
+                    Divider(height: 1, indent: 0, color: dividerColor),
                     _buildSupportTile(
                       icon: Icons.privacy_tip_outlined,
                       title: 'pt_privacy_policy'.tr,
@@ -489,7 +578,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: InkWell(
@@ -523,6 +612,7 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _buildCompanyInfo() {
+    final textSecondary = AppColors.textSecondary;
     return Obx(() {
       final service = Get.isRegistered<SystemSettingService>()
           ? Get.find<SystemSettingService>()
@@ -542,18 +632,19 @@ class _ProfileTabState extends State<ProfileTab> {
           const StayHubLogo(variant: StayHubLogoVariant.full, iconSize: 32),
           const SizedBox(height: 12),
           Text(name,
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: AppColors.textSecondary)),
+                  color: textSecondary)),
           if (address.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4, left: 32, right: 32),
+              padding:
+                  const EdgeInsets.only(top: 4, left: 32, right: 32),
               child: Text(address,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: textSecondary,
                       height: 1.4)),
             ),
           const SizedBox(height: 4),
@@ -561,13 +652,13 @@ class _ProfileTabState extends State<ProfileTab> {
             Text(
                 '${phone.isNotEmpty ? "Hotline: $phone" : ""}${phone.isNotEmpty && email.isNotEmpty ? " • " : ""}${email.isNotEmpty ? "Email: $email" : ""}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary)),
+                style:
+                    TextStyle(fontSize: 12, color: textSecondary)),
           const SizedBox(height: 16),
           Text('${'pt_version'.tr} 1.0.0',
               style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textSecondary.withValues(alpha: 0.5))),
+                  color: textSecondary.withValues(alpha: 0.5))),
         ],
       );
     });

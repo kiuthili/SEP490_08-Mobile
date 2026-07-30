@@ -115,9 +115,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
                     padding:
                         const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceGrouped,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.separator),
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -256,10 +255,10 @@ class _MyProfilePanelState extends State<MyProfilePanel>
             child: GestureDetector(
               onTap: () => Get.toNamed(AppRoutes.profile),
               child: Container(
-                height: 34,
+                height: 36,
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.separator, width: 1),
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -277,11 +276,11 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           GestureDetector(
             onTap: () => Get.toNamed(AppRoutes.shareMoment),
             child: Container(
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.separator, width: 1),
-                borderRadius: BorderRadius.circular(AppRadius.xs),
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(100),
               ),
               alignment: Alignment.center,
               child: const Icon(Icons.add_photo_alternate_outlined,
@@ -490,9 +489,9 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Colors.black,
         title: Text(
           'sc_mp_posts'.tr,
@@ -716,7 +715,7 @@ class _FeedItem extends StatelessWidget {
   void _showOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => SafeArea(

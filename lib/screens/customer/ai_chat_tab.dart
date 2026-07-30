@@ -258,7 +258,7 @@ class _AiChatTabState extends State<AiChatTab> {
             16,
             8,
             16,
-            MediaQuery.paddingOf(context).bottom + 100,
+            MediaQuery.paddingOf(context).bottom + 12,
           ),
           child: Row(
             children: [
@@ -297,7 +297,7 @@ class _AiChatTabState extends State<AiChatTab> {
                       ),
                     ),
                     filled: true,
-                    fillColor: AppColors.surfaceGrouped,
+                    fillColor: AppColors.surface,
                     contentPadding: const EdgeInsets.only(left: 16, right: 8, top: 12, bottom: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(100),

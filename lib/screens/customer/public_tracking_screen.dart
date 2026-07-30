@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:get/get.dart';
 import '../../models/ai_models.dart';
 import '../../services/signalr_service.dart';
@@ -11,7 +11,7 @@ import '../../constants/api_constants.dart';
 import 'package:stayhub_mobile/theme/app_colors.dart';
 import 'package:stayhub_mobile/theme/app_radius.dart';
 
-/// Theo dõi vị trí công khai qua token (giống web).
+/// Theo dõi vị trí công khai qua token (giống web) dùng Mapbox.
 class PublicTrackingScreen extends StatefulWidget {
   const PublicTrackingScreen({super.key});
 
@@ -23,7 +23,9 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
   final _social = Get.find<SocialService>();
   final _signalR = Get.find<SignalRService>();
 
-  final MapController _mapController = MapController();
+  mb.MapboxMap? _mapboxMap;
+  mb.PointAnnotationManager? _pointAnnotationManager;
+  mb.PointAnnotation? _marker;
 
   late final String _token;
   PublicLocationModel? _location;
@@ -34,6 +36,8 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
   void initState() {
     super.initState();
     _token = Get.parameters['token'] ?? '';
+    mb.MapboxOptions.setAccessToken(ApiConstants.mapboxAccessToken);
+
     if (_token.isEmpty) {
       _error = true;
       _loading = false;
@@ -63,7 +67,12 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
               fullName: _location?.fullName ?? 'Khách',
             );
           });
-          _moveCamera(lat, lng, _mapController.camera.zoom);
+
+          if (_mapboxMap != null) {
+            _mapboxMap!.getCameraState().then((state) {
+              _moveCamera(lat, lng, state.zoom);
+            });
+          }
         },
       );
     } catch (_) {
@@ -76,21 +85,55 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
     }
   }
 
-  void _moveCamera(double lat, double lng, double? zoom) {
+  void _onMapCreated(mb.MapboxMap mapboxMap) {
+    _mapboxMap = mapboxMap;
+    mapboxMap.annotations.createPointAnnotationManager().then((manager) {
+      _pointAnnotationManager = manager;
+      _updateMarker();
+    });
+  }
+
+  Future<void> _updateMarker() async {
+    if (_pointAnnotationManager == null || _location == null) return;
+
     try {
-      _mapController.move(LatLng(lat, lng), zoom ?? 15);
+      if (_marker != null) {
+        await _pointAnnotationManager?.delete(_marker!);
+        _marker = null;
+      }
+
+      _marker = await _pointAnnotationManager?.create(mb.PointAnnotationOptions(
+        geometry:
+            mb.Point(coordinates: mb.Position(_location!.lng, _location!.lat)),
+        iconSize: 2.0,
+        iconColor: AppColors.error.value,
+      ));
+    } catch (e) {
+      debugPrint('Error updating marker: $e');
+    }
+  }
+
+  void _moveCamera(double lat, double lng, double? zoom) {
+    if (_mapboxMap == null) return;
+    try {
+      _mapboxMap!.flyTo(
+          mb.CameraOptions(
+            center: mb.Point(coordinates: mb.Position(lng, lat)),
+            zoom: zoom ?? 15,
+          ),
+          mb.MapAnimationOptions(duration: 500));
+      _updateMarker();
     } catch (_) {}
   }
 
   @override
   void dispose() {
     _signalR.disconnectPublicTracking();
+    if (_pointAnnotationManager != null) {
+      _pointAnnotationManager?.deleteAll();
+    }
     super.dispose();
   }
-
-  static String get _tileUrl =>
-      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
-      '?access_token=${ApiConstants.mapboxAccessToken}';
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +152,7 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.link_off, size: 56, color: AppColors.error),
+                const Icon(Icons.link_off, size: 56, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
                   'Liên kết không hợp lệ hoặc đã hết hạn',
@@ -134,35 +177,13 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: LatLng(loc.lat, loc.lng),
-              initialZoom: 15,
-              minZoom: 2,
-              maxZoom: 18,
+          mb.MapWidget(
+            key: const ValueKey('public_tracking_map'),
+            onMapCreated: _onMapCreated,
+            cameraOptions: mb.CameraOptions(
+              center: mb.Point(coordinates: mb.Position(loc.lng, loc.lat)),
+              zoom: 15.0,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: _tileUrl,
-                userAgentPackageName: 'com.stayhub.stayhub_mobile',
-                maxZoom: 18,
-              ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: LatLng(loc.lat, loc.lng),
-                    width: 50,
-                    height: 50,
-                    child: const Icon(
-                      Icons.location_on,
-                      color: AppColors.error,
-                      size: 40,
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ),
           SafeArea(
             child: Padding(

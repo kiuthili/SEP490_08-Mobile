@@ -40,16 +40,15 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          AppColors.backgroundSecondary, // Light gray background for grid items
+      backgroundColor: AppColors.surfaceGrouped,
       appBar: AppBar(
-        backgroundColor: AppColors.brand,
+        backgroundColor: AppColors.surfaceGrouped,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
           onPressed: () => Get.back(),
         ),
         title: GestureDetector(
@@ -59,13 +58,13 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
             height: 40,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Row(
               children: [
-                Icon(Icons.search_rounded,
-                    size: 20, color: AppColors.brand.withValues(alpha: 0.7)),
+                const Icon(Icons.search_rounded,
+                    size: 20, color: AppColors.textTertiary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -85,7 +84,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list_rounded, color: Colors.white),
+            icon: const Icon(Icons.filter_list_rounded, color: AppColors.textPrimary),
             onPressed: () {
               Get.bottomSheet(
                 const FilterBottomSheet(),
@@ -101,9 +100,8 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
           // Sort Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceGrouped,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

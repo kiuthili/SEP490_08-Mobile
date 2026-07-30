@@ -86,14 +86,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           uiSettings: [
             AndroidUiSettings(
               toolbarTitle: 'Crop Image',
-              toolbarColor: AppColors.brand,
-              toolbarWidgetColor: Colors.white,
+              toolbarColor: Colors.white,
+              toolbarWidgetColor: Colors.black87,
               initAspectRatio: CropAspectRatioPreset.square,
               lockAspectRatio: true,
+              hideBottomControls: true,
             ),
             IOSUiSettings(
               title: 'Crop Image',
               aspectRatioLockEnabled: true,
+              resetButtonHidden: true,
+              aspectRatioPickerButtonHidden: true,
             ),
           ],
         );
@@ -284,95 +287,91 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 32),
 
-              IosSurfaceCard(
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      controller: _nameController,
-                      label: 'name'.tr,
-                      validator: Validators.fullName,
-                      prefixIcon: Icons.person_outline,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _phoneController,
-                      label: 'phone_number'.tr,
-                      keyboardType: TextInputType.phone,
-                      prefixIcon: Icons.phone_outlined,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) return null;
-                        return Validators.phone(value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Email',
-                      enabled: false,
-                      prefixIcon: Icons.email_outlined,
-                    ),
-                  ],
-                ),
+              Column(
+                children: [
+                  CustomTextField(
+                    controller: _nameController,
+                    label: 'name'.tr,
+                    validator: Validators.fullName,
+                    prefixIcon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _phoneController,
+                    label: 'phone_number'.tr,
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: Icons.phone_outlined,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return null;
+                      return Validators.phone(value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _emailController,
+                    label: 'Email',
+                    enabled: false,
+                    prefixIcon: Icons.email_outlined,
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
-              IosSurfaceCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('gender'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputFill,
-                        borderRadius: AppRadius.input,
-                        border: Border.all(color: AppColors.separator),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _gender,
-                          isExpanded: true,
-                          icon: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
-                          style: textTheme.bodyLarge?.copyWith(color: Colors.black87),
-                          items: [
-                            DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
-                            DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
-                            DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
-                          ],
-                          onChanged: (value) => setState(() => _gender = value),
-                        ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('gender'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _gender,
+                        isExpanded: true,
+                        icon: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                        style: textTheme.bodyLarge?.copyWith(color: Colors.black87),
+                        items: [
+                          DropdownMenuItem(value: 'Male', child: Text('male'.tr)),
+                          DropdownMenuItem(value: 'Female', child: Text('female'.tr)),
+                          DropdownMenuItem(value: 'Other', child: Text('other'.tr)),
+                        ],
+                        onChanged: (value) => setState(() => _gender = value),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 16),
 
-                    Text('date_of_birth'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickBirthDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.inputFill,
-                          borderRadius: AppRadius.input,
-                          border: Border.all(color: AppColors.separator),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _dateOfBirth == null ? 'set_now'.tr : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: _dateOfBirth == null ? AppColors.textSecondary : Colors.black87,
-                              ),
+                  Text('date_of_birth'.tr.toUpperCase(), style: textTheme.labelSmall?.copyWith(color: AppColors.textSecondary, letterSpacing: 0.6)),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: _pickBirthDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _dateOfBirth == null ? 'set_now'.tr : DateFormat('dd/MM/yyyy').format(_dateOfBirth!),
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: _dateOfBirth == null ? AppColors.textSecondary : Colors.black87,
                             ),
-                            const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondary),
-                          ],
-                        ),
+                          ),
+                          const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondary),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const SizedBox(height: 40),
             ],

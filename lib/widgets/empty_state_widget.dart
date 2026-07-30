@@ -62,10 +62,22 @@ class EmptyStateWidget extends StatelessWidget {
               FilledButton.tonal(
                 onPressed: onRetry,
                 style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.brand.withValues(alpha: 0.1),
+                  foregroundColor: AppColors.brand,
+                  elevation: 0,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
                 ),
-                child: Text(retryLabel ?? 'Thử lại'),
+                child: Text(
+                  retryLabel ?? 'Thử lại',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ],

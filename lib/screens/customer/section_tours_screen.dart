@@ -48,7 +48,7 @@ class _SectionToursScreenState extends State<SectionToursScreen> {
                 fontWeight: FontWeight.w700,
               ),
             )),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         scrolledUnderElevation: 2,
         shadowColor: Colors.black.withValues(alpha: 0.1),
         leading: IconButton(

@@ -390,7 +390,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         context: context,
         useRootNavigator: true,
         isScrollControlled: true,
-        backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -448,7 +447,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -561,7 +559,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

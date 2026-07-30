@@ -262,7 +262,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${departure == null ? 'ot_no_schedule'.tr : DateFormatter.display(departure)} • $_quantity vé',
+                      '${departure == null ? 'ot_no_schedule'.tr : DateFormatter.display(departure)} • ${'ot_tickets_count'.trParams({'count': _quantity.toString()})}',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,

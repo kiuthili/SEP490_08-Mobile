@@ -31,7 +31,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceGrouped,
       appBar: _buildAppBar(),
       body: Obx(() {
         final query = _controller.searchTerm.value.trim();
@@ -57,27 +57,27 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.brand,
+      backgroundColor: AppColors.surfaceGrouped,
       elevation: 0,
       scrolledUnderElevation: 0,
       titleSpacing: 0,
-      iconTheme: const IconThemeData(color: Colors.white),
+      iconTheme: const IconThemeData(color: AppColors.textPrimary),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
         onPressed: () => Get.back(),
       ),
       title: Container(
         height: 40,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: AppRadius.input,
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(100),
         ),
         child: Row(
           children: [
             const SizedBox(width: 12),
-            Icon(Icons.search_rounded,
-                size: 20, color: AppColors.brand.withValues(alpha: 0.7)),
+            const Icon(Icons.search_rounded,
+                size: 20, color: AppColors.textTertiary),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -151,17 +151,28 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: _controller.suggestions.length,
-      itemBuilder: (context, index) {
-        final suggestion = _controller.suggestions[index];
-        return ListTile(
-          leading:
-              const Icon(Icons.search_rounded, color: AppColors.textTertiary),
-          title: Text(suggestion, style: const TextStyle(fontSize: 15)),
-          onTap: () => _controller.onSearchSubmit(suggestion),
-        );
-      },
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _controller.suggestions.length,
+        separatorBuilder: (context, index) => const Divider(height: 1, indent: 16, endIndent: 16, color: AppColors.border),
+        itemBuilder: (context, index) {
+          final suggestion = _controller.suggestions[index];
+          return ListTile(
+            leading:
+                const Icon(Icons.search_rounded, color: AppColors.textTertiary),
+            title: Text(suggestion, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textTertiary),
+            onTap: () => _controller.onSearchSubmit(suggestion),
+          );
+        },
+      ),
     );
   }
 
@@ -208,8 +219,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0F2F5),
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
                       province,
@@ -273,9 +284,8 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                   child: Container(
                     width: 160,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
-                      border: Border.all(color: AppColors.border),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +294,7 @@ class _SearchSuggestionScreenState extends State<SearchSuggestionScreen> {
                           children: [
                             ClipRRect(
                               borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(7)),
+                                  top: Radius.circular(16)),
                               child: SizedBox(
                                 height: 90,
                                 width: double.infinity,

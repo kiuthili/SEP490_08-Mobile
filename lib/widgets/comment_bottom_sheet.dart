@@ -68,9 +68,12 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
     final diff = DateTime.now().difference(time);
     final isVi = Get.locale?.languageCode == 'vi';
 
-    if (diff.inDays > 0) return isVi ? '${diff.inDays} ngày' : '${diff.inDays} d';
-    if (diff.inHours > 0) return isVi ? '${diff.inHours} giờ' : '${diff.inHours} h';
-    if (diff.inMinutes > 0) return isVi ? '${diff.inMinutes} phút' : '${diff.inMinutes} m';
+    if (diff.inDays > 0)
+      return isVi ? '${diff.inDays} ngày' : '${diff.inDays} d';
+    if (diff.inHours > 0)
+      return isVi ? '${diff.inHours} giờ' : '${diff.inHours} h';
+    if (diff.inMinutes > 0)
+      return isVi ? '${diff.inMinutes} phút' : '${diff.inMinutes} m';
     return isVi ? 'Vừa xong' : 'Just now';
   }
 
@@ -270,30 +273,41 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
               children: [
                 // Header
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      const SizedBox(width: 24), // Spacer for centering
-                      Text(
-                        'sc_cmt_title'
-                            .trParams({'count': _comments.length.toString()}),
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'sc_cmt_title'
+                              .trParams({'count': _comments.length.toString()}),
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.close_rounded,
-                            color: Colors.black54, size: 24),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          color: Colors.black54,
+                          onPressed: () => Navigator.pop(context),
+                          padding: const EdgeInsets.all(4),
+                          constraints:
+                              const BoxConstraints(minWidth: 32, minHeight: 32),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                            shape: const CircleBorder(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(color: Colors.black12, height: 1),
+                const SizedBox(height: 4),
 
                 // Content
                 Expanded(
@@ -473,8 +487,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
 
                       Expanded(
                         child: Container(
-                          height: 40,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          constraints: const BoxConstraints(minHeight: 40),
+                          padding: const EdgeInsets.only(
+                              left: 16, right: 4, top: 4, bottom: 4),
                           decoration: BoxDecoration(
                             color: AppColors.inputFill,
                             borderRadius: BorderRadius.circular(20),
@@ -489,7 +504,8 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                   onChanged: (_) => setState(() {}),
                                   onSubmitted: (_) => _submitComment(),
                                   style: const TextStyle(
-                                      color: Colors.black87, fontSize: 14),
+                                      color: Colors.black87, fontSize: 15),
+                                  maxLines: null,
                                   decoration: InputDecoration(
                                     hintText: _editingCommentId != null
                                         ? 'sc_cmt_edit_hint'.tr
@@ -502,52 +518,56 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                     filled: true,
                                     fillColor: Colors.transparent,
                                     hintStyle: const TextStyle(
-                                        color: Colors.black54, fontSize: 14),
+                                        color: Colors.black54, fontSize: 15),
                                     isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 10),
+                                    contentPadding: EdgeInsets.zero,
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              // Send Button
+                              _sendingComment
+                                  ? const SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.brand),
+                                        ),
+                                      ),
+                                    )
+                                  : GestureDetector(
+                                      onTap:
+                                          _commentController.text.trim().isEmpty
+                                              ? null
+                                              : _submitComment,
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _commentController.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? Colors.transparent
+                                              : AppColors.brand,
+                                        ),
+                                        child: Icon(Icons.arrow_upward_rounded,
+                                            color: _commentController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? AppColors.textTertiary
+                                                : Colors.white,
+                                            size: 20),
+                                      ),
+                                    ),
                             ],
                           ),
                         ),
-                      ),
-
-                      // Send Button
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: _sendingComment
-                            ? const SizedBox(
-                                width: 36,
-                                height: 36,
-                                child: Center(
-                                  child: SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: AppColors.brand),
-                                  ),
-                                ),
-                              )
-                            : GestureDetector(
-                                onTap: _commentController.text.trim().isEmpty
-                                    ? null
-                                    : _submitComment,
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color:
-                                        _commentController.text.trim().isEmpty
-                                            ? Colors.grey.shade400
-                                            : AppColors.brand,
-                                  ),
-                                  child: const Icon(Icons.send_rounded,
-                                      color: Colors.white, size: 18),
-                                ),
-                              ),
                       ),
                     ],
                   ),

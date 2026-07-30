@@ -310,7 +310,12 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.paddingOf(context).bottom + 100),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              8,
+              20,
+              MediaQuery.paddingOf(context).bottom + 12,
+            ),
             child: Row(
               children: [
                 if (_step > 0)

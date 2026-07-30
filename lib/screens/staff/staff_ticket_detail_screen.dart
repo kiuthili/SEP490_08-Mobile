@@ -172,6 +172,24 @@ class _TicketFilterBarState extends State<_TicketFilterBar> {
                       },
                     )
                   : null,
+              isDense: true,
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppColors.brand, width: 1.5),
+              ),
             ),
           ),
           const SizedBox(height: 8),
