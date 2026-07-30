@@ -1394,23 +1394,24 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
 
     try {
       moment = _findInFeed(momentId) ?? moment;
-      if (moment == null) {
-        final userMoments = await Get.find<SocialService>().getUserMoments(_currentUserId);
-        moment = userMoments.firstWhereOrNull((m) => m.id == momentId);
-      }
-      if (moment == null) {
-        moment = await _socialController.getMomentById(momentId);
-      }
-
-      if (moment == null) {
-        setState(() => _error = 'Moment does not exist or has been deleted');
-      } else {
+      if (moment != null) {
         setState(() {
           _moment = moment;
+          _loading = false;
+        });
+      }
+
+      final latest = await _socialController.getMomentById(momentId);
+      if (mounted) {
+        setState(() {
+          _moment = latest;
+          _error = null;
         });
       }
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (moment == null && mounted) {
+        setState(() => _error = e.toString());
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1424,10 +1425,10 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
       builder: (context) => CommentBottomSheet(
         moment: moment,
       ),
-    ).then((_) {
+    ).then((_) async {
       if (mounted) {
-        final updated = _findInFeed(moment.id);
-        if (updated != null) {
+        final updated = _findInFeed(moment.id) ?? await _socialController.getMomentById(moment.id);
+        if (updated != null && mounted) {
           setState(() => _moment = updated);
         }
       }
@@ -1471,7 +1472,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
             const SizedBox(height: 12),
             Flexible(
               child: ListView.builder(
-                shrinkWrap: true,
+                shrinkWrap: true, 
                 itemCount: rooms.length,
                 itemBuilder: (context, index) {
                   final room = rooms[index];
@@ -1607,7 +1608,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                       },
                     ),
                     Positioned(
-                      top: MediaQuery.of(context).padding.top + 8,
+                      top: 16,
                       left: 16,
                       child: SafeArea(
                         child: CircleAvatar(
@@ -1776,9 +1777,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  Future<void> _loadMoments(int userId) async {
+  Future<void> _loadMoments(int userId, {bool silent = false}) async {
     try {
-      setState(() => _momentsLoading = true);
+      if (!silent) setState(() => _momentsLoading = true);
       _moments = await _social.getUserMoments(userId);
     } catch (_) {
     } finally {
@@ -1786,10 +1787,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  void _openFeedAtIndex(int index) {
-    Navigator.of(context).push(
+  void _openFeedAtIndex(int index) async {
+    if (_user == null) return;
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => _OtherUserFeedScreen(
+          user: _user!,
           moments: _moments,
           initialIndex: index,
           currentUserId: _socialController.currentUserId,
@@ -1797,6 +1800,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
       ),
     );
+    final id = Get.arguments as int?;
+    if (id != null) {
+      _loadMoments(id, silent: true);
+    }
   }
 
   @override
@@ -2618,11 +2625,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 // ─────────────────────────────────────────────────
 class _OtherUserFeedScreen extends StatefulWidget {
   const _OtherUserFeedScreen({
+    required this.user,
     required this.moments,
     required this.initialIndex,
     required this.currentUserId,
     required this.socialController,
   });
+  final UserSearchModel user;
   final List<MomentModel> moments;
   final int initialIndex;
   final int currentUserId;
@@ -2640,6 +2649,22 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
     super.initState();
     // Bắt đầu từ bài được chọn
     _moments = widget.moments.sublist(widget.initialIndex);
+    _loadFullMoments();
+  }
+
+  Future<void> _loadFullMoments() async {
+    for (int i = 0; i < _moments.length; i++) {
+      try {
+        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        if (mounted) {
+          setState(() {
+            _moments[i] = fullData;
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   Future<void> _toggleLike(int index) async {
@@ -2680,6 +2705,7 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
         itemBuilder: (context, index) {
           final moment = _moments[index];
           return _OtherFeedItem(
+            user: widget.user,
             moment: moment,
             currentUserId: widget.currentUserId,
             onLike: () => _toggleLike(index),
@@ -2695,11 +2721,13 @@ class _OtherUserFeedScreenState extends State<_OtherUserFeedScreen> {
 
 class _OtherFeedItem extends StatelessWidget {
   const _OtherFeedItem({
+    required this.user,
     required this.moment,
     required this.currentUserId,
     required this.onLike,
     required this.onComment,
   });
+  final UserSearchModel user;
   final MomentModel moment;
   final int currentUserId;
   final VoidCallback onLike;
@@ -2721,16 +2749,16 @@ class _OtherFeedItem extends StatelessWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: AppColors.brandLight,
-                  backgroundImage: moment.avatarUrl?.isNotEmpty == true &&
-                          !moment.avatarUrl!.toLowerCase().endsWith('.svg')
-                      ? CachedNetworkImageProvider(moment.avatarUrl!)
+                  backgroundImage: user.avatarUrl?.isNotEmpty == true &&
+                          !user.avatarUrl!.toLowerCase().endsWith('.svg')
+                      ? CachedNetworkImageProvider(user.avatarUrl!)
                       : null,
-                  child: moment.avatarUrl == null ||
-                          moment.avatarUrl!.isEmpty ||
-                          moment.avatarUrl!.toLowerCase().endsWith('.svg')
+                  child: user.avatarUrl == null ||
+                          user.avatarUrl!.isEmpty ||
+                          user.avatarUrl!.toLowerCase().endsWith('.svg')
                       ? Text(
-                          (moment.fullName?.isNotEmpty == true
-                                  ? moment.fullName![0]
+                          (user.fullName?.isNotEmpty == true
+                                  ? user.fullName![0]
                                   : '?')
                               .toUpperCase(),
                           style: const TextStyle(
@@ -2743,7 +2771,7 @@ class _OtherFeedItem extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    moment.fullName ?? 'StayHub User',
+                    user.fullName ?? 'StayHub User',
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
@@ -2753,20 +2781,39 @@ class _OtherFeedItem extends StatelessWidget {
               ],
             ),
           ),
-          CachedNetworkImage(
-            imageUrl: moment.imageUrl,
-            width: double.infinity,
-            fit: BoxFit.contain,
-            placeholder: (_, __) =>
-                Container(height: 300, color: Colors.black12),
-            errorWidget: (_, __, ___) => Container(
-              height: 300,
-              color: Colors.black12,
-              child: const Center(
-                  child: Icon(Icons.broken_image_outlined,
-                      color: Colors.black38, size: 48)),
+          GestureDetector(
+            onTap: onComment,
+            child: Hero(
+              tag: 'moment_image_${moment.id}',
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: moment.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  placeholder: (_, __) =>
+                      Container(height: 300, color: Colors.black12),
+                  errorWidget: (_, __, ___) => Container(
+                    height: 300,
+                    color: Colors.black12,
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined,
+                            color: Colors.black38, size: 48)),
+                  ),
+                ),
+              ),
             ),
           ),
+          if (moment.caption?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+              child: Text(
+                moment.caption!,
+                style: const TextStyle(color: Colors.black87, fontSize: 14),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
             child: Row(
@@ -2790,38 +2837,39 @@ class _OtherFeedItem extends StatelessWidget {
               ],
             ),
           ),
-          if (moment.reactionCount > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                moment.reactionCount.toString() + ' ' + 'sc_sds_likes'.tr,
-                style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13),
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              Get.locale?.languageCode == 'vi'
+                  ? '${moment.reactionCount} lượt thích'
+                  : '${moment.reactionCount} likes',
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13),
             ),
-          if (moment.caption?.isNotEmpty == true)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
-                  children: [
-                    TextSpan(
-                      text: '${moment.fullName ?? ''}  ',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    TextSpan(text: moment.caption),
-                  ],
-                ),
-              ),
-            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+            child: GestureDetector(
+              onTap: onComment,
+              child: Text(
+                moment.comments.isNotEmpty
+                    ? (Get.locale?.languageCode == 'vi'
+                        ? 'Xem tất cả ${moment.comments.length} bình luận'
+                        : 'View all ${moment.comments.length} comments')
+                    : (Get.locale?.languageCode == 'vi'
+                        ? 'Thêm bình luận...'
+                        : 'Add a comment...'),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              'sc_sds_view_all_comments'.tr,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),
         ],

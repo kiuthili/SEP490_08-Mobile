@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../models/user_model.dart';
@@ -35,8 +36,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
     _loadMoments();
   }
 
-  Future<void> _loadMoments() async {
-    setState(() => _loading = true);
+  Future<void> _loadMoments({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       final user = _auth.currentUser.value;
       if (user != null) {
@@ -410,10 +411,10 @@ class _MyProfilePanelState extends State<MyProfilePanel>
     );
   }
 
-  void _openFeedAtIndex(BuildContext context, int index) {
+  void _openFeedAtIndex(BuildContext context, int index) async {
     final user = _auth.currentUser.value;
     if (user == null) return;
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => _UserMomentsFeedScreen(
           moments: _myMoments,
@@ -423,6 +424,7 @@ class _MyProfilePanelState extends State<MyProfilePanel>
         ),
       ),
     );
+    _loadMoments(silent: true);
   }
 }
 
@@ -453,6 +455,22 @@ class _UserMomentsFeedScreenState extends State<_UserMomentsFeedScreen> {
     super.initState();
     // Bắt đầu từ bài được chọn để khi cuộn ListView sẽ liên tiếp các bài cũ hơn
     _moments = widget.moments.sublist(widget.initialIndex);
+    _loadFullMoments();
+  }
+
+  Future<void> _loadFullMoments() async {
+    for (int i = 0; i < _moments.length; i++) {
+      try {
+        final fullData = await widget.socialController.getMomentById(_moments[i].id);
+        if (mounted) {
+          setState(() {
+            _moments[i] = fullData;
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   Future<void> _toggleLike(int index) async {
@@ -588,18 +606,23 @@ class _FeedItem extends StatelessWidget {
             onTap: onComment, // Re-use onComment to navigate to MomentDetailScreen
             child: Hero(
               tag: 'moment_image_${moment.id}',
-              child: CachedNetworkImage(
-                imageUrl: moment.imageUrl,
-                width: double.infinity,
-                fit: BoxFit.contain, // Fit contain to avoid cropping vertical images
-                placeholder: (_, __) =>
-                    Container(height: 300, color: Colors.black12),
-                errorWidget: (_, __, ___) => Container(
-                  height: 300,
-                  color: Colors.black12,
-                  child: const Center(
-                      child: Icon(Icons.broken_image_outlined,
-                          color: Colors.black38, size: 48)),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: moment.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.contain, // Fit contain to avoid cropping vertical images
+                  placeholder: (_, __) =>
+                      Container(height: 300, color: Colors.black12),
+                  errorWidget: (_, __, ___) => Container(
+                    height: 300,
+                    color: Colors.black12,
+                    child: const Center(
+                        child: Icon(Icons.broken_image_outlined,
+                            color: Colors.black38, size: 48)),
+                  ),
                 ),
               ),
             ),
@@ -641,24 +664,41 @@ class _FeedItem extends StatelessWidget {
           ),
 
           // ── Likes Count ──
-          if (moment.reactionCount > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'sc_mp_likes_count'.trParams({'count': moment.reactionCount.toString()}),
-                style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13),
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              Get.locale?.languageCode == 'vi'
+                  ? '${moment.reactionCount} lượt thích'
+                  : '${moment.reactionCount} likes',
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13),
             ),
+          ),
 
-          // ── Time ──
+          // ── Time & Comments ──
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+            child: GestureDetector(
+              onTap: onComment,
+              child: Text(
+                moment.comments.isNotEmpty
+                    ? (Get.locale?.languageCode == 'vi'
+                        ? 'Xem tất cả ${moment.comments.length} bình luận'
+                        : 'View all ${moment.comments.length} comments')
+                    : (Get.locale?.languageCode == 'vi'
+                        ? 'Thêm bình luận...'
+                        : 'Add a comment...'),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
             child: Text(
-              'sc_mp_view_all_comments'.tr, // Can be refined later with real date formatting if needed
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              DateFormat('HH:mm - dd/MM/yyyy').format(moment.createdAt.toLocal()),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
             ),
           ),
         ],
@@ -676,24 +716,11 @@ class _FeedItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(2)),
-            ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.error),
               title: Text('sc_mp_delete_post'.tr,
                   style: TextStyle(color: AppColors.error)),
               onTap: onDelete,
-            ),
-            ListTile(
-              leading: const Icon(Icons.cancel_outlined, color: Colors.black87),
-              title: Text('sc_mp_cancel'.tr, style: TextStyle(color: Colors.black87)),
-              onTap: () => Navigator.pop(context),
             ),
             const SizedBox(height: 8),
           ],
