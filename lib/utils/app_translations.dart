@@ -186,6 +186,7 @@ class AppTranslations extends Translations {
           'nav_tickets': 'Tickets',
           'nav_checkin': 'Check-in',
           'nav_guests': 'Guests',
+          'nav_customers': 'Customers',
 
           // --- Home & Search ---
           'search_hint': 'Search...',
@@ -1102,6 +1103,7 @@ class AppTranslations extends Translations {
           'nav_tickets': 'Vé',
           'nav_checkin': 'Check-in',
           'nav_guests': 'Khách',
+          'nav_customers': 'Khách hàng',
 
           // --- Home & Search ---
           'search_hint': 'Tìm kiếm...',

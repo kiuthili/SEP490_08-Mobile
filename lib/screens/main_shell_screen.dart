@@ -100,7 +100,7 @@ class MainShellScreen extends GetView<ShellController> {
     IosBottomNavItem(
       icon: Icons.groups_outlined,
       selectedIcon: Icons.groups_rounded,
-      label: 'nav_guests'.tr,
+      label: 'nav_customers'.tr,
     ),
     IosBottomNavItem(
       icon: Icons.person_outline_rounded,
