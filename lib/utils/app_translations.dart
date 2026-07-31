@@ -187,7 +187,8 @@ class AppTranslations extends Translations {
           'nav_schedule': 'Schedule',
           'nav_tickets': 'Tickets',
           'nav_checkin': 'Check-in',
-          'nav_guests': 'Guests',
+          'nav_guests': 'Customers',
+          'nav_customers': 'Customers',
 
           // --- Home & Search ---
           'search_hint': 'Search...',
@@ -413,6 +414,9 @@ class AppTranslations extends Translations {
           'td_transportation': 'Transportation',
           'td_entrance_fees': 'Entrance fees & sightseeing tickets',
           'td_free_cancellation': 'Free cancellation according to policy',
+          'od_view_review': 'View Review',
+          'od_submit_review': 'Submit Review',
+          'od_cancel': 'Cancel',
           'td_edit_review': 'Edit review',
           'td_write_review': 'Write a review',
           'td_comment': 'Comment...',
@@ -793,6 +797,9 @@ class AppTranslations extends Translations {
           'od_cannot_cancel': 'Cannot request cancellation',
           'od_cancel_policy_error': 'Cancellation request is not supported within 1 day before departure or when departure information is missing.',
           'od_understood': 'I Understand',
+          'od_view_review': 'View Review',
+          'od_submit_review': 'Submit Review',
+          'od_cancel': 'Cancel',
           'od_days_until_departure': '@days days remaining until departure.',
           'od_cancel_fee': 'Cancellation fee: @percent% (@amount)',
           'od_estimated_refund': 'Estimated refund: @amount',
@@ -885,7 +892,7 @@ class AppTranslations extends Translations {
           'st_nationality': 'Nationality',
 
           'st_customers_and_location': 'Customers & Location',
-          'st_customer_list': 'Customer List',
+          'st_customer_list': 'View Customers',
           'st_location_map': 'Location Map',
           'st_no_customers': 'No customers yet',
           'st_select_schedule_in_calendar': 'Select a schedule in the Schedule tab',
@@ -1116,7 +1123,8 @@ class AppTranslations extends Translations {
           'nav_schedule': 'Lịch',
           'nav_tickets': 'Vé',
           'nav_checkin': 'Check-in',
-          'nav_guests': 'Khách',
+          'nav_guests': 'Khách hàng',
+          'nav_customers': 'Khách hàng',
 
           // --- Home & Search ---
           'search_hint': 'Tìm kiếm...',
@@ -1300,6 +1308,9 @@ class AppTranslations extends Translations {
           'td_transportation': 'Phương tiện di chuyển',
           'td_entrance_fees': 'Vé tham quan & phí vào cửa',
           'td_free_cancellation': 'Miễn phí hủy theo chính sách',
+          'od_view_review': 'Xem đánh giá',
+          'od_submit_review': 'Gửi đánh giá',
+          'od_cancel': 'Hủy',
           'td_edit_review': 'Sửa đánh giá',
           'td_write_review': 'Viết đánh giá',
           'td_comment': 'Nhận xét...',
@@ -1773,7 +1784,7 @@ class AppTranslations extends Translations {
           'st_nationality': 'Quốc tịch',
 
           'st_customers_and_location': 'Khách hàng & Vị trí',
-          'st_customer_list': 'Danh sách khách',
+          'st_customer_list': 'Xem khách hàng',
           'st_location_map': 'Bản đồ vị trí',
           'st_no_customers': 'Chưa có khách',
           'st_select_schedule_in_calendar': 'Chọn lịch trình ở tab Lịch trình',

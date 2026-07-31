@@ -314,10 +314,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         order.status == 'Completed') ...[
                       const SizedBox(height: 16),
                       _PostPaymentActions(
+                        order: order,
                         completed: order.status == 'Completed',
                         showCancellation: _canRequestCancellation(order),
                         onCancellation: () => _openCancellationRequest(order),
                         onReview: () => _showReviewDialog(order),
+                        onUpdateReview: () => _showReviewDialog(order, isUpdate: true),
                       ),
                     ],
                     if (order.status == 'Cancelled' ||
@@ -544,11 +546,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  void _showReviewDialog(OrderModel order) {
-    final commentController = TextEditingController();
+  void _showReviewDialog(OrderModel order, {bool isUpdate = false}) {
+    final commentController = TextEditingController(text: isUpdate ? order.review?.comment : null);
     // `rating` is declared here — outside all builder closures — so it is
     // never inadvertently reset when a builder re-runs.
-    var rating = 5;
+    var rating = isUpdate ? (order.review?.rating ?? 5) : 5;
     // Cache screenHeight from the parent context BEFORE opening the sheet to
     // avoid registering sheetContext as a MediaQuery dependent (which causes
     // the '_dependents.isEmpty' crash when the user swipes the sheet down).
@@ -582,7 +584,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'od_review_trip'.tr,
+                        isUpdate ? 'td_edit_review'.tr : 'od_review_trip'.tr,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -595,24 +597,31 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         'od_how_was_experience'.tr,
                         style: bodyTextStyle?.copyWith(
                           color: AppColors.textSecondary,
+                          fontSize: 15,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 28),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(5, (index) {
-                          return IconButton(
-                            icon: Icon(
-                              index < rating
-                                  ? Icons.star_rounded
-                                  : Icons.star_border_rounded,
-                              color: const Color(0xFFFFB020),
-                              size: 34,
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                setDialogState(() => rating = index + 1);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  index < rating
+                                      ? Icons.star_rounded
+                                      : Icons.star_border_rounded,
+                                  color: const Color(0xFFFFB020),
+                                  size: 40,
+                                ),
+                              ),
                             ),
-                            onPressed: () {
-                              setDialogState(() => rating = index + 1);
-                            },
                           );
                         }),
                       ),
@@ -636,11 +645,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                           filled: true,
                           fillColor: AppColors.surfaceGrouped,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
-                        maxLines: 2,
-                        minLines: 2,
+                        maxLines: 5,
+                        minLines: 3,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       Row(
                         children: [
                           Expanded(
@@ -653,7 +663,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 foregroundColor: AppColors.textPrimary,
                               ),
                               child: Text(
-                                'od_later'.tr,
+                                'od_cancel'.tr,
                                 style: const TextStyle(fontWeight: FontWeight.w800),
                               ),
                             ),
@@ -661,16 +671,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             flex: 2,
-                            child: FilledButton.icon(
+                            child: FilledButton(
                               onPressed: () async {
                                 final reviewController = Get.find<ReviewController>();
                                 await reviewController.submitReview(
                                   tourId: order.tour?.id ?? 0,
                                   rating: rating,
                                   comment: commentController.text,
+                                  existingReviewId: isUpdate ? order.review?.id : null,
                                 );
                                 if (sheetContext.mounted) {
                                   Navigator.pop(sheetContext);
+                                  _refreshOrder(order.id);
                                 }
                               },
                               style: FilledButton.styleFrom(
@@ -679,10 +691,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 15),
                                 shape: const StadiumBorder(),
                               ),
-                              icon: const Icon(Icons.send_rounded, size: 18),
-                              label: Text(
+                              child: Text(
                                 'od_submit_review'.tr,
-                                style: const TextStyle(fontWeight: FontWeight.w800),
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                               ),
                             ),
                           ),
@@ -2121,19 +2132,35 @@ class _PendingOrderNotice extends StatelessWidget {
 
 class _PostPaymentActions extends StatelessWidget {
   const _PostPaymentActions({
+    required this.order,
     required this.completed,
     required this.showCancellation,
     required this.onCancellation,
     required this.onReview,
+    required this.onUpdateReview,
   });
 
+  final OrderModel order;
   final bool completed;
   final bool showCancellation;
   final VoidCallback onCancellation;
   final VoidCallback onReview;
+  final VoidCallback onUpdateReview;
 
   @override
   Widget build(BuildContext context) {
+    bool hasCheckedInTicket = order.tickets.any((t) => t.checkInStatus == 'CheckedIn');
+    bool canReview = (order.status == 'Paid' || order.status == 'Completed') && hasCheckedInTicket;
+    
+    bool hasReview = order.review != null;
+    bool canUpdateReview = false;
+    if (hasReview && order.review?.createdAt != null) {
+      final reviewCreatedAt = order.review!.createdAt!.toLocal();
+      if (DateTime.now().difference(reviewCreatedAt).inHours < 24) {
+        canUpdateReview = true;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2152,23 +2179,49 @@ class _PostPaymentActions extends StatelessWidget {
             completed ? 'od_review_prompt'.tr : 'od_qr_ready'.tr,
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          const SizedBox(height: 14),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: const StadiumBorder(),
-            ),
-            onPressed: onReview,
-            child: Text(
-              'td_write_review'.tr,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
+          if (hasReview) ...[
+            const SizedBox(height: 14),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.brand,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: const StadiumBorder(),
+              ),
+              onPressed: () {
+                if (canUpdateReview) {
+                  onUpdateReview();
+                } else {
+                  Get.toNamed(AppRoutes.myReviews);
+                }
+              },
+              child: Text(
+                canUpdateReview ? 'td_edit_review'.tr : 'od_view_review'.tr,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
+          ] else if (canReview) ...[
+            const SizedBox(height: 14),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.brand,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: const StadiumBorder(),
+              ),
+              onPressed: onReview,
+              child: Text(
+                'td_write_review'.tr,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
           if (showCancellation) ...[
             const SizedBox(height: 10),
             OutlinedButton(

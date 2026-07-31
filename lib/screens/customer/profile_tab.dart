@@ -153,7 +153,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     size: 16, color: AppColors.brand),
                 const SizedBox(width: 4),
                 Text(
-                  'pt_member'.tr,
+                  user.isStaff ? 'Staff Account' : 'pt_member'.tr,
                   style: const TextStyle(
                     color: AppColors.brandDeep,
                     fontSize: 12,
@@ -364,7 +364,28 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildCommunityAndExplore() {
+  Widget _buildStaffWorkspace(UserModel user) {
+    if (!user.isStaff) return const SizedBox.shrink();
+    
+    return _buildSectionCard(
+      title: 'Staff Workspace',
+      viewAllText: '',
+      onViewAll: () {},
+      child: Column(
+        children: [
+          _buildSupportTile(
+            icon: Icons.chat_bubble_rounded,
+            title: 'pt_messages'.tr,
+            onTap: () => Get.toNamed(AppRoutes.chatInbox),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunityAndExplore(UserModel user) {
+    if (user.isStaff) return const SizedBox.shrink();
+
     return _buildSectionCard(
       title: 'pt_community_explore'.tr,
       viewAllText: '',
@@ -506,9 +527,11 @@ class _ProfileTabState extends State<ProfileTab> {
             children: [
               _buildHeader(user),
 
-              _buildMyBookings(),
-              _buildMyUtilities(),
-              _buildCommunityAndExplore(),
+              if (!user.isStaff) _buildMyBookings(),
+              if (!user.isStaff) _buildMyUtilities(),
+              
+              _buildStaffWorkspace(user),
+              _buildCommunityAndExplore(user),
 
               _buildDarkModeToggle(),
 

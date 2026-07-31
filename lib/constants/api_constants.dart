@@ -11,7 +11,6 @@ class ApiConstants {
     if (Platform.isAndroid) {
       // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
       return 'https://h3s3nnnt-7010.asse.devtunnels.ms';
-      // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
@@ -19,14 +18,13 @@ class ApiConstants {
     }
 
     // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
-    return 'https://h3s3nnnt-7010.asse.devtunnels.ms';
+    // return 'https://h3s3nnnt-7010.asse.devtunnels.ms';
     // return 'https://028xpj74-7010.asse.devtunnels.ms';
     // return 'https://jpg6krl7-7010.asse.devtunnels.ms';
     // return 'https://028xpj74-7010.asse.devtunnels.ms';
     // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
-    //   return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
-    // return 'https://localhost:7010';
-    return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
+    // return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
+    return 'https://localhost:7010';
   }
 
   static String get webUrl {
@@ -51,7 +49,7 @@ class ApiConstants {
   static const googleClientId = String.fromEnvironment(
     'GOOGLE_CLIENT_ID',
     defaultValue:
-        '1007115094738-i4re3khhtf8hlvnv1a5u57680il4p6ba.apps.googleusercontent.com',
+    '1007115094738-i4re3khhtf8hlvnv1a5u57680il4p6ba.apps.googleusercontent.com',
   );
 
   static const Duration connectTimeout = Duration(seconds: 30);
@@ -90,7 +88,7 @@ class ApiConstants {
   static const mapboxAccessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
     defaultValue:
-        'pk.eyJ1IjoicGhhbWtoYXZ5MTEwMiIsImEiOiJjbWZxdzRyOGcwMzU0MmlwYXozdG5zdjI0In0.TF-jItzlzC3i-LLE4sepEA',
+    'pk.eyJ1IjoicGhhbWtoYXZ5MTEwMiIsImEiOiJjbWZxdzRyOGcwMzU0MmlwYXozdG5zdjI0In0.TF-jItzlzC3i-LLE4sepEA',
   );
 
   static const mapboxTileUrl =

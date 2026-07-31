@@ -13,7 +13,7 @@ class StaffCustomersTab extends GetView<StaffController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text('st_customers_and_location'.tr)),
+      appBar: AppBar(title: Text('nav_customers'.tr)),
       body: StaffScheduleList(
         actionBuilder: (context, schedule) => StaffActionButton(
           label: 'st_customer_list'.tr,
