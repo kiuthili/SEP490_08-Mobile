@@ -244,7 +244,6 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
                   onPressed: _isProcessing ? null : _doCheckIn,
                 ),
                 const SizedBox(height: 24),
-
               ]),
             ),
           ),

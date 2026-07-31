@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
@@ -15,7 +15,8 @@ class StaffCustomerDetailScreen extends StatefulWidget {
   final int scheduleId;
 
   @override
-  State<StaffCustomerDetailScreen> createState() => _StaffCustomerDetailScreenState();
+  State<StaffCustomerDetailScreen> createState() =>
+      _StaffCustomerDetailScreenState();
 }
 
 class _StaffCustomerDetailScreenState extends State<StaffCustomerDetailScreen> {
@@ -51,7 +52,8 @@ class _StaffCustomerDetailScreenState extends State<StaffCustomerDetailScreen> {
         ),
         body: TabBarView(
           children: [
-            _CustomersTab(controller: controller, scheduleId: widget.scheduleId),
+            _CustomersTab(
+                controller: controller, scheduleId: widget.scheduleId),
             _MapTab(controller: controller),
           ],
         ),
@@ -102,21 +104,29 @@ class _CustomersTabState extends State<_CustomersTab> {
                       icon: const Icon(Icons.close_rounded, size: 18),
                       onPressed: () {
                         _searchController.clear();
-                        widget.controller.applyCustomerFilter(widget.scheduleId, '');
+                        widget.controller
+                            .applyCustomerFilter(widget.scheduleId, '');
                         setState(() {});
                       },
                     )
                   : null,
               isDense: true,
+              filled: true,
+              fillColor: Colors.grey.shade100,
               contentPadding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.border),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppColors.brand, width: 1.5),
               ),
             ),
           ),
@@ -230,7 +240,9 @@ class _CustomerCard extends StatelessWidget {
                 children: [
                   if (phone != null && phone.isNotEmpty)
                     _InfoRow(
-                        icon: Icons.phone_rounded, label: 'st_phone'.tr, value: phone),
+                        icon: Icons.phone_rounded,
+                        label: 'st_phone'.tr,
+                        value: phone),
                   _InfoRow(
                       icon: Icons.badge_rounded,
                       label: 'st_id_passport'.tr,
@@ -352,11 +364,8 @@ class _MapTab extends StatefulWidget {
 }
 
 class _MapTabState extends State<_MapTab> {
-  final MapController _mapController = MapController();
-
-  static String get _tileUrl =>
-      'https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x'
-      '?access_token=${ApiConstants.mapboxAccessToken}';
+  mb.MapboxMap? _mapboxMap;
+  mb.PointAnnotationManager? _pointAnnotationManager;
 
   @override
   Widget build(BuildContext context) {
@@ -370,29 +379,16 @@ class _MapTabState extends State<_MapTab> {
           if (constraints.maxHeight < 1 || constraints.maxWidth < 1) {
             return const SizedBox.shrink();
           }
-          return FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: LatLng(centerLat, centerLng),
-              initialZoom: 14,
+          return mb.MapWidget(
+            cameraOptions: mb.CameraOptions(
+              center: mb.Point(coordinates: mb.Position(centerLng, centerLat)),
+              zoom: 14,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: _tileUrl,
-                userAgentPackageName: 'com.stayhub.stayhub_mobile',
-                maxZoom: 18,
-              ),
-              MarkerLayer(
-                markers: locs
-                    .map((loc) => Marker(
-                          point: LatLng(loc.latitude, loc.longitude),
-                          width: 70,
-                          height: 80,
-                          child: _LiveLocationMarker(location: loc),
-                        ))
-                    .toList(),
-              ),
-            ],
+            styleUri: mb.MapboxStyles.STANDARD,
+            onMapCreated: (map) async {
+              _mapboxMap = map;
+              _pointAnnotationManager = await map.annotations.createPointAnnotationManager();
+            },
           );
         },
       );

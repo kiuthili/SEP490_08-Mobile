@@ -26,11 +26,11 @@ class _OrdersTabState extends State<OrdersTab>
   final OrderController controller = Get.find<OrderController>();
 
   static Map<String, String> get _filters => {
-    '': 'pt_all'.tr,
-    'Paid': 'pt_paid'.tr,
-    'Cancelled': 'pt_cancelled'.tr,
-    'Request to cancel': 'pt_cancel_req'.tr,
-  };
+        '': 'pt_all'.tr,
+        'Paid': 'pt_paid'.tr,
+        'Cancelled': 'pt_cancelled'.tr,
+        'Request to cancel': 'pt_cancel_req'.tr,
+      };
 
   late final TabController _tabController;
 
@@ -83,7 +83,10 @@ class _OrdersTabState extends State<OrdersTab>
     }
 
     return Scaffold(
+      backgroundColor: AppColors.surfaceGrouped,
       appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        scrolledUnderElevation: 0,
         title: Text('ot_tour_orders'.tr),
         actions: [
           IconButton(
@@ -97,14 +100,15 @@ class _OrdersTabState extends State<OrdersTab>
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.center,
-          labelColor: AppColors.brand,
+          labelColor: AppColors.textPrimary,
           unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.brand,
-          indicatorWeight: 3,
+          indicatorColor: AppColors.textPrimary,
+          indicatorWeight: 2,
+          dividerColor: AppColors.separator,
           labelStyle:
-              const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           unselectedLabelStyle:
-              const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           tabs: _filters.values.map((label) => Tab(text: label)).toList(),
         ),
       ),
@@ -160,7 +164,7 @@ class _OrdersTabState extends State<OrdersTab>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           16,
-          8,
+          16,
           16,
           ShellLayout.bottomInset(context),
         ),
@@ -196,14 +200,6 @@ class _OrderCard extends StatelessWidget {
   int get _quantity =>
       order.totalQuantity > 0 ? order.totalQuantity : order.ticketCount;
 
-  String get _location {
-    final parts = [
-      order.tour?.city,
-      order.tour?.country,
-    ].whereType<String>().where((value) => value.trim().isNotEmpty);
-    return parts.join(', ');
-  }
-
   @override
   Widget build(BuildContext context) {
     final status = _OrderStatusStyle.from(order.status);
@@ -211,37 +207,25 @@ class _OrderCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: AppRadius.card,
       child: InkWell(
         onTap: onTap,
-        borderRadius: AppRadius.card,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
-            border: Border.all(color: AppColors.border),
-            borderRadius: AppRadius.card,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.lg),
-                ),
+                borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
-                  height: 150,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (order.tour?.imageUrl?.isNotEmpty == true)
-                        CachedNetworkImage(
+                  width: 86,
+                  height: 86,
+                  child: order.tour?.imageUrl?.isNotEmpty == true
+                      ? CachedNetworkImage(
                           imageUrl: order.tour!.imageUrl!,
                           fit: BoxFit.cover,
                           placeholder: (_, __) =>
@@ -249,157 +233,56 @@ class _OrderCard extends StatelessWidget {
                           errorWidget: (_, __, ___) =>
                               const _OrderImagePlaceholder(),
                         )
-                      else
-                        const _OrderImagePlaceholder(),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.transparent, Color(0xCC05073C)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            stops: [0.35, 1.0],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: _StatusBadge(style: status),
-                      ),
-                      Positioned(
-                        right: 12,
-                        top: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.15),
-                            ),
-                          ),
-                          child: Text(
-                            '#${order.id}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 14,
-                        right: 14,
-                        bottom: 12,
-                        child: Text(
-                          order.tour?.name ?? 'ot_order_id'.trParams({'id': order.id.toString()}),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            height: 1.2,
-                            fontWeight: FontWeight.w800,
-                            shadows: [
-                              Shadow(color: Color(0x88000000), blurRadius: 6),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                      : const _OrderImagePlaceholder(),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _OrderMeta(
-                            icon: Icons.calendar_month_rounded,
-                            label: departure == null
-                                ? 'ot_no_schedule'.tr
-                                : DateFormatter.display(departure),
-                          ),
-                        ),
-                        Container(
-                            width: 1, height: 24, color: AppColors.separator),
-                        Expanded(
-                          child: _OrderMeta(
-                            icon: Icons.confirmation_number_outlined,
-                            label: 'ot_tickets_count'.trParams({'count': _quantity.toString()}),
-                          ),
-                        ),
-                        if (_location.isNotEmpty) ...[
-                          Container(
-                              width: 1, height: 24, color: AppColors.separator),
-                          Expanded(
-                            child: _OrderMeta(
-                              icon: Icons.location_on_outlined,
-                              label: _location,
+                          child: Text(
+                            order.tour?.name ?? 'ot_order_id'.trParams({'id': order.id.toString()}),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 15,
+                              height: 1.3,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ],
+                        ),
                       ],
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 11),
-                      child: Divider(height: 1),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${departure == null ? 'ot_no_schedule'.tr : DateFormatter.display(departure)} • ${'ot_tickets_count'.trParams({'count': _quantity.toString()})}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
+                    const SizedBox(height: 8),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ot_total_payment'.tr,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                CurrencyFormatter.format(order.finalAmount),
-                                style: AppTextStyles.textTheme.titleMedium
-                                    ?.copyWith(
-                                  color: AppColors.navy,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 17,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          CurrencyFormatter.format(order.finalAmount),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
                           ),
                         ),
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.brand, Color(0xFF1565C0)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.brand.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
+                        _StatusBadge(style: status),
                       ],
                     ),
                   ],
@@ -409,35 +292,6 @@ class _OrderCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _OrderMeta extends StatelessWidget {
-  const _OrderMeta({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 17, color: AppColors.brand),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -550,3 +404,4 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 }
+

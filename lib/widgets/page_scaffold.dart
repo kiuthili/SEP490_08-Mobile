@@ -20,9 +20,11 @@ class PageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(
-        gradient: AppColors.pageGradient,
+      decoration: BoxDecoration(
+        gradient:
+            isDark ? AppColorsDark.pageGradient : AppColors.pageGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,

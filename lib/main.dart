@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:stayhub_mobile/firebase_options.dart';
 import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/push_notification_service.dart';
@@ -13,6 +14,7 @@ import 'package:stayhub_mobile/services/review_service.dart';
 import 'package:stayhub_mobile/services/staff_service.dart';
 import 'app.dart';
 import 'controllers/feature_controllers.dart';
+import 'controllers/theme_controller.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/feature_services.dart';
@@ -27,6 +29,7 @@ import 'services/tour_service.dart';
 import 'services/ai_trend_service.dart';
 import 'services/user_study_service.dart';
 import 'services/system_setting_service.dart';
+import 'constants/api_constants.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/home_controller.dart';
 
@@ -34,6 +37,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _StayHubHttpOverrides();
   GoogleFonts.config.allowRuntimeFetching = true;
+
+  // Configure Mapbox access token before running app
+  MapboxOptions.setAccessToken(ApiConstants.mapboxAccessToken);
+
   await GetStorage.init();
   try {
     await Firebase.initializeApp(
@@ -65,6 +72,7 @@ Future<void> main() async {
   Get.put(SystemSettingService(), permanent: true);
   Get.put(SocialService(), permanent: true);
   Get.put(SignalRService(), permanent: true);
+  Get.put(ThemeController(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(HomeController(), permanent: true);
   Get.put(AiController(), permanent: true);

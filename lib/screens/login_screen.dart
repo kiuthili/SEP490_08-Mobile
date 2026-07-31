@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding:
@@ -275,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         foregroundColor: AppColors.brand,
                         backgroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          borderRadius: BorderRadius.circular(100),
                         ),
                       ),
                       child: Text(

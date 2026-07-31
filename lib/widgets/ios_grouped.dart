@@ -58,7 +58,7 @@ class IosGroupedSection extends StatelessWidget {
           ClipRRect(
             borderRadius: AppRadius.card,
             child: Container(
-              decoration: AppDecorations.card(),
+              decoration: AppDecorations.cardFromContext(context),
               child: Column(
                 children: _withDividers(visible),
               ),
@@ -155,10 +155,14 @@ class IosPickRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? AppColors.brandLight : AppColors.surfaceElevated;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = selected
+        ? (isDark ? AppColorsDark.brandLight : AppColors.brandLight)
+        : (isDark ? AppColorsDark.surfaceElevated : AppColors.surfaceElevated);
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
     final shape = RoundedRectangleBorder(
       borderRadius: AppRadius.card,
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: borderColor),
     );
 
     if (useSimpleTap) {
@@ -212,8 +216,12 @@ class IosSurfaceCard extends StatelessWidget {
   final Color? color;
   final bool selected;
 
-  Color get _background =>
-      selected ? AppColors.brandLight : (color ?? AppColors.surfaceElevated);
+  Color _background(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (selected) return isDark ? AppColorsDark.brandLight : AppColors.brandLight;
+    if (color != null) return color!;
+    return isDark ? AppColorsDark.surfaceElevated : AppColors.surfaceElevated;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +232,7 @@ class IosSurfaceCard extends StatelessWidget {
         return Padding(
           padding: margin,
           child: DecoratedBox(
-            decoration: AppDecorations.card(color: _background),
+            decoration: AppDecorations.cardFromContext(context, color: _background(context)),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: onTap,
@@ -239,10 +247,10 @@ class IosSurfaceCard extends StatelessWidget {
       return Padding(
         padding: margin,
         child: Material(
-          color: _background,
+          color: _background(context),
           shape: RoundedRectangleBorder(
             borderRadius: AppRadius.card,
-            side: const BorderSide(color: AppColors.border),
+            side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? AppColorsDark.border : AppColors.border),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -261,10 +269,10 @@ class IosSurfaceCard extends StatelessWidget {
       return Padding(
         padding: margin,
         child: Material(
-          color: _background,
+          color: _background(context),
           shape: RoundedRectangleBorder(
             borderRadius: AppRadius.card,
-            side: const BorderSide(color: AppColors.border),
+            side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? AppColorsDark.border : AppColors.border),
           ),
           clipBehavior: Clip.antiAlias,
           child: ListTile(
@@ -286,7 +294,7 @@ class IosSurfaceCard extends StatelessWidget {
     return Padding(
       padding: margin,
       child: DecoratedBox(
-        decoration: AppDecorations.card(color: _background),
+        decoration: AppDecorations.cardFromContext(context, color: _background(context)),
         child: Padding(
           padding: innerPadding,
           child: child,

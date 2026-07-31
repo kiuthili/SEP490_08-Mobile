@@ -96,7 +96,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('sc_fm_unfriend_title'.tr),
-        content: Text('sc_fm_unfriend_desc'.trParams({'name': friend.fullName})),
+        content:
+            Text('sc_fm_unfriend_desc'.trParams({'name': friend.fullName})),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -129,7 +130,6 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     );
   }
 
-
   Widget _viewSelector() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
@@ -148,7 +148,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                 _FriendView.requests,
                 social.pendingRequests.isEmpty
                     ? 'sc_fm_tab_requests'.tr
-                    : 'sc_fm_tab_requests_count'.trParams({'count': social.pendingRequests.length.toString()}),
+                    : 'sc_fm_tab_requests_count'.trParams(
+                        {'count': social.pendingRequests.length.toString()}),
                 Icons.person_add_alt_1_rounded,
               ),
               const SizedBox(width: 8),
@@ -156,7 +157,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                 _FriendView.sent,
                 social.sentRequests.isEmpty
                     ? 'sc_fm_tab_sent'.tr
-                    : 'sc_fm_tab_sent_count'.trParams({'count': social.sentRequests.length.toString()}),
+                    : 'sc_fm_tab_sent_count'.trParams(
+                        {'count': social.sentRequests.length.toString()}),
                 Icons.outbox_rounded,
               ),
             ],
@@ -206,15 +208,25 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     widget.searchController.clear();
                     _submitSearch('');
                   },
-                  icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 20),
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.black54, size: 20),
                 ),
           filled: true,
           fillColor: Colors.grey.shade200,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          isDense: true,
         ),
       ),
     );
@@ -249,8 +261,10 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'sc_fm_friend_count'.trParams({'count': social.friends.length.toString()}),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  'sc_fm_friend_count'
+                      .trParams({'count': social.friends.length.toString()}),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -318,7 +332,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
             hasScrollBody: false,
             child: EmptyStateWidget(
               title: 'sc_fm_no_user_title'.tr,
-              subtitle: 'sc_fm_no_user_desc'.trParams({'query': _submittedQuery}),
+              subtitle:
+                  'sc_fm_no_user_desc'.trParams({'query': _submittedQuery}),
               icon: Icons.search_off_rounded,
             ),
           );
@@ -357,7 +372,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         Theme(
           data: Theme.of(context).copyWith(
             popupMenuTheme: PopupMenuThemeData(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
           child: PopupMenuButton<String>(
@@ -375,7 +391,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                 value: 'message',
                 child: Row(
                   children: [
-                    const Icon(Icons.chat_bubble_outline_rounded, color: Colors.black87),
+                    const Icon(Icons.chat_bubble_outline_rounded,
+                        color: Colors.black87),
                     const SizedBox(width: 10),
                     Text('sc_fm_btn_message'.tr),
                   ],
@@ -385,9 +402,11 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                 value: 'unfriend',
                 child: Row(
                   children: [
-                    const Icon(Icons.person_remove_outlined, color: AppColors.error),
+                    const Icon(Icons.person_remove_outlined,
+                        color: AppColors.error),
                     const SizedBox(width: 10),
-                    Text('sc_fm_unfriend_title'.tr, style: const TextStyle(color: AppColors.error)),
+                    Text('sc_fm_unfriend_title'.tr,
+                        style: const TextStyle(color: AppColors.error)),
                   ],
                 ),
               ),
@@ -403,9 +422,13 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
     final busy = social.processingRequestIds.contains(request.id);
     final date = request.createdAt == null
         ? 'sc_fm_friend_request'.tr
-        : 'sc_fm_sent_date'.trParams({'date': DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())});
+        : 'sc_fm_sent_date'.trParams({
+            'date':
+                DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())
+          });
     return _PersonCard(
-      name: request.senderName ?? 'sc_fm_user_id'.trParams({'id': request.senderId.toString()}),
+      name: request.senderName ??
+          'sc_fm_user_id'.trParams({'id': request.senderId.toString()}),
       subtitle: date,
       avatarUrl: request.senderAvatarUrl,
       onTap: () =>
@@ -434,9 +457,13 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
         social.processingUserIds.contains(request.receiverId);
     final date = request.createdAt == null
         ? 'sc_fm_req_sent'.tr
-        : 'sc_fm_sent_date'.trParams({'date': DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())});
+        : 'sc_fm_sent_date'.trParams({
+            'date':
+                DateFormat('dd/MM/yyyy').format(request.createdAt!.toLocal())
+          });
     return _PersonCard(
-      name: request.senderName ?? 'sc_fm_user_id'.trParams({'id': request.receiverId.toString()}),
+      name: request.senderName ??
+          'sc_fm_user_id'.trParams({'id': request.receiverId.toString()}),
       subtitle: date,
       avatarUrl: request.senderAvatarUrl,
       onTap: () =>
@@ -444,7 +471,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       actions: [
         FilledButton.tonal(
           style: _secondaryButtonStyle().copyWith(
-            backgroundColor: WidgetStateProperty.all(AppColors.error.withValues(alpha: 0.1)),
+            backgroundColor:
+                WidgetStateProperty.all(AppColors.error.withValues(alpha: 0.1)),
             foregroundColor: WidgetStateProperty.all(AppColors.error),
           ),
           onPressed: busy
@@ -454,8 +482,8 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       title: Text('sc_fm_revoke_title'.tr),
-                      content: Text(
-                          'sc_fm_revoke_desc'.trParams({'name': request.senderName ?? ''})),
+                      content: Text('sc_fm_revoke_desc'
+                          .trParams({'name': request.senderName ?? ''})),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext, false),
@@ -497,10 +525,10 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           IconButton.filled(
             tooltip: 'sc_fm_btn_message'.tr,
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.brand,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.brandLight,
-              disabledForegroundColor: AppColors.textTertiary,
+              backgroundColor: Colors.grey.shade200,
+              foregroundColor: Colors.black87,
+              disabledBackgroundColor: Colors.grey.shade100,
+              disabledForegroundColor: Colors.black45,
             ),
             onPressed: busy
                 ? null
@@ -533,6 +561,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       disabledForegroundColor: Colors.white.withValues(alpha: 0.85),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       minimumSize: const Size(0, 32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
     );
   }
@@ -545,6 +574,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       disabledForegroundColor: Colors.black45,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
       minimumSize: const Size(0, 32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
       textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
     );
   }
@@ -570,6 +600,7 @@ class _PersonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      borderRadius: AppRadius.button,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -596,7 +627,8 @@ class _PersonCard extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade600),
                     ),
                   ],
                 ],

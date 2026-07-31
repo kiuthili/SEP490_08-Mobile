@@ -28,12 +28,12 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart'; // EdgeInsets, WidgetsBinding
-import 'package:flutter_map/flutter_map.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -48,7 +48,8 @@ import '../services/signalr_service.dart';
 import '../services/social_service.dart';
 import '../services/storage_service.dart';
 import '../utils/snackbar_helper.dart';
-import 'package:stayhub_mobile/theme/app_colors.dart';
+import '../utils/marker_generator.dart';
+import '../utils/fog_mask_geojson_builder.dart';
 
 class SocialMapController extends GetxController {
   SocialMapController({
@@ -67,7 +68,292 @@ class SocialMapController extends GetxController {
   final OrderController _orderController;
 
   /// MapController dùng để fit camera / điều khiển zoom.
-  MapController mapController = MapController();
+
+  mb.MapboxMap? mapboxMap;
+  mb.PointAnnotationManager? liveLocManager;
+  mb.PointAnnotationManager? momentManager;
+  mb.PointAnnotationManager? scheduleManager;
+  mb.PointAnnotationManager? waypointManager;
+  mb.PolylineAnnotationManager? routeCasingManager;
+  mb.PolylineAnnotationManager? routeDashedCoreManager;
+  mb.PolygonAnnotationManager? footprintManager;
+
+  Future<void> onMapCreated(mb.MapboxMap map) async {
+    mapboxMap = map;
+    debugPrint('MAP_CREATED');
+  }
+
+  bool _isSyncing = false;
+
+  Future<void> onStyleLoaded(mb.StyleLoadedEventData event) async {
+    debugPrint('STYLE_LOADED');
+    debugPrint('STYLE_INITIALIZATION_START');
+    if (_isSyncing) return;
+    _isSyncing = true;
+    isMapReady.value = false;
+    _waypointMarkerCache.clear();
+
+    try {
+      if (mapboxMap == null) return;
+
+      // Cleanup Managers
+      try {
+        if (liveLocManager != null) {
+          await mapboxMap!.annotations.removeAnnotationManager(liveLocManager!);
+        }
+        if (momentManager != null) {
+          await mapboxMap!.annotations.removeAnnotationManager(momentManager!);
+        }
+        if (scheduleManager != null) {
+          await mapboxMap!.annotations
+              .removeAnnotationManager(scheduleManager!);
+        }
+        if (waypointManager != null) {
+          await mapboxMap!.annotations
+              .removeAnnotationManager(waypointManager!);
+        }
+        if (routeCasingManager != null) {
+          await mapboxMap!.annotations
+              .removeAnnotationManager(routeCasingManager!);
+        }
+        if (routeDashedCoreManager != null) {
+          await mapboxMap!.annotations
+              .removeAnnotationManager(routeDashedCoreManager!);
+        }
+        // Remove legacy footprintManager if it exists
+        if (footprintManager != null) {
+          await mapboxMap!.annotations
+              .removeAnnotationManager(footprintManager!);
+        }
+      } catch (e, stack) {
+        debugPrint('MAP_RENDER_ERROR: Error cleaning up managers: $e\n$stack');
+      }
+
+      // Deprecate Moment PointAnnotationManager but keep the variable
+      liveLocManager = null;
+      // momentManager = null; // Do not use PointAnnotationManager for moments anymore
+      scheduleManager = null;
+      waypointManager = null;
+      routeCasingManager = null;
+      routeDashedCoreManager = null;
+      footprintManager = null;
+
+      // 1. Heatmap
+      try {
+        if (await mapboxMap!.style.styleLayerExists("stayhub-heatmap-layer")) {
+          await mapboxMap!.style.removeStyleLayer("stayhub-heatmap-layer");
+        }
+        if (await mapboxMap!.style
+            .styleSourceExists("stayhub-heatmap-source")) {
+          await mapboxMap!.style.removeStyleSource("stayhub-heatmap-source");
+        }
+
+        await mapboxMap!.style.addSource(mb.GeoJsonSource(
+            id: "stayhub-heatmap-source",
+            data: '{"type":"FeatureCollection","features":[]}'));
+        await mapboxMap!.style.addLayer(mb.HeatmapLayer(
+          id: "stayhub-heatmap-layer",
+          sourceId: "stayhub-heatmap-source",
+          heatmapWeightExpression: ["get", "weight"],
+          heatmapIntensityExpression: [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            1,
+            15,
+            3
+          ],
+          heatmapRadiusExpression: [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            2,
+            9,
+            20,
+            15,
+            40
+          ],
+          heatmapOpacity: 0.45,
+          heatmapColorExpression: [
+            "interpolate",
+            ["linear"],
+            ["heatmap-density"],
+            0,
+            "rgba(255, 255, 255, 0)",
+            0.2,
+            "#E9D5FF",
+            0.5,
+            "#C084FC",
+            0.8,
+            "#8B5CF6",
+            1,
+            "#5B21B6"
+          ],
+        ));
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: Heatmap setup failed: $e');
+      }
+
+      // 2. Footprints (Legacy Cleanup)
+      try {
+        if (await mapboxMap!.style
+            .styleLayerExists("stayhub-footprint-point-layer")) {
+          await mapboxMap!.style
+              .removeStyleLayer("stayhub-footprint-point-layer");
+        }
+        if (await mapboxMap!.style
+            .styleLayerExists("stayhub-footprint-point-halo-layer")) {
+          await mapboxMap!.style
+              .removeStyleLayer("stayhub-footprint-point-halo-layer");
+        }
+        if (await mapboxMap!.style
+            .styleSourceExists("stayhub-footprint-source")) {
+          await mapboxMap!.style.removeStyleSource("stayhub-footprint-source");
+        }
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: Footprint cleanup failed: $e');
+      }
+
+      // 3. Clouds (Legacy Cleanup)
+      try {
+        if (await mapboxMap!.style
+            .styleLayerExists("stayhub-footprint-cloud-layer")) {
+          await mapboxMap!.style
+              .removeStyleLayer("stayhub-footprint-cloud-layer");
+        }
+        if (await mapboxMap!.style
+            .styleSourceExists("stayhub-footprint-cloud-source")) {
+          await mapboxMap!.style
+              .removeStyleSource("stayhub-footprint-cloud-source");
+        }
+        if (await mapboxMap!.style
+            .hasStyleImage("stayhub-footprint-cloud-image")) {
+          await mapboxMap!.style
+              .removeStyleImage("stayhub-footprint-cloud-image");
+        }
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: Cloud cleanup failed: $e');
+      }
+
+      // 3.5. NEW Fog Layer
+      try {
+        await _ensureFogSourceAndLayer();
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: Fog layer setup failed: $e');
+      }
+
+      // 3.6 NEW Moment Clusters
+      try {
+        await _ensureMomentSourceAndLayers();
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: Moment cluster layer setup failed: $e');
+      }
+
+      // 4. Managers
+      routeDashedCoreManager = await mapboxMap!.annotations
+          .createPolylineAnnotationManager(id: "route_core");
+      routeCasingManager = await mapboxMap!.annotations
+          .createPolylineAnnotationManager(
+              id: "route_casing", below: "route_core");
+
+      liveLocManager = await mapboxMap!.annotations
+          .createPointAnnotationManager(id: "live_loc");
+      // Keep momentManager for cleanup but don't recreate it
+      // momentManager = await mapboxMap!.annotations
+      //     .createPointAnnotationManager(id: "moment");
+      scheduleManager = await mapboxMap!.annotations
+          .createPointAnnotationManager(id: "schedule");
+      waypointManager = await mapboxMap!.annotations
+          .createPointAnnotationManager(id: "waypoint");
+
+      final currentStyleUri = await mapboxMap!.style.getStyleURI();
+      debugPrint('MAP_STYLE_URI: $currentStyleUri');
+
+      try {
+        final layers = await mapboxMap!.style.getStyleLayers();
+        final idsList = <String>[];
+        for (final layer in layers) {
+          final id = layer?.id ?? "";
+          idsList.add(id);
+        }
+
+        final cloudIdx = idsList.indexOf("stayhub-footprint-cloud-layer");
+        final casingIdx = idsList.indexOf("route_casing");
+        final coreIdx = idsList.indexOf("route_core");
+        final waypointIdx = idsList.indexOf("waypoint");
+        final scheduleIdx = idsList.indexOf("schedule");
+        final momentIdx = idsList.indexOf("moment");
+        final liveLocIdx = idsList.indexOf("live_loc");
+
+        debugPrint(
+            'CLOUD_LAYER_INDEX: ${cloudIdx >= 0 ? cloudIdx : 'unverified'}');
+        debugPrint(
+            'ROUTE_CASING_LAYER_INDEX: ${casingIdx >= 0 ? casingIdx : 'unverified'}');
+        debugPrint(
+            'ROUTE_CORE_LAYER_INDEX: ${coreIdx >= 0 ? coreIdx : 'unverified'}');
+        debugPrint(
+            'WAYPOINT_LAYER_INDEX: ${waypointIdx >= 0 ? waypointIdx : 'unverified'}');
+        debugPrint(
+            'SCHEDULE_LAYER_INDEX: ${scheduleIdx >= 0 ? scheduleIdx : 'unverified'}');
+        debugPrint(
+            'MOMENT_LAYER_INDEX: ${momentIdx >= 0 ? momentIdx : 'unverified'}');
+        debugPrint(
+            'LIVE_LOCATION_LAYER_INDEX: ${liveLocIdx >= 0 ? liveLocIdx : 'unverified'}');
+
+        String aboveStatus = "unverified";
+        if (cloudIdx >= 0 &&
+            casingIdx >= 0 &&
+            coreIdx >= 0 &&
+            waypointIdx >= 0 &&
+            scheduleIdx >= 0 &&
+            momentIdx >= 0 &&
+            liveLocIdx >= 0) {
+          if (casingIdx > cloudIdx &&
+              coreIdx > cloudIdx &&
+              waypointIdx > cloudIdx &&
+              scheduleIdx > cloudIdx &&
+              momentIdx > cloudIdx &&
+              liveLocIdx > cloudIdx) {
+            aboveStatus = "true";
+          } else {
+            aboveStatus = "false";
+          }
+        }
+        debugPrint('SYSTEM_LAYERS_ABOVE_CLOUDS: $aboveStatus');
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: Could not verify layer order: $e');
+      }
+
+      debugPrint('MANAGERS_CREATED');
+      isMapReady.value = true;
+      debugPrint('STYLE_INITIALIZATION_COMPLETE');
+    } catch (e, stack) {
+      debugPrint('MAP_RENDER_ERROR: Error during style load: $e\n$stack');
+    } finally {
+      _isSyncing = false;
+    }
+
+    if (isMapReady.value) {
+      await _syncRoute();
+      await _syncMomentsGeoJson();
+      await _syncWaypoints();
+      _scheduleFogMaskBuild();
+      await _syncHeatmap();
+      await _configureCurrentUserLocationPuck();
+    }
+  }
+
+  void updateMapStylePreset(String preset) {
+    if (mapboxMap != null) {
+      mapboxMap!.loadStyleURI(
+          preset == 'dark' ? mb.MapboxStyles.DARK : mb.MapboxStyles.STANDARD);
+    }
+  }
+
+
+
 
   int get currentUserId => _storage.user?.id ?? 0;
 
@@ -77,13 +363,139 @@ class SocialMapController extends GetxController {
 
   // ======================= GLOBAL STATE =======================
   final isLoading = false.obs;
+  int _footprintRequestGeneration = 0;
   final RxnInt selectedScheduleId = RxnInt();
   final eligibleSchedules = <EligibleScheduleModel>[].obs;
 
   /// Map đã mount xong chưa (tránh fitCamera trước khi sẵn sàng).
   final isMapReady = false.obs;
+
+  /// Stream to notify camera changes for Fog of War overlay
+  final cameraUpdateStream = StreamController<void>.broadcast();
+
   // Yêu cầu fit camera đang chờ map mount xong.
   List<LatLng>? _pendingFit;
+
+  /// Generation ID for Isolate computation to prevent race conditions
+  int _fogGenerationId = 0;
+  String? _lastFogGeoJson;
+
+  Future<void> _ensureFogSourceAndLayer() async {
+    if (mapboxMap == null) return;
+    try {
+      final style = mapboxMap!.style;
+      if (!await style.styleSourceExists("stayhub-fog-source")) {
+        // Create initial empty mask (Outer bounds only)
+        final initialMask = await FogMaskGeoJsonBuilder.buildMaskIsolate({
+          'generationId': 0,
+          'footprints': [],
+          'currentLocation': null,
+          'radius': 300.0,
+          'steps': 24,
+          'precision': 6,
+        });
+        _lastFogGeoJson = initialMask['geojson'];
+        await style.addSource(
+            mb.GeoJsonSource(id: "stayhub-fog-source", data: _lastFogGeoJson));
+      } else if (_lastFogGeoJson != null) {
+        // Reloaded style -> reapply last known data
+        await style.setStyleSourceProperty(
+            "stayhub-fog-source", "data", _lastFogGeoJson!);
+      }
+
+      if (!await style.styleLayerExists("stayhub-fog-layer")) {
+        await style.addLayer(mb.FillLayer(
+          id: "stayhub-fog-layer",
+          sourceId: "stayhub-fog-source",
+          fillColor: 0xFF673AB7,
+          fillOpacity: showFootprints.value ? 0.50 : 0.0,
+          fillAntialias: true,
+        ));
+        await style.addLayer(mb.LineLayer(
+          id: "stayhub-fog-edge-layer",
+          sourceId: "stayhub-fog-source",
+          lineColor: 0xFF673AB7,
+          lineWidth: 10.0,
+          lineBlur: 8.0,
+          lineOpacity: showFootprints.value ? 0.22 : 0.0,
+        ));
+      } else {
+        // Sync visibility
+        await _setFogVisibility();
+      }
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: _ensureFogSourceAndLayer failed: $e');
+    }
+  }
+
+  void _scheduleFogMaskBuild() {
+    if (mapboxMap == null || !isMapReady.value) return;
+
+    _lastFogBuildPosition = _latestPosition;
+
+    _fogGenerationId++;
+    final currentGen = _fogGenerationId;
+
+    // Tạo immutable snapshot
+    final List<List<double>> fpSnapshot = footprints
+        .where((f) => _isValidCoordinate(f.lat, f.lng))
+        .map((f) => [f.lng, f.lat])
+        .toList();
+
+    List<double>? currentLoc;
+    if (_latestPosition != null) {
+      final currentLat = _latestPosition!.latitude;
+      final currentLng = _latestPosition!.longitude;
+      if (_isValidCoordinate(currentLat, currentLng)) {
+        currentLoc = [currentLng, currentLat];
+      }
+    }
+
+    compute(FogMaskGeoJsonBuilder.buildMaskIsolate, {
+      'generationId': currentGen,
+      'footprints': fpSnapshot,
+      'currentLocation': currentLoc,
+      'radius': 300.0,
+      'steps': 24,
+      'precision': 6,
+    }).then((result) {
+      if (_fogGenerationId != result['generationId']) {
+        return; // Stale result
+      }
+      _syncFogGeoJson(result['geojson']);
+    }).catchError((e) {
+      debugPrint('MAP_RENDER_ERROR: Fog Isolate failed: $e');
+    });
+  }
+
+  Future<void> _syncFogGeoJson(String geoJsonStr) async {
+    if (mapboxMap == null || !isMapReady.value) return;
+    try {
+      _lastFogGeoJson = geoJsonStr;
+      if (await mapboxMap!.style.styleSourceExists("stayhub-fog-source")) {
+        await mapboxMap!.style
+            .setStyleSourceProperty("stayhub-fog-source", "data", geoJsonStr);
+      } else {
+        await _ensureFogSourceAndLayer();
+      }
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: _syncFogGeoJson failed: $e');
+    }
+  }
+
+  Future<void> _setFogVisibility() async {
+    if (mapboxMap == null) return;
+    try {
+      if (await mapboxMap!.style.styleLayerExists("stayhub-fog-layer")) {
+        await mapboxMap!.style.setStyleLayerProperty("stayhub-fog-layer",
+            "fill-opacity", showFootprints.value ? 0.50 : 0.0);
+      }
+      if (await mapboxMap!.style.styleLayerExists("stayhub-fog-edge-layer")) {
+        await mapboxMap!.style.setStyleLayerProperty("stayhub-fog-edge-layer",
+            "line-opacity", showFootprints.value ? 0.22 : 0.0);
+      }
+    } catch (_) {}
+  }
 
   // ----- Toggles của các lớp bản đồ -----
   final showLiveLocations = true.obs;
@@ -92,7 +504,7 @@ class SocialMapController extends GetxController {
   final showFootprints = false.obs;
   final showHeatmap = false.obs;
 
-  final heatmapType = 'all'.obs; // 'all', 'online', 'moments'
+  final heatmapType = 'moments'.obs; // 'online', 'moments'
   final heatmapRadius = 30.0.obs; // Similar to web radius
 
   // ======================= 1) LIVE LOCATION =======================
@@ -225,6 +637,8 @@ class SocialMapController extends GetxController {
   final drivingRouteLatLngs = <LatLng>[].obs;
   final isRouteLoading = false.obs;
   final List<RoutePointModel> _allItineraryPoints = [];
+  List<RoutePointModel> get allItineraryPoints =>
+      List<RoutePointModel>.unmodifiable(_allItineraryPoints);
 
   /// Toạ độ Polyline dẫn xuất từ routePoints (chỉ điểm có toạ độ hợp lệ).
   List<LatLng> get routeLatLngs => routePoints
@@ -234,6 +648,25 @@ class SocialMapController extends GetxController {
 
   // ======================= 4) FOOTPRINTS =======================
   final footprints = <FootprintDto>[].obs;
+
+  List<LatLng> get revealPoints {
+    final pts = <LatLng>[];
+    for (final f in footprints) {
+      if (_isValidCoordinate(f.lat, f.lng)) {
+        pts.add(LatLng(f.lat, f.lng));
+      }
+    }
+    for (final m in mapMoments) {
+      if (m.userId == currentUserId &&
+          m.lat != null &&
+          m.lng != null &&
+          _isValidCoordinate(m.lat!, m.lng!)) {
+        pts.add(LatLng(m.lat!, m.lng!));
+      }
+    }
+    return pts;
+  }
+
   final isFootprintsLoading = false.obs;
 
   // ======================= 5) HEATMAP =======================
@@ -246,11 +679,60 @@ class SocialMapController extends GetxController {
   Stream<void> get heatmapResetStream => heatmapResetController.stream;
   Timer? _heatmapDebounce;
 
+  final Map<String, Uint8List> _waypointMarkerCache = {};
+
   // ======================= LIFECYCLE =======================
   @override
   void onInit() {
     super.onInit();
     _bootstrap();
+
+    // Sync to Mapbox Native
+    ever(liveLocations, (_) {
+      _syncLiveLocations();
+      if (heatmapType.value == 'online' && showHeatmap.value) loadHeatmap();
+    });
+    ever(mapMoments, (_) {
+      _syncMomentsGeoJson();
+      if (heatmapType.value == 'moments' && showHeatmap.value) loadHeatmap();
+    });
+    ever(drivingRouteLatLngs, (_) {
+      _syncRoute();
+    });
+    ever(showRoute, (_) {
+      _syncRoute();
+      _syncWaypoints();
+    });
+    ever(routePoints, (_) {
+      _syncWaypoints();
+    });
+    ever(selectedScheduleId, (_) {
+      _syncWaypoints();
+      // Handle Schedule Change for Fog:
+      // 1. Invalidate current build immediately
+      _fogGenerationId++;
+      _lastFogGeoJson = null;
+      // 2. Revert to solid Fog while new data loads ONLY if no current position
+      if (_latestPosition == null || !showFootprints.value) {
+        _syncFogGeoJson(jsonEncode({
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [-180.0, -85.051129],
+              [180.0, -85.051129],
+              [180.0, 85.051129],
+              [-180.0, 85.051129],
+              [-180.0, -85.051129]
+            ]
+          ]
+        }));
+      }
+      // Footprint data will be updated by loadFootprints(), triggering ever(footprints)
+    });
+    ever(footprints, (_) => _scheduleFogMaskBuild());
+    ever(showFootprints, (_) => _setFogVisibility());
+    ever(heatPoints, (_) => _syncHeatmap());
+    ever(showHeatmap, (_) => _syncHeatmap());
   }
 
   @override
@@ -259,12 +741,12 @@ class SocialMapController extends GetxController {
     _friendsTimer?.cancel();
     _footprintsTimer?.cancel();
     _heatmapDebounce?.cancel();
+    _fogDebounceTimer?.cancel();
     _positionStreamSubscription?.cancel();
     unawaited(_signalR.disconnectTracking());
     if (!heatmapResetController.isClosed) heatmapResetController.close();
-    try {
-      mapController.dispose();
-    } catch (_) {/* đã dispose hoặc chưa mount */}
+    if (!cameraUpdateStream.isClosed) cameraUpdateStream.close();
+    try {} catch (_) {/* đã dispose hoặc chưa mount */}
     super.onClose();
   }
 
@@ -331,6 +813,7 @@ class SocialMapController extends GetxController {
     }
     return null;
   }
+
   // ======================= SCHEDULE SELECTION =======================
   Future<void> selectSchedule(int scheduleId) async {
     if (selectedScheduleId.value == scheduleId && liveLocations.isNotEmpty) {
@@ -342,6 +825,7 @@ class SocialMapController extends GetxController {
     routeDays.clear();
     routePoints.clear();
     _allItineraryPoints.clear();
+    _waypointMarkerCache.clear();
     selectedDay.value = null;
     drivingRouteLatLngs.clear();
 
@@ -364,9 +848,21 @@ class SocialMapController extends GetxController {
         await _signalR.disconnectTracking();
       }
       _fitToLiveLocations();
-      // Nếu heatmap đang bật, nạp lại theo schedule mới.
+
+      _footprintRequestGeneration++;
+
+      isHeatmapLoading.value = false;
+      isFootprintsLoading.value = false;
+
+      // Clear stale heatmap/footprint data unconditionally when schedule changes
+      heatPoints.clear();
+      footprints.clear();
+
       if (showHeatmap.value) {
         unawaited(loadHeatmap());
+      }
+      if (showFootprints.value) {
+        unawaited(loadFootprints());
       }
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
@@ -433,44 +929,85 @@ class SocialMapController extends GetxController {
     }
   }
 
+  Position? _lastFogBuildPosition;
+
+  void _evaluateLocationStream() async {
+    final needsStream = isSharingLocation.value || showFootprints.value;
+    if (needsStream) {
+      if (_positionStreamSubscription == null) {
+        final granted = await LocationHelper.ensurePermission();
+        if (!granted) return;
+
+        try {
+          final initialPos = await Geolocator.getLastKnownPosition();
+          if (initialPos != null) {
+            _latestPosition = initialPos;
+            _onLocationUpdated(initialPos);
+          }
+        } catch (_) {}
+
+        _positionStreamSubscription = Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 0,
+          ),
+        ).listen((Position pos) {
+          _latestPosition = pos;
+          _onLocationUpdated(pos);
+        }, onError: (_) {});
+      }
+    } else {
+      _positionStreamSubscription?.cancel();
+      _positionStreamSubscription = null;
+    }
+  }
+
+  Timer? _fogDebounceTimer;
+  void _debounceFogBuild() {
+    _fogDebounceTimer?.cancel();
+    _fogDebounceTimer = Timer(const Duration(milliseconds: 750), () {
+      _scheduleFogMaskBuild();
+    });
+  }
+
+  void _onLocationUpdated(Position pos) {
+    if (isSharingLocation.value) {
+      final here = LatLng(pos.latitude, pos.longitude);
+      _appendTrail(here);
+      _updateMyLiveMarker(here);
+    }
+    if (showFootprints.value) {
+      if (_lastFogBuildPosition == null) {
+        _debounceFogBuild();
+      } else {
+        final dist = Geolocator.distanceBetween(
+          _lastFogBuildPosition!.latitude,
+          _lastFogBuildPosition!.longitude,
+          pos.latitude,
+          pos.longitude,
+        );
+        if (dist >= 75) {
+          _debounceFogBuild();
+        }
+      }
+    }
+  }
+
   /// Bắt đầu ghi log di chuyển realtime (cào map liên tục). Trả về true nếu
   /// được cấp quyền và đã khởi động vòng ping.
   Future<bool> _startAutoTracking({bool notify = false}) async {
     if (isSharingLocation.value) return true;
     final granted = await LocationHelper.ensurePermission();
     if (!granted) {
-      if (notify)
+      if (notify) {
         SnackbarHelper.error(
             'Location permission is required for tracking and sharing');
+      }
       return false;
     }
     isSharingLocation.value = true;
 
-    // Lấy vị trí ban đầu lập tức từ cache để map mượt
-    try {
-      final initialPos = await Geolocator.getLastKnownPosition();
-      if (initialPos != null) {
-        _latestPosition = initialPos;
-        final here = LatLng(initialPos.latitude, initialPos.longitude);
-        _appendTrail(here);
-        _updateMyLiveMarker(here);
-        unawaited(_pingLatestToServer());
-      }
-    } catch (_) {}
-
-    // Lắng nghe stream thay đổi vị trí chủ động, độ chính xác cao và liên tục
-    _positionStreamSubscription?.cancel();
-    _positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0, // 0 mét để tracking liên tục không bỏ sót
-      ),
-    ).listen((Position pos) {
-      _latestPosition = pos;
-      final here = LatLng(pos.latitude, pos.longitude);
-      _appendTrail(here);
-      _updateMyLiveMarker(here);
-    }, onError: (_) {});
+    _evaluateLocationStream();
 
     // Gửi vị trí lên server định kỳ 12s/lần nhưng chỉ gửi khi có toạ độ mới
     _pingTimer?.cancel();
@@ -482,9 +1019,8 @@ class SocialMapController extends GetxController {
   void _stopSharing() {
     _pingTimer?.cancel();
     _pingTimer = null;
-    _positionStreamSubscription?.cancel();
-    _positionStreamSubscription = null;
     isSharingLocation.value = false;
+    _evaluateLocationStream();
   }
 
   /// Gửi vị trí lên server định kỳ 5s/lần để tracking liên tục thời gian thực
@@ -528,15 +1064,29 @@ class SocialMapController extends GetxController {
   }
 
   // ======================= 2) MOMENTS ON MAP =======================
+  int _momentRequestGeneration = 0;
+
+  // ======================= 2) MOMENTS ON MAP =======================
   Future<void> loadMapMoments(int? scheduleId) async {
+    final requestGeneration = ++_momentRequestGeneration;
+    final requestedScheduleId = selectedScheduleId.value;
+
     try {
       final data =
           await _service.getMomentsWithLocation(scheduleId: scheduleId);
+
+      if (requestGeneration != _momentRequestGeneration ||
+          selectedScheduleId.value != requestedScheduleId) {
+        return;
+      }
+
       mapMoments.assignAll(
         data.where((m) => m.lat != null && m.lng != null),
       );
-    } catch (_) {
-      // không chặn luồng chính nếu moment lỗi
+    } catch (e) {
+      if (kDebugMode || kProfileMode) {
+        debugPrint('MAP_RENDER_ERROR: loadMapMoments failed: $e');
+      }
     }
   }
 
@@ -577,22 +1127,20 @@ class SocialMapController extends GetxController {
   /// Lọc các điểm của 1 ngày hoặc toàn bộ lộ trình nếu dayNumber là null (Overview).
   Future<void> selectDay(int? dayNumber) async {
     selectedDay.value = dayNumber;
-    
+
     final List<RoutePointModel> pts;
     if (dayNumber == null) {
       // Overview mode: Show all itineraries
       pts = List<RoutePointModel>.from(_allItineraryPoints);
     } else {
-      pts = _allItineraryPoints
-          .where((p) => p.dayNumber == dayNumber)
-          .toList();
+      pts = _allItineraryPoints.where((p) => p.dayNumber == dayNumber).toList();
     }
-    
+
     // Sort chronologically: by day number first, then order sequence
-    pts.sort((a, b) => a.dayNumber == b.dayNumber 
-        ? a.order.compareTo(b.order) 
+    pts.sort((a, b) => a.dayNumber == b.dayNumber
+        ? a.order.compareTo(b.order)
         : a.dayNumber.compareTo(b.dayNumber));
-        
+
     routePoints.assignAll(pts);
 
     // Fetch actual Mapbox driving route
@@ -618,132 +1166,91 @@ class SocialMapController extends GetxController {
   // ======================= 4) FOOTPRINTS ("CÀO MAP") =======================
   Future<void> toggleFootprints() async {
     showFootprints.toggle();
+    _evaluateLocationStream();
     if (showFootprints.value) {
       if (footprints.isEmpty) await loadFootprints();
-      // Tự refresh footprints từ server định kỳ khi lớp đang bật.
       _footprintsTimer?.cancel();
       _footprintsTimer = Timer.periodic(
         _footprintsRefreshInterval,
         (_) => loadFootprints(silent: true),
       );
+      if (mapboxMap != null) {
+        try {
+          await mapboxMap!.gestures.updateSettings(
+            mb.GesturesSettings(pitchEnabled: false),
+          );
+          final camera = await mapboxMap!.getCameraState();
+          if (camera.pitch != 0.0) {
+            await mapboxMap!.setCamera(mb.CameraOptions(pitch: 0.0));
+          }
+        } catch (_) {}
+      }
+      _scheduleFogMaskBuild();
     } else {
       _footprintsTimer?.cancel();
       _footprintsTimer = null;
+      if (mapboxMap != null) {
+        try {
+          await mapboxMap!.gestures.updateSettings(
+            mb.GesturesSettings(pitchEnabled: true),
+          );
+        } catch (_) {}
+      }
     }
   }
 
   Future<void> loadFootprints({bool silent = false}) async {
+    final requestGeneration = ++_footprintRequestGeneration;
+    final requestedScheduleId = selectedScheduleId.value;
+
     if (!silent) isFootprintsLoading.value = true;
     try {
-      final data = await _service.getMyFootprints();
+      final apiScheduleId =
+          (requestedScheduleId != null && requestedScheduleId > 0)
+              ? requestedScheduleId
+              : null;
+      final data = await _service.getMyFootprints(
+        scheduleId: apiScheduleId,
+      );
+
+      if (requestGeneration != _footprintRequestGeneration ||
+          selectedScheduleId.value != requestedScheduleId) {
+        debugPrint(
+            'FOOTPRINT_STALE_RESPONSE_IGNORED: schedule=$requestedScheduleId');
+        return;
+      }
+
       footprints.assignAll(data);
       if (data.isEmpty && !silent && liveTrail.isEmpty) {
         SnackbarHelper.success(
             'No footprints recorded yet — start moving to map your path');
       }
     } on ApiError catch (e) {
+      if (requestGeneration != _footprintRequestGeneration ||
+          selectedScheduleId.value != requestedScheduleId) {
+        debugPrint(
+            'FOOTPRINT_STALE_ERROR_IGNORED: schedule=$requestedScheduleId');
+        return;
+      }
       if (!silent) SnackbarHelper.error(e.message);
     } catch (e) {
+      if (requestGeneration != _footprintRequestGeneration ||
+          selectedScheduleId.value != requestedScheduleId) {
+        debugPrint(
+            'FOOTPRINT_STALE_ERROR_IGNORED: schedule=$requestedScheduleId');
+        return;
+      }
       if (!silent) SnackbarHelper.error('Error loading footprints: $e');
     } finally {
-      if (!silent) isFootprintsLoading.value = false;
+      if (requestGeneration == _footprintRequestGeneration &&
+          selectedScheduleId.value == requestedScheduleId) {
+        isFootprintsLoading.value = false;
+      }
     }
   }
 
-  /// Tính toán các ô lục giác (BUMP Hexagons) từ dữ liệu footprints và liveTrail
-  List<Polygon> get bumpHexPolygons {
-    final validPoints = <LatLng>[];
-    for (final f in footprints) {
-      if (f.lat != 0 && f.lng != 0) {
-        validPoints.add(LatLng(f.lat, f.lng));
-      }
-    }
-    for (final t in liveTrail) {
-      if (t.latitude != 0 && t.longitude != 0) {
-        validPoints.add(t);
-      }
-    }
-
-    if (validPoints.isEmpty) return const [];
-
-    const double rEarth = 6378137.0;
-    const double hexR = 220.0;
-    final double sqrt3 = math.sqrt(3);
-
-    final refLat = validPoints.fold<double>(0.0, (sum, p) => sum + p.latitude) /
-        validPoints.length;
-    final refLng =
-        validPoints.fold<double>(0.0, (sum, p) => sum + p.longitude) /
-            validPoints.length;
-    final cosRef = math.cos(refLat * math.pi / 180.0);
-
-    List<double> toLocal(double lat, double lng) => [
-          (lng - refLng) * (math.pi / 180.0) * rEarth * cosRef,
-          (lat - refLat) * (math.pi / 180.0) * rEarth,
-        ];
-
-    LatLng toGeo(double x, double y) => LatLng(
-          refLat + (y / rEarth) * (180.0 / math.pi),
-          refLng + (x / (rEarth * cosRef)) * (180.0 / math.pi),
-        );
-
-    final hexSet = <String, List<int>>{};
-    for (final p in validPoints) {
-      final loc = toLocal(p.latitude, p.longitude);
-      final x = loc[0];
-      final y = loc[1];
-
-      final fq = (2.0 / 3.0 * x) / hexR;
-      final fr = (-1.0 / 3.0 * x + sqrt3 / 3.0 * y) / hexR;
-      final fs = -fq - fr;
-
-      var rq = fq.round();
-      var rr = fr.round();
-      var rs = fs.round();
-
-      final dq = (rq - fq).abs();
-      final dr = (rr - fr).abs();
-      final ds = (rs - fs).abs();
-
-      if (dq > dr && dq > ds) {
-        rq = -rr - rs;
-      } else if (dr > ds) {
-        rr = -rq - rs;
-      }
-
-      final key = '$rq,$rr';
-      if (!hexSet.containsKey(key)) {
-        hexSet[key] = [rq, rr];
-      }
-    }
-
-    final polygons = <Polygon>[];
-    final hexFillColor = AppColors.brandLight.withValues(alpha: 0.28);
-    final hexBorderColor = const Color(0xFFE0F2FE).withValues(alpha: 0.85);
-
-    for (final qr in hexSet.values) {
-      final q = qr[0];
-      final r = qr[1];
-      final cx = hexR * (3.0 / 2.0 * q);
-      final cy = hexR * (sqrt3 / 2.0 * q + sqrt3 * r);
-
-      final ring = <LatLng>[];
-      for (var i = 0; i < 6; i++) {
-        final a = (i * 60.0) * (math.pi / 180.0);
-        ring.add(toGeo(cx + hexR * math.cos(a), cy + hexR * math.sin(a)));
-      }
-
-      polygons.add(
-        Polygon(
-          points: ring,
-          color: hexFillColor,
-          borderColor: hexBorderColor,
-          borderStrokeWidth: 1.8,
-        ),
-      );
-    }
-
-    return polygons;
+  List<dynamic> get bumpHexPolygons {
+    return const [];
   }
 
   // ======================= 5) HEATMAP =======================
@@ -761,16 +1268,14 @@ class SocialMapController extends GetxController {
   Future<void> loadHeatmap() async {
     isHeatmapLoading.value = true;
     try {
-      final data = await _service.getHeatmapData(
-        scheduleId: selectedScheduleId.value,
-      );
-      if (data.isEmpty) {
-        heatPoints.assignAll(_buildHeatmapFromClientData());
-      } else {
-        heatPoints.assignAll(data);
-      }
-    } catch (_) {
-      heatPoints.assignAll(_buildHeatmapFromClientData());
+      final scheduleId = selectedScheduleId.value;
+      final apiScheduleId =
+          (scheduleId != null && scheduleId > 0) ? scheduleId : null;
+      final data = await _service.getHeatmapData(scheduleId: apiScheduleId);
+      heatPoints.assignAll(data);
+    } catch (e) {
+      heatPoints.clear();
+      SnackbarHelper.error('Error loading heatmap: $e');
     } finally {
       _scheduleHeatmapReset();
       isHeatmapLoading.value = false;
@@ -785,68 +1290,597 @@ class SocialMapController extends GetxController {
     });
   }
 
-  /// Gộp mọi toạ độ đang có thành điểm heatmap (fallback khi chưa có API).
-  List<HeatPointModel> _buildHeatmapFromClientData() {
-    final pts = <HeatPointModel>[];
+  Future<void> _syncLiveLocations() async {
+    if (liveLocManager == null) return;
+    await liveLocManager!.deleteAll();
 
-    if (heatmapType.value == 'all' || heatmapType.value == 'moments') {
-      for (final m in mapMoments) {
-        if (m.lat != null && m.lng != null)
-          pts.add(HeatPointModel(lat: m.lat!, lng: m.lng!));
-      }
-      for (final f in footprints) {
-        pts.add(HeatPointModel(lat: f.lat, lng: f.lng));
-      }
-    }
-
-    if (heatmapType.value == 'all' || heatmapType.value == 'online') {
-      for (final l in liveLocations) {
-        pts.add(HeatPointModel(lat: l.latitude, lng: l.longitude));
-      }
-      for (final t in liveTrail) {
-        pts.add(HeatPointModel(lat: t.latitude, lng: t.longitude));
-      }
-    }
-
-    return pts;
+    // Placeholder for now
   }
 
-  // ======================= CAMERA HELPERS =======================
-  /// Về vị trí của tôi (nếu đang chia sẻ/lấy được GPS), nếu không thì fit live.
-  Future<void> recenter() async {
-    // 1. Ưu tiên sử dụng vị trí cập nhật gần nhất có sẵn (phản hồi tức thì)
-    final cached = _latestPosition;
-    if (cached != null) {
-      _safeMove(LatLng(cached.latitude, cached.longitude), 15);
+  String _lastMomentSignature = "";
+
+  Future<void> _ensureMomentSourceAndLayers() async {
+    if (mapboxMap == null) return;
+    try {
+      final style = mapboxMap!.style;
+
+      // Load Moment Camera Icon to Style
+      if (!await style.hasStyleImage("stayhub-moment-icon")) {
+        final markerData = await MarkerGenerator.createMomentMarker();
+        if (markerData != null) {
+          await style.addStyleImage(
+            "stayhub-moment-icon",
+            4.0,
+            mb.MbxImage(
+              width: markerData.width,
+              height: markerData.height,
+              data: markerData.data,
+            ),
+            false,
+            [],
+            [],
+            null,
+          );
+        }
+      }
+
+      if (!await style.styleSourceExists("stayhub-moments-source")) {
+        await style.addSource(mb.GeoJsonSource(
+          id: "stayhub-moments-source",
+          data: '{"type":"FeatureCollection","features":[]}',
+          cluster: true,
+          clusterRadius: 80,
+          // SDK 2.27.0 clusterMaxZoom indicates up to what zoom level to cluster.
+          // Set to 19 to match Web's maxZoom: 19
+          clusterMaxZoom: 19,
+          // maxzoom: Ensure points don't disappear at high zoom levels
+          maxzoom: 24.0,
+        ));
+      }
+
+      if (!await style.styleLayerExists("stayhub-moment-clusters")) {
+        await style.addLayer(mb.CircleLayer(
+          id: "stayhub-moment-clusters",
+          sourceId: "stayhub-moments-source",
+          filter: ["has", "point_count"],
+          circleColor: 0xFF2196F3,
+          circleRadius: 20.0,
+          circleStrokeWidth: 3.0,
+          circleStrokeColor: 0xFFFFFFFF,
+        ));
+      }
+
+      if (!await style.styleLayerExists("stayhub-moment-cluster-count")) {
+        await style.addLayer(mb.SymbolLayer(
+          id: "stayhub-moment-cluster-count",
+          sourceId: "stayhub-moments-source",
+          filter: ["has", "point_count"],
+          textField: "{point_count_abbreviated}",
+          textFont: ["Open Sans Bold", "Arial Unicode MS Bold"],
+          textSize: 12.0,
+          textColor: 0xFFFFFFFF,
+        ));
+      }
+
+      if (!await style.styleLayerExists("stayhub-moment-unclustered")) {
+        await style.addLayer(mb.SymbolLayer(
+          id: "stayhub-moment-unclustered",
+          sourceId: "stayhub-moments-source",
+          filter: [
+            "!",
+            ["has", "point_count"]
+          ],
+          iconImage: "stayhub-moment-icon",
+          iconSize: 0.55,
+          iconAnchor: mb.IconAnchor.BOTTOM,
+          iconAllowOverlap: true,
+        ));
+      }
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: _ensureMomentSourceAndLayers failed: $e');
+    }
+  }
+
+  Future<void> _syncMomentsGeoJson() async {
+    if (mapboxMap == null || !isMapReady.value) return;
+
+    if (!showMoments.value || mapMoments.isEmpty) {
+      try {
+        await mapboxMap!.style.setStyleSourceProperty("stayhub-moments-source",
+            "data", '{"type":"FeatureCollection","features":[]}');
+      } catch (_) {}
       return;
     }
 
-    // 2. Thử lấy GPS phần cứng mới nếu chưa có cache
+    // Deduplicate by momentId
+    final Map<int, MomentModel> uniqueMoments = {};
+    for (final m in mapMoments) {
+      if (!uniqueMoments.containsKey(m.id)) {
+        uniqueMoments[m.id] = m;
+      }
+    }
+
+    final sortedIds = uniqueMoments.keys.toList()..sort();
+
+    // Create Signature
+    final StringBuffer sigBuilder = StringBuffer();
+    sigBuilder.write(selectedScheduleId.value?.toString() ?? "null");
+    sigBuilder.write("|");
+    for (final id in sortedIds) {
+      final m = uniqueMoments[id]!;
+      sigBuilder.write("${m.id}:${m.lat}:${m.lng},");
+    }
+
+    final newSig = sigBuilder.toString();
+    if (newSig == _lastMomentSignature) {
+      return; // No changes in moments logic
+    }
+    _lastMomentSignature = newSig;
+
+    final features = <Map<String, dynamic>>[];
+    for (final id in sortedIds) {
+      final m = uniqueMoments[id]!;
+      if (m.lat != null &&
+          m.lng != null &&
+          _isValidCoordinate(m.lat!, m.lng!)) {
+        features.add({
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [m.lng, m.lat]
+          },
+          "properties": {
+            "momentId": m.id,
+            "scheduleId": m.scheduleId,
+          }
+        });
+      }
+    }
+
+    final geoJson = jsonEncode({
+      "type": "FeatureCollection",
+      "features": features,
+    });
+
     try {
-      final pos = await LocationHelper.getCurrentPosition();
-      if (pos != null) {
-        _latestPosition = pos;
-        _safeMove(LatLng(pos.latitude, pos.longitude), 15);
+      if (await mapboxMap!.style.styleSourceExists("stayhub-moments-source")) {
+        await mapboxMap!.style
+            .setStyleSourceProperty("stayhub-moments-source", "data", geoJson);
+      } else {
+        await _ensureMomentSourceAndLayers();
+        await mapboxMap!.style
+            .setStyleSourceProperty("stayhub-moments-source", "data", geoJson);
+      }
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: _syncMomentsGeoJson failed: $e');
+    }
+  }
+
+  void handleMapTap(mb.MapContentGestureContext context) async {
+    if (mapboxMap == null) return;
+    try {
+      final features = await mapboxMap!.queryRenderedFeatures(
+        mb.RenderedQueryGeometry.fromScreenCoordinate(context.touchPosition),
+        mb.RenderedQueryOptions(
+          layerIds: ['stayhub-moment-clusters', 'stayhub-moment-unclustered'],
+          filter: null,
+        ),
+      );
+
+      if (features.isNotEmpty) {
+        // Priority 1: Check if any tapped feature is a cluster
+        final clusterFeature = features.firstWhere((f) {
+          final p =
+              f?.queriedFeature.feature['properties'] as Map<String, dynamic>?;
+          return p != null && p.containsKey('cluster') && p['cluster'] == true;
+        }, orElse: () => null);
+
+        if (clusterFeature != null) {
+          // Tap on cluster
+          final props = clusterFeature.queriedFeature.feature['properties']
+              as Map<String, dynamic>;
+          final clusterId = props['cluster_id'];
+          if (clusterId != null) {
+            // SDK 2.27.0 does not natively expose getGeoJsonClusterExpansionZoom
+            // Fallback: simply zoom in by +2
+            final state = await mapboxMap!.getCameraState();
+            final geom = clusterFeature.queriedFeature.feature['geometry']
+                as Map<String, dynamic>;
+            if (geom['type'] == 'Point') {
+              final coords = geom['coordinates'] as List<dynamic>;
+              mapboxMap!.flyTo(
+                mb.CameraOptions(
+                  center:
+                      mb.Point(coordinates: mb.Position(coords[0], coords[1])),
+                  zoom: state.zoom + 2,
+                ),
+                mb.MapAnimationOptions(duration: 300),
+              );
+            }
+          }
+        } else {
+          // Tap on unclustered moment(s)
+          final unclusteredProps = features
+              .map((f) => f?.queriedFeature.feature['properties']
+                  as Map<String, dynamic>?)
+              .where((p) => p != null && p.containsKey('momentId'))
+              .toList();
+
+          if (unclusteredProps.isNotEmpty) {
+            final momentIds = unclusteredProps
+                .map((p) => p!['momentId'] as int)
+                .toSet()
+                .toList();
+            final overlappingMoments = momentIds
+                .map((id) => mapMoments.firstWhereOrNull((m) => m.id == id))
+                .whereType<MomentModel>()
+                .toList();
+
+            if (overlappingMoments.isEmpty) return;
+
+            HapticFeedback.selectionClick();
+            if (overlappingMoments.length == 1) {
+              Get.toNamed('/moment-detail',
+                  arguments: overlappingMoments.first);
+            } else {
+              // Multiple overlapping moments, show a selection sheet
+              Get.bottomSheet(
+                Container(
+                  color: Colors.white,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: overlappingMoments.length,
+                    itemBuilder: (context, index) {
+                      final m = overlappingMoments[index];
+                      return ListTile(
+                        leading: m.imageUrl.isNotEmpty
+                            ? Image.network(m.imageUrl,
+                                width: 50, height: 50, fit: BoxFit.cover)
+                            : const Icon(Icons.camera_alt),
+                        title: Text(m.caption?.isNotEmpty == true
+                            ? m.caption!
+                            : 'Moment ${m.id}'),
+                        subtitle: const Text('Click to view details'),
+                        onTap: () {
+                          Get.back();
+                          Get.toNamed('/moment-detail', arguments: m);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: Tap handling failed: $e');
+    }
+  }
+
+  bool _isSyncingRoute = false;
+
+  Future<void> _syncRoute() async {
+    if (_isSyncingRoute) return;
+    _isSyncingRoute = true;
+    debugPrint('ROUTE_SYNC_START');
+
+    try {
+      if (routeCasingManager == null || routeDashedCoreManager == null) return;
+      await routeCasingManager!.deleteAll();
+      await routeDashedCoreManager!.deleteAll();
+
+      if (!showRoute.value || drivingRouteLatLngs.isEmpty) return;
+      if (drivingRouteLatLngs.length < 2) return;
+
+      final coords = drivingRouteLatLngs
+          .map((l) => mb.Position(l.longitude, l.latitude))
+          .toList();
+      debugPrint('ROUTE_COORDINATE_COUNT: ${coords.length}');
+      final geometry = mb.LineString(coordinates: coords);
+
+      final casingOptions = mb.PolylineAnnotationOptions(
+        geometry: geometry,
+        lineColor: 0xFF2196F3,
+        lineWidth: 6.0,
+        lineJoin: mb.LineJoin.ROUND,
+      );
+
+      final coreOptions = mb.PolylineAnnotationOptions(
+        geometry: geometry,
+        lineColor: 0xFFFFFFFF,
+        lineWidth: 2.5,
+        lineJoin: mb.LineJoin.ROUND,
+      );
+
+      await routeCasingManager!.setLineCap(mb.LineCap.ROUND);
+      await routeCasingManager!.setLineJoin(mb.LineJoin.ROUND);
+      await routeCasingManager!.create(casingOptions);
+      debugPrint('ROUTE_CASING_CREATED');
+
+      await routeDashedCoreManager!.setLineCap(mb.LineCap.ROUND);
+      await routeDashedCoreManager!.setLineJoin(mb.LineJoin.ROUND);
+      await routeDashedCoreManager!.setLineDasharray([2.0, 2.0]);
+      await routeDashedCoreManager!.create(coreOptions);
+      debugPrint('ROUTE_CORE_CREATED');
+
+      final dashArray = await routeDashedCoreManager!.getLineDasharray();
+      debugPrint('ROUTE_DASH_VALUE: $dashArray');
+    } catch (e, stack) {
+      debugPrint('MAP_RENDER_ERROR: Route sync failed: $e\n$stack');
+    } finally {
+      _isSyncingRoute = false;
+    }
+  }
+
+// ======================= CAMERA HELPERS =======================
+
+  Future<void> recenter() async {
+    debugPrint('RECENTER_LOCATION');
+    final pos = await LocationHelper.getCurrentPosition();
+    if (pos != null) {
+      _latestPosition = pos;
+      _safeMove(LatLng(pos.latitude, pos.longitude), 15);
+      await _configureCurrentUserLocationPuck();
+    } else {
+      SnackbarHelper.error('Unable to access current location');
+    }
+  }
+
+  Future<void> _configureCurrentUserLocationPuck() async {
+    try {
+      final granted = await LocationHelper.ensurePermission();
+      debugPrint('LOCATION_PERMISSION_STATUS: $granted');
+      if (!granted) return;
+
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      debugPrint('LOCATION_SERVICE_STATUS: $serviceEnabled');
+
+      if (mapboxMap != null) {
+        await mapboxMap!.location.updateSettings(
+          mb.LocationComponentSettings(
+            enabled: true,
+            pulsingEnabled: true,
+            showAccuracyRing: true,
+            puckBearingEnabled: true,
+            puckBearing: mb.PuckBearing.HEADING,
+          ),
+        );
+        debugPrint('LOCATION_PUCK_ENABLED: true');
+        debugPrint('LOCATION_PUCK_HEADING_ENABLED: true');
+      }
+    } catch (e, stack) {
+      debugPrint(
+          'MAP_RENDER_ERROR: Error configuring location puck: $e\n$stack');
+    }
+  }
+
+  bool _isSyncingWaypoints = false;
+
+  Future<void> _syncWaypoints() async {
+    if (_isSyncingWaypoints) return;
+    _isSyncingWaypoints = true;
+    debugPrint('WAYPOINT_SYNC_START');
+
+    try {
+      if (waypointManager == null) return;
+      await waypointManager!.deleteAll();
+
+      if (!showRoute.value || _allItineraryPoints.isEmpty) return;
+
+      final allPts = List<RoutePointModel>.from(_allItineraryPoints);
+      allPts.sort((a, b) => a.dayNumber == b.dayNumber
+          ? a.order.compareTo(b.order)
+          : a.dayNumber.compareTo(b.dayNumber));
+
+      final validAllPts =
+          allPts.where((p) => _isValidCoordinate(p.lat, p.lng)).toList();
+
+      int globalSeq = 1;
+      final globalAssigned = <RoutePointModel, int>{};
+      for (final p in validAllPts) {
+        globalAssigned[p] = globalSeq++;
+      }
+      debugPrint('WAYPOINT_INPUT_COUNT: ${validAllPts.length}');
+
+      final visiblePts = validAllPts.where((p) {
+        if (selectedDay.value == null) return true;
+        return p.dayNumber == selectedDay.value;
+      }).toList();
+
+      debugPrint('WAYPOINT_VISIBLE_COUNT: ${visiblePts.length}');
+
+      final List<mb.PointAnnotationOptions> options = [];
+      final List<String> labels = [];
+      int preparedCount = 0;
+      int skippedCount = 0;
+      int failedCount = 0;
+
+      for (final p in visiblePts) {
+        if (!p.hasCoordinates || !_isValidCoordinate(p.lat, p.lng)) {
+          skippedCount++;
+          continue;
+        }
+
+        final seq = globalAssigned[p]!;
+        final label = '$seq. ${p.name}';
+
+        if (kDebugMode || kProfileMode) {
+          debugPrint('WAYPOINT_LABEL: $label');
+          debugPrint('WAYPOINT_COORDINATE_VALID: true');
+        }
+
+        final cacheKey =
+            '${selectedScheduleId.value}|${p.dayNumber}|${p.order}|${p.name}';
+
+        Uint8List? markerData = _waypointMarkerCache[cacheKey];
+        final bool cacheHit = markerData != null;
+
+        if (kDebugMode || kProfileMode) {
+          debugPrint('WAYPOINT_CACHE_HIT: $cacheHit');
+        }
+
+        if (!cacheHit) {
+          try {
+            final marker =
+                await MarkerGenerator.createScheduleStopMarker(label);
+            if (marker != null) {
+              markerData = marker.data;
+              _waypointMarkerCache[cacheKey] = markerData;
+            }
+          } catch (e, stack) {
+            if (kDebugMode || kProfileMode) {
+              debugPrint(
+                  'MAP_RENDER_ERROR: Failed to generate waypoint "$label": $e\n$stack');
+            }
+          }
+        }
+
+        if (markerData == null) {
+          failedCount++;
+          if (kDebugMode || kProfileMode) {
+            debugPrint('WAYPOINT_OPTION_PREPARED: false');
+          }
+          continue;
+        }
+
+        if (kDebugMode || kProfileMode) {
+          debugPrint('WAYPOINT_PNG_BYTE_LENGTH: ${markerData.length}');
+          debugPrint('WAYPOINT_OPTION_PREPARED: label=$label');
+        }
+
+        options.add(mb.PointAnnotationOptions(
+          geometry: mb.Point(coordinates: mb.Position(p.lng, p.lat)),
+          image: markerData,
+          iconAnchor: mb.IconAnchor.BOTTOM,
+        ));
+        labels.add(label);
+        preparedCount++;
+      }
+
+      int createdCount = 0;
+      if (options.isNotEmpty) {
+        await waypointManager!.setIconAllowOverlap(true);
+        await waypointManager!.setIconIgnorePlacement(true);
+
+        try {
+          final results = await waypointManager!.createMulti(options);
+          for (int i = 0; i < options.length; i++) {
+            final bool resultReturned = i < results.length;
+            final bool success = resultReturned && results[i] != null;
+
+            if (success) {
+              createdCount++;
+            } else {
+              failedCount++;
+            }
+
+            if (kDebugMode || kProfileMode) {
+              debugPrint(
+                'WAYPOINT_MAPBOX_CREATED: '
+                'label=${labels[i]}, '
+                'resultReturned=$resultReturned, '
+                'success=$success',
+              );
+            }
+          }
+
+          if ((kDebugMode || kProfileMode) &&
+              results.length != options.length) {
+            debugPrint(
+              'MAP_RENDER_ERROR: WAYPOINT_RESULT_COUNT_MISMATCH '
+              'prepared=${options.length}, returned=${results.length}',
+            );
+          }
+        } catch (e, stack) {
+          failedCount += options.length;
+          if (kDebugMode || kProfileMode) {
+            debugPrint('MAP_RENDER_ERROR: createMulti failed: $e\n$stack');
+          }
+        }
+      }
+      debugPrint('WAYPOINT_PREPARED_COUNT: $preparedCount');
+      debugPrint('WAYPOINT_CREATED_COUNT: $createdCount');
+      debugPrint('WAYPOINT_SKIPPED_COUNT: $skippedCount');
+      debugPrint('WAYPOINT_FAILED_COUNT: $failedCount');
+    } catch (e, stack) {
+      debugPrint('MAP_RENDER_ERROR: Waypoint sync failed: $e\n$stack');
+    } finally {
+      _isSyncingWaypoints = false;
+    }
+  }
+
+  bool _isValidCoordinate(double lat, double lng) {
+    if (!lat.isFinite || !lng.isFinite) return false;
+    if (lat < -90 || lat > 90) return false;
+    if (lng < -180 || lng > 180) return false;
+    if (lat == 0 && lng == 0) return false;
+    return true;
+  }
+
+  Future<void> _syncHeatmap() async {
+    if (mapboxMap == null) return;
+    try {
+      if (!showHeatmap.value || heatPoints.isEmpty) {
+        await mapboxMap!.style.setStyleSourceProperty("stayhub-heatmap-source",
+            "data", '{"type":"FeatureCollection","features":[]}');
+        debugPrint('HEATMAP_VISIBLE: false (or empty)');
         return;
       }
-    } catch (_) {}
-    _fitToLiveLocations();
+
+      final features = <Map<String, dynamic>>[];
+      int validCount = 0;
+      int invalidCount = 0;
+      for (final p in heatPoints) {
+        if (_isValidCoordinate(p.lat, p.lng)) {
+          double weight = p.weight;
+          if (weight < 0 || weight.isNaN || weight.isInfinite) weight = 0;
+
+          features.add({
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [p.lng, p.lat]
+            },
+            "properties": {"weight": weight}
+          });
+          validCount++;
+        } else {
+          invalidCount++;
+        }
+      }
+
+      debugPrint('HEATMAP_INPUT_COUNT: ${heatPoints.length}');
+      debugPrint('HEATMAP_VALID_COUNT: $validCount');
+      debugPrint('HEATMAP_INVALID_COUNT: $invalidCount');
+
+      final geoJson =
+          jsonEncode({"type": "FeatureCollection", "features": features});
+      await mapboxMap!.style
+          .setStyleSourceProperty("stayhub-heatmap-source", "data", geoJson);
+      debugPrint('HEATMAP_SOURCE_UPDATED');
+      debugPrint('HEATMAP_VISIBLE: true');
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: Heatmap sync failed: $e');
+    }
   }
 
-  void zoomIn() {
-    if (!isMapReady.value) return;
-    try {
-      final cam = mapController.camera;
-      _safeMove(cam.center, (cam.zoom + 1).clamp(2, 18).toDouble());
-    } catch (_) {}
+  // Legacy footprint mapbox synchronization removed.
+  // The fog overlay now listens to fogDataRevision directly.
+
+  void zoomIn() async {
+    if (mapboxMap == null) return;
+    final state = await mapboxMap!.getCameraState();
+    mapboxMap!.flyTo(mb.CameraOptions(zoom: state.zoom + 1),
+        mb.MapAnimationOptions(duration: 300));
   }
 
-  void zoomOut() {
-    if (!isMapReady.value) return;
-    try {
-      final cam = mapController.camera;
-      _safeMove(cam.center, (cam.zoom - 1).clamp(2, 18).toDouble());
-    } catch (_) {}
+  void zoomOut() async {
+    if (mapboxMap == null) return;
+    final state = await mapboxMap!.getCameraState();
+    mapboxMap!.flyTo(mb.CameraOptions(zoom: state.zoom - 1),
+        mb.MapAnimationOptions(duration: 300));
   }
 
   void _fitToLiveLocations() {
@@ -860,99 +1894,30 @@ class SocialMapController extends GetxController {
   void fitToRoute() => _fitCamera(routeLatLngs);
 
   void _safeMove(LatLng center, double zoom) {
-    if (!isMapReady.value) return;
-    try {
-      mapController.move(center, zoom);
-    } catch (_) {}
-  }
-
-  /// Tải dữ liệu dòng thời gian hành trình (timeline) về thiết bị dưới dạng tệp JSON
-  Future<void> downloadTimeline() async {
-    if (mapMoments.isEmpty) {
-      SnackbarHelper.error('No timeline data available to download');
-      return;
-    }
-
-    try {
-      // 1. Tạo cấu trúc dữ liệu JSON dòng thời gian hành trình
-      final momentsData = timelineMoments
-          .map((m) => {
-                'id': m.id,
-                'user': m.fullName ?? 'User',
-                'caption': m.caption ?? '',
-                'imageUrl': m.imageUrl,
-                'lat': m.lat,
-                'lng': m.lng,
-                'time': m.createdAt.toIso8601String(),
-              })
-          .toList();
-
-      final jsonString = const JsonEncoder.withIndent('  ').convert(momentsData);
-
-      // 2. Thử lưu vào thư mục Download công cộng của thiết bị Android
-      File? savedFile;
-      try {
-        final downloadDir = Directory('/storage/emulated/0/Download');
-        if (await downloadDir.exists()) {
-          final file = File(
-              '${downloadDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
-          await file.writeAsString(jsonString);
-          savedFile = file;
-        }
-      } catch (_) {
-        // Bỏ qua lỗi truy cập trực tiếp thư mục Download
-      }
-
-      // 3. Nếu là iOS hoặc thư mục Download công cộng bị giới hạn quyền, lưu vào thư mục tạm của ứng dụng
-      if (savedFile == null) {
-        final tempDir = Directory.systemTemp;
-        final file = File(
-            '${tempDir.path}/stayhub_timeline_${selectedScheduleId.value ?? "general"}.json');
-        await file.writeAsString(jsonString);
-        savedFile = file;
-      }
-
-      // 4. Đồng thời sao chép vào Clipboard làm fallback an toàn
-      await Clipboard.setData(ClipboardData(text: jsonString));
-
-      // 5. Hiển thị thông báo thành công
-      SnackbarHelper.success(
-          'Timeline downloaded to: ${savedFile.path}\n(Data has also been copied to Clipboard!)');
-    } catch (e) {
-      SnackbarHelper.error('Error exporting timeline: $e');
-    }
+    if (mapboxMap == null) return;
+    mapboxMap!.flyTo(
+        mb.CameraOptions(
+            center: mb.Point(
+                coordinates: mb.Position(center.longitude, center.latitude)),
+            zoom: zoom),
+        mb.MapAnimationOptions(duration: 300));
   }
 
   void _fitCamera(List<LatLng> points) {
-    if (points.isEmpty) return;
-    // Nếu map chưa mount, hoãn lại tới onMapReady.
-    if (!isMapReady.value) {
-      _pendingFit = points;
-      return;
+    if (points.isEmpty || mapboxMap == null) return;
+    double minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
+    for (var p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
     }
-    try {
-      if (points.length == 1) {
-        mapController.move(points.first, 13);
-        return;
-      }
-      mapController.fitCamera(
-        CameraFit.coordinates(
-          coordinates: points,
-          padding: const EdgeInsets.all(72),
-        ),
-      );
-    } catch (_) {
-      // map có thể chưa sẵn sàng; thử lại sau frame kế tiếp.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        try {
-          mapController.fitCamera(
-            CameraFit.coordinates(
-              coordinates: points,
-              padding: const EdgeInsets.all(72),
-            ),
-          );
-        } catch (_) {}
-      });
-    }
+    mapboxMap!.flyTo(
+        mb.CameraOptions(
+            center: mb.Point(
+                coordinates:
+                    mb.Position((minLng + maxLng) / 2, (minLat + maxLat) / 2)),
+            zoom: 12.0),
+        mb.MapAnimationOptions(duration: 500));
   }
 }

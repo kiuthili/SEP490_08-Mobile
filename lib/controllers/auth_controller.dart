@@ -57,7 +57,11 @@ class AuthController extends GetxController {
         );
       }
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -155,7 +159,11 @@ class AuthController extends GetxController {
     try {
       currentUser.value = await _authService.getProfile();
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
     } finally {
       isLoading.value = false;
     }
@@ -188,8 +196,7 @@ class AuthController extends GetxController {
       newPassword: newPassword,
     );
   }
-
-  Future<void> logout() async {
+  Future<void> logout([bool redirectToHome = true]) async {
     if (Get.isRegistered<SignalRService>()) {
       await Get.find<SignalRService>().disconnectAll();
     }
@@ -204,7 +211,9 @@ class AuthController extends GetxController {
     }
     await _authService.logout();
     currentUser.value = null;
-    Get.offAllNamed(AppRoutes.home);
+    if (redirectToHome) {
+      Get.offAllNamed(AppRoutes.home);
+    }
   }
 
   Future<void> handleSessionExpiredCleanly() async {
@@ -264,7 +273,11 @@ class AuthController extends GetxController {
         );
       }
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
     } catch (_) {
       SnackbarHelper.error('err_google_login'.tr);
     } finally {
@@ -322,6 +335,8 @@ class AuthController extends GetxController {
         SnackbarHelper.error('err_phone_exists'.tr);
       } else if (e.message == 'PhoneNumberMax15Chars') {
         SnackbarHelper.error('err_phone_length'.tr);
+      } else if (e.message == 'InvalidProvider') {
+        SnackbarHelper.error('InvalidProvider'.tr);
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -332,3 +347,4 @@ class AuthController extends GetxController {
     }
   }
 }
+

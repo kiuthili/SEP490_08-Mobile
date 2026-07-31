@@ -60,78 +60,71 @@ class _AuthInputFieldState extends State<AuthInputField> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: _obscured,
+      keyboardType: widget.keyboardType,
+      textInputAction: widget.textInputAction,
+      validator: widget.validator,
+      enabled: widget.enabled,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: const TextStyle(
+        fontSize: 15,
+        color: AppColors.textPrimary,
+      ),
+      cursorColor: AppColors.brand,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hint,
+        alignLabelWithHint: true,
+        hintStyle: TextStyle(
+          fontSize: 15,
+          color: Colors.grey.shade400,
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: widget.controller,
-          obscureText: _obscured,
-          keyboardType: widget.keyboardType,
-          textInputAction: widget.textInputAction,
-          validator: widget.validator,
-          enabled: widget.enabled,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          style: const TextStyle(
-            fontSize: 15,
-            color: AppColors.textPrimary,
-          ),
-          cursorColor: AppColors.brand,
-          decoration: InputDecoration(
-            hintText: widget.hint,
-            hintStyle: TextStyle(
-              fontSize: 15,
-              color: Colors.grey.shade400,
-            ),
-            prefixIcon: Icon(
-              widget.icon,
-              size: 20,
-              color: Colors.grey.shade400,
-            ),
-            suffixIcon: suffix,
-            filled: true,
-            fillColor: widget.enabled
-                ? const Color(0xFFF8F9FF)
-                : const Color(0xFFF0F1F5),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-            ),
-          ),
+        prefixIcon: Icon(
+          widget.icon,
+          size: 22,
+          color: AppColors.textSecondary,
         ),
-      ],
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 52,
+          maxWidth: 52,
+          minHeight: 48,
+        ),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: widget.enabled
+            ? Colors.grey.shade100
+            : const Color(0xFFF0F1F5),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.brand, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+      ),
     );
   }
 }
@@ -159,23 +152,11 @@ class AuthPrimaryButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: disabled ? null : onPressed,
-          borderRadius: AppRadius.button,
+          borderRadius: BorderRadius.circular(100),
           child: Ink(
             decoration: BoxDecoration(
-              gradient: disabled
-                  ? null
-                  : const LinearGradient(
-                      colors: [
-                        Color(0xFF1A7AFF),
-                        AppColors.brand,
-                        Color(0xFF0048B0),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-              color: disabled ? AppColors.brand.withValues(alpha: 0.4) : null,
-              borderRadius: AppRadius.button,
-              boxShadow: disabled ? null : AppShadows.soft,
+              color: disabled ? AppColors.brand.withValues(alpha: 0.4) : AppColors.brand,
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Center(
               child: isLoading
@@ -228,7 +209,7 @@ class AuthGoogleButton extends StatelessWidget {
           side: BorderSide(color: Colors.grey.shade300),
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderRadius: BorderRadius.circular(100),
           ),
         ),
         child: Row(
@@ -302,7 +283,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
         24,
         24,
         24,
-        MediaQuery.viewInsetsOf(context).bottom + 24,
+        24,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -418,15 +399,6 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
               const SizedBox(height: 20),
 
               // Phone field
-              Text(
-                'auth_google_phone_label'.tr,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
@@ -438,6 +410,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
+                  labelText: 'auth_google_phone_label'.tr,
                   counterText: '',
                   hintText: 'auth_google_phone_hint'.tr,
                   hintStyle: TextStyle(
@@ -448,22 +421,27 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                   prefixIcon: const Icon(
                     Icons.phone_outlined,
                     color: AppColors.textSecondary,
-                    size: 20,
+                    size: 22,
+                  ),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 52,
+                    maxWidth: 52,
+                    minHeight: 48,
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFF8F9FF),
+                  fillColor: Colors.grey.shade100,
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(color: Colors.grey.shade200),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide:
                         const BorderSide(color: AppColors.brand, width: 1.5),
                   ),
@@ -493,7 +471,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.grey.shade300),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                         ),
                         child: Text(
@@ -518,7 +496,7 @@ class _GooglePhoneBottomSheetState extends State<GooglePhoneBottomSheet> {
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                         ),
                         child: widget.isLoading

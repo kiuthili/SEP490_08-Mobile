@@ -16,6 +16,7 @@ class OrderModel {
   final OrderScheduleInfo? schedule;
   final List<OrderDetailModel> orderDetails;
   final List<TicketModel> tickets;
+  final OrderReviewInfo? review;
 
   OrderModel({
     required this.id,
@@ -35,6 +36,7 @@ class OrderModel {
     this.schedule,
     this.orderDetails = const [],
     this.tickets = const [],
+    this.review,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,9 @@ class OrderModel {
           : null,
       schedule: json['schedule'] != null
           ? OrderScheduleInfo.fromJson(json['schedule'] as Map<String, dynamic>)
+          : null,
+      review: json['review'] != null
+          ? OrderReviewInfo.fromJson(json['review'] as Map<String, dynamic>)
           : null,
       orderDetails: orderDetails,
       tickets: tickets,
@@ -175,6 +180,29 @@ class OrderScheduleInfo {
         id: json['id'] as int,
         departureDate: DateTime.parse(json['departureDate'].toString()),
         returnDate: DateTime.parse(json['returnDate'].toString()),
+      );
+}
+
+class OrderReviewInfo {
+  final int id;
+  final int rating;
+  final String? comment;
+  final DateTime? createdAt;
+
+  OrderReviewInfo({
+    required this.id,
+    required this.rating,
+    this.comment,
+    this.createdAt,
+  });
+
+  factory OrderReviewInfo.fromJson(Map<String, dynamic> json) => OrderReviewInfo(
+        id: json['id'] as int,
+        rating: (json['rating'] as num?)?.toInt() ?? 5,
+        comment: json['comment'] as String?,
+        createdAt: json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'].toString())
+            : null,
       );
 }
 

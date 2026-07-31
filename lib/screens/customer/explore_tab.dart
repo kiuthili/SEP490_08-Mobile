@@ -692,7 +692,7 @@ class _ExploreTabState extends State<ExploreTab> {
                 padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  borderRadius: AppRadius.input,
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.navy.withValues(alpha: 0.18),
@@ -785,7 +785,7 @@ class _ExploreTabState extends State<ExploreTab> {
             Get.toNamed(AppRoutes.aiQuestionnaire);
           }
         },
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: AppRadius.button,
         child: Ink(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -794,7 +794,7 @@ class _ExploreTabState extends State<ExploreTab> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: AppRadius.button,
             border: Border.all(color: AppColors.brand.withValues(alpha: 0.1)),
           ),
           child: Row(
@@ -916,7 +916,7 @@ class _ActiveFilterBar extends StatelessWidget {
           ),
           InkWell(
             onTap: onClear,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
+            borderRadius: AppRadius.button,
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               child: Text(

@@ -622,28 +622,37 @@ class EligibleScheduleModel {
     required this.statusContext,
   });
 
-  factory EligibleScheduleModel.fromJson(Map<String, dynamic> json) =>
-      EligibleScheduleModel(
-        scheduleId: JsonUtils.readInt(
-          JsonUtils.pick(json, ['scheduleId', 'ScheduleId', 'id']),
-        ),
-        tourName: JsonUtils.readString(
-              JsonUtils.pick(json, ['tourName', 'TourName']),
-            ) ??
-            '',
-        departureDate: JsonUtils.readDateTime(
-              JsonUtils.pick(json, ['departureDate', 'DepartureDate']),
-            ) ??
-            DateTime.now(),
-        returnDate: JsonUtils.readDateTime(
-              JsonUtils.pick(json, ['returnDate', 'ReturnDate']),
-            ) ??
-            DateTime.now(),
-        statusContext: JsonUtils.readString(
-              JsonUtils.pick(json, ['statusContext', 'StatusContext']),
-            ) ??
-            '',
-      );
+  factory EligibleScheduleModel.fromJson(Map<String, dynamic> json) {
+    String? name = JsonUtils.readString(
+      JsonUtils.pick(json, ['tourName', 'TourName']),
+    );
+    if (name == null || name.isEmpty) {
+      final tourObj = json['tour'] ?? json['Tour'];
+      if (tourObj is Map) {
+        name = JsonUtils.readString(
+          JsonUtils.pick(Map<String, dynamic>.from(tourObj), ['name', 'Name', 'tourName', 'TourName']),
+        );
+      }
+    }
+    return EligibleScheduleModel(
+      scheduleId: JsonUtils.readInt(
+        JsonUtils.pick(json, ['scheduleId', 'ScheduleId', 'id', 'Id']),
+      ),
+      tourName: name ?? 'Tour Schedule',
+      departureDate: JsonUtils.readDateTime(
+            JsonUtils.pick(json, ['departureDate', 'DepartureDate']),
+          ) ??
+          DateTime.now(),
+      returnDate: JsonUtils.readDateTime(
+            JsonUtils.pick(json, ['returnDate', 'ReturnDate']),
+          ) ??
+          DateTime.now(),
+      statusContext: JsonUtils.readString(
+            JsonUtils.pick(json, ['statusContext', 'StatusContext']),
+          ) ??
+          'Ongoing',
+    );
+  }
 }
 
 class SocialReactionModel {

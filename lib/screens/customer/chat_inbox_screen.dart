@@ -127,15 +127,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                     onChanged: (value) => setState(() => _query = value),
                     decoration: InputDecoration(
                       hintText: 'sc_ib_search'.tr,
-                      filled: true,
-                      fillColor: AppColors.surfaceGrouped,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 0, horizontal: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        borderSide: BorderSide.none,
-                      ),
-                      prefixIcon: const Icon(Icons.search_rounded),
+                      prefixIcon: const Icon(Icons.search_rounded, color: Colors.black54),
                       suffixIcon: _query.isEmpty
                           ? null
                           : IconButton(
@@ -143,29 +135,60 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                                 _searchController.clear();
                                 setState(() => _query = '');
                               },
-                              icon: const Icon(Icons.close_rounded),
+                              icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 20),
                             ),
+                      filled: true,
+                      fillColor: Colors.grey.shade200,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      isDense: true,
                     ),
                   ),
                 ),
               ),
-              SliverToBoxAdapter(
-                child: TabBar(
-                  controller: _tabController,
-                  dividerColor: Colors.transparent,
-                  labelColor: AppColors.brand,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicatorColor: AppColors.brand,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 13),
-                  unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w500, fontSize: 13),
-                  tabs: [
-                    Tab(text: 'sc_ib_tab_all'.tr),
-                    Tab(text: 'sc_ib_tab_direct'.tr),
-                    Tab(text: 'sc_ib_tab_group'.tr),
-                  ],
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarDelegate(
+                  child: Container(
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    padding: const EdgeInsets.all(3),
+                    child: TabBar(
+                      controller: _tabController,
+                      dividerColor: Colors.transparent,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        color: Colors.white,
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))
+                        ],
+                      ),
+                      labelColor: Colors.black87,
+                      unselectedLabelColor: Colors.black54,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      tabs: [
+                        Tab(text: 'sc_ib_tab_all'.tr),
+                        Tab(text: 'sc_ib_tab_direct'.tr),
+                        Tab(text: 'sc_ib_tab_group'.tr),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               if (rooms.isEmpty)
@@ -221,7 +244,8 @@ class _ConversationCard extends StatelessWidget {
     final title = room.name?.trim().isNotEmpty == true
         ? room.name!
         : room.isGroup
-            ? 'sc_ib_tour_group_id'.trParams({'id': (room.scheduleId ?? room.id).toString()})
+            ? 'sc_ib_tour_group_id'
+                .trParams({'id': (room.scheduleId ?? room.id).toString()})
             : 'sc_ib_chat_id'.trParams({'id': room.id.toString()});
     final hasUnread = room.unreadCount > 0;
 
@@ -240,7 +264,7 @@ class _ConversationCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderRadius: AppRadius.button,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(
@@ -379,7 +403,6 @@ class _ChatAvatar extends StatelessWidget {
         gradient: isGroup ? AppColors.brandGradient : null,
         color: isGroup ? null : AppColors.brandLight,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
       ),
       child: imageUrl?.isNotEmpty == true
           ? CachedNetworkImage(
@@ -406,3 +429,29 @@ class _ChatAvatar extends StatelessWidget {
     );
   }
 }
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  _TabBarDelegate({required this.child});
+  final Widget child;
+
+  @override
+  double get minExtent => 52.0; // 36 height + 16 padding
+  @override
+  double get maxExtent => 52.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) {
+    return oldDelegate.child != child;
+  }
+}
+

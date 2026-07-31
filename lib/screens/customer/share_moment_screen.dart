@@ -58,6 +58,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
   bool _isInitializing = true;
   bool _isUploading = false;
+  bool _isCameraInitializedFirstTime = false;
 
   @override
   void initState() {
@@ -133,11 +134,12 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         if (mounted) setState(() => _isInitializing = false);
         return;
       }
-      if (_cameraController == null) {
+      if (!_isCameraInitializedFirstTime) {
         _cameraIndex = _cameras.indexWhere(
           (c) => c.lensDirection == CameraLensDirection.back,
         );
         if (_cameraIndex < 0) _cameraIndex = 0;
+        _isCameraInitializedFirstTime = true;
       }
       final controller = CameraController(
         _cameras[_cameraIndex],
@@ -223,18 +225,20 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         _privacy,
       );
 
-      if (success) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) Get.back();
-        });
-      } else if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    } catch (e) {
-      SnackbarHelper.error('Cannot share moment at this time: $e');
       if (mounted) {
         setState(() => _isUploading = false);
       }
+
+      if (success) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+      SnackbarHelper.error('Cannot share moment at this time: $e');
     }
   }
 
@@ -250,9 +254,9 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   Widget build(BuildContext context) {
     final schedules = _ongoingSchedules;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: _capturedImage != null
-          ? SafeArea(child: _buildReviewScreen())
+          ? _buildReviewScreen()
           : _buildCameraScreen(schedules),
     );
   }
@@ -425,222 +429,314 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        var scale = constraints.maxHeight /
-            constraints.maxWidth *
-            cam.value.aspectRatio;
-        if (scale < 1) scale = 1 / scale;
-        return Transform.scale(
-          scale: scale,
-          child: Center(
-            child: CameraPreview(cam),
-          ),
-        );
-      },
+    final size = MediaQuery.of(context).size;
+    var cameraRatio = cam.value.aspectRatio;
+
+    // Ensure camera ratio is in portrait (width < height)
+    if (cameraRatio > 1) {
+      cameraRatio = 1 / cameraRatio;
+    }
+
+    final deviceRatio = size.width / size.height;
+
+    // Calculate scale to cover the screen
+    double scale = 1.0;
+    if (deviceRatio < cameraRatio) {
+      scale = cameraRatio / deviceRatio;
+    } else {
+      scale = deviceRatio / cameraRatio;
+    }
+
+    return Transform.scale(
+      scale: scale,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: cameraRatio,
+          child: CameraPreview(cam),
+        ),
+      ),
     );
   }
 
   // ── REVIEW SCREEN (after capture) ────────────────────────────────────────
 
   Widget _buildReviewScreen() {
-    return Column(
+    final topPad = MediaQuery.of(context).padding.top;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final isVi = Get.locale?.languageCode == 'vi';
+    final schedules = _ongoingSchedules;
+
+    return Stack(
       children: [
-        // Top bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: _retake,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
-                  child: const Icon(Icons.arrow_back_rounded,
-                      color: Colors.white, size: 20),
+        // ── Full-screen photo ───────────────────────────────────────
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
+            ),
+            child: Image.file(
+              _capturedImage!,
+              fit: BoxFit.cover,
+              cacheWidth: 1080,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey.shade900,
+                child: const Center(
+                  child: Icon(Icons.broken_image_rounded,
+                      color: Colors.white30, size: 56),
                 ),
               ),
-              const Spacer(),
-              const Text(
-                'Preview',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 17),
-              ),
-              const Spacer(),
-              const SizedBox(width: 36),
-            ],
+            ),
           ),
         ),
 
-        // Preview image
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.file(
-                    _capturedImage!,
-                    fit: BoxFit.cover,
-                    cacheWidth: 800,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey.shade900,
-                      child: const Center(
-                        child: Icon(Icons.broken_image_rounded,
-                            color: Colors.white30, size: 48),
-                      ),
-                    ),
-                  ),
-
-                  // Caption overlay at bottom of image
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.65),
-                            Colors.transparent
-                          ],
-                        ),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-                      child: TextField(
-                        controller: _captionController,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          shadows: [
-                            Shadow(color: Colors.black54, blurRadius: 4)
-                          ],
-                        ),
-                        maxLines: 2,
-                        maxLength: _kMaxCaption,
-                        textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(
-                          hintText: 'Add a caption...',
-                          hintStyle:
-                              TextStyle(color: Colors.white60, fontSize: 15),
-                          border: InputBorder.none,
-                          counterStyle:
-                              TextStyle(color: Colors.white54, fontSize: 11),
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                  ),
+        // ── Top gradient + back button ──────────────────────────────
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.55),
+                  Colors.transparent,
                 ],
               ),
             ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Privacy chips
-        SizedBox(
-          height: 40,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: _privacyOptions
-                .where((opt) =>
-                    opt.value != 'Tour' || (_selectedScheduleId ?? 0) != 0)
-                .map((opt) {
-              final sel = _privacy == opt.value;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _privacy = opt.value);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            padding: EdgeInsets.fromLTRB(16, topPad + 12, 16, 40),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: _retake,
+                  child: Container(
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      color: sel ? _kAccentCyan : Colors.white12,
-                      border: Border.all(
-                        color: sel ? _kAccentCyan : Colors.white24,
-                        width: 1.2,
-                      ),
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.35),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(opt.icon,
-                            size: 13,
-                            color: sel ? Colors.black : Colors.white70),
-                        const SizedBox(width: 5),
-                        Text(
-                          opt.label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: sel ? Colors.black : Colors.white70,
-                          ),
-                        ),
-                      ],
+                    child: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.30),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    isVi ? 'Xem trước' : 'Preview',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Send button
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: FilledButton(
-              onPressed: _isUploading ? null : _submitMoment,
-              style: FilledButton.styleFrom(
-                backgroundColor: _kAccentCyan,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32)),
-                elevation: 0,
-              ),
-              child: _isUploading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.black),
-                    )
-                  : const Text(
-                      'Send Moment',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          letterSpacing: 0.3),
-                    ),
+                const Spacer(),
+                const SizedBox(width: 40),
+              ],
             ),
           ),
         ),
 
-        const SizedBox(height: 16),
+        // ── Bottom gradient + controls ──────────────────────────────
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.95),
+                  Colors.black.withValues(alpha: 0.70),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.65, 1.0],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            padding: EdgeInsets.fromLTRB(20, 48, 20, bottomPad + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Caption input ─────────────────────────────────
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.edit_rounded,
+                          color: Colors.white60, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _captionController,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          maxLength: _kMaxCaption,
+                          textInputAction: TextInputAction.done,
+                          decoration: InputDecoration(
+                            hintText: isVi
+                                ? 'Thêm dòng trạng thái...'
+                                : 'Add a caption...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            counterStyle: const TextStyle(
+                                color: Colors.white54, fontSize: 11),
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            filled: false,
+                            fillColor: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Tour selector + Privacy chips ─────────────────
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      if (schedules.length > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _TourPill(
+                            schedules: schedules,
+                            selectedId: _selectedScheduleId,
+                            onChanged: (id) => setState(() {
+                              _selectedScheduleId = id;
+                              if (id == 0 && _privacy == 'Tour') {
+                                _privacy = 'Public';
+                              }
+                            }),
+                          ),
+                        ),
+                      ..._privacyOptions
+                          .where((opt) =>
+                              opt.value != 'Tour' ||
+                              (_selectedScheduleId ?? 0) != 0)
+                          .map((opt) {
+                        final sel = _privacy == opt.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _privacy = opt.value);
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(100),
+                                color: sel
+                                    ? AppColors.brand
+                                    : Colors.white.withValues(alpha: 0.20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(opt.icon,
+                                      size: 13,
+                                      color: Colors.white.withValues(
+                                          alpha: sel ? 1.0 : 0.80)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    opt.label,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white.withValues(
+                                          alpha: sel ? 1.0 : 0.80),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Send button ───────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton.icon(
+                    onPressed: _isUploading ? null : _submitMoment,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.brand,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    icon: _isUploading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5, color: Colors.white),
+                          )
+                        : const Icon(Icons.send_rounded, size: 18),
+                    label: _isUploading
+                        ? const SizedBox.shrink()
+                        : Text(
+                            isVi ? 'Chia sẻ Moment' : 'Share Moment',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -664,10 +760,10 @@ class _LocketShutterButton extends StatelessWidget {
         height: 78,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: _kAccentCyan, width: 3.5),
+          border: Border.all(color: AppColors.brand, width: 3.5),
           boxShadow: [
             BoxShadow(
-              color: _kAccentCyan.withValues(alpha: 0.35),
+              color: AppColors.brand.withValues(alpha: 0.35),
               blurRadius: 14,
               spreadRadius: 2,
             ),
@@ -770,8 +866,9 @@ class _TourPill extends StatelessWidget {
               Icon(
                 s.scheduleId == 0 ? Icons.person : Icons.tour_rounded,
                 size: 16,
-                color:
-                    s.scheduleId == selectedId ? _kAccentCyan : Colors.white54,
+                color: s.scheduleId == selectedId
+                    ? AppColors.brand
+                    : Colors.white54,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -781,7 +878,7 @@ class _TourPill extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: s.scheduleId == selectedId
-                        ? _kAccentCyan
+                        ? AppColors.brand
                         : Colors.white,
                     fontWeight: s.scheduleId == selectedId
                         ? FontWeight.bold
@@ -791,7 +888,8 @@ class _TourPill extends StatelessWidget {
                 ),
               ),
               if (s.scheduleId == selectedId)
-                const Icon(Icons.check_rounded, size: 14, color: _kAccentCyan),
+                const Icon(Icons.check_rounded,
+                    size: 14, color: AppColors.brand),
             ],
           ),
           onTap: () => onChanged(s.scheduleId),
@@ -827,18 +925,17 @@ class _HistoryPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, -120),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        width: 170,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           color: Colors.white.withValues(alpha: 0.12),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.tour_rounded, color: Colors.white, size: 16),
             const SizedBox(width: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 130),
+            Expanded(
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
@@ -913,12 +1010,6 @@ class _PrivacyPill extends StatelessWidget {
     return found?.icon ?? Icons.public;
   }
 
-  String get _label {
-    final found =
-        _privacyOptions.where((opt) => opt.value == currentPrivacy).firstOrNull;
-    return found?.label ?? 'Public';
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
@@ -927,7 +1018,7 @@ class _PrivacyPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md)),
       offset: const Offset(0, -120),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           color: Colors.white.withValues(alpha: 0.12),
@@ -936,18 +1027,9 @@ class _PrivacyPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(_icon, color: Colors.white, size: 16),
-            const SizedBox(width: 6),
-            Text(
-              _label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
             const SizedBox(width: 4),
             const Icon(Icons.keyboard_arrow_down_rounded,
-                color: Colors.white70, size: 16),
+                color: Colors.white70, size: 14),
           ],
         ),
       ),

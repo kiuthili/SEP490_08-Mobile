@@ -37,9 +37,8 @@ class ApiError {
   factory ApiError.fromJson(Map<String, dynamic>? json, {int? statusCode}) {
     final rawRetryAfter = json?['retryAfterSeconds'];
     final is401 = statusCode == 401;
-    String message = is401
-        ? silent401Message
-        : (json?['message'] as String? ?? 'Đã xảy ra lỗi');
+    String message = json?['message'] as String? ?? 
+        (is401 ? silent401Message : 'Đã xảy ra lỗi');
 
     if (json != null && json.containsKey('errors')) {
       final errors = json['errors'];

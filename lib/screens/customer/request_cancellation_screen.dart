@@ -170,7 +170,7 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
     if (ok) {
       final controller = Get.find<OrderController>();
       await controller.fetchOrders(refresh: true);
-      
+
       if (mounted) Get.back(result: true);
     }
   }
@@ -233,8 +233,9 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
                       onChanged: _submitting
                           ? null
                           : (value) => setState(() => _selectedBank = value),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? 'rc_error_select_bank'.tr : null,
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'rc_error_select_bank'.tr
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     CustomTextField(
@@ -376,15 +377,15 @@ class _BankFallbackNotice extends StatelessWidget {
             color: AppColors.accent,
           ),
           const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'rc_bank_fallback'.tr,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.navy,
-                      height: 1.35,
-                    ),
-              ),
+          Expanded(
+            child: Text(
+              'rc_bank_fallback'.tr,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.navy,
+                    height: 1.35,
+                  ),
             ),
+          ),
         ],
       ),
     );

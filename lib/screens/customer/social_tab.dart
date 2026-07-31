@@ -30,7 +30,7 @@ class _SocialTabState extends State<SocialTab>
   late final TabController _tabController;
   final _social = Get.find<SocialController>();
   final _searchController = TextEditingController();
-  
+
   bool _isFeedLight = false;
 
   @override
@@ -62,7 +62,7 @@ class _SocialTabState extends State<SocialTab>
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -92,8 +92,10 @@ class _SocialTabState extends State<SocialTab>
           indicatorWeight: 3,
           labelColor: _headerColor,
           unselectedLabelColor: _headerColor.withValues(alpha: 0.6),
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          labelStyle:
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          unselectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           tabs: [
             Tab(text: 'sc_tab_feed'.tr),
             Tab(text: 'sc_tab_friends'.tr),
@@ -165,7 +167,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     });
 
     ever(widget.social.moments, (_) {
-      if (widget.social.moments.isNotEmpty && !_isFeedLightMap.containsKey(0) && _currentFeedIndex == 0) {
+      if (widget.social.moments.isNotEmpty &&
+          !_isFeedLightMap.containsKey(0) &&
+          _currentFeedIndex == 0) {
         _checkImageColor(0);
       }
     });
@@ -173,12 +177,12 @@ class _MomentsPanelState extends State<_MomentsPanel> {
 
   Future<void> _checkImageColor(int index) async {
     if (index >= widget.social.moments.length) return;
-    
+
     if (_isFeedLightMap.containsKey(index)) {
       widget.onThemeChanged(_isFeedLightMap[index]!);
       return;
     }
-    
+
     final imageUrl = widget.social.moments[index].imageUrl;
     if (imageUrl.isEmpty) return;
 
@@ -186,9 +190,11 @@ class _MomentsPanelState extends State<_MomentsPanel> {
       final palette = await PaletteGenerator.fromImageProvider(
         CachedNetworkImageProvider(imageUrl),
       );
-      final dominantColor = palette.dominantColor?.color ?? palette.mutedColor?.color ?? Colors.black;
+      final dominantColor = palette.dominantColor?.color ??
+          palette.mutedColor?.color ??
+          Colors.black;
       final isLight = dominantColor.computeLuminance() > 0.5;
-      
+
       if (mounted) {
         _isFeedLightMap[index] = isLight;
         if (_currentFeedIndex == index) {
@@ -213,24 +219,37 @@ class _MomentsPanelState extends State<_MomentsPanel> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  'sc_share_send_to'.tr,
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    'sc_share_send_to'.tr,
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary),
+                  ),
                 ),
-                IconButton(
-                  onPressed: () => Get.back(),
-                  icon: const Icon(Icons.close_rounded),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: AppColors.textSecondary,
+                    onPressed: () => Get.back(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                      shape: const CircleBorder(),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -262,7 +281,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                           fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
-                      room.isGroup ? 'sc_share_tour_group'.tr : 'sc_share_direct_chat'.tr,
+                      room.isGroup
+                          ? 'sc_share_tour_group'.tr
+                          : 'sc_share_direct_chat'.tr,
                       style: const TextStyle(
                           fontSize: 11, color: AppColors.textTertiary),
                     ),
@@ -338,10 +359,11 @@ class _MomentsPanelState extends State<_MomentsPanel> {
               onDelete: widget.social.deleteMoment,
               onLike: (isLike) => widget.social.reactMoment(m.id, isLike),
               onComment: () {
-                Get.bottomSheet(
-                  CommentBottomSheet(moment: m),
+                showModalBottomSheet(
+                  context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
+                  builder: (context) => CommentBottomSheet(moment: m),
                 );
               },
               onReport: (id) =>
@@ -363,7 +385,7 @@ class _MomentsPanelState extends State<_MomentsPanel> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -381,27 +403,29 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-
                     Text(
                       '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       value: selectedReason,
                       decoration: InputDecoration(
-                          labelText: 'sc_report_reason'.tr,
-                          border: const OutlineInputBorder()),
+                        labelText: 'sc_report_reason'.tr,
+                      ),
                       items: [
                         DropdownMenuItem(
                             value: 'Spam', child: Text('sc_report_spam'.tr)),
                         DropdownMenuItem(
-                            value: 'sc_report_hate'.tr, child: Text('sc_report_hate'.tr)),
+                            value: 'sc_report_hate'.tr,
+                            child: Text('sc_report_hate'.tr)),
                         DropdownMenuItem(
                             value: 'Harassment',
                             child: Text('sc_report_harassment'.tr)),
                         DropdownMenuItem(
-                            value: 'Violence', child: Text('sc_report_violence'.tr)),
+                            value: 'Violence',
+                            child: Text('sc_report_violence'.tr)),
                         DropdownMenuItem(
                             value: 'Other', child: Text('sc_report_other'.tr)),
                       ],
@@ -418,7 +442,6 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                         labelText: 'sc_report_details'.tr,
                         hintText: 'sc_report_details_hint'.tr,
                         alignLabelWithHint: true,
-                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 3,
                     ),
@@ -427,7 +450,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: isSending ? null : () => Navigator.pop(context),
+                            onPressed:
+                                isSending ? null : () => Navigator.pop(context),
                             child: Text('sc_report_cancel'.tr),
                           ),
                         ),
@@ -442,7 +466,9 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                                       contentType: contentType,
                                       targetId: targetId,
                                       reason: selectedReason,
-                                      details: detailsController.text.trim().isNotEmpty
+                                      details: detailsController.text
+                                              .trim()
+                                              .isNotEmpty
                                           ? detailsController.text.trim()
                                           : null,
                                     );
@@ -451,7 +477,8 @@ class _MomentsPanelState extends State<_MomentsPanel> {
                                       Navigator.pop(context);
                                     }
                                   },
-                            style: FilledButton.styleFrom(backgroundColor: AppColors.brand),
+                            style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.brand),
                             child: isSending
                                 ? const SizedBox(
                                     width: 20,
@@ -509,8 +536,7 @@ class _SkeletonPlaceholderState extends State<_SkeletonPlaceholder> {
         height: 250,
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.separator),
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
     );

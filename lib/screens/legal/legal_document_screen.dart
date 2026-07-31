@@ -74,11 +74,16 @@ class _LegalDocumentScreenState extends State<LegalDocumentScreen> {
   @override
   Widget build(BuildContext context) {
     final args = Get.arguments as Map<String, dynamic>? ?? {};
-    final resolvedTitle = widget.title ?? args['title'] as String? ?? 'Văn bản pháp lý';
-    final resolvedUpdated = widget.lastUpdated ?? args['lastUpdated'] as String? ?? '';
-    final resolvedSections = widget.sections ?? (args['sections'] as List<LegalSection>?) ?? [];
-    final resolvedRelatedRoute = widget.relatedRoute ?? args['relatedRoute'] as String?;
-    final resolvedRelatedLabel = widget.relatedLabel ?? args['relatedLabel'] as String?;
+    final resolvedTitle =
+        widget.title ?? args['title'] as String? ?? 'Văn bản pháp lý';
+    final resolvedUpdated =
+        widget.lastUpdated ?? args['lastUpdated'] as String? ?? '';
+    final resolvedSections =
+        widget.sections ?? (args['sections'] as List<LegalSection>?) ?? [];
+    final resolvedRelatedRoute =
+        widget.relatedRoute ?? args['relatedRoute'] as String?;
+    final resolvedRelatedLabel =
+        widget.relatedLabel ?? args['relatedLabel'] as String?;
     final resolvedRelatedDocs = widget.relatedDocuments ??
         (args['relatedDocuments'] as List<Map<String, String>>?) ??
         [
@@ -135,7 +140,10 @@ class _LegalDocumentScreenState extends State<LegalDocumentScreen> {
           ],
           const SizedBox(height: 16),
           if (_isLoading)
-            const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+            const Center(
+                child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator()))
           else if (_htmlContent != null && _htmlContent!.isNotEmpty)
             IosSurfaceCard(
               margin: EdgeInsets.zero,

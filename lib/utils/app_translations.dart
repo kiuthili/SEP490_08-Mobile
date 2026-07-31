@@ -79,7 +79,7 @@ class AppTranslations extends Translations {
           'otp_required': 'Please enter the verification code',
 
           // --- Profile / Edit Profile ---
-          'edit_profile': 'Edit Profile',
+          'edit_profile': 'Update Profile',
           'profile_updated_success': 'Profile updated successfully',
           'profile_update_failed': 'Failed to update profile. Please try again.',
           'name': 'Name',
@@ -96,6 +96,7 @@ class AppTranslations extends Translations {
           'current_password': 'Current Password',
           'new_password': 'New Password',
           'change_password_success': 'Password changed successfully',
+          'change_password_success_relogin': 'Password changed successfully. Please login again.',
           'change_password_failed': 'Failed to change password',
           
           // --- Forgot Password ---
@@ -167,6 +168,7 @@ class AppTranslations extends Translations {
           'err_name_special': 'Full name cannot contain special characters or symbols',
           'err_phone_exists': 'This phone number is already used. Please use another one.',
           'err_otp_invalid': 'OTP confirmation code is incorrect or expired.',
+          'InvalidProvider': 'This email is registered with a different login method. Please select the correct login method.',
 
           // --- General Auth Prompts ---
           'login_required': 'Please login to use this feature',
@@ -185,7 +187,7 @@ class AppTranslations extends Translations {
           'nav_schedule': 'Schedule',
           'nav_tickets': 'Tickets',
           'nav_checkin': 'Check-in',
-          'nav_guests': 'Guests',
+          'nav_guests': 'Customers',
           'nav_customers': 'Customers',
 
           // --- Home & Search ---
@@ -208,6 +210,12 @@ class AppTranslations extends Translations {
           'thousands_tours': 'Thousands of tours await you at the best prices',
           'explore_now': 'Explore now',
           'choose_language': 'Select language',
+          'promo_banner_badge': 'STAYHUB',
+          'promo_banner_title': 'The Smartest &\nMost Convenient Travel App',
+          'home_hero_title': 'Discover Your\nNext Adventure',
+          'home_hero_subtitle': 'Premium tours across Vietnam & beyond',
+          'home_explore_by': 'Explore by Category',
+          'search_filter': 'Filter',
           
           'region_north': 'North',
           'region_central': 'Central',
@@ -406,6 +414,9 @@ class AppTranslations extends Translations {
           'td_transportation': 'Transportation',
           'td_entrance_fees': 'Entrance fees & sightseeing tickets',
           'td_free_cancellation': 'Free cancellation according to policy',
+          'od_view_review': 'View Review',
+          'od_submit_review': 'Submit Review',
+          'od_cancel': 'Cancel',
           'td_edit_review': 'Edit review',
           'td_write_review': 'Write a review',
           'td_comment': 'Comment...',
@@ -474,6 +485,8 @@ class AppTranslations extends Translations {
           'pt_terms': 'Terms of service',
           'pt_privacy_policy': 'Privacy policy',
           'pt_logout': 'Log out',
+          'pt_dark_mode': 'Dark mode',
+          'pt_theme_system': 'Follow system',
           'sc_bk_age_range': '@name (@min - @max years old)',
           'sc_bk_age_under': '@name (Under @max years old)',
           'sc_bk_age_over': '@name (@min years and older)',
@@ -531,6 +544,7 @@ class AppTranslations extends Translations {
           'sc_bk_invalid_format': 'Invalid format',
           'sc_bk_error': 'Error',
           'sc_bk_gender': 'Gender',
+          'sc_bk_male': 'Male',
           'sc_bk_female': 'Female',
           'sc_bk_other_gender': 'Other',
           'sc_bk_nationality': 'Nationality',
@@ -618,6 +632,7 @@ class AppTranslations extends Translations {
           'sc_ib_chat_id': 'Conversation #@id',
           'sc_ib_tour_group_desc': 'Tour schedule group chat',
           'sc_ib_start_chat': 'Start a conversation',
+          'sc_mp_my_profile': 'My Profile',
           'sc_mp_err_load_moments': 'Cannot load moments data',
           'sc_mp_not_logged_in': 'Not logged in',
           'sc_mp_loading_moments': 'Loading moments...',
@@ -684,6 +699,7 @@ class AppTranslations extends Translations {
           'sc_cmt_err_update': 'Failed to update comment',
           'sc_cmt_err_post': 'Failed to post comment. Please try again.',
           'sc_cmt_title': 'Comments (@count)',
+          'sc_cmt_add_hint': 'Add a comment...',
           'sc_cmt_empty': 'No comments yet. Be the first to comment!',
           'sc_menu_edit': 'Edit',
           'sc_cmt_edit_hint': 'Edit comment...',
@@ -781,6 +797,9 @@ class AppTranslations extends Translations {
           'od_cannot_cancel': 'Cannot request cancellation',
           'od_cancel_policy_error': 'Cancellation request is not supported within 1 day before departure or when departure information is missing.',
           'od_understood': 'I Understand',
+          'od_view_review': 'View Review',
+          'od_submit_review': 'Submit Review',
+          'od_cancel': 'Cancel',
           'od_days_until_departure': '@days days remaining until departure.',
           'od_cancel_fee': 'Cancellation fee: @percent% (@amount)',
           'od_estimated_refund': 'Estimated refund: @amount',
@@ -873,7 +892,7 @@ class AppTranslations extends Translations {
           'st_nationality': 'Nationality',
 
           'st_customers_and_location': 'Customers & Location',
-          'st_customer_list': 'Customer List',
+          'st_customer_list': 'View Customers',
           'st_location_map': 'Location Map',
           'st_no_customers': 'No customers yet',
           'st_select_schedule_in_calendar': 'Select a schedule in the Schedule tab',
@@ -996,7 +1015,7 @@ class AppTranslations extends Translations {
           'otp_required': 'Vui lòng nhập mã xác minh',
 
           // --- Profile / Edit Profile ---
-          'edit_profile': 'Sửa hồ sơ',
+          'edit_profile': 'Cập nhật hồ sơ',
           'profile_updated_success': 'Cập nhật hồ sơ thành công',
           'profile_update_failed': 'Không cập nhật được hồ sơ. Vui lòng thử lại.',
           'name': 'Tên',
@@ -1013,6 +1032,7 @@ class AppTranslations extends Translations {
           'current_password': 'Mật khẩu hiện tại',
           'new_password': 'Mật khẩu mới',
           'change_password_success': 'Đổi mật khẩu thành công',
+          'change_password_success_relogin': 'Thay đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
           'change_password_failed': 'Đổi mật khẩu thất bại',
           
           // --- Forgot Password ---
@@ -1084,6 +1104,7 @@ class AppTranslations extends Translations {
           'err_name_special': 'Họ và tên không được chứa ký tự đặc biệt hoặc biểu tượng',
           'err_phone_exists': 'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.',
           'err_otp_invalid': 'Mã xác nhận OTP không chính xác hoặc đã hết hạn.',
+          'InvalidProvider': 'Email này đã được đăng ký bằng phương thức khác. Vui lòng chọn đúng phương thức đăng nhập.',
 
           // --- General Auth Prompts ---
           'login_required': 'Vui lòng đăng nhập để sử dụng chức năng này',
@@ -1102,7 +1123,7 @@ class AppTranslations extends Translations {
           'nav_schedule': 'Lịch',
           'nav_tickets': 'Vé',
           'nav_checkin': 'Check-in',
-          'nav_guests': 'Khách',
+          'nav_guests': 'Khách hàng',
           'nav_customers': 'Khách hàng',
 
           // --- Home & Search ---
@@ -1125,6 +1146,12 @@ class AppTranslations extends Translations {
           'thousands_tours': 'Hàng nghìn tour đang chờ bạn với giá tốt nhất',
           'explore_now': 'Khám phá ngay',
           'choose_language': 'Chọn ngôn ngữ',
+          'promo_banner_badge': 'STAYHUB',
+          'promo_banner_title': 'Nền tảng du lịch\nThông minh & Tiện lợi nhất',
+          'home_hero_title': 'Khám phá Hành trình\nCủa Bạn',
+          'home_hero_subtitle': 'Tour cao cấp khắp Việt Nam & Quốc tế',
+          'home_explore_by': 'Khám phá theo chủ đề',
+          'search_filter': 'Lọc',
           'booking_terms_title': 'Điều khoản đặt tour & Thanh toán',
           'booking_terms_content': '...',
 
@@ -1281,6 +1308,9 @@ class AppTranslations extends Translations {
           'td_transportation': 'Phương tiện di chuyển',
           'td_entrance_fees': 'Vé tham quan & phí vào cửa',
           'td_free_cancellation': 'Miễn phí hủy theo chính sách',
+          'od_view_review': 'Xem đánh giá',
+          'od_submit_review': 'Gửi đánh giá',
+          'od_cancel': 'Hủy',
           'td_edit_review': 'Sửa đánh giá',
           'td_write_review': 'Viết đánh giá',
           'td_comment': 'Nhận xét...',
@@ -1349,6 +1379,8 @@ class AppTranslations extends Translations {
           'pt_terms': 'Điều khoản dịch vụ',
           'pt_privacy_policy': 'Chính sách bảo mật',
           'pt_logout': 'Đăng xuất',
+          'pt_dark_mode': 'Chế độ tối',
+          'pt_theme_system': 'Theo hệ thống',
           'sc_bk_age_range': '@name (Từ @min - @max tuổi)',
           'sc_bk_age_under': '@name (Dưới @max tuổi)',
           'sc_bk_age_over': '@name (Từ @min tuổi trở lên)',
@@ -1406,6 +1438,7 @@ class AppTranslations extends Translations {
           'sc_bk_invalid_format': 'Sai Đ/dạng',
           'sc_bk_error': 'Lỗi',
           'sc_bk_gender': 'Giới tính',
+          'sc_bk_male': 'Nam',
           'sc_bk_female': 'Nữ',
           'sc_bk_other_gender': 'Khác',
           'sc_bk_nationality': 'Quốc tịch',
@@ -1493,6 +1526,7 @@ class AppTranslations extends Translations {
           'sc_ib_chat_id': 'Cuộc trò chuyện #@id',
           'sc_ib_tour_group_desc': 'Nhóm trò chuyện theo lịch tour',
           'sc_ib_start_chat': 'Bắt đầu cuộc trò chuyện',
+          'sc_mp_my_profile': 'Hồ sơ của tôi',
           'sc_mp_err_load_moments': 'Không thể tải dữ liệu khoảnh khắc',
           'sc_mp_not_logged_in': 'Chưa đăng nhập',
           'sc_mp_loading_moments': 'Đang tải khoảnh khắc...',
@@ -1558,6 +1592,7 @@ class AppTranslations extends Translations {
           'sc_cmt_err_update': 'Cập nhật bình luận thất bại',
           'sc_cmt_err_post': 'Gửi bình luận thất bại. Vui lòng thử lại.',
           'sc_cmt_title': 'Bình luận (@count)',
+          'sc_cmt_add_hint': 'Thêm bình luận...',
           'sc_cmt_empty': 'Chưa có bình luận nào. Hãy là người đầu tiên bình luận!',
           'sc_menu_edit': 'Chỉnh sửa',
           'sc_cmt_edit_hint': 'Chỉnh sửa bình luận...',
@@ -1749,7 +1784,7 @@ class AppTranslations extends Translations {
           'st_nationality': 'Quốc tịch',
 
           'st_customers_and_location': 'Khách hàng & Vị trí',
-          'st_customer_list': 'Danh sách khách',
+          'st_customer_list': 'Xem khách hàng',
           'st_location_map': 'Bản đồ vị trí',
           'st_no_customers': 'Chưa có khách',
           'st_select_schedule_in_calendar': 'Chọn lịch trình ở tab Lịch trình',
@@ -1798,3 +1833,4 @@ class AppTranslations extends Translations {
         }
       };
 }
+

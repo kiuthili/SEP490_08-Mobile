@@ -55,10 +55,24 @@ class AuthGate {
       return;
     }
 
-    final tab = destination?.shellTab;
+    final storage = Get.find<StorageService>();
+    final isStaff = storage.user?.isStaff ?? false;
+    
+    // Default home tab: Schedule (0) for Staff, Home (2) for Customer
+    int targetTab = isStaff ? 0 : 2; 
+
+    final guestTab = destination?.shellTab;
+    if (guestTab != null && !isStaff) {
+      if (guestTab == 2) {
+        // Guest clicked Social -> map to Customer Social (1)
+        targetTab = 1;
+      }
+      // For Login (guest tab 4) or other guest tabs, default to Home (2)
+    }
+
     Get.offAllNamed(
       AppRoutes.home,
-      arguments: tab == null ? null : {'initialTab': tab},
+      arguments: {'initialTab': targetTab},
     );
   }
 }

@@ -80,14 +80,17 @@ class _AiQuestionnaireScreenState extends State<AiQuestionnaireScreen>
             ),
           ],
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            AiChatTab(onSwitchToGuide: () => _tabController.animateTo(1)),
-            AiQuestionnaireTab(
-              onCompleted: () => Get.toNamed(AppRoutes.aiRecommendations),
-            ),
-          ],
+        body: ColoredBox(
+          color: AppColors.surfaceGrouped,
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              AiChatTab(onSwitchToGuide: () => _tabController.animateTo(1)),
+              AiQuestionnaireTab(
+                onCompleted: () => Get.toNamed(AppRoutes.aiRecommendations),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -288,10 +291,14 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: AppColors.brandLight,
-                  color: AppColors.brand,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: AppColors.brandLight,
+                    color: AppColors.brand,
+                  ),
                 ),
               ],
             ),
@@ -303,7 +310,12 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              8,
+              20,
+              MediaQuery.paddingOf(context).bottom + 12,
+            ),
             child: Row(
               children: [
                 if (_step > 0)
@@ -313,7 +325,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         _step--;
                         _errors.clear();
                       }),
-                      child: Text('ai_back'.tr),
+                      style: OutlinedButton.styleFrom(shape: const StadiumBorder()),
+                      child: Text('ai_back'.tr, style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 if (_step > 0) const SizedBox(width: 12),
@@ -321,7 +334,9 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   flex: 2,
                   child: Obx(
                     () => CustomButton(
-                      label: _isLastStep ? 'ai_get_recommendations'.tr : 'ai_continue'.tr,
+                      label: _isLastStep
+                          ? 'ai_get_recommendations'.tr
+                          : 'ai_continue'.tr,
                       isLoading: _ai.questionnaireSubmitting.value,
                       onPressed: _next,
                     ),
@@ -377,7 +392,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 final showSearch = field.options.length > 8;
                 final filteredOptions = showSearch
                     ? field.options
-                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .where((o) =>
+                            o.label.toLowerCase().contains(query.toLowerCase()))
                         .toList()
                     : field.options;
 
@@ -389,14 +405,13 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                     return ChoiceChip(
                       label: Text(o.label),
                       selected: on,
-                      selectedColor: AppColors.brandLight,
+                      selectedColor: AppColors.brand.withValues(alpha: 0.1),
                       labelStyle: TextStyle(
                         color: on ? AppColors.brand : AppColors.textSecondary,
                         fontWeight: on ? FontWeight.bold : FontWeight.normal,
                       ),
-                      side: BorderSide(
-                          color: on ? AppColors.brand : AppColors.border),
-                      backgroundColor: AppColors.surfaceGrouped,
+                      shape: const StadiumBorder(side: BorderSide.none),
+                      backgroundColor: AppColors.surface,
                       onSelected: (v) => setState(() {
                         if (v) {
                           _values[field.fieldKey] = o.value;
@@ -415,12 +430,6 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm địa điểm...',
                           prefixIcon: const Icon(Icons.search, size: 16),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.border),
-                          ),
                         ),
                         onChanged: (val) => setState(() {
                           _values[queryKey] = val;
@@ -487,7 +496,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                 final showSearch = field.options.length > 8;
                 final filteredOptions = showSearch
                     ? field.options
-                        .where((o) => o.label.toLowerCase().contains(query.toLowerCase()))
+                        .where((o) =>
+                            o.label.toLowerCase().contains(query.toLowerCase()))
                         .toList()
                     : field.options;
 
@@ -499,15 +509,14 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                     return FilterChip(
                       label: Text(o.label),
                       selected: on,
-                      selectedColor: AppColors.brandLight,
+                      selectedColor: AppColors.brand.withValues(alpha: 0.1),
                       checkmarkColor: AppColors.brand,
                       labelStyle: TextStyle(
                         color: on ? AppColors.brand : AppColors.textSecondary,
                         fontWeight: on ? FontWeight.bold : FontWeight.normal,
                       ),
-                      side: BorderSide(
-                          color: on ? AppColors.brand : AppColors.border),
-                      backgroundColor: AppColors.surfaceGrouped,
+                      shape: const StadiumBorder(side: BorderSide.none),
+                      backgroundColor: AppColors.surface,
                       onSelected: (v) => setState(() {
                         final list = List<String>.from(selected);
                         if (v) {
@@ -531,10 +540,12 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                           hintText: 'Tìm kiếm lựa chọn...',
                           prefixIcon: const Icon(Icons.search, size: 16),
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
                           ),
                         ),
                         onChanged: (val) => setState(() {
@@ -586,9 +597,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
           input = Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.border),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
@@ -649,9 +659,8 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
           input = Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceGrouped,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.border),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -750,13 +759,20 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
           );
         }
       case 'boolean':
-        input = SwitchListTile(
-          title: Text(field.label),
-          value: _values[field.fieldKey] == true,
-          onChanged: (v) => setState(() {
-            _values[field.fieldKey] = v;
-            _errors.remove(field.fieldKey);
-          }),
+        input = Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SwitchListTile(
+            title: Text(field.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            value: _values[field.fieldKey] == true,
+            activeColor: AppColors.brand,
+            onChanged: (v) => setState(() {
+              _values[field.fieldKey] = v;
+              _errors.remove(field.fieldKey);
+            }),
+          ),
         );
       default:
         input = CustomTextField(
