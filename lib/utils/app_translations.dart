@@ -277,6 +277,8 @@ class AppTranslations extends Translations {
           'ai_no_recommendations': 'No recommendations yet',
           'ai_no_recommendations_subtitle': 'Complete the AI questionnaire to get suitable tours',
           'ai_start_questionnaire': 'Start questionnaire',
+          'ai_search_location': 'Search location...',
+          'ai_search_options': 'Search options...',
           
           'ai_tab_tours': 'Suggested Tours',
           'ai_tab_guide': 'Travel Guide',
@@ -1182,6 +1184,8 @@ class AppTranslations extends Translations {
           'ai_no_recommendations': 'Chưa có gợi ý',
           'ai_no_recommendations_subtitle': 'Hoàn thành khảo sát AI để nhận danh sách tour phù hợp',
           'ai_start_questionnaire': 'Bắt đầu khảo sát',
+          'ai_search_location': 'Tìm kiếm địa điểm...',
+          'ai_search_options': 'Tìm kiếm lựa chọn...',
           
           'ai_tab_tours': 'Tour gợi ý',
           'ai_tab_guide': 'Cẩm nang du lịch',
