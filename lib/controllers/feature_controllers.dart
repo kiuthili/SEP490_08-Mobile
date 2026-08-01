@@ -1034,7 +1034,7 @@ class BookingController extends GetxController {
     if (qty > oldQty) {
       final diff = qty - oldQty;
       if (currentTotal + diff > 9) {
-        SnackbarHelper.error('Chỉ được đặt tối đa 9 vé mỗi đơn');
+        SnackbarHelper.error('sc_bk_max_9_tickets'.tr);
         qty = oldQty + (9 - currentTotal);
       }
     }
