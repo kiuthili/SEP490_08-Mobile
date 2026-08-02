@@ -840,20 +840,6 @@ class SocialController extends GetxController {
         reason: reason,
         details: details,
       );
-      if (contentType == 'Moment') {
-        moments.removeWhere((m) => m.id == targetId);
-      } else if (contentType == 'Comment') {
-        for (int i = 0; i < moments.length; i++) {
-          if (moments[i].comments.any((c) => c.id == targetId)) {
-            final previous = moments[i];
-            final updatedComments =
-                previous.comments.where((c) => c.id != targetId).toList();
-            moments[i] = previous.copyWith(comments: updatedComments);
-            moments.refresh();
-            break;
-          }
-        }
-      }
       SnackbarHelper.success('Violation report submitted successfully');
       return true;
     } on ApiError catch (e) {
@@ -1034,7 +1020,7 @@ class BookingController extends GetxController {
     if (qty > oldQty) {
       final diff = qty - oldQty;
       if (currentTotal + diff > 9) {
-        SnackbarHelper.error('Chỉ được đặt tối đa 9 vé mỗi đơn');
+        SnackbarHelper.error('sc_bk_max_9_tickets'.tr);
         qty = oldQty + (9 - currentTotal);
       }
     }

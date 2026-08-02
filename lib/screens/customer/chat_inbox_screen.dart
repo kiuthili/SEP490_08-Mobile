@@ -319,7 +319,9 @@ class _ConversationCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           room.lastMessage?.trim().isNotEmpty == true
-                              ? room.lastMessage!
+                              ? (room.lastMessage!.contains('[LocationShare:')
+                                  ? 'sc_sds_live_location_caps'.tr
+                                  : room.lastMessage!)
                               : room.isGroup
                                   ? 'sc_ib_tour_group_desc'.tr
                                   : 'sc_ib_start_chat'.tr,

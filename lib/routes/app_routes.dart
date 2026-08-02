@@ -24,6 +24,7 @@ class AppRoutes {
   static const String chatRoom = '/chat-room';
   static const String newMessage = '/new-message';
   static const String momentDetail = '/moment-detail';
+  static const String scopedMomentFeed = '/scoped-moment-feed';
   static const String userProfile = '/user-profile';
   static const String payment = '/payment';
   static const String myTickets = '/my-tickets';

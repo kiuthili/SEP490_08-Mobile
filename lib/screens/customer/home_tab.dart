@@ -115,15 +115,6 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
 
-            // ── Region section ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 28),
-                child: _RegionSection(
-                    home: _home, onTap: _openTour, isDark: isDark),
-              ),
-            ),
-
             // ── Hot Tours ──
             SliverToBoxAdapter(
               child: Obx(() => _HomeSectionRow(
@@ -189,6 +180,15 @@ class _HomeTabState extends State<HomeTab> {
                     wishlistController: _wishlistController,
                     isDark: isDark,
                   )),
+            ),
+
+            // ── Region section ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: _RegionSection(
+                    home: _home, onTap: _openTour, isDark: isDark),
+              ),
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
@@ -599,13 +599,13 @@ class _SectionHeader extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.iconColor,
-    required this.onViewAll,
+    this.onViewAll,
   });
 
   final String title;
   final IconData icon;
   final Color iconColor;
-  final VoidCallback onViewAll;
+  final VoidCallback? onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -635,24 +635,25 @@ class _SectionHeader extends StatelessWidget {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: onViewAll,
-            child: Row(
-              children: [
-                Text(
-                  'view_all'.tr,
-                  style: const TextStyle(
-                    color: AppColors.brand,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+          if (onViewAll != null)
+            GestureDetector(
+              onTap: onViewAll,
+              child: Row(
+                children: [
+                  Text(
+                    'view_all'.tr,
+                    style: const TextStyle(
+                      color: AppColors.brand,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 2),
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.brand, size: 18),
-              ],
+                  const SizedBox(width: 2),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.brand, size: 18),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -1135,7 +1136,6 @@ class _RegionSectionState extends State<_RegionSection> {
             title: 'favorite_destinations'.tr,
             icon: Icons.explore_rounded,
             iconColor: AppColors.brand,
-            onViewAll: () {},
           ),
 
           // Region tabs

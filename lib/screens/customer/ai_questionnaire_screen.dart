@@ -427,9 +427,20 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   children: [
                     if (showSearch) ...[
                       TextField(
+                        style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: 'Tìm kiếm địa điểm...',
-                          prefixIcon: const Icon(Icons.search, size: 16),
+                          hintText: 'ai_search_location'.tr,
+                          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textSecondary),
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark 
+                              ? const Color(0xFF2C2C2E) 
+                              : const Color(0xFF767680).withValues(alpha: 0.12),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          isDense: true,
                         ),
                         onChanged: (val) => setState(() {
                           _values[queryKey] = val;
@@ -536,17 +547,20 @@ class _AiQuestionnaireTabState extends State<AiQuestionnaireTab> {
                   children: [
                     if (showSearch) ...[
                       TextField(
+                        style: const TextStyle(fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: 'Tìm kiếm lựa chọn...',
-                          prefixIcon: const Icon(Icons.search, size: 16),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                          hintText: 'ai_search_options'.tr,
+                          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textSecondary),
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark 
+                              ? const Color(0xFF2C2C2E) 
+                              : const Color(0xFF767680).withValues(alpha: 0.12),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide:
-                                const BorderSide(color: AppColors.border),
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
                           ),
+                          isDense: true,
                         ),
                         onChanged: (val) => setState(() {
                           _values[queryKey] = val;
