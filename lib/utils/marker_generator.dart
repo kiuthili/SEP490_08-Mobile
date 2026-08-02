@@ -1,3 +1,5 @@
+
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +35,7 @@ class MarkerGenerator {
     canvas.drawCircle(const Offset(90, 50), 20, borderPaint);
 
     final img = await pictureRecorder.endRecording().toImage(width, height);
-    final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
     img.dispose();
 
     if (byteData == null) {
@@ -108,8 +110,9 @@ class MarkerGenerator {
 
   /// Create a simple photo marker for Moments
   static Future<({Uint8List data, int width, int height})?>
-      createMomentMarker() async {
+      createMomentMarker([String? imageUrl]) async {
     ui.Image? img;
+    ui.Image? photoImg;
     try {
       final double width = 120;
       final double tailHeight = 16;
@@ -123,25 +126,62 @@ class MarkerGenerator {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0;
 
-      _drawPinWithTail(canvas, Size(width, height), backgroundPaint);
-      _drawPinWithTail(canvas, Size(width, height), borderPaint);
+      // Draw Avatar Image or Initial
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        try {
+          final response = await http.get(Uri.parse(imageUrl)).timeout(const Duration(seconds: 3));
+          if (response.statusCode == 200) {
+            final codec = await ui.instantiateImageCodec(response.bodyBytes, targetWidth: width.toInt(), targetHeight: width.toInt());
+            final frame = await codec.getNextFrame();
+            photoImg = frame.image;
+          }
+        } catch (_) {}
+      }
 
-      // Draw icon
-      TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
-      painter.text = TextSpan(
-        text: String.fromCharCode(Icons.photo.codePoint),
-        style: TextStyle(
-          fontSize: 50,
-          color: Colors.grey[600],
-          fontFamily: Icons.photo.fontFamily,
-          package: Icons.photo.fontPackage,
-        ),
-      );
-      painter.layout();
-      painter.paint(
-          canvas,
-          Offset((width - painter.width) / 2,
-              ((height - tailHeight) - painter.height) / 2));
+      if (photoImg != null) {
+        // Draw the image clipped to the pin shape
+        canvas.save();
+        final RRect rrect = RRect.fromRectAndRadius(
+            Rect.fromLTWH(0, 0, width, height - tailHeight), const Radius.circular(12.0));
+        final Path path = Path()..addRRect(rrect);
+        // Add tail
+        path.moveTo(width / 2 - 24.0 / 2, height - tailHeight);
+        path.lineTo(width / 2, height);
+        path.lineTo(width / 2 + 24.0 / 2, height - tailHeight);
+        path.close();
+        
+        canvas.clipPath(path);
+        paintImage(
+          canvas: canvas,
+          rect: Rect.fromLTWH(0, 0, width, width),
+          image: photoImg,
+          fit: BoxFit.cover,
+        );
+        canvas.restore();
+        
+        // Draw border over it
+        _drawPinWithTail(canvas, Size(width, height), borderPaint);
+      } else {
+        _drawPinWithTail(canvas, Size(width, height), backgroundPaint);
+        _drawPinWithTail(canvas, Size(width, height), borderPaint);
+
+        // Draw icon fallback
+        TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
+        painter.text = TextSpan(
+          text: String.fromCharCode(Icons.photo.codePoint),
+          style: TextStyle(
+            fontSize: 50,
+            color: Colors.grey[600],
+            fontFamily: Icons.photo.fontFamily,
+            package: Icons.photo.fontPackage,
+          ),
+        );
+        painter.layout();
+        painter.paint(
+            canvas,
+            Offset((width - painter.width) / 2,
+                ((height - tailHeight) - painter.height) / 2));
+      }
 
       img = await pictureRecorder
           .endRecording()
@@ -539,49 +579,80 @@ class MarkerGenerator {
   }
 
   static Future<({Uint8List data, int width, int height})>
-      createLiveFriendMarker(String? avatarUrl, bool isStaff) async {
-    final double avatarRadius = 36.0;
-    final double borderSize = 4.0;
+      createLiveFriendMarker(String? avatarUrl, bool isStaff, {String? name}) async {
+    final double avatarRadius = 28.0;
+    final double borderSize = 3.5;
     final double totalRadius = avatarRadius + borderSize;
 
     // Simulate ping ring
-    final double pingRadius = totalRadius + 16.0;
+    final double pingRadius = totalRadius + 12.0;
 
-    final double totalWidth = pingRadius * 2;
-    final double totalHeight = pingRadius * 2 + (isStaff ? 24.0 : 0.0);
+    final double tailHeight = 12.0;
+    
+    // Measure name text
+    double textHeight = 0;
+    double textWidth = 0;
+    TextPainter? namePainter;
+    if (name != null && name.isNotEmpty) {
+      namePainter = TextPainter(textDirection: TextDirection.ltr);
+      namePainter.text = TextSpan(
+        text: name,
+        style: const TextStyle(
+          fontSize: 13,
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.2,
+        ),
+      );
+      namePainter.layout();
+      textHeight = namePainter.height + 12.0; // vertical padding
+      textWidth = namePainter.width + 16.0;   // horizontal padding
+    }
+
+    // Include space for the badge if staff
+    final double badgeHeight = isStaff ? 20.0 : 0.0;
+
+    // Canvas size
+    final double totalWidth = math.max(pingRadius * 2, textWidth);
+    final double totalHeight = pingRadius * 2 + tailHeight + textHeight + badgeHeight;
 
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
 
     final double centerX = totalWidth / 2;
-    final double centerY = totalHeight - pingRadius;
+    // Push the avatar down if there's a staff badge
+    final double centerY = pingRadius + (isStaff ? 8.0 : 0.0);
 
-    final Color mainColor = isStaff
-        ? const Color(0xFF10B981)
-        : const Color(0xFF10B981); // Emerald 500 or Green 500
-    // Actually frontend uses bg-emerald-500 for staff, bg-green-500 for normal.
-    final Color ringColor =
-        isStaff ? const Color(0xFF10B981) : const Color(0xFF22C55E);
+    final Color ringColor = isStaff ? const Color(0xFF10B981) : const Color(0xFF3B82F6); // Emerald or Blue
 
-    // Draw Ping Ring (Pulse)
-    canvas.drawCircle(Offset(centerX, centerY), pingRadius,
-        Paint()..color = ringColor.withValues(alpha: 0.2));
-    canvas.drawCircle(Offset(centerX, centerY), pingRadius - 8,
-        Paint()..color = ringColor.withValues(alpha: 0.4));
+    // 1. Draw Ping Ring (Pulse)
+    canvas.drawCircle(Offset(centerX, centerY), pingRadius, Paint()..color = ringColor.withValues(alpha: 0.15));
+    canvas.drawCircle(Offset(centerX, centerY), pingRadius - 6, Paint()..color = ringColor.withValues(alpha: 0.3));
 
-    // Draw shadow
+    // 2. Draw Pin Tail
+    Path tailPath = Path();
+    tailPath.moveTo(centerX - 8, centerY + totalRadius - 2);
+    tailPath.lineTo(centerX + 8, centerY + totalRadius - 2);
+    tailPath.lineTo(centerX, centerY + totalRadius + tailHeight);
+    tailPath.close();
+    canvas.drawPath(tailPath, Paint()..color = Colors.white);
+
+    Path tailInner = Path();
+    tailInner.moveTo(centerX - 5, centerY + totalRadius - 2);
+    tailInner.lineTo(centerX + 5, centerY + totalRadius - 2);
+    tailInner.lineTo(centerX, centerY + totalRadius + tailHeight - 2);
+    tailInner.close();
+    canvas.drawPath(tailInner, Paint()..color = ringColor);
+
+    // 3. Draw Shadow for avatar
     canvas.drawShadow(
-        Path()
-          ..addOval(Rect.fromCircle(
-              center: Offset(centerX, centerY), radius: totalRadius)),
-        Colors.black,
-        12.0,
-        true);
-    // Ring fill
-    canvas.drawCircle(
-        Offset(centerX, centerY), totalRadius, Paint()..color = ringColor);
+        Path()..addOval(Rect.fromCircle(center: Offset(centerX, centerY), radius: totalRadius)),
+        Colors.black, 12.0, true);
+        
+    // 4. Ring fill
+    canvas.drawCircle(Offset(centerX, centerY), totalRadius, Paint()..color = ringColor);
 
-    // Draw image inside (or fallback icon)
+    // 5. Draw image inside (or fallback icon)
     bool hasDrawnImage = false;
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       try {
@@ -596,15 +667,12 @@ class MarkerGenerator {
           final ui.FrameInfo fi = await codec.getNextFrame();
           final ui.Image image = fi.image;
           Path clipPath = Path()
-            ..addOval(Rect.fromCircle(
-                center: Offset(centerX, centerY), radius: avatarRadius));
+            ..addOval(Rect.fromCircle(center: Offset(centerX, centerY), radius: avatarRadius));
           canvas.save();
           canvas.clipPath(clipPath);
-          // ensure the image is drawn center-cropped
           paintImage(
               canvas: canvas,
-              rect: Rect.fromLTWH(centerX - avatarRadius,
-                  centerY - avatarRadius, avatarRadius * 2, avatarRadius * 2),
+              rect: Rect.fromLTWH(centerX - avatarRadius, centerY - avatarRadius, avatarRadius * 2, avatarRadius * 2),
               image: image,
               fit: BoxFit.cover);
           canvas.restore();
@@ -614,27 +682,24 @@ class MarkerGenerator {
     }
 
     if (!hasDrawnImage) {
-      // Draw fallback
-      canvas.drawCircle(Offset(centerX, centerY), avatarRadius,
-          Paint()..color = Colors.white);
+      canvas.drawCircle(Offset(centerX, centerY), avatarRadius, Paint()..color = Colors.white);
       TextPainter iconPainter = TextPainter(textDirection: TextDirection.ltr);
+      String fallbackText = (name != null && name.isNotEmpty) ? name[0].toUpperCase() : String.fromCharCode(Icons.person.codePoint);
       iconPainter.text = TextSpan(
-        text: String.fromCharCode(Icons.person.codePoint),
+        text: fallbackText,
         style: TextStyle(
-          fontSize: 48,
+          fontSize: (name != null && name.isNotEmpty) ? 26 : 32,
           color: ringColor,
-          fontFamily: Icons.person.fontFamily,
-          package: Icons.person.fontPackage,
+          fontWeight: FontWeight.bold,
+          fontFamily: (name != null && name.isNotEmpty) ? null : Icons.person.fontFamily,
+          package: (name != null && name.isNotEmpty) ? null : Icons.person.fontPackage,
         ),
       );
       iconPainter.layout();
-      iconPainter.paint(
-          canvas,
-          Offset(centerX - iconPainter.width / 2,
-              centerY - iconPainter.height / 2));
+      iconPainter.paint(canvas, Offset(centerX - iconPainter.width / 2, centerY - iconPainter.height / 2));
     }
 
-    // Draw white border ring
+    // 6. Draw white border ring
     canvas.drawCircle(
         Offset(centerX, centerY),
         totalRadius,
@@ -643,10 +708,9 @@ class MarkerGenerator {
           ..style = PaintingStyle.stroke
           ..strokeWidth = borderSize);
 
-    // Draw status dot bottom right
-    final double dotRadius = 9.0;
-    // Calculate 45 degrees bottom right offset
-    final double offset = totalRadius * 0.7071; // sin(45)
+    // 7. Draw status dot (Live pulse overlay)
+    final double dotRadius = 7.0;
+    final double offset = totalRadius * 0.7071;
     final Offset dotCenter = Offset(centerX + offset, centerY + offset);
     canvas.drawCircle(dotCenter, dotRadius, Paint()..color = ringColor);
     canvas.drawCircle(
@@ -655,41 +719,52 @@ class MarkerGenerator {
         Paint()
           ..color = Colors.white
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5);
+          ..strokeWidth = 2.0);
 
-    // Draw Staff Badge
+    // 8. Draw Staff Badge (if staff)
     if (isStaff) {
       TextPainter badgePainter = TextPainter(textDirection: TextDirection.ltr);
       badgePainter.text = const TextSpan(
         text: 'STAFF',
-        style: TextStyle(
-            fontSize: 14, color: Colors.white, fontWeight: FontWeight.w900),
+        style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w900),
       );
       badgePainter.layout();
-      final double badgeWidth = badgePainter.width + 12.0;
-      final double badgeHeight = badgePainter.height + 6.0;
+      final double badgeWidth = badgePainter.width + 10.0;
+      final double badgeHeight = badgePainter.height + 4.0;
 
       final RRect badgeRect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(centerX - badgeWidth / 2, 0, badgeWidth, badgeHeight),
-          const Radius.circular(6));
-      canvas.drawRRect(
-          badgeRect, Paint()..color = const Color(0xFF059669)); // emerald-600
-      canvas.drawRRect(
-          badgeRect,
-          Paint()
-            ..color = Colors.white
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+          Rect.fromLTWH(centerX - badgeWidth / 2, 2, badgeWidth, badgeHeight),
+          const Radius.circular(4));
+      canvas.drawRRect(badgeRect, Paint()..color = const Color(0xFF059669));
+      canvas.drawRRect(badgeRect, Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 1.0);
 
-      badgePainter.paint(canvas, Offset(centerX - badgePainter.width / 2, 3.0));
+      badgePainter.paint(canvas, Offset(centerX - badgePainter.width / 2, 4.0));
     }
 
-    final img = await pictureRecorder
-        .endRecording()
-        .toImage(totalWidth.toInt(), totalHeight.toInt());
-    final data = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+    // 9. Draw Name Tag
+    if (namePainter != null) {
+      final double tagWidth = namePainter.width + 16.0;
+      final double tagHeight = namePainter.height + 12.0;
+      final double tagTop = centerY + totalRadius + tailHeight;
+
+      final RRect tagRect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(centerX - tagWidth / 2, tagTop, tagWidth, tagHeight),
+          const Radius.circular(6));
+
+      // Draw shadow for name tag
+      canvas.drawShadow(
+          Path()..addRRect(tagRect),
+          Colors.black, 4.0, false);
+      
+      canvas.drawRRect(tagRect, Paint()..color = ringColor);
+      namePainter.paint(canvas, Offset(centerX - namePainter.width / 2, tagTop + 6.0));
+    }
+
+    final img = await pictureRecorder.endRecording().toImage(totalWidth.toInt(), totalHeight.toInt());
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    final data = byteData!.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
     return (
-      data: data!.buffer.asUint8List(),
+      data: data,
       width: totalWidth.toInt(),
       height: totalHeight.toInt()
     );

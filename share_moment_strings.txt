@@ -1,0 +1,52 @@
+dart:io
+package:camera/camera.dart
+package:flutter/material.dart
+package:flutter/services.dart
+package:get/get.dart
+;
+import 
+;
+import 
+;
+import 
+;
+import 
+;
+import 
+;
+import 
+Public
+Public
+Tour
+Tour members
+Friend
+Friends
+Private
+Only me
+Public
+Cá nhân (Ngoài Tour)
+Ongoing
+ongoing
+completed
+Lỗi camera: $e
+Cannot capture photo
+Tour
+Public
+Tour
+Public
+Camera unavailable
+Xem trước
+Preview
+Thêm dòng trạng thái...
+Add a caption...
+Tour
+Public
+Tour
+Chia sẻ Moment
+Share Moment
+Personal
+
+          : 
+History
+History
+Tour

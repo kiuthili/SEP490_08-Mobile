@@ -263,13 +263,13 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
-  // ================= LOCATION & TRACKING =================
   Future<void> pingLocation(
       {required double lat, required double lng, int? scheduleId}) async {
     await request(() async {
       await api.dio.post('${ApiConstants.locations}/ping', data: {
-        'latitude': lat,
-        'longitude': lng,
+        'lat': lat,
+        'lng': lng,
+        'platform': 'Mobile',
         if (scheduleId != null) 'scheduleId': scheduleId,
       });
     });

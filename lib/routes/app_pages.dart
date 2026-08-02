@@ -214,6 +214,16 @@ class AppPages {
       }),
     ),
     GetPage(
+      name: AppRoutes.scopedMomentFeed,
+      page: () => const ScopedMomentFeedScreen(),
+      middlewares: _protected,
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<SocialController>()) {
+          Get.lazyPut<SocialController>(() => SocialController());
+        }
+      }),
+    ),
+    GetPage(
       name: AppRoutes.userProfile,
       page: () => const UserProfileScreen(),
       middlewares: _protected,

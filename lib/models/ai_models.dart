@@ -1,4 +1,5 @@
 import '../utils/json_utils.dart';
+import 'package:get/get.dart';
 import 'tour_model.dart';
 
 class QuestionnaireOption {
@@ -514,11 +515,13 @@ class PublicLocationModel {
   final double lat;
   final double lng;
   final String fullName;
+  final String? avatarUrl;
 
   PublicLocationModel({
     required this.lat,
     required this.lng,
     required this.fullName,
+    this.avatarUrl,
   });
 
   factory PublicLocationModel.fromJson(Map<String, dynamic> json) {
@@ -532,7 +535,10 @@ class PublicLocationModel {
       fullName: JsonUtils.readString(
             JsonUtils.pick(json, ['fullName', 'FullName']),
           ) ??
-          'Khách',
+          'sc_pts_guest'.tr,
+      avatarUrl: JsonUtils.readString(
+            JsonUtils.pick(json, ['avatarUrl', 'AvatarUrl']),
+          ),
     );
   }
 }
