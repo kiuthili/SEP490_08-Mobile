@@ -12,7 +12,9 @@ import '../../models/feature_models.dart';
 import '../../models/social_models.dart'; // -É+ú th+¬m
 import '../../models/tour_model.dart';
 import '../../widgets/comment_bottom_sheet.dart';
+import '../../widgets/moment_card.dart';
 import '../../routes/app_routes.dart';
+import '../../services/location_helper.dart';
 import '../../services/signalr_service.dart';
 import '../../services/social_service.dart';
 import '../../services/storage_service.dart';
@@ -24,7 +26,7 @@ import '../../utils/snackbar_helper.dart';
 import '../../widgets/app_screen.dart';
 import '../../widgets/ios_grouped.dart';
 import '../../widgets/loading_widget.dart';
-import '../../widgets/moment_card.dart';
+import '../../widgets/report_bottom_sheet.dart';
 import 'my_profile_panel.dart';
 
 class ChatRoomScreen extends StatefulWidget {
@@ -215,18 +217,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     setState(() => _sending = true);
     try {
-      final token = await _socialService.generateTrackingToken();
-      if (token.isNotEmpty) {
-        // URL -æß+Öng: d+¦ng ApiConstants.webUrl -æß+â t¦¦¦íng th+¡ch vß+¢i tunnel -æang chß¦íy.
-        // Khi deploy production th+¼ chß+ë cß¦ºn thay baseUrl trong api_constants.dart.
-        final trackingUrl = '${ApiConstants.webUrl}/track/$token';
-        final shareText =
-            'sc_sds_live_location_prefix'.tr + '[LocationShare:${jsonEncode({
-              'token': token,
-              'url': trackingUrl
-            })}]';
-        await _socialController.sendChatMessage(roomId, shareText);
-        SnackbarHelper.success('sc_sds_location_shared'.tr);
+      final myLoc = await LocationHelper.getCurrentPosition();
+      if (myLoc != null) {
+        await _socialService.pingLocation(
+          lat: myLoc.latitude, 
+          lng: myLoc.longitude
+        );
+        
+        final token = await _socialService.generateTrackingToken();
+        if (token.isNotEmpty) {
+          // URL -æß+Öng: d+¦ng ApiConstants.webUrl -æß+â t¦¦¦íng th+¡ch vß+¢i tunnel -æang chß¦íy.
+          // Khi deploy production th+¼ chß+ë cß¦ºn thay baseUrl trong api_constants.dart.
+          final trackingUrl = '${ApiConstants.webUrl}/track/$token';
+          final shareText =
+              'sc_sds_live_location_prefix'.tr + 'sc_sds_location_share_limit'.tr + '[LocationShare:${jsonEncode({
+                'token': token,
+                'url': trackingUrl
+              })}]';
+          await _socialController.sendChatMessage(roomId, shareText);
+          SnackbarHelper.success('sc_sds_location_shared'.tr);
+        } else {
+          SnackbarHelper.error('sc_sds_location_share_failed'.tr);
+        }
       } else {
         SnackbarHelper.error('sc_sds_location_share_failed'.tr);
       }
@@ -975,21 +987,68 @@ class _MessageBubble extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      if (message.senderAvatar?.isNotEmpty == true)
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            image: DecorationImage(
+                              image: NetworkImage(message.senderAvatar!),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            (message.senderName?.isNotEmpty == true)
+                                ? message.senderName![0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'sc_sds_live_location_caps'.tr,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: isMe ? Colors.white : AppColors.textPrimary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          if (message.senderName?.isNotEmpty == true)
+                            Text(
+                              message.senderName!,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: isMe ? Colors.blue.shade200 : Colors.grey.shade600,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Spacer(),
                       Container(
                         width: 8,
                         height: 8,
                         decoration: const BoxDecoration(
                           color: AppColors.error,
                           shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'sc_sds_live_location_caps'.tr,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: isMe ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -1603,8 +1662,8 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                           setState(() => _moment = updated);
                         }
                       },
-                      onReport: (id) => _showReportDialog(
-                          context, 'Moment', id, _socialController),
+                      onReport: (id) =>
+                          ReportBottomSheet.show(context, 'Moment', id),
                       onComment: () {
                         if (_moment != null) {
                           _showCommentBottomSheet(context, _moment!);
@@ -1627,100 +1686,6 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
                     ),
                   ],
                 ),
-    );
-  }
-
-  void _showReportDialog(BuildContext context, String contentType, int targetId,
-      SocialController social) {
-    String selectedReason = 'Spam';
-    final detailsController = TextEditingController();
-    var isSending = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                  'Report ${contentType == 'Moment' ? 'moment' : 'comment'}'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      value: selectedReason,
-                      decoration: const InputDecoration(
-                          labelText: 'Reason for reporting'),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'Spam', child: Text('Spam / Advertisement')),
-                        DropdownMenuItem(
-                            value: 'Hate Speech', child: Text('Hate Speech')),
-                        DropdownMenuItem(
-                            value: 'Harassment',
-                            child: Text('Harassment / Threats')),
-                        DropdownMenuItem(
-                            value: 'Violence', child: Text('Violence / Gore')),
-                        DropdownMenuItem(
-                            value: 'Other', child: Text('Other reason')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => selectedReason = val);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: detailsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Details (Optional)',
-                        hintText: 'Enter violation details...',
-                        alignLabelWithHint: true,
-                      ),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: isSending
-                      ? null
-                      : () async {
-                          setDialogState(() => isSending = true);
-                          final ok = await social.reportContent(
-                            contentType: contentType,
-                            targetId: targetId,
-                            reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty
-                                ? detailsController.text.trim()
-                                : null,
-                          );
-                          setDialogState(() => isSending = false);
-                          if (ok) {
-                            Navigator.pop(context);
-                          }
-                        },
-                  child: isSending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Submit Report'),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }
@@ -2885,4 +2850,156 @@ class _OtherFeedItem extends StatelessWidget {
     );
   }
 }
-      
+
+class ScopedMomentFeedScreen extends StatefulWidget {
+  const ScopedMomentFeedScreen({super.key});
+
+  @override
+  State<ScopedMomentFeedScreen> createState() => _ScopedMomentFeedScreenState();
+}
+
+class _ScopedMomentFeedScreenState extends State<ScopedMomentFeedScreen> {
+  final _socialController = Get.find<SocialController>();
+  late PageController _pageController;
+  late List<MomentModel> _moments;
+
+  @override
+  void initState() {
+    super.initState();
+    final args = Get.arguments as Map<String, dynamic>?;
+    _moments = (args?['moments'] as List<MomentModel>?) ?? [];
+    final initialIndex = (args?['initialIndex'] as int?) ?? 0;
+    _pageController = PageController(initialPage: initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _shareMoment(MomentModel moment) {
+    final rooms = _socialController.chatRooms;
+    if (rooms.isEmpty) {
+      SnackbarHelper.error('No conversation found to share.');
+      return;
+    }
+
+    Get.bottomSheet(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    'sc_share_send_to'.tr,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: AppColors.textSecondary,
+                    onPressed: () => Get.back(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey.withOpacity(0.2),
+                      shape: const CircleBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: rooms.length,
+                itemBuilder: (context, index) {
+                  final room = rooms[index];
+                  final roomName = (room.name != null && room.name!.trim().isNotEmpty) ? room.name! : 'sc_share_conversation'.tr;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.brandLight,
+                      child: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.brand),
+                    ),
+                    title: Text(roomName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(room.isGroup ? 'sc_share_tour_group'.tr : 'sc_share_direct_chat'.tr, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                    trailing: const Icon(Icons.send_rounded, color: AppColors.brand, size: 20),
+                    onTap: () async {
+                      Get.back();
+                      final shareText = '[MomentShare:${jsonEncode({'id': moment.id, 'imageUrl': moment.imageUrl, 'caption': moment.caption ?? ''})}]';
+                      await _socialController.sendChatMessage(room.id, shareText);
+                      SnackbarHelper.success('sc_share_success'.tr);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_moments.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text("No moments found", style: TextStyle(color: Colors.white))),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: _moments.length,
+        itemBuilder: (context, index) {
+          final m = _moments[index];
+          return Obx(() {
+            final currentM = _socialController.moments.firstWhereOrNull((mo) => mo.id == m.id) ?? m;
+            return MomentCard(
+              moment: currentM,
+              currentUserId: _socialController.currentUserId,
+              onDelete: _socialController.deleteMoment,
+              onLike: (isLike) => _socialController.reactMoment(currentM.id, isLike),
+              onComment: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => CommentBottomSheet(moment: currentM),
+                );
+              },
+              onReport: (id) => ReportBottomSheet.show(context, 'Moment', id),
+              onShare: () => _shareMoment(currentM),
+            );
+          });
+        },
+      ),
+    );
+  }
+}

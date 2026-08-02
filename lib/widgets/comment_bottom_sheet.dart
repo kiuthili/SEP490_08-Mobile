@@ -10,6 +10,7 @@ import '../utils/snackbar_helper.dart';
 import 'glass_widgets.dart';
 import 'moment_card.dart';
 import 'package:stayhub_mobile/theme/app_radius.dart';
+import 'report_bottom_sheet.dart';
 
 class CommentBottomSheet extends StatefulWidget {
   final MomentModel moment;
@@ -45,6 +46,103 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
       if (m.id == id) return m;
     }
     return null;
+  }
+
+  void _showDeleteConfirm(SocialCommentModel c) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.delete_outline_rounded,
+                  color: AppColors.error, size: 32),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'sc_del_comment_title'.tr,
+              style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'sc_del_comment_desc'.tr,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(bottomSheetContext),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Colors.black12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'sc_btn_no'.tr,
+                      style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.pop(bottomSheetContext);
+                      _deleteComment(c);
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'sc_btn_delete'.tr,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: MediaQuery.paddingOf(context).bottom),
+          ],
+        ),
+      ),
+    );
   }
 
   void _editComment(SocialCommentModel c) {
@@ -144,102 +242,6 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
     if (mounted) {
       setState(() => _comments.removeWhere((x) => x.id == c.id));
     }
-  }
-
-  void _showReportDialog(
-      BuildContext context, String contentType, int targetId) {
-    String selectedReason = 'Spam';
-    final detailsController = TextEditingController();
-    var isSending = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                  '${contentType == 'Moment' ? 'sc_report_moment'.tr : 'sc_report_comment'.tr}'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      value: selectedReason,
-                      decoration:
-                          InputDecoration(labelText: 'sc_report_reason'.tr),
-                      items: [
-                        DropdownMenuItem(
-                            value: 'Spam', child: Text('sc_report_spam'.tr)),
-                        DropdownMenuItem(
-                            value: 'sc_report_hate'.tr,
-                            child: Text('sc_report_hate'.tr)),
-                        DropdownMenuItem(
-                            value: 'Harassment',
-                            child: Text('sc_report_harassment'.tr)),
-                        DropdownMenuItem(
-                            value: 'Violence',
-                            child: Text('sc_report_violence'.tr)),
-                        DropdownMenuItem(
-                            value: 'Other', child: Text('sc_report_other'.tr)),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => selectedReason = val);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: detailsController,
-                      decoration: InputDecoration(
-                        labelText: 'sc_report_details'.tr,
-                        hintText: 'sc_report_details_hint'.tr,
-                        alignLabelWithHint: true,
-                      ),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSending ? null : () => Navigator.pop(context),
-                  child: Text('sc_report_cancel'.tr),
-                ),
-                FilledButton(
-                  onPressed: isSending
-                      ? null
-                      : () async {
-                          setDialogState(() => isSending = true);
-                          final ok = await _socialController.reportContent(
-                            contentType: contentType,
-                            targetId: targetId,
-                            reason: selectedReason,
-                            details: detailsController.text.trim().isNotEmpty
-                                ? detailsController.text.trim()
-                                : null,
-                          );
-                          setDialogState(() => isSending = false);
-                          if (ok) {
-                            Navigator.pop(context);
-                          }
-                        },
-                  child: isSending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text('sc_report_submit'.tr),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 
   @override
@@ -350,9 +352,9 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                                   fontSize: 16)),
                                         ),
                                         SimpleDialogOption(
-                                          onPressed: () async {
+                                          onPressed: () {
                                             Navigator.pop(ctx);
-                                            await _deleteComment(c);
+                                            _showDeleteConfirm(c);
                                           },
                                           child: Text('sc_btn_delete'.tr,
                                               style: const TextStyle(
@@ -364,7 +366,7 @@ class _CommentBottomSheetState extends State<CommentBottomSheet> {
                                         SimpleDialogOption(
                                           onPressed: () {
                                             Navigator.pop(ctx);
-                                            _showReportDialog(
+                                            ReportBottomSheet.show(
                                                 context, 'Comment', c.id);
                                           },
                                           child: Text('sc_menu_report'.tr,

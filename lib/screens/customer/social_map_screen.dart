@@ -73,17 +73,28 @@ class _SocialMapScreenState extends State<SocialMapScreen> {
           onPressed: () => _showShareLinkDialog(c),
         ),
         Obx(
-          () => IconButton(
-            tooltip: c.isSharingLocation.value
-                ? 'Sharing location - tap to stop'
-                : 'Share my location',
-            icon: Icon(
-              c.isSharingLocation.value
-                  ? Icons.location_on_rounded
-                  : Icons.location_off_rounded,
-              color: c.isSharingLocation.value ? AppColors.error : null,
-            ),
-            onPressed: c.toggleShareMyLocation,
+          () => Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                tooltip: c.isSharingLocation.value
+                    ? 'Sharing location - tap to stop'
+                    : 'Share my location',
+                icon: Icon(
+                  c.isSharingLocation.value
+                      ? Icons.location_on_rounded
+                      : Icons.location_off_rounded,
+                  color: c.isSharingLocation.value ? Colors.redAccent : null,
+                ),
+                onPressed: c.toggleShareMyLocation,
+              ),
+              if (c.isSharingLocation.value)
+                const Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _LiquidLiveDot(),
+                ),
+            ],
           ),
         ),
       ],
@@ -198,6 +209,15 @@ Future<void> _showShareLinkDialog(SocialMapController c) async {
           const Text(
             'Send this link to your friends or family to let them track your live location on the map:',
           ),
+          const SizedBox(height: 8),
+          Text(
+            'sc_sds_location_share_dialog_limit'.tr,
+            style: const TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              color: Colors.redAccent,
+            ),
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
@@ -265,6 +285,9 @@ class _MapView extends StatelessWidget {
       },
       onTapListener: (context) {
         c.handleMapTap(context);
+      },
+      onLongTapListener: (context) {
+        c.handleMapLongTap(context);
       },
     );
   }
@@ -1782,6 +1805,96 @@ class _PolaroidCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ============================================================
+// CHẤM ĐỎ NHẤP NHÁY (LIQUID GLASS DOT)
+// ============================================================
+class _LiquidLiveDot extends StatefulWidget {
+  const _LiquidLiveDot();
+
+  @override
+  State<_LiquidLiveDot> createState() => _LiquidLiveDotState();
+}
+
+class _LiquidLiveDotState extends State<_LiquidLiveDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scaleAnim;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1, milliseconds: 500),
+    )..repeat(reverse: true);
+    
+    _scaleAnim = Tween<double>(begin: 0.6, end: 1.2).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutSine),
+    );
+    _fadeAnim = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnim.value,
+          child: Opacity(
+            opacity: _fadeAnim.value,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.redAccent,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.redAccent.withValues(alpha: 0.6),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 0.5,
+                      ),
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.redAccent.withValues(alpha: 0.4),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.3, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

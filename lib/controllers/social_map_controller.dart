@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart';
+import 'package:geolocator_android/geolocator_android.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -803,6 +804,14 @@ class SocialMapController extends GetxController {
   /// Tạo link chia sẻ vị trí cá nhân (gửi cho bạn bè / người thân theo dõi web).
   Future<String?> generateShareLink() async {
     try {
+      final myLoc = await LocationHelper.getCurrentPosition();
+      if (myLoc != null) {
+        await _service.pingLocation(
+          lat: myLoc.latitude, 
+          lng: myLoc.longitude
+        );
+      }
+      
       final token = await _service.generateTrackingToken();
       if (token.isEmpty) return null;
       return token;
@@ -946,11 +955,27 @@ class SocialMapController extends GetxController {
           }
         } catch (_) {}
 
-        _positionStreamSubscription = Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
+        LocationSettings locationSettings = const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0,
+        );
+
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          locationSettings = AndroidSettings(
             accuracy: LocationAccuracy.high,
             distanceFilter: 0,
-          ),
+            forceLocationManager: true,
+            intervalDuration: const Duration(seconds: 10),
+            foregroundNotificationConfig: const ForegroundNotificationConfig(
+              notificationText: "StayHub is tracking your location in background.",
+              notificationTitle: "StayHub Location Tracking",
+              enableWakeLock: true,
+            ),
+          );
+        }
+
+        _positionStreamSubscription = Geolocator.getPositionStream(
+          locationSettings: locationSettings,
         ).listen((Position pos) {
           _latestPosition = pos;
           _onLocationUpdated(pos);
@@ -1370,8 +1395,8 @@ class SocialMapController extends GetxController {
             "!",
             ["has", "point_count"]
           ],
-          iconImage: "stayhub-moment-icon",
-          iconSize: 0.55,
+          iconImage: "{imageId}",
+          iconSize: 0.45,
           iconAnchor: mb.IconAnchor.BOTTOM,
           iconAllowOverlap: true,
         ));
@@ -1423,6 +1448,23 @@ class SocialMapController extends GetxController {
       if (m.lat != null &&
           m.lng != null &&
           _isValidCoordinate(m.lat!, m.lng!)) {
+            
+        final imageId = "moment_img_${m.id}";
+        try {
+          if (!await mapboxMap!.style.hasStyleImage(imageId)) {
+            final imageUrl = m.imageUrl;
+            final markerData = await MarkerGenerator.createMomentMarker(imageUrl);
+            if (markerData != null) {
+              await mapboxMap!.style.addStyleImage(
+                imageId,
+                1.0,
+                mb.MbxImage(width: markerData.width, height: markerData.height, data: markerData.data),
+                false, [], [], null,
+              );
+            }
+          }
+        } catch (_) {}
+
         features.add({
           "type": "Feature",
           "geometry": {
@@ -1432,6 +1474,7 @@ class SocialMapController extends GetxController {
           "properties": {
             "momentId": m.id,
             "scheduleId": m.scheduleId,
+            "imageId": imageId,
           }
         });
       }
@@ -1459,8 +1502,13 @@ class SocialMapController extends GetxController {
   void handleMapTap(mb.MapContentGestureContext context) async {
     if (mapboxMap == null) return;
     try {
+      final touchPos = context.touchPosition;
+      final queryBox = mb.ScreenBox(
+        min: mb.ScreenCoordinate(x: touchPos.x - 20, y: touchPos.y - 20),
+        max: mb.ScreenCoordinate(x: touchPos.x + 20, y: touchPos.y + 20),
+      );
       final features = await mapboxMap!.queryRenderedFeatures(
-        mb.RenderedQueryGeometry.fromScreenCoordinate(context.touchPosition),
+        mb.RenderedQueryGeometry.fromScreenBox(queryBox),
         mb.RenderedQueryOptions(
           layerIds: ['stayhub-moment-clusters', 'stayhub-moment-unclustered'],
           filter: null,
@@ -1471,21 +1519,21 @@ class SocialMapController extends GetxController {
         // Priority 1: Check if any tapped feature is a cluster
         final clusterFeature = features.firstWhere((f) {
           final p =
-              f?.queriedFeature.feature['properties'] as Map<String, dynamic>?;
+              f?.queriedFeature.feature['properties'] as Map<dynamic, dynamic>?;
           return p != null && p.containsKey('cluster') && p['cluster'] == true;
         }, orElse: () => null);
 
         if (clusterFeature != null) {
           // Tap on cluster
-          final props = clusterFeature.queriedFeature.feature['properties']
-              as Map<String, dynamic>;
+          final props = clusterFeature!.queriedFeature.feature['properties']
+              as Map<dynamic, dynamic>;
           final clusterId = props['cluster_id'];
           if (clusterId != null) {
             // SDK 2.27.0 does not natively expose getGeoJsonClusterExpansionZoom
             // Fallback: simply zoom in by +2
             final state = await mapboxMap!.getCameraState();
             final geom = clusterFeature.queriedFeature.feature['geometry']
-                as Map<String, dynamic>;
+                as Map<dynamic, dynamic>;
             if (geom['type'] == 'Point') {
               final coords = geom['coordinates'] as List<dynamic>;
               mapboxMap!.flyTo(
@@ -1502,13 +1550,13 @@ class SocialMapController extends GetxController {
           // Tap on unclustered moment(s)
           final unclusteredProps = features
               .map((f) => f?.queriedFeature.feature['properties']
-                  as Map<String, dynamic>?)
+                  as Map<dynamic, dynamic>?)
               .where((p) => p != null && p.containsKey('momentId'))
               .toList();
 
           if (unclusteredProps.isNotEmpty) {
             final momentIds = unclusteredProps
-                .map((p) => p!['momentId'] as int)
+                .map((p) => int.parse(p!['momentId'].toString()))
                 .toSet()
                 .toList();
             final overlappingMoments = momentIds
@@ -1556,6 +1604,109 @@ class SocialMapController extends GetxController {
       }
     } catch (e) {
       debugPrint('MAP_RENDER_ERROR: Tap handling failed: $e');
+    }
+  }
+
+  void handleMapLongTap(mb.MapContentGestureContext context) async {
+    if (mapboxMap == null) return;
+    try {
+      final touchPos = context.touchPosition;
+      final queryBox = mb.ScreenBox(
+        min: mb.ScreenCoordinate(x: touchPos.x - 20, y: touchPos.y - 20),
+        max: mb.ScreenCoordinate(x: touchPos.x + 20, y: touchPos.y + 20),
+      );
+      final features = await mapboxMap!.queryRenderedFeatures(
+        mb.RenderedQueryGeometry.fromScreenBox(queryBox),
+        mb.RenderedQueryOptions(
+          layerIds: ['stayhub-moment-clusters', 'stayhub-moment-unclustered'],
+          filter: null,
+        ),
+      );
+
+      if (features.isNotEmpty) {
+        final unclusteredProps = features
+            .map((f) => f?.queriedFeature.feature['properties'] as Map<String, dynamic>?)
+            .where((p) => p != null && p.containsKey('momentId'))
+            .toList();
+
+        if (unclusteredProps.isNotEmpty) {
+          final momentIds = unclusteredProps
+              .map((p) => int.parse(p!['momentId'].toString()))
+              .toSet()
+              .toList();
+          
+          final overlappingMoments = momentIds
+              .map((id) => mapMoments.firstWhereOrNull((m) => m.id == id))
+              .whereType<MomentModel>()
+              .toList();
+
+          if (overlappingMoments.isEmpty) return;
+          HapticFeedback.heavyImpact();
+
+          final selectedMoment = overlappingMoments.first;
+          
+          List<MomentModel> scopedMoments = [];
+          if (selectedMoment.scheduleId != null) {
+            scopedMoments = mapMoments.where((m) => m.scheduleId == selectedMoment.scheduleId).toList();
+            scopedMoments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          } else {
+            scopedMoments = [selectedMoment];
+          }
+
+          int initialIndex = scopedMoments.indexWhere((m) => m.id == selectedMoment.id);
+          if (initialIndex < 0) initialIndex = 0;
+
+          if (overlappingMoments.length == 1) {
+            Get.toNamed(
+              '/scoped-moment-feed',
+              arguments: {
+                'moments': scopedMoments,
+                'initialIndex': initialIndex,
+              },
+            );
+          } else {
+            Get.bottomSheet(
+              Container(
+                color: Colors.white,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: overlappingMoments.length,
+                  itemBuilder: (context, index) {
+                    final m = overlappingMoments[index];
+                    return ListTile(
+                      leading: m.imageUrl.isNotEmpty
+                          ? Image.network(m.imageUrl, width: 50, height: 50, fit: BoxFit.cover)
+                          : const Icon(Icons.camera_alt),
+                      title: Text(m.caption?.isNotEmpty == true ? m.caption! : 'Moment ${m.id}'),
+                      subtitle: const Text('Long press to open feed'),
+                      onTap: () {
+                        Get.back();
+                        List<MomentModel> sm = [];
+                        if (m.scheduleId != null) {
+                          sm = mapMoments.where((x) => x.scheduleId == m.scheduleId).toList();
+                          sm.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                        } else {
+                          sm = [m];
+                        }
+                        int idx = sm.indexWhere((x) => x.id == m.id);
+                        Get.toNamed(
+                          '/scoped-moment-feed',
+                          arguments: {
+                            'moments': sm,
+                            'initialIndex': idx < 0 ? 0 : idx,
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('MAP_RENDER_ERROR: Long tap handling failed: $e');
     }
   }
 
