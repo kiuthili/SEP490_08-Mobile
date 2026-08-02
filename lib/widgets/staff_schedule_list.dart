@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/staff_controller.dart';
+import '../routes/app_routes.dart';
 import '../models/assigned_schedule_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
@@ -82,7 +83,13 @@ class StaffScheduleList extends StatelessWidget {
                     final schedule = controller.schedules[index];
                     return _ScheduleCard(
                       schedule: schedule,
-                      onTap: () => onScheduleTap?.call(schedule),
+                      onTap: () {
+                        if (onScheduleTap != null) {
+                          onScheduleTap!(schedule);
+                        } else {
+                          Get.toNamed(AppRoutes.staffMap, arguments: {'scheduleId': schedule.scheduleId});
+                        }
+                      },
                       action: actionBuilder != null
                           ? actionBuilder!(context, schedule)
                           : null,

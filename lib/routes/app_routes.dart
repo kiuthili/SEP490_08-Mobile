@@ -43,4 +43,5 @@ class AppRoutes {
   static const String sectionTours = '/tours/section';
   static const String searchResult = '/search-result';
   static const String footprint = '/footprint';
+  static const String staffMap = '/staff-map';
 }
