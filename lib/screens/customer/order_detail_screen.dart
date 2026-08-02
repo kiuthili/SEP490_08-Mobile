@@ -575,10 +575,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: screenHeight * 0.50),
+              constraints: BoxConstraints(maxHeight: screenHeight * 0.65),
               child: SafeArea(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -601,7 +601,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(5, (index) {
@@ -618,14 +618,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                       ? Icons.star_rounded
                                       : Icons.star_border_rounded,
                                   color: const Color(0xFFFFB020),
-                                  size: 40,
+                                  size: 36,
                                 ),
                               ),
                             ),
                           );
                         }),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       TextField(
                         controller: commentController,
                         decoration: InputDecoration(
@@ -647,10 +647,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           fillColor: AppColors.surfaceGrouped,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         ),
-                        maxLines: 5,
-                        minLines: 3,
+                        maxLines: 4,
+                        minLines: 2,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       Row(
                         children: [
                           Expanded(

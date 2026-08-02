@@ -4,6 +4,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
+import '../../controllers/staff_map_controller.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_text_styles.dart';
@@ -51,10 +52,11 @@ class _StaffCustomerDetailScreenState extends State<StaffCustomerDetailScreen> {
           ),
         ),
         body: TabBarView(
+          physics: const NeverScrollableScrollPhysics(),
           children: [
             _CustomersTab(
                 controller: controller, scheduleId: widget.scheduleId),
-            _MapTab(controller: controller),
+            _MapTab(scheduleId: widget.scheduleId),
           ],
         ),
       ),
@@ -356,193 +358,163 @@ class _SmallPill extends StatelessWidget {
 // ── Map tab ───────────────────────────────────────────────────────────────────
 
 class _MapTab extends StatefulWidget {
-  const _MapTab({required this.controller});
-  final StaffController controller;
+  const _MapTab({required this.scheduleId});
+  final int scheduleId;
 
   @override
   State<_MapTab> createState() => _MapTabState();
 }
 
 class _MapTabState extends State<_MapTab> {
-  mb.MapboxMap? _mapboxMap;
-  mb.PointAnnotationManager? _pointAnnotationManager;
+  late StaffMapController c;
+
+  @override
+  void initState() {
+    super.initState();
+    c = Get.put(StaffMapController(), tag: 'staff_map_${widget.scheduleId}');
+    c.initMap(widget.scheduleId);
+  }
+
+  @override
+  void dispose() {
+    Get.delete<StaffMapController>(tag: 'staff_map_${widget.scheduleId}');
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final locs = widget.controller.liveLocations;
-      final centerLng = locs.isNotEmpty ? locs.first.longitude : 108.206230;
-      final centerLat = locs.isNotEmpty ? locs.first.latitude : 16.047079;
+      if (c.isLoading.value && c.liveLocations.isEmpty && c.routeDays.isEmpty) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return Stack(
+        children: [
+          mb.MapWidget(
+            key: ValueKey("staffMapWidget_${widget.scheduleId}"),
+            onMapCreated: c.onMapCreated,
+            onStyleLoadedListener: c.onStyleLoaded,
+            onTapListener: c.handleMapTap,
+            styleUri: mb.MapboxStyles.MAPBOX_STREETS,
+          ),
+          
+          // Day Selector Overlay
+          if (c.showRoute.value && c.routeDays.isNotEmpty)
+            Positioned(
+              top: 8,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: c.routeDays.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (context, i) {
+                    final bool isOverview = i == 0;
+                    final bool selected = isOverview
+                        ? c.selectedDay.value == null
+                        : c.selectedDay.value == c.routeDays[i - 1].dayNumber;
+                    final String label = isOverview ? 'Overview' : 'Day ${c.routeDays[i - 1].dayNumber}';
 
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxHeight < 1 || constraints.maxWidth < 1) {
-            return const SizedBox.shrink();
-          }
-          return mb.MapWidget(
-            cameraOptions: mb.CameraOptions(
-              center: mb.Point(coordinates: mb.Position(centerLng, centerLat)),
-              zoom: 14,
+                    return GestureDetector(
+                      onTap: () {
+                        if (isOverview) {
+                          c.selectDay(null);
+                        } else {
+                          c.selectDay(c.routeDays[i - 1].dayNumber);
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: selected ? AppColors.brand : Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: selected ? Colors.white : Colors.black87,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
-            styleUri: mb.MapboxStyles.STANDARD,
-            onMapCreated: (map) async {
-              _mapboxMap = map;
-              _pointAnnotationManager = await map.annotations.createPointAnnotationManager();
-            },
-          );
-        },
+          
+          // Map controls overlay
+          Positioned(
+            right: 12,
+            bottom: 40,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'staff_recenter_${widget.scheduleId}',
+                  backgroundColor: Colors.white,
+                  onPressed: c.recenter,
+                  child: const Icon(Icons.my_location_rounded, color: AppColors.brand),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.add_rounded, color: AppColors.brand),
+                        onPressed: c.zoomIn,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      ),
+                      Container(height: 1, width: 24, color: Colors.grey.shade200),
+                      IconButton(
+                        icon: const Icon(Icons.remove_rounded, color: AppColors.brand),
+                        onPressed: c.zoomOut,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      ),
+                      Container(height: 1, width: 24, color: Colors.grey.shade200),
+                      IconButton(
+                        icon: Icon(
+                          c.showRoute.value ? Icons.route_rounded : Icons.route_outlined,
+                          color: c.showRoute.value ? AppColors.brand : Colors.black54,
+                        ),
+                        onPressed: () => c.showRoute.toggle(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      ),
+                      Container(height: 1, width: 24, color: Colors.grey.shade200),
+                      IconButton(
+                        icon: Icon(
+                          c.showMoments.value ? Icons.photo_library_rounded : Icons.photo_library_outlined,
+                          color: c.showMoments.value ? AppColors.brand : Colors.black54,
+                        ),
+                        onPressed: () => c.showMoments.toggle(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       );
     });
   }
 }
 
-class _LiveLocationMarker extends StatefulWidget {
-  const _LiveLocationMarker({required this.location});
-  final dynamic location;
-
-  @override
-  State<_LiveLocationMarker> createState() => _LiveLocationMarkerState();
-}
-
-class _LiveLocationMarkerState extends State<_LiveLocationMarker>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  String? get _avatar {
-    try {
-      final v = widget.location.avatarUrl;
-      if (v is String && v.isNotEmpty) return v;
-    } catch (_) {}
-    return null;
-  }
-
-  String get _name {
-    final n = widget.location.fullName as String?;
-    if (n != null && n.isNotEmpty) return n;
-    return '#${widget.location.userId}';
-  }
-
-  bool get _isStaff {
-    try {
-      return widget.location.role.toLowerCase() == 'staff';
-    } catch (_) {}
-    return false;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final avatar = _avatar;
-    final isStaff = _isStaff;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (isStaff)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-            margin: const EdgeInsets.only(bottom: 2),
-            decoration: BoxDecoration(
-              color: AppColors.success,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: AppColors.success, width: 1),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 2),
-              ],
-            ),
-            child: const Text(
-              'STAFF',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        SizedBox(
-          width: 50,
-          height: 50,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              AnimatedBuilder(
-                animation: _ctrl,
-                builder: (_, __) {
-                  final t = _ctrl.value;
-                  return Container(
-                    width: 24 + 26 * t,
-                    height: 24 + 26 * t,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: (isStaff ? AppColors.success : AppColors.brand)
-                          .withValues(alpha: (1 - t) * 0.35),
-                    ),
-                  );
-                },
-              ),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isStaff ? AppColors.success : AppColors.brand,
-                  border: Border.all(
-                    color: isStaff ? AppColors.success : Colors.white,
-                    width: 2.5,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black38, blurRadius: 4),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: avatar != null
-                    ? CachedNetworkImage(
-                        imageUrl: avatar,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Icon(
-                          Icons.person,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.person, size: 18, color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 2),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.70),
-            borderRadius: BorderRadius.circular(AppRadius.xs),
-          ),
-          child: Text(
-            _name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}

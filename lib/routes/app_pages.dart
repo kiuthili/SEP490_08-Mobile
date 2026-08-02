@@ -40,6 +40,8 @@ import '../screens/customer/user_study_screen.dart';
 import '../screens/customer/footprint_screen.dart';
 import 'app_routes.dart';
 import '../utils/auth_gate.dart';
+import '../screens/staff/staff_map_screen.dart';
+import '../controllers/staff_map_controller.dart';
 
 class AppPages {
   AppPages._();
@@ -337,6 +339,14 @@ class AppPages {
       name: AppRoutes.footprint,
       page: () => const FootprintScreen(),
       middlewares: _protected,
+    ),
+    GetPage(
+      name: AppRoutes.staffMap,
+      page: () => const StaffMapScreen(),
+      middlewares: _protected,
+      binding: BindingsBuilder(() {
+        Get.lazyPut<StaffMapController>(() => StaffMapController());
+      }),
     ),
   ];
 }

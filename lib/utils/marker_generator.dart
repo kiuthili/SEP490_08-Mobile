@@ -7,6 +7,69 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 class MarkerGenerator {
+  /// Create a circle marker for a live location, optionally with avatar
+  static Future<Uint8List> createLiveLocationMarker({String? avatarUrl}) async {
+    final int size = 100;
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(pictureRecorder);
+    final Paint borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0;
+
+    final Paint fillPaint = Paint()..color = Colors.blue;
+
+    final double radius = size / 2;
+    final Offset center = Offset(radius, radius);
+
+    canvas.drawCircle(center, radius - 3, fillPaint);
+    canvas.drawCircle(center, radius - 3, borderPaint);
+
+    ui.Image? avatarImg;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      try {
+        final uri = Uri.tryParse(avatarUrl);
+        if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+          final response = await http.get(uri).timeout(const Duration(seconds: 3));
+          if (response.statusCode == 200) {
+            final codec = await ui.instantiateImageCodec(response.bodyBytes, targetWidth: size, targetHeight: size);
+            final frame = await codec.getNextFrame();
+            avatarImg = frame.image;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (avatarImg != null) {
+      canvas.save();
+      canvas.clipPath(Path()..addOval(Rect.fromCircle(center: center, radius: radius - 6)));
+      paintImage(
+        canvas: canvas,
+        rect: Rect.fromCircle(center: center, radius: radius - 6),
+        image: avatarImg,
+        fit: BoxFit.cover,
+      );
+      canvas.restore();
+    } else {
+      TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
+      painter.text = TextSpan(
+        text: String.fromCharCode(Icons.person.codePoint),
+        style: TextStyle(
+          fontSize: 60,
+          color: Colors.white,
+          fontFamily: Icons.person.fontFamily,
+          package: Icons.person.fontPackage,
+        ),
+      );
+      painter.layout();
+      painter.paint(canvas, Offset(radius - painter.width / 2, radius - painter.height / 2));
+    }
+
+    final img = await pictureRecorder.endRecording().toImage(size, size);
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  }
+
   /// Create a cartoon cloud for Footprints
   static Future<({Uint8List data, int width, int height})>
       createCloudMarker() async {
