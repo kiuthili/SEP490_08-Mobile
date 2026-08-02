@@ -13,6 +13,8 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import 'package:flutter/services.dart';
 import 'package:stayhub_mobile/controllers/staff_controller.dart';
+import '../../controllers/notification_controller.dart';
+import '../../routes/app_routes.dart';
 import '../../widgets/ios_grouped.dart';
 import 'package:stayhub_mobile/theme/app_radius.dart';
 
@@ -157,7 +159,28 @@ class _StaffCheckInTabState extends State<StaffCheckInTab>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text('st_qr_checkin'.tr)),
+      appBar: AppBar(
+        title: Text('st_qr_checkin'.tr),
+        actions: [
+          Obx(() {
+            if (!Get.isRegistered<NotificationController>()) return const SizedBox.shrink();
+            final notifController = Get.find<NotificationController>();
+            final unread = notifController.unreadCount;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: IconButton(
+                onPressed: () => Get.toNamed(AppRoutes.notifications),
+                icon: Badge(
+                  label: Text(unread > 99 ? '99+' : unread.toString()),
+                  isLabelVisible: unread > 0,
+                  backgroundColor: AppColors.error,
+                  child: const Icon(Icons.notifications_none_rounded),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
       body: CustomScrollView(
         slivers: [
           SliverPadding(
