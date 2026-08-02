@@ -20,6 +20,7 @@ import '../screens/staff/staff_schedules_tab.dart';
 import '../widgets/ios_bottom_nav.dart';
 import '../widgets/page_scaffold.dart';
 import '../utils/auth_gate.dart';
+import '../services/tutorial_service.dart';
 
 class MainShellScreen extends GetView<ShellController> {
   const MainShellScreen({super.key});
@@ -74,6 +75,7 @@ class MainShellScreen extends GetView<ShellController> {
           label: 'nav_book_tour'.tr,
         ),
         IosBottomNavItem(
+          key: Get.isRegistered<TutorialService>() ? Get.find<TutorialService>().loginTabKey : null,
           icon: Icons.login_rounded,
           selectedIcon: Icons.login_rounded,
           label: 'nav_login'.tr,

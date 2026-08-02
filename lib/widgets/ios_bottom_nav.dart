@@ -8,12 +8,14 @@ class IosBottomNavItem {
   final IconData selectedIcon;
   final String label;
   final bool isProminent;
+  final GlobalKey? key;
 
   const IosBottomNavItem({
     required this.icon,
     required this.selectedIcon,
     required this.label,
     this.isProminent = false,
+    this.key,
   });
 }
 
@@ -89,6 +91,7 @@ class IosBottomNav extends StatelessWidget {
 
           if (item.isProminent) {
             return GestureDetector(
+              key: item.key,
               onTap: () => onSelect(i),
               behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
@@ -122,6 +125,7 @@ class IosBottomNav extends StatelessWidget {
           }
 
           return GestureDetector(
+            key: item.key,
             onTap: () => onSelect(i),
             behavior: HitTestBehavior.opaque,
             child: AnimatedContainer(
