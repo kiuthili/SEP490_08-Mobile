@@ -1,9 +1,12 @@
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/custom_tutorial_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../../services/tutorial_service.dart';
 import '../../controllers/feature_controllers.dart';
 import '../../controllers/home_controller.dart';
 import '../../models/tour_model.dart';
@@ -30,16 +33,130 @@ class _HomeTabState extends State<HomeTab> {
   final _notificationController = Get.find<NotificationController>();
   final _scrollController = ScrollController();
 
+  late TutorialCoachMark tutorialCoachMark;
+  final GlobalKey _searchBarKey = GlobalKey();
+  final GlobalKey _hotToursKey = GlobalKey();
+
   String _selectedLang = 'vi';
 
   @override
   void initState() {
     super.initState();
+
     _selectedLang = Get.locale?.languageCode ?? 'vi';
     if (!Get.isRegistered<HomeController>()) {
       Get.put(HomeController());
     }
     _home = Get.find<HomeController>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<TutorialService>()) {
+        if (!Get.find<TutorialService>().isHomeTutorialDone.value) {
+          _showTutorial();
+        }
+      }
+    });
+  }
+
+  void _showTutorial() {
+    tutorialCoachMark = TutorialCoachMark(
+      targets: _createTargets(),
+      colorShadow: AppColors.navy,
+      hideSkip: true,
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+      onFinish: () {
+        Get.find<TutorialService>().completeHomeTutorial();
+      },
+      onSkip: () {
+        Get.find<TutorialService>().completeHomeTutorial();
+        return true;
+      },
+    )..show(context: context);
+  }
+
+  List<TargetFocus> _createTargets() {
+    return [
+      TargetFocus(
+        identify: "searchBar",
+        keyTarget: _searchBarKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 14,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_home_search'.tr,
+                description: 'tutorial_home_search_desc'.tr,
+                currentStep: 1,
+                totalSteps: 3,
+                onNext: () {
+                  if (_hotToursKey.currentContext != null) {
+                    Scrollable.ensureVisible(
+                      _hotToursKey.currentContext!,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      alignment: 0.5, // Giữa màn hình
+                    ).then((_) {
+                      controller.next();
+                    });
+                  } else {
+                    controller.next();
+                  }
+                },
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "hotTours",
+        keyTarget: _hotToursKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 10,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_home_hot'.tr,
+                description: 'tutorial_home_hot_desc'.tr,
+                currentStep: 2,
+                totalSteps: 3,
+                onNext: () => controller.next(),
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "loginTab",
+        keyTarget: Get.find<TutorialService>().loginTabKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_home_login'.tr,
+                description: 'tutorial_home_login_desc'.tr,
+                currentStep: 3,
+                totalSteps: 3,
+                onNext: () => controller.next(),
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+    ];
   }
 
   @override
@@ -101,9 +218,12 @@ class _HomeTabState extends State<HomeTab> {
 
             // ── Search Bar (normal) ──
             SliverToBoxAdapter(
-              child: _HomeSearchBar(
-                onSearchTap: () => Get.toNamed(AppRoutes.tourSearch),
-                isDark: isDark,
+              child: Container(
+                key: _searchBarKey,
+                child: _HomeSearchBar(
+                  onSearchTap: () => Get.toNamed(AppRoutes.tourSearch),
+                  isDark: isDark,
+                ),
               ),
             ),
 
@@ -118,21 +238,22 @@ class _HomeTabState extends State<HomeTab> {
             // ── Hot Tours ──
             SliverToBoxAdapter(
               child: Obx(() => _HomeSectionRow(
-                    title: 'hot_tours'.tr,
-                    icon: Icons.local_fire_department_rounded,
-                    iconColor: const Color(0xFFFF5722),
-                    onViewAll: () => Get.toNamed(
-                      AppRoutes.sectionTours,
-                      arguments: {'title': 'hot_tours'.tr, 'type': 'hot'},
-                    ),
-                    isLoading: _home.isLoadingHot.value,
-                    tours: _home.hotTours,
-                    badgeLabel: 'hot_badge'.tr,
-                    badgeColor: const Color(0xFFE53935),
-                    onTap: _openTour,
-                    wishlistController: _wishlistController,
-                    isDark: isDark,
-                  )),
+                      sectionKey: _hotToursKey,
+                      title: 'hot_tours'.tr,
+                      icon: Icons.local_fire_department_rounded,
+                      iconColor: const Color(0xFFFF5722),
+                      onViewAll: () => Get.toNamed(
+                        AppRoutes.sectionTours,
+                        arguments: {'title': 'hot_tours'.tr, 'type': 'hot'},
+                      ),
+                      isLoading: _home.isLoadingHot.value,
+                      tours: _home.hotTours,
+                      badgeLabel: 'hot_badge'.tr,
+                      badgeColor: const Color(0xFFE53935),
+                      onTap: _openTour,
+                      wishlistController: _wishlistController,
+                      isDark: isDark,
+                    )),
             ),
 
             // ── Last Minute Deals ──
@@ -677,6 +798,7 @@ class _HomeSectionRow extends StatefulWidget {
     this.badgeLabel,
     this.badgeColor,
     this.showSalePrice = false,
+    this.sectionKey,
   });
 
   final String title;
@@ -691,6 +813,7 @@ class _HomeSectionRow extends StatefulWidget {
   final String? badgeLabel;
   final Color? badgeColor;
   final bool showSalePrice;
+  final GlobalKey? sectionKey;
 
   @override
   State<_HomeSectionRow> createState() => _HomeSectionRowState();
@@ -716,11 +839,14 @@ class _HomeSectionRowState extends State<_HomeSectionRow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          title: widget.title,
-          icon: widget.icon,
-          iconColor: widget.iconColor,
-          onViewAll: widget.onViewAll,
+        Container(
+          key: widget.sectionKey,
+          child: _SectionHeader(
+            title: widget.title,
+            icon: widget.icon,
+            iconColor: widget.iconColor,
+            onViewAll: widget.onViewAll,
+          ),
         ),
         if (widget.isLoading)
           SizedBox(

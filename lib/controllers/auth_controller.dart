@@ -213,6 +213,7 @@ class AuthController extends GetxController {
     currentUser.value = null;
     if (redirectToHome) {
       Get.offAllNamed(AppRoutes.home);
+      SnackbarHelper.success('msg_logout_success'.tr);
     }
   }
 

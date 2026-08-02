@@ -41,6 +41,7 @@ dependencies:
   http: ^1.6.0
   palette_generator: ^0.3.3+7
   image_cropper: ^12.2.1
+  tutorial_coach_mark: ^1.2.9
 
 
 dev_dependencies:

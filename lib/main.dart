@@ -15,6 +15,7 @@ import 'package:stayhub_mobile/services/staff_service.dart';
 import 'app.dart';
 import 'controllers/feature_controllers.dart';
 import 'controllers/theme_controller.dart';
+import 'services/tutorial_service.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/feature_services.dart';
@@ -56,6 +57,7 @@ Future<void> main() async {
   }
 
   Get.put(StorageService(), permanent: true);
+  Get.put(TutorialService(), permanent: true);
   Get.put(ApiClient(), permanent: true);
   Get.put(AuthService(), permanent: true);
   Get.put(TourService(), permanent: true);
