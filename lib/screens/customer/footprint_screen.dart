@@ -221,12 +221,14 @@ class _FootprintScreenState extends State<FootprintScreen> {
 
   @override
   void dispose() {
-    if (_pointAnnotationManager != null) {
-      _pointAnnotationManager!.deleteAll();
-    }
-    if (_polygonAnnotationManager != null) {
-      _polygonAnnotationManager!.deleteAll();
-    }
+    try {
+      if (_pointAnnotationManager != null) {
+        _pointAnnotationManager!.deleteAll();
+      }
+      if (_polygonAnnotationManager != null) {
+        _polygonAnnotationManager!.deleteAll();
+      }
+    } catch (_) {}
     super.dispose();
   }
 

@@ -82,10 +82,11 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   }
 
   List<EligibleScheduleModel> get _ongoingSchedules {
+    final isVi = Get.locale?.languageCode == 'vi';
     final list = <EligibleScheduleModel>[
       EligibleScheduleModel(
         scheduleId: 0,
-        tourName: 'Cá nhân (Ngoài Tour)',
+        tourName: isVi ? 'Cá nhân (Ngoài Tour)' : 'All trips (Global)',
         departureDate: DateTime.now(),
         returnDate: DateTime.now(),
         statusContext: 'Ongoing',
@@ -93,11 +94,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     ];
     final now = DateTime.now();
     list.addAll(_orderController.eligibleSchedules.where((s) {
-      final status = s.statusContext.toLowerCase();
-      return status == 'ongoing' ||
-          status == 'completed' ||
-          s.departureDate.isBefore(now) ||
-          s.departureDate.isAtSameMomentAs(now);
+      return s.statusContext.toLowerCase() == 'ongoing';
     }));
     return list;
   }
@@ -105,9 +102,14 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
   Future<void> _fetchSchedules() async {
     await _orderController.fetchEligibleSchedules();
     final ongoing = _ongoingSchedules;
-    if (ongoing.isNotEmpty && mounted) {
+    if (mounted && ongoing.isNotEmpty) {
       setState(() {
-        _selectedScheduleId = ongoing.first.scheduleId;
+        if (ongoing.length > 1) {
+          _selectedScheduleId = ongoing[1].scheduleId;
+          if (_privacy == 'Public') _privacy = 'Tour';
+        } else {
+          _selectedScheduleId = ongoing[0].scheduleId;
+        }
       });
     }
   }
@@ -305,7 +307,11 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                   selectedId: _selectedScheduleId,
                   onChanged: (id) => setState(() {
                     _selectedScheduleId = id;
-                    if (id == 0 && _privacy == 'Tour') _privacy = 'Public';
+                    if (id == 0 && _privacy == 'Tour') {
+                      _privacy = 'Public';
+                    } else if (id != 0 && _privacy == 'Public') {
+                      _privacy = 'Tour';
+                    }
                   }),
                 ),
 
@@ -360,7 +366,11 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                       selectedId: _selectedScheduleId,
                       onChanged: (id) => setState(() {
                         _selectedScheduleId = id;
-                        if (id == 0 && _privacy == 'Tour') _privacy = 'Public';
+                        if (id == 0 && _privacy == 'Tour') {
+                          _privacy = 'Public';
+                        } else if (id != 0 && _privacy == 'Public') {
+                          _privacy = 'Tour';
+                        }
                       }),
                     ),
                     const SizedBox(width: 12),
@@ -643,14 +653,19 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                               _selectedScheduleId = id;
                               if (id == 0 && _privacy == 'Tour') {
                                 _privacy = 'Public';
+                              } else if (id != 0 && _privacy == 'Public') {
+                                _privacy = 'Tour';
                               }
                             }),
                           ),
                         ),
                       ..._privacyOptions
-                          .where((opt) =>
-                              opt.value != 'Tour' ||
-                              (_selectedScheduleId ?? 0) != 0)
+                          .where((opt) {
+                            final tourSelected = (_selectedScheduleId ?? 0) != 0;
+                            if (opt.value == 'Tour' && !tourSelected) return false;
+                            if (opt.value == 'Public' && tourSelected) return false;
+                            return true;
+                          })
                           .map((opt) {
                         final sel = _privacy == opt.value;
                         return Padding(
@@ -679,7 +694,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
                                           alpha: sel ? 1.0 : 0.80)),
                                   const SizedBox(width: 5),
                                   Text(
-                                    opt.label,
+                                    _getPrivacyLabel(opt.value, isVi),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
@@ -739,6 +754,21 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
         ),
       ],
     );
+  }
+}
+
+String _getPrivacyLabel(String value, bool isVi) {
+  switch (value) {
+    case 'Public':
+      return isVi ? 'Công khai' : 'Public';
+    case 'Tour':
+      return isVi ? 'Thành viên Tour' : 'Tour members';
+    case 'Friend':
+      return isVi ? 'Bạn bè' : 'Friends';
+    case 'Private':
+      return isVi ? 'Chỉ mình tôi' : 'Private';
+    default:
+      return value;
   }
 }
 
@@ -1033,8 +1063,14 @@ class _PrivacyPill extends StatelessWidget {
           ],
         ),
       ),
-      itemBuilder: (_) => _privacyOptions
-          .where((opt) => opt.value != 'Tour' || hasTour)
+      itemBuilder: (_) {
+        final isVi = Get.locale?.languageCode == 'vi';
+        return _privacyOptions
+          .where((opt) {
+            if (opt.value == 'Tour' && !hasTour) return false;
+            if (opt.value == 'Public' && hasTour) return false;
+            return true;
+          })
           .map((opt) {
         final isSelected = opt.value == currentPrivacy;
         return PopupMenuItem<String>(
@@ -1048,7 +1084,7 @@ class _PrivacyPill extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                opt.label,
+                _getPrivacyLabel(opt.value, isVi),
                 style: TextStyle(
                   color: isSelected ? _kAccentCyan : Colors.white,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -1062,7 +1098,8 @@ class _PrivacyPill extends StatelessWidget {
           ),
           onTap: () => onChanged(opt.value),
         );
-      }).toList(),
+      }).toList();
+      },
     );
   }
 }
