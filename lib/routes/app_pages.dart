@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../screens/onboarding_screen.dart';
 import 'package:stayhub_mobile/controllers/notification_controller.dart';
 import 'package:stayhub_mobile/controllers/review_controller.dart';
 import '../controllers/feature_controllers.dart';
@@ -47,6 +48,7 @@ class AppPages {
 
   static final routes = [
     GetPage(name: AppRoutes.splash, page: () => const SplashScreen()),
+    GetPage(name: AppRoutes.onboarding, page: () => const OnboardingScreen()),
     GetPage(name: AppRoutes.login, page: () => const LoginScreen()),
     GetPage(name: AppRoutes.register, page: () => const RegisterScreen()),
     GetPage(
