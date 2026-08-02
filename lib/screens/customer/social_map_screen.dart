@@ -262,10 +262,11 @@ class _MapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Dynamic Lighting based on system theme
-    final brightness = MediaQuery.of(context).platformBrightness;
+    // Dynamic Lighting based on actual time of day
+    final hour = DateTime.now().hour;
+    final isNight = hour < 6 || hour >= 18;
 
-    final styleUri = brightness == Brightness.dark
+    final styleUri = isNight
         ? mb.MapboxStyles.DARK
         : mb.MapboxStyles.STANDARD;
 

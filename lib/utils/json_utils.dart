@@ -36,7 +36,12 @@ class JsonUtils {
 
   static DateTime? readDateTime(dynamic value) {
     if (value == null) return null;
-    return DateTime.tryParse(value.toString());
+    String str = value.toString();
+    if (str.isEmpty) return null;
+    if (!str.endsWith('Z') && !str.contains(RegExp(r'[\+\-]\d{2}:\d{2}$'))) {
+      str += 'Z';
+    }
+    return DateTime.tryParse(str)?.toLocal();
   }
 
   static List<Map<String, dynamic>> readMapList(dynamic value) {

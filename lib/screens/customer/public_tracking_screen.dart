@@ -200,9 +200,11 @@ class _PublicTrackingScreenState extends State<PublicTrackingScreen> {
   @override
   void dispose() {
     _signalR.disconnectPublicTracking();
-    if (_pointAnnotationManager != null) {
-      _pointAnnotationManager?.deleteAll();
-    }
+    try {
+      if (_pointAnnotationManager != null) {
+        _pointAnnotationManager?.deleteAll();
+      }
+    } catch (_) {}
     super.dispose();
   }
 
