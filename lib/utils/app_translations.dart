@@ -7,6 +7,8 @@ class AppTranslations extends Translations {
           // --- Tutorial ---
           'tutorial_skip': 'Skip',
           'tutorial_got_it': 'Got it',
+          'tutorial_next': 'Next',
+          'tutorial_step': 'Step @current / @total',
           'onboarding_title_1': 'Discover the World',
           'onboarding_desc_1': 'Find and book the best tours, homestays, and apartments with ease.',
           'onboarding_title_2': 'Easy Booking',
@@ -992,6 +994,8 @@ class AppTranslations extends Translations {
           // --- Tutorial ---
           'tutorial_skip': 'Bỏ qua',
           'tutorial_got_it': 'Đã hiểu',
+          'tutorial_next': 'Tiếp tục',
+          'tutorial_step': 'Bước @current / @total',
           'onboarding_title_1': 'Khám phá Thế giới',
           'onboarding_desc_1': 'Dễ dàng tìm kiếm và đặt các tour du lịch, homestay và căn hộ tốt nhất.',
           'onboarding_title_2': 'Đặt phòng Dễ dàng',
