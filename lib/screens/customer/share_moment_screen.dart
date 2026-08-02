@@ -241,12 +241,11 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
     try {
       if (_lat == null || _lng == null) {
-        await _fetchLocation();
-        if (_lat == null || _lng == null) {
-          SnackbarHelper.error(
-            'Could not get GPS location - moment will not display on map',
-          );
-        }
+        // Đã bỏ await _fetchLocation() để tránh treo 7 giây khi mất GPS.
+        // Chỉ hiện thông báo info thay vì báo lỗi đỏ.
+        SnackbarHelper.info(
+          'Không lấy được vị trí GPS - Moment sẽ không hiển thị trên bản đồ',
+        );
       }
 
       final compressedFile = await ImageHelper.compressImage(_capturedImage!);
