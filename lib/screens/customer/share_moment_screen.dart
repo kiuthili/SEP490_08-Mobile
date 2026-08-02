@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/feature_controllers.dart';
@@ -66,7 +68,38 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     WidgetsBinding.instance.addObserver(this);
     _initCamera();
     _fetchSchedules();
-    _fetchLocation();
+    _startLocationTracking();
+  }
+
+  StreamSubscription<Position>? _positionStream;
+
+  Future<void> _startLocationTracking() async {
+    final hasPermission = await LocationHelper.ensurePermission();
+    if (!hasPermission) return;
+
+    try {
+      final pos = await LocationHelper.getCurrentPosition();
+      if (mounted && pos != null) {
+        setState(() {
+          _lat = pos.latitude;
+          _lng = pos.longitude;
+        });
+      }
+    } catch (_) {}
+
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      if (mounted) {
+        setState(() {
+          _lat = position.latitude;
+          _lng = position.longitude;
+        });
+      }
+    });
   }
 
   @override
@@ -249,6 +282,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     WidgetsBinding.instance.removeObserver(this);
     _cameraController?.dispose();
     _captionController.dispose();
+    _positionStream?.cancel();
     super.dispose();
   }
 
