@@ -18,8 +18,8 @@ class ApiConstants {
       return 'https://028xpj74-7010.asse.devtunnels.ms';
     }
 
-    return 'https://028xpj74-7010.asse.devtunnels.ms';
-    // return 'https://localhost:7010';
+    // return 'https://028xpj74-7010.asse.devtunnels.ms';
+    return 'https://localhost:7010';
   }
 
   static String get webUrl {

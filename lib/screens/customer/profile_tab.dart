@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/notification_controller.dart';
 import '../../controllers/shell_controller.dart';
 import '../../controllers/theme_controller.dart';
 import '../../models/user_model.dart';
@@ -59,10 +60,20 @@ class _ProfileTabState extends State<ProfileTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              IconButton(
-                onPressed: () => Get.toNamed(AppRoutes.notifications),
-                icon: Icon(Icons.notifications_none_rounded, color: textPrimary),
-              ),
+              Obx(() {
+                if (!Get.isRegistered<NotificationController>()) return const SizedBox.shrink();
+                final notifController = Get.find<NotificationController>();
+                final unread = notifController.unreadCount;
+                return IconButton(
+                  onPressed: () => Get.toNamed(AppRoutes.notifications),
+                  icon: Badge(
+                    label: Text(unread > 99 ? '99+' : unread.toString()),
+                    isLabelVisible: unread > 0,
+                    backgroundColor: AppColors.error,
+                    child: Icon(Icons.notifications_none_rounded, color: textPrimary),
+                  ),
+                );
+              }),
               PopupMenuButton<String>(
                 icon: Icon(Icons.settings_outlined, color: textPrimary),
                 shape: RoundedRectangleBorder(
