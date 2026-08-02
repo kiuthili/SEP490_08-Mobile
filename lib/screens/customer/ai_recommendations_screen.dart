@@ -970,8 +970,8 @@ class _AiRecommendationsTabState extends State<AiRecommendationsTab> {
                       backgroundColor: AppColors.brand,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.button,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       elevation: 0,
                     ),
