@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../constants/app_constants.dart';
 import '../routes/app_routes.dart';
 import '../services/storage_service.dart';
+import '../services/tutorial_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/stayhub_logo.dart';
@@ -42,7 +43,15 @@ class _SplashScreenState extends State<SplashScreen>
       const Duration(milliseconds: AppConstants.splashDelayMs),
     );
     final storage = Get.find<StorageService>();
+    final tutorial = Get.find<TutorialService>();
     final user = storage.user;
+
+    // Check if it's the very first launch
+    if (!tutorial.hasSeenOnboarding.value) {
+      Get.offAllNamed(AppRoutes.onboarding);
+      return;
+    }
+
     if (storage.isLoggedIn && user?.isCustomerOnly == true) {
       if (user!.requirePasswordChange) {
         Get.offAllNamed(AppRoutes.changePassword);

@@ -470,7 +470,7 @@ class SocialMapController extends GetxController {
   }
 
   Future<void> _syncFogGeoJson(String geoJsonStr) async {
-    if (mapboxMap == null || !isMapReady.value) return;
+    if (_isSyncing || mapboxMap == null || !isMapReady.value) return;
     try {
       _lastFogGeoJson = geoJsonStr;
       if (await mapboxMap!.style.styleSourceExists("stayhub-fog-source")) {
@@ -696,6 +696,9 @@ class SocialMapController extends GetxController {
     ever(mapMoments, (_) {
       _syncMomentsGeoJson();
       if (heatmapType.value == 'moments' && showHeatmap.value) loadHeatmap();
+    });
+    ever(showMoments, (_) {
+      _syncMomentsGeoJson();
     });
     ever(drivingRouteLatLngs, (_) {
       _syncRoute();
@@ -1291,16 +1294,37 @@ class SocialMapController extends GetxController {
   /// Ưu tiên gọi service; nếu lỗi (vd 404) thì dựng heatmap client-side từ
   /// dữ liệu sẵn có (moments + footprints + live locations).
   Future<void> loadHeatmap() async {
+    if (_isSyncing) return;
     isHeatmapLoading.value = true;
     try {
       final scheduleId = selectedScheduleId.value;
       final apiScheduleId =
           (scheduleId != null && scheduleId > 0) ? scheduleId : null;
-      final data = await _service.getHeatmapData(scheduleId: apiScheduleId);
+      final data = await _service.getHeatmapData(
+        scheduleId: apiScheduleId,
+        type: heatmapType.value,
+      );
       heatPoints.assignAll(data);
     } catch (e) {
-      heatPoints.clear();
-      SnackbarHelper.error('Error loading heatmap: $e');
+      // Fallback: Client-side generation since backend might not have this endpoint
+      final clientPoints = <HeatPointModel>[];
+      
+      if (heatmapType.value == 'moments') {
+        for (final m in mapMoments) {
+          if (m.lat != null && m.lng != null && _isValidCoordinate(m.lat!, m.lng!)) {
+            clientPoints.add(HeatPointModel(lat: m.lat!, lng: m.lng!, weight: 1.0));
+          }
+        }
+      } else if (heatmapType.value == 'online') {
+        for (final loc in liveLocations) {
+          if (_isValidCoordinate(loc.latitude, loc.longitude)) {
+             clientPoints.add(HeatPointModel(lat: loc.latitude, lng: loc.longitude, weight: 2.0));
+          }
+        }
+      }
+      
+      heatPoints.assignAll(clientPoints);
+      debugPrint('Fallback to client-side heatmap with ${clientPoints.length} points due to: $e');
     } finally {
       _scheduleHeatmapReset();
       isHeatmapLoading.value = false;
@@ -1316,10 +1340,15 @@ class SocialMapController extends GetxController {
   }
 
   Future<void> _syncLiveLocations() async {
-    if (liveLocManager == null) return;
-    await liveLocManager!.deleteAll();
+    if (_isSyncing) return;
+    try {
+      if (liveLocManager == null) return;
+      await liveLocManager!.deleteAll();
 
-    // Placeholder for now
+      // Placeholder for now
+    } catch (e, stack) {
+      debugPrint('MAP_RENDER_ERROR: Error in _syncLiveLocations: $e\n$stack');
+    }
   }
 
   String _lastMomentSignature = "";
@@ -1407,7 +1436,7 @@ class SocialMapController extends GetxController {
   }
 
   Future<void> _syncMomentsGeoJson() async {
-    if (mapboxMap == null || !isMapReady.value) return;
+    if (_isSyncing || mapboxMap == null || !isMapReady.value) return;
 
     if (!showMoments.value || mapMoments.isEmpty) {
       try {
@@ -1713,7 +1742,7 @@ class SocialMapController extends GetxController {
   bool _isSyncingRoute = false;
 
   Future<void> _syncRoute() async {
-    if (_isSyncingRoute) return;
+    if (_isSyncing || _isSyncingRoute) return;
     _isSyncingRoute = true;
     debugPrint('ROUTE_SYNC_START');
 
@@ -1810,7 +1839,7 @@ class SocialMapController extends GetxController {
   bool _isSyncingWaypoints = false;
 
   Future<void> _syncWaypoints() async {
-    if (_isSyncingWaypoints) return;
+    if (_isSyncing || _isSyncingWaypoints) return;
     _isSyncingWaypoints = true;
     debugPrint('WAYPOINT_SYNC_START');
 
@@ -1971,7 +2000,7 @@ class SocialMapController extends GetxController {
   }
 
   Future<void> _syncHeatmap() async {
-    if (mapboxMap == null) return;
+    if (_isSyncing || mapboxMap == null) return;
     try {
       if (!showHeatmap.value || heatPoints.isEmpty) {
         await mapboxMap!.style.setStyleSourceProperty("stayhub-heatmap-source",
@@ -2010,6 +2039,27 @@ class SocialMapController extends GetxController {
           jsonEncode({"type": "FeatureCollection", "features": features});
       await mapboxMap!.style
           .setStyleSourceProperty("stayhub-heatmap-source", "data", geoJson);
+          
+      try {
+        await mapboxMap!.style.setStyleLayerProperty(
+          "stayhub-heatmap-layer",
+          "heatmap-radius",
+          jsonEncode([
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            2,
+            9,
+            heatmapRadius.value / 2,
+            15,
+            heatmapRadius.value
+          ]),
+        );
+      } catch (e) {
+        debugPrint('Failed to update heatmap radius: $e');
+      }
+      
       debugPrint('HEATMAP_SOURCE_UPDATED');
       debugPrint('HEATMAP_VISIBLE: true');
     } catch (e) {

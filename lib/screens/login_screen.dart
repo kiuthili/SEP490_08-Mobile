@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../widgets/custom_tutorial_tooltip.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../services/tutorial_service.dart';
 import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
 import '../theme/app_colors.dart';
@@ -16,10 +19,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   late final AuthController _auth;
+  final _formKey = GlobalKey<FormState>();
+  final GlobalKey _loginFieldKey = GlobalKey();
+  final GlobalKey _loginButtonKey = GlobalKey();
+  final GlobalKey _forgotPassKey = GlobalKey();
+  final GlobalKey _googleLoginKey = GlobalKey();
+  final GlobalKey _registerKey = GlobalKey();
+
+  TutorialCoachMark? tutorialCoachMark;
 
   void _goHome() => Get.offAllNamed(AppRoutes.home);
 
@@ -27,6 +37,197 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _auth = Get.find<AuthController>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<TutorialService>()) {
+        if (!Get.find<TutorialService>().isLoginTutorialDone.value) {
+          _showTutorial();
+        }
+      }
+    });
+  }
+
+  void _showTutorial() {
+    tutorialCoachMark = TutorialCoachMark(
+      targets: _createTargets(),
+      colorShadow: AppColors.navy,
+      hideSkip: true,
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+      onSkip: () {
+        Get.find<TutorialService>().completeLoginTutorial();
+        return true;
+      },
+      onFinish: () {
+        Get.find<TutorialService>().completeLoginTutorial();
+      },
+    )..show(context: context);
+  }
+
+  List<TargetFocus> _createTargets() {
+    return [
+      TargetFocus(
+        identify: "loginField",
+        keyTarget: _loginFieldKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        enableOverlayTab: false, // Bắt buộc user tương tác với card
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_login_welcome'.tr,
+                description: 'tutorial_login_welcome_desc'.tr,
+                currentStep: 1,
+                totalSteps: 5,
+                onNext: () {
+                  if (_loginButtonKey.currentContext != null) {
+                    Scrollable.ensureVisible(
+                      _loginButtonKey.currentContext!,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      alignment: 0.5,
+                    ).then((_) {
+                      controller.next();
+                    });
+                  } else {
+                    controller.next();
+                  }
+                },
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "loginButton",
+        keyTarget: _loginButtonKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_login_btn'.tr,
+                description: 'tutorial_login_btn_desc'.tr,
+                currentStep: 2,
+                totalSteps: 5,
+                onNext: () {
+                  if (_forgotPassKey.currentContext != null) {
+                    Scrollable.ensureVisible(
+                      _forgotPassKey.currentContext!,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      alignment: 0.5,
+                    ).then((_) {
+                      controller.next();
+                    });
+                  } else {
+                    controller.next();
+                  }
+                },
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "forgotPass",
+        keyTarget: _forgotPassKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_login_forgot'.tr,
+                description: 'tutorial_login_forgot_desc'.tr,
+                currentStep: 3,
+                totalSteps: 5,
+                onNext: () {
+                  if (_googleLoginKey.currentContext != null) {
+                    Scrollable.ensureVisible(
+                      _googleLoginKey.currentContext!,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      alignment: 0.5,
+                    ).then((_) {
+                      controller.next();
+                    });
+                  } else {
+                    controller.next();
+                  }
+                },
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "googleLogin",
+        keyTarget: _googleLoginKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_login_google'.tr,
+                description: 'tutorial_login_google_desc'.tr,
+                currentStep: 4,
+                totalSteps: 5,
+                onNext: () {
+                  if (_registerKey.currentContext != null) {
+                    Scrollable.ensureVisible(
+                      _registerKey.currentContext!,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      alignment: 0.5,
+                    ).then((_) {
+                      controller.next();
+                    });
+                  } else {
+                    controller.next();
+                  }
+                },
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "register",
+        keyTarget: _registerKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        enableOverlayTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              return CustomTutorialTooltip(
+                title: 'tutorial_login_register'.tr,
+                description: 'tutorial_login_register_desc'.tr,
+                currentStep: 5,
+                totalSteps: 5,
+                onNext: () => controller.next(),
+                onSkip: () => controller.skip(),
+              );
+            },
+          ),
+        ],
+      ),
+    ];
   }
 
   @override
@@ -101,32 +302,38 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Email/Phone input
-                  AuthInputField(
-                    controller: _emailController,
-                    label: 'account_label'.tr,
-                    hint: 'account_hint'.tr,
-                    icon: Icons.person_outline_rounded,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    validator: Validators.email,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Password input
-                  AuthInputField(
-                    controller: _passwordController,
-                    label: 'password_label'.tr,
-                    hint: 'password_hint'.tr,
-                    icon: Icons.lock_outline_rounded,
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    validator: Validators.password,
+                  // Form fields (Email & Password)
+                  Container(
+                    key: _loginFieldKey,
+                    child: Column(
+                      children: [
+                        AuthInputField(
+                          controller: _emailController,
+                          label: 'account_label'.tr,
+                          hint: 'account_hint'.tr,
+                          icon: Icons.person_outline_rounded,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          validator: Validators.email,
+                        ),
+                        const SizedBox(height: 14),
+                        AuthInputField(
+                          controller: _passwordController,
+                          label: 'password_label'.tr,
+                          hint: 'password_hint'.tr,
+                          icon: Icons.lock_outline_rounded,
+                          obscureText: true,
+                          textInputAction: TextInputAction.done,
+                          validator: Validators.password,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 2),
 
                   // Forgot password link
-                  Align(
+                  Container(
+                    key: _forgotPassKey,
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () => Get.toNamed(AppRoutes.forgotPassword),
@@ -149,18 +356,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 10),
 
                   // Primary Login Button
-                  Obx(
-                    () => AuthPrimaryButton(
-                      label: 'login_btn'.tr,
-                      isLoading: _auth.isLoading.value,
-                      onPressed: () {
-                        if (_formKey.currentState?.validate() ?? false) {
-                          _auth.login(
-                            email: _emailController.text,
-                            password: _passwordController.text,
-                          );
-                        }
-                      },
+                  Container(
+                    key: _loginButtonKey,
+                    child: Obx(
+                      () => AuthPrimaryButton(
+                        label: 'login_btn'.tr,
+                        isLoading: _auth.isLoading.value,
+                        onPressed: () {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            _auth.login(
+                              email: _emailController.text,
+                              password: _passwordController.text,
+                            );
+                          }
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -190,11 +400,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   // Google Button
-                  Obx(
-                    () => AuthGoogleButton(
-                      label: 'login_with_google'.tr,
-                      isLoading: _auth.isLoading.value,
-                      onPressed: _auth.loginWithGoogle,
+                  Container(
+                    key: _googleLoginKey,
+                    child: Obx(
+                      () => AuthGoogleButton(
+                        label: 'login_with_google'.tr,
+                        isLoading: _auth.isLoading.value,
+                        onPressed: _auth.loginWithGoogle,
+                      ),
                     ),
                   ),
                 ],
@@ -262,6 +475,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
+                    key: _registerKey,
                     width: double.infinity,
                     height: 44,
                     child: OutlinedButton(

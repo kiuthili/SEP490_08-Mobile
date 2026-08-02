@@ -283,6 +283,9 @@ class AuthService extends GetxService with BaseServiceMixin {
         );
       } catch (_) {}
     }
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
     await _storage.clearSession();
   }
 

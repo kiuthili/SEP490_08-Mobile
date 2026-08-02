@@ -437,12 +437,14 @@ class SocialService extends GetxService with BaseServiceMixin {
   /// Để nguyên hàm này (sẽ ném lỗi/404) — controller bắt lỗi và tự dựng
   /// heatmap client-side từ moments + footprints + live locations.
   /// Khi backend bổ sung (vd GET /api/locations/heatmap) thì hàm này dùng được ngay.
-  Future<List<HeatPointModel>> getHeatmapData({int? scheduleId}) async {
+  Future<List<HeatPointModel>> getHeatmapData({int? scheduleId, String type = 'online', int days = 90}) async {
     return request(() async {
       final response = await api.dio.get(
         '${ApiConstants.locations}/heatmap',
         queryParameters: {
           if (scheduleId != null) 'scheduleId': scheduleId,
+          'type': type,
+          'days': days,
         },
       );
       return parseList(response.data, HeatPointModel.fromJson);

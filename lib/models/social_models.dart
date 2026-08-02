@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../utils/json_utils.dart';
 
 // Model đại diện cho một bài đăng du lịch (Moment)
 class MomentModel {
@@ -87,7 +88,7 @@ class MomentModel {
     DateTime parseCreated() {
       final raw = json['createdAt'] ?? json['CreatedAt'] ?? json['createdDate'];
       if (raw == null) return DateTime.now();
-      return DateTime.tryParse(raw.toString())?.toLocal() ?? DateTime.now();
+      return JsonUtils.readDateTime(raw) ?? DateTime.now();
     }
 
     bool pickLiked() {
@@ -250,14 +251,11 @@ class SocialCommentModel {
               json['Comment'] ??
               json['content']) ??
           '',
-      timestamp: DateTime.tryParse(
-            (json['createdAt'] ??
-                    json['CreatedAt'] ??
-                    json['timestamp'] ??
-                    json['Timestamp'] ??
-                    '')
-                .toString(),
-          )?.toLocal() ??
+      timestamp: JsonUtils.readDateTime(
+            json['createdAt'] ??
+                json['CreatedAt'] ??
+                json['timestamp'] ??
+                json['Timestamp']) ??
           DateTime.now(),
     );
   }
