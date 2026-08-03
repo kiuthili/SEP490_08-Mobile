@@ -373,9 +373,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 await _socialService.leaveChatRoom(_roomId!);
                 await _socialController.fetchChatRooms();
                 Get.back();
+              } else if (value == 'add_member' && _roomId != null) {
+                _showAddMemberDialog();
               }
             },
             itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'add_member',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_add_rounded, color: AppColors.brand),
+                    const SizedBox(width: 10),
+                    Text('sc_sds_add_member'.tr),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'leave',
                 child: Row(
@@ -479,11 +491,189 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  void _showAddMemberDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _AddMemberBottomSheet(roomId: _roomId!);
+      },
+    );
+  }
+
   bool _sameDay(DateTime? first, DateTime? second) {
     if (first == null || second == null) return false;
     final a = first.toLocal();
     final b = second.toLocal();
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class _AddMemberBottomSheet extends StatefulWidget {
+  final int roomId;
+  const _AddMemberBottomSheet({required this.roomId});
+
+  @override
+  State<_AddMemberBottomSheet> createState() => _AddMemberBottomSheetState();
+}
+
+class _AddMemberBottomSheetState extends State<_AddMemberBottomSheet> {
+  final _socialService = Get.find<SocialService>();
+  bool _loading = true;
+  String? _error;
+  List<FriendModel> _friends = [];
+  final Set<int> _selectedIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFriends();
+  }
+
+  Future<void> _loadFriends() async {
+    try {
+      final friends = await _socialService.getFriends();
+      final members = await _socialService.getRoomMembers(widget.roomId);
+      final memberIds = members.map((m) => m.id).toSet();
+      
+      final availableFriends = friends.where((f) => !memberIds.contains(f.userId)).toList();
+
+      if (mounted) {
+        setState(() {
+          _friends = availableFriends;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_selectedIds.isEmpty) return;
+    try {
+      setState(() => _loading = true);
+      await _socialService.addMembersToRoom(widget.roomId, _selectedIds.toList());
+      Get.back();
+      SnackbarHelper.success('sc_sds_add_member_success'.tr);
+    } catch (e) {
+      SnackbarHelper.error(e.toString());
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'sc_sds_add_member'.tr,
+                  style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _selectedIds.isEmpty || _loading ? null : _submit,
+                  child: _loading && _friends.isNotEmpty 
+                      ? const SizedBox(
+                          width: 20, 
+                          height: 20, 
+                          child: CircularProgressIndicator(strokeWidth: 2)
+                        )
+                      : Text('sc_sds_add'.tr),
+                )
+              ],
+            ),
+          ),
+          const Divider(),
+          Expanded(
+            child: _loading && _friends.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(child: Text(_error!))
+                    : _friends.isEmpty
+                        ? Center(child: Text('sc_sds_no_friends'.tr))
+                        : ListView.builder(
+                            itemCount: _friends.length,
+                            itemBuilder: (context, index) {
+                              final f = _friends[index];
+                              final isSelected = _selectedIds.contains(f.userId);
+                              return ListTile(
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.brandLight,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: f.avatarUrl != null && f.avatarUrl!.isNotEmpty
+                                      ? CachedNetworkImage(
+                                          imageUrl: f.avatarUrl!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : const Icon(Icons.person, color: AppColors.brand),
+                                ),
+                                title: Text(f.fullName),
+                                trailing: Checkbox(
+                                  value: isSelected,
+                                  activeColor: AppColors.brand,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      if (val == true) {
+                                        _selectedIds.add(f.userId);
+                                      } else {
+                                        _selectedIds.remove(f.userId);
+                                      }
+                                    });
+                                  },
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedIds.remove(f.userId);
+                                    } else {
+                                      _selectedIds.add(f.userId);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1188,6 +1378,30 @@ class _SystemMessageNotice extends StatelessWidget {
   const _SystemMessageNotice({required this.message});
   final ChatMessageModel message;
 
+  String _getFormattedMessage() {
+    final raw = message.content;
+    try {
+      if (raw.trim().startsWith('{')) {
+        final data = jsonDecode(raw) as Map<String, dynamic>;
+        if (data['action'] == 'MEMBER_ADDED' && data['users'] != null) {
+          final usersList = data['users'] as List;
+          if (usersList.isNotEmpty) {
+            final names = usersList.map((u) {
+              if (u is Map) {
+                return u['fullName'] ?? u['FullName'] ?? 'User';
+              }
+              return 'User';
+            }).join(', ');
+            return 'sc_sds_sys_member_added'.trParams({'names': names});
+          }
+        }
+      }
+    } catch (_) {
+      // Fallback to raw content if not JSON or parsing fails
+    }
+    return raw;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1213,7 +1427,7 @@ class _SystemMessageNotice extends StatelessWidget {
                   const SizedBox(width: 7),
                   Flexible(
                     child: Text(
-                      message.content,
+                      _getFormattedMessage(),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
