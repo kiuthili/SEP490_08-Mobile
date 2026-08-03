@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/feature_controllers.dart';
@@ -66,7 +68,38 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     WidgetsBinding.instance.addObserver(this);
     _initCamera();
     _fetchSchedules();
-    _fetchLocation();
+    _startLocationTracking();
+  }
+
+  StreamSubscription<Position>? _positionStream;
+
+  Future<void> _startLocationTracking() async {
+    final hasPermission = await LocationHelper.ensurePermission();
+    if (!hasPermission) return;
+
+    try {
+      final pos = await LocationHelper.getCurrentPosition();
+      if (mounted && pos != null) {
+        setState(() {
+          _lat = pos.latitude;
+          _lng = pos.longitude;
+        });
+      }
+    } catch (_) {}
+
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      if (mounted) {
+        setState(() {
+          _lat = position.latitude;
+          _lng = position.longitude;
+        });
+      }
+    });
   }
 
   @override
@@ -208,12 +241,11 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
 
     try {
       if (_lat == null || _lng == null) {
-        await _fetchLocation();
-        if (_lat == null || _lng == null) {
-          SnackbarHelper.error(
-            'Could not get GPS location - moment will not display on map',
-          );
-        }
+        // Đã bỏ await _fetchLocation() để tránh treo 7 giây khi mất GPS.
+        // Chỉ hiện thông báo info thay vì báo lỗi đỏ.
+        SnackbarHelper.info(
+          'Không lấy được vị trí GPS - Moment sẽ không hiển thị trên bản đồ',
+        );
       }
 
       final compressedFile = await ImageHelper.compressImage(_capturedImage!);
@@ -249,6 +281,7 @@ class _ShareMomentScreenState extends State<ShareMomentScreen>
     WidgetsBinding.instance.removeObserver(this);
     _cameraController?.dispose();
     _captionController.dispose();
+    _positionStream?.cancel();
     super.dispose();
   }
 
