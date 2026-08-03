@@ -9,18 +9,20 @@ class ApiConstants {
     if (override.isNotEmpty) return override;
 
     if (Platform.isAndroid) {
-
       // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
       return 'https://stayhub.cloud';
       // return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
-      return 'https://stayhub.cloud';
+      return 'https://028xpj74-7010.asse.devtunnels.ms';
     }
 
-    return 'https://stayhub.cloud';
+    // return 'https://stayhub.cloud';
+    // return 'https://028xpj74-7010.asse.devtunnels.ms';
     // return 'https://localhost:7010';
+    return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
+
   }
 
   static String get webUrl {
