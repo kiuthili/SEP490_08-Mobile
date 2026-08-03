@@ -1161,6 +1161,7 @@ class _MessageBubble extends StatelessWidget {
               Get.toNamed('/track/$token');
             },
             child: Container(
+              width: 240,
               margin: const EdgeInsets.only(top: 4, bottom: 4),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1719,6 +1720,7 @@ class _MomentDetailScreenState extends State<MomentDetailScreen> {
 
     Get.bottomSheet(
       Container(
+        constraints: BoxConstraints(maxHeight: Get.height * 0.8),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -3101,6 +3103,7 @@ class _ScopedMomentFeedScreenState extends State<ScopedMomentFeedScreen> {
 
     Get.bottomSheet(
       Container(
+        constraints: BoxConstraints(maxHeight: Get.height * 0.8),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

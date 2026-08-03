@@ -81,10 +81,29 @@ class SocialMapController extends GetxController {
 
   Future<void> onMapCreated(mb.MapboxMap map) async {
     mapboxMap = map;
+    try {
+      await mapboxMap!.scaleBar.updateSettings(mb.ScaleBarSettings(enabled: false));
+      await mapboxMap!.compass.updateSettings(mb.CompassSettings(enabled: false));
+    } catch (_) {}
     debugPrint('MAP_CREATED');
   }
 
   bool _isSyncing = false;
+
+  /// Mutex riêng cho _syncMomentsGeoJson — độc lập với _isSyncing của onStyleLoaded.
+  /// Ngăn 2 lần gọi concurrent (từ ever(mapMoments) và ever(showMoments)) cùng
+  /// gọi Mapbox native API → crash.
+  bool _isSyncingMoments = false;
+
+  /// Cờ để tránh gọi Mapbox API sau khi controller bị dispose.
+  bool _isDisposed = false;
+
+  /// Cache các imageId đã upload vào Mapbox style để skip re-download.
+  /// Được reset khi style reload (onStyleLoaded).
+  final Set<String> _uploadedImageIds = {};
+
+  /// Image load generation: tăng mỗi lần schedule thay đổi — hủy background load cũ.
+  int _imageLoadGeneration = 0;
 
   Future<void> onStyleLoaded(mb.StyleLoadedEventData event) async {
     debugPrint('STYLE_LOADED');
@@ -93,6 +112,11 @@ class SocialMapController extends GetxController {
     _isSyncing = true;
     isMapReady.value = false;
     _waypointMarkerCache.clear();
+    // Reset image cache khi style reload — các imageId cũ không còn hợp lệ.
+    _uploadedImageIds.clear();
+    _lastMomentSignature = "";
+    // Hủy background image load cũ trước khi style reload.
+    _imageLoadGeneration++;
 
     try {
       if (mapboxMap == null) return;
@@ -253,24 +277,57 @@ class SocialMapController extends GetxController {
       }
 
       // 4. Managers
-      routeDashedCoreManager = await mapboxMap!.annotations
-          .createPolylineAnnotationManager(id: "route_core");
-      routeCasingManager = await mapboxMap!.annotations
-          .createPolylineAnnotationManager(
-              id: "route_casing", below: "route_core");
+      try {
+        routeDashedCoreManager = await mapboxMap!.annotations
+            .createPolylineAnnotationManager(id: "route_core");
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: route_core manager failed: $e');
+      }
 
-      liveLocManager = await mapboxMap!.annotations
-          .createPointAnnotationManager(id: "live_loc");
+      try {
+        routeCasingManager = await mapboxMap!.annotations
+            .createPolylineAnnotationManager(
+                id: "route_casing", below: "route_core");
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: route_casing manager failed: $e');
+        try {
+          // Fallback without 'below' if the layer 'route_core' isn't ready
+          routeCasingManager = await mapboxMap!.annotations
+              .createPolylineAnnotationManager(id: "route_casing");
+        } catch (e2) {
+          debugPrint('MAP_RENDER_ERROR: route_casing manager fallback failed: $e2');
+        }
+      }
+
+      try {
+        liveLocManager = await mapboxMap!.annotations
+            .createPointAnnotationManager(id: "live_loc");
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: live_loc manager failed: $e');
+      }
       // Keep momentManager for cleanup but don't recreate it
       // momentManager = await mapboxMap!.annotations
       //     .createPointAnnotationManager(id: "moment");
-      scheduleManager = await mapboxMap!.annotations
-          .createPointAnnotationManager(id: "schedule");
-      waypointManager = await mapboxMap!.annotations
-          .createPointAnnotationManager(id: "waypoint");
+      try {
+        scheduleManager = await mapboxMap!.annotations
+            .createPointAnnotationManager(id: "schedule");
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: schedule manager failed: $e');
+      }
 
-      final currentStyleUri = await mapboxMap!.style.getStyleURI();
-      debugPrint('MAP_STYLE_URI: $currentStyleUri');
+      try {
+        waypointManager = await mapboxMap!.annotations
+            .createPointAnnotationManager(id: "waypoint");
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: waypoint manager failed: $e');
+      }
+
+      try {
+        final currentStyleUri = await mapboxMap!.style.getStyleURI();
+        debugPrint('MAP_STYLE_URI: $currentStyleUri');
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: getStyleURI failed: $e');
+      }
 
       try {
         final layers = await mapboxMap!.style.getStyleLayers();
@@ -514,6 +571,13 @@ class SocialMapController extends GetxController {
 
   void updateZoom(double zoom) {
     currentZoom.value = zoom;
+    // Trigger debounced viewport load when zoomed in enough
+    if (zoom >= _viewportLoadZoomThreshold && mapboxMap != null) {
+      _viewportMomentDebounce?.cancel();
+      _viewportMomentDebounce = Timer(const Duration(milliseconds: 800), () {
+        _loadMomentsInViewport();
+      });
+    }
   }
 
   bool _isLocationVisible(LiveLocationModel loc) {
@@ -741,11 +805,13 @@ class SocialMapController extends GetxController {
 
   @override
   void onClose() {
+    _isDisposed = true;
     _pingTimer?.cancel();
     _friendsTimer?.cancel();
     _footprintsTimer?.cancel();
     _heatmapDebounce?.cancel();
     _fogDebounceTimer?.cancel();
+    _viewportMomentDebounce?.cancel();
     _positionStreamSubscription?.cancel();
     unawaited(_signalR.disconnectTracking());
     if (!heatmapResetController.isClosed) heatmapResetController.close();
@@ -831,6 +897,11 @@ class SocialMapController extends GetxController {
     if (selectedScheduleId.value == scheduleId && liveLocations.isNotEmpty) {
       return;
     }
+    // Hủy background image load cũ trước khi đổi schedule
+    _imageLoadGeneration++;
+    _uploadedImageIds.clear();
+    _lastMomentSignature = "";
+
     selectedScheduleId.value = scheduleId;
     isLoading.value = true;
 
@@ -1093,27 +1164,107 @@ class SocialMapController extends GetxController {
 
   // ======================= 2) MOMENTS ON MAP =======================
   int _momentRequestGeneration = 0;
-
-  // ======================= 2) MOMENTS ON MAP =======================
+  /// Debounce timer for viewport-based moment loading (fires after camera stops moving)
+  Timer? _viewportMomentDebounce;
+  /// Tracks the last bounding box fetched to avoid redundant requests
+  String _lastViewportSignature = '';
+  /// Zoom threshold above which viewport loading kicks in
+  static const double _viewportLoadZoomThreshold = 8.0;
   Future<void> loadMapMoments(int? scheduleId) async {
     final requestGeneration = ++_momentRequestGeneration;
     final requestedScheduleId = selectedScheduleId.value;
+    _lastViewportSignature = ''; // reset viewport cache on full reload
 
     try {
-      final data =
-          await _service.getMomentsWithLocation(scheduleId: scheduleId);
+      if (scheduleId != null && scheduleId > 0) {
+        // === Specific tour: single request — backend already filters by scheduleId ===
+        final data = await _service.getMomentsWithLocation(scheduleId: scheduleId, top: 200);
+        if (requestGeneration != _momentRequestGeneration ||
+            selectedScheduleId.value != requestedScheduleId) return;
+        mapMoments.assignAll(data);
+      } else {
+        // === All Trips: Two-Track Priority Loading ===
+        // Track A: User's OWN moments (always guaranteed, not sharing pool with social)
+        // Track B: Social moments from others (capped at 100 to avoid drowning out Track A)
+        final results = await Future.wait([
+          _service.getUserMoments(currentUserId!),           // Track A
+          _service.getMomentsWithLocation(top: 100),         // Track B
+        ]);
 
-      if (requestGeneration != _momentRequestGeneration ||
-          selectedScheduleId.value != requestedScheduleId) {
-        return;
+        if (requestGeneration != _momentRequestGeneration ||
+            selectedScheduleId.value != requestedScheduleId) return;
+
+        // Merge: A ∪ B, deduplicate by id, filter for map-ready (has lat/lng)
+        final mine = results[0].where((m) => m.lat != null && m.lng != null);
+        final social = results[1]; // already filtered by getMomentsWithLocation
+        final seenIds = <int>{};
+        final merged = <MomentModel>[];
+        // My moments first (priority)
+        for (final m in mine) {
+          if (seenIds.add(m.id)) merged.add(m);
+        }
+        // Then social fill
+        for (final m in social) {
+          if (seenIds.add(m.id)) merged.add(m);
+        }
+        mapMoments.assignAll(merged);
       }
-
-      mapMoments.assignAll(
-        data.where((m) => m.lat != null && m.lng != null),
-      );
     } catch (e) {
       if (kDebugMode || kProfileMode) {
         debugPrint('MAP_RENDER_ERROR: loadMapMoments failed: $e');
+      }
+    }
+  }
+
+  /// Viewport-based progressive loading — called when camera stops at zoom >= 8.
+  /// Loads additional moments in the current visible bounding box and merges
+  /// them into mapMoments without replacing existing data.
+  Future<void> _loadMomentsInViewport() async {
+    if (_isDisposed || mapboxMap == null) return;
+    try {
+      final bounds = await mapboxMap!.coordinateBoundsForCamera(
+        await mapboxMap!.getCameraState().then(
+          (s) => mb.CameraOptions(
+            center: s.center,
+            zoom: s.zoom,
+            bearing: s.bearing,
+            pitch: s.pitch,
+          ),
+        ),
+      );
+      final minLat = bounds.southwest.coordinates.lat.toDouble();
+      final maxLat = bounds.northeast.coordinates.lat.toDouble();
+      final minLng = bounds.southwest.coordinates.lng.toDouble();
+      final maxLng = bounds.northeast.coordinates.lng.toDouble();
+
+      // Skip if viewport hasn't changed significantly (0.05° ≈ 5km tolerance)
+      final sig = '${minLat.toStringAsFixed(2)},${maxLat.toStringAsFixed(2)},'
+          '${minLng.toStringAsFixed(2)},${maxLng.toStringAsFixed(2)}'
+          '|${selectedScheduleId.value}';
+      if (sig == _lastViewportSignature) return;
+      _lastViewportSignature = sig;
+
+      final incoming = await _service.getMomentsInBounds(
+        minLat: minLat,
+        maxLat: maxLat,
+        minLng: minLng,
+        maxLng: maxLng,
+        scheduleId: selectedScheduleId.value,
+        top: 100,
+      );
+
+      if (_isDisposed) return;
+
+      // Merge into existing moments (don't replace — progressive add)
+      final existingIds = mapMoments.map((m) => m.id).toSet();
+      final newOnes = incoming.where((m) => !existingIds.contains(m.id)).toList();
+      if (newOnes.isNotEmpty) {
+        mapMoments.addAll(newOnes);
+        debugPrint('VIEWPORT_LOAD: +${newOnes.length} moments in bbox [$sig]');
+      }
+    } catch (e) {
+      if (kDebugMode || kProfileMode) {
+        debugPrint('MAP_RENDER_ERROR: _loadMomentsInViewport failed: $e');
       }
     }
   }
@@ -1409,11 +1560,23 @@ class SocialMapController extends GetxController {
           id: "stayhub-moment-cluster-count",
           sourceId: "stayhub-moments-source",
           filter: ["has", "point_count"],
-          textField: "{point_count_abbreviated}",
+          textField: "{point_count}",
           textFont: ["Open Sans Bold", "Arial Unicode MS Bold"],
           textSize: 12.0,
           textColor: 0xFFFFFFFF,
         ));
+        // Override text-field with a smart expression via raw JSON:
+        // shows "100+" for ≥100, "10+" for ≥10, exact digit for <10
+        await style.setStyleLayerProperty(
+          "stayhub-moment-cluster-count",
+          "text-field",
+          jsonEncode([
+            "case",
+            [">=", ["get", "point_count"], 100], "100+",
+            [">=", ["get", "point_count"], 10], "10+",
+            ["to-string", ["get", "point_count"]]
+          ]),
+        );
       }
 
       if (!await style.styleLayerExists("stayhub-moment-unclustered")) {
@@ -1436,64 +1599,55 @@ class SocialMapController extends GetxController {
   }
 
   Future<void> _syncMomentsGeoJson() async {
+    // Guard 1: onStyleLoaded đang chạy → skip
     if (_isSyncing || mapboxMap == null || !isMapReady.value) return;
+    // Guard 2: Mutex riêng, ngăn concurrent calls từ ever(mapMoments) + ever(showMoments)
+    if (_isSyncingMoments) return;
+    _isSyncingMoments = true;
 
-    if (!showMoments.value || mapMoments.isEmpty) {
-      try {
-        await mapboxMap!.style.setStyleSourceProperty("stayhub-moments-source",
-            "data", '{"type":"FeatureCollection","features":[]}');
-      } catch (_) {}
-      return;
-    }
-
-    // Deduplicate by momentId
-    final Map<int, MomentModel> uniqueMoments = {};
-    for (final m in mapMoments) {
-      if (!uniqueMoments.containsKey(m.id)) {
-        uniqueMoments[m.id] = m;
-      }
-    }
-
-    final sortedIds = uniqueMoments.keys.toList()..sort();
-
-    // Create Signature
-    final StringBuffer sigBuilder = StringBuffer();
-    sigBuilder.write(selectedScheduleId.value?.toString() ?? "null");
-    sigBuilder.write("|");
-    for (final id in sortedIds) {
-      final m = uniqueMoments[id]!;
-      sigBuilder.write("${m.id}:${m.lat}:${m.lng},");
-    }
-
-    final newSig = sigBuilder.toString();
-    if (newSig == _lastMomentSignature) {
-      return; // No changes in moments logic
-    }
-    _lastMomentSignature = newSig;
-
-    final features = <Map<String, dynamic>>[];
-    for (final id in sortedIds) {
-      final m = uniqueMoments[id]!;
-      if (m.lat != null &&
-          m.lng != null &&
-          _isValidCoordinate(m.lat!, m.lng!)) {
-            
-        final imageId = "moment_img_${m.id}";
+    try {
+      if (!showMoments.value || mapMoments.isEmpty) {
         try {
-          if (!await mapboxMap!.style.hasStyleImage(imageId)) {
-            final imageUrl = m.imageUrl;
-            final markerData = await MarkerGenerator.createMomentMarker(imageUrl);
-            if (markerData != null) {
-              await mapboxMap!.style.addStyleImage(
-                imageId,
-                1.0,
-                mb.MbxImage(width: markerData.width, height: markerData.height, data: markerData.data),
-                false, [], [], null,
-              );
-            }
-          }
+          if (mapboxMap == null) return;
+          await mapboxMap!.style.setStyleSourceProperty(
+              "stayhub-moments-source",
+              "data",
+              '{"type":"FeatureCollection","features":[]}');
         } catch (_) {}
+        return;
+      }
 
+      // Deduplicate by momentId (CPU only — không có async)
+      final Map<int, MomentModel> uniqueMoments = {};
+      for (final m in mapMoments) {
+        if (!uniqueMoments.containsKey(m.id)) uniqueMoments[m.id] = m;
+      }
+      final sortedIds = uniqueMoments.keys.toList()..sort();
+
+      // Signature check — bỏ qua nếu data không đổi
+      final StringBuffer sigBuilder = StringBuffer();
+      sigBuilder.write(selectedScheduleId.value?.toString() ?? "null");
+      sigBuilder.write("|");
+      for (final id in sortedIds) {
+        final m = uniqueMoments[id]!;
+        sigBuilder.write("${m.id}:${m.lat}:${m.lng},");
+      }
+      final newSig = sigBuilder.toString();
+      if (newSig == _lastMomentSignature) return;
+      _lastMomentSignature = newSig;
+
+      // ── PHASE 1 (NGAY LẬP TỨC): Build và push GeoJSON không chờ ảnh ───────────
+      // Mội feature dùng imageId riêng (đã upload thì hiện ảnh, chưa upload thì
+      // Mapbox tự fallback về stayhub-moment-icon — hiện camera pin ngay).
+      final features = <Map<String, dynamic>>[];
+      for (final id in sortedIds) {
+        final m = uniqueMoments[id]!;
+        if (m.lat == null ||
+            m.lng == null ||
+            !_isValidCoordinate(m.lat!, m.lng!)) {
+          continue;
+        }
+        final imageId = "moment_img_${m.id}";
         features.add({
           "type": "Feature",
           "geometry": {
@@ -1503,28 +1657,145 @@ class SocialMapController extends GetxController {
           "properties": {
             "momentId": m.id,
             "scheduleId": m.scheduleId,
-            "imageId": imageId,
+            // Nếu ảnh chưa upload: sử dụng shared camera icon làm fallback
+            "imageId":
+                _uploadedImageIds.contains(imageId) ? imageId : "stayhub-moment-icon",
           }
         });
       }
-    }
 
-    final geoJson = jsonEncode({
-      "type": "FeatureCollection",
-      "features": features,
-    });
+      final geoJson = jsonEncode({
+        "type": "FeatureCollection",
+        "features": features,
+      });
 
-    try {
-      if (await mapboxMap!.style.styleSourceExists("stayhub-moments-source")) {
-        await mapboxMap!.style
-            .setStyleSourceProperty("stayhub-moments-source", "data", geoJson);
-      } else {
-        await _ensureMomentSourceAndLayers();
-        await mapboxMap!.style
-            .setStyleSourceProperty("stayhub-moments-source", "data", geoJson);
+      if (mapboxMap == null) return; // Safety check trước native call
+      try {
+        if (await mapboxMap!.style
+            .styleSourceExists("stayhub-moments-source")) {
+          await mapboxMap!.style
+              .setStyleSourceProperty("stayhub-moments-source", "data", geoJson);
+        } else {
+          await _ensureMomentSourceAndLayers();
+          if (mapboxMap == null) return;
+          await mapboxMap!.style
+              .setStyleSourceProperty("stayhub-moments-source", "data", geoJson);
+        }
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: _syncMomentsGeoJson push failed: $e');
+        return;
       }
-    } catch (e) {
-      debugPrint('MAP_RENDER_ERROR: _syncMomentsGeoJson failed: $e');
+
+      // ── PHASE 2 (NỀN): Tải ảnh bất đồng bộ, không block UI ─────────────────
+      // Chỉ tải những moment chưa có ảnh trong cache.
+      final needsPhoto = sortedIds
+          .map((id) => uniqueMoments[id]!)
+          .where((m) =>
+              m.lat != null &&
+              m.lng != null &&
+              _isValidCoordinate(m.lat!, m.lng!) &&
+              !_uploadedImageIds.contains("moment_img_${m.id}"))
+          .toList();
+
+      if (needsPhoto.isNotEmpty) {
+        // Fire-and-forget: không await, chạy nền sau khi GeoJSON đã hiện
+        unawaited(_loadMomentImagesInBackground(
+          needsPhoto,
+          uniqueMoments: uniqueMoments,
+          sortedIds: sortedIds,
+          generation: _imageLoadGeneration,
+        ));
+      }
+    } finally {
+      // Luôn release mutex dù có exception — tránh deadlock
+      _isSyncingMoments = false;
+    }
+  }
+
+  /// Tải ảnh moment bất đồng bộ và cập nhật GeoJSON khi mỗi ảnh sẵn sàng.
+  ///
+  /// - Mỗi ảnh tải xong → upload vào Mapbox style → push GeoJSON mới (có ảnh)
+  /// - Kiểm tra [generation] — nếu schedule đã thay đổi thì dừng lại ngay.
+  /// - Kiểm tra [_isDisposed] sau mỗi await — tránh gọi Mapbox sau dispose.
+  Future<void> _loadMomentImagesInBackground(
+    List<MomentModel> moments, {
+    required Map<int, MomentModel> uniqueMoments,
+    required List<int> sortedIds,
+    required int generation,
+  }) async {
+    for (final m in moments) {
+      // Dừng nếu schedule đã thay đổi hoặc controller đã dispose
+      if (generation != _imageLoadGeneration || _isDisposed) return;
+
+      final imageId = "moment_img_${m.id}";
+      if (_uploadedImageIds.contains(imageId)) continue;
+
+      // Download + render marker (có thể mất 200-800ms mỗi ảnh)
+      ({Uint8List data, int width, int height})? markerData;
+      try {
+        markerData = await MarkerGenerator.createMomentMarker(m.imageUrl);
+      } catch (_) {}
+
+      // Kiểm tra sau await (controller có thể đã dispose trong lúc chờ)
+      if (generation != _imageLoadGeneration || _isDisposed || mapboxMap == null) return;
+
+      if (markerData == null) continue;
+
+      // Upload ảnh vào Mapbox style (tuần tự — an toàn)
+      try {
+        if (!await mapboxMap!.style.hasStyleImage(imageId)) {
+          await mapboxMap!.style.addStyleImage(
+            imageId, 1.0,
+            mb.MbxImage(
+              width: markerData.width,
+              height: markerData.height,
+              data: markerData.data,
+            ),
+            false, [], [], null,
+          );
+        }
+        _uploadedImageIds.add(imageId);
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: bg addStyleImage failed: $e');
+        continue;
+      }
+
+      // Kiểm tra lần nữa trước push GeoJSON
+      if (generation != _imageLoadGeneration || _isDisposed || mapboxMap == null) return;
+
+      // Push GeoJSON cập nhật: thay ảnh của riêng moment này từ fallback → ảnh thật
+      try {
+        final updatedFeatures = <Map<String, dynamic>>[];
+        for (final id in sortedIds) {
+          final mo = uniqueMoments[id]!;
+          if (mo.lat == null || mo.lng == null || !_isValidCoordinate(mo.lat!, mo.lng!)) continue;
+          final fImageId = "moment_img_${mo.id}";
+          updatedFeatures.add({
+            "type": "Feature",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [mo.lng, mo.lat]
+            },
+            "properties": {
+              "momentId": mo.id,
+              "scheduleId": mo.scheduleId,
+              "imageId": _uploadedImageIds.contains(fImageId)
+                  ? fImageId
+                  : "stayhub-moment-icon",
+            }
+          });
+        }
+        final updatedGeoJson = jsonEncode({
+          "type": "FeatureCollection",
+          "features": updatedFeatures,
+        });
+        if (await mapboxMap!.style.styleSourceExists("stayhub-moments-source")) {
+          await mapboxMap!.style.setStyleSourceProperty(
+              "stayhub-moments-source", "data", updatedGeoJson);
+        }
+      } catch (e) {
+        debugPrint('MAP_RENDER_ERROR: bg GeoJSON push failed: $e');
+      }
     }
   }
 
