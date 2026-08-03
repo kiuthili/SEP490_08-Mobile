@@ -402,6 +402,34 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  /// Viewport-based loading: fetch moments within a geographic bounding box.
+  /// Used when user zooms into a specific region to load more relevant moments.
+  Future<List<MomentModel>> getMomentsInBounds({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+    int? scheduleId,
+    int top = 100,
+  }) async {
+    return request(() async {
+      final response = await api.dio.get(
+        ApiConstants.moments,
+        queryParameters: {
+          if (scheduleId != null) 'scheduleId': scheduleId,
+          r'$skip': 0,
+          r'$top': top,
+          'minLat': minLat,
+          'maxLat': maxLat,
+          'minLng': minLng,
+          'maxLng': maxLng,
+        },
+      );
+      final all = parseList(response.data, MomentModel.fromJson);
+      return all.where((m) => m.lat != null && m.lng != null).toList();
+    });
+  }
+
   // ============ 3) LỘ TRÌNH TOUR (Polyline) ============
   /// Lấy toàn bộ điểm lộ trình của 1 schedule; controller tự gom theo ngày.
   /// GET /api/tourschedules/{scheduleId}/itineraries
