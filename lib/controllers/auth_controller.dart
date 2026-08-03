@@ -248,6 +248,11 @@ class AuthController extends GetxController {
       final social = Get.find<SocialController>();
       unawaited(social.fetchChatRooms());
     }
+    if (Get.isRegistered<NotificationController>()) {
+      final notif = Get.find<NotificationController>();
+      unawaited(notif.fetchNotifications());
+      unawaited(notif.connectRealtime());
+    }
   }
 
   Future<void> loginWithGoogle() async {
