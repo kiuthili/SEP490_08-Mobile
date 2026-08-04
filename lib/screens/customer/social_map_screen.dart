@@ -567,7 +567,7 @@ class _ScheduleSelectorBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (c.eligibleSchedules.isEmpty) return const SizedBox.shrink();
+      // Always show the selector even if empty, allowing users to see 'All Trips'
 
       final selectedSchedule = c.eligibleSchedules
           .firstWhereOrNull((s) => s.scheduleId == c.selectedScheduleId.value);
@@ -640,6 +640,7 @@ void _showTourSelector(BuildContext context, SocialMapController c) {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
