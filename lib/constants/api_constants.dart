@@ -10,16 +10,15 @@ class ApiConstants {
 
     if (Platform.isAndroid) {
       // return 'https://fzq9bq7p-7010.asse.devtunnels.ms';
-      return 'https://stayhub.cloud';
+      return 'https://h3s3nnnt-7010.asse.devtunnels.ms';
       // return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
     }
 
     if (Platform.isIOS) {
-      return 'https://028xpj74-7010.asse.devtunnels.ms';
+      return 'https://h3s3nnnt-7010.asse.devtunnels.ms';
     }
 
-    // return 'https://stayhub.cloud';
-    // return 'https://028xpj74-7010.asse.devtunnels.ms';
+    return 'https://h3s3nnnt-7010.asse.devtunnels.ms';
     // return 'https://localhost:7010';
     return 'https://pk3wrcr6-7010.asse.devtunnels.ms';
 

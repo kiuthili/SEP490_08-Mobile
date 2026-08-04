@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:stayhub_mobile/models/check_in_result_model.dart';
 import 'package:stayhub_mobile/models/schedule_customer_model.dart';
@@ -18,6 +19,7 @@ class OrderService extends GetxService with BaseServiceMixin {
     String? voucherCode,
     int? promotionValue,
     String? note,
+    required String idempotencyKey,
   }) async {
     return request(() async {
       final response = await api.dio.post(
@@ -30,6 +32,7 @@ class OrderService extends GetxService with BaseServiceMixin {
           if (note != null) 'note': note,
           'orderDetails': orderDetails,
         },
+        options: Options(headers: {'Idempotency-Key': idempotencyKey}),
       );
       return parseData(response.data, OrderModel.fromJson);
     });
