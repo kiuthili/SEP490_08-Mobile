@@ -18,9 +18,9 @@ class NotificationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (!AuthGate.isLoggedIn) return;
+    if (!AuthGate.isAuthenticated) return;
     fetchNotifications();
-    _connectRealtime();
+    connectRealtime();
   }
 
   @override
@@ -30,7 +30,7 @@ class NotificationController extends GetxController {
   }
 
   Future<void> fetchNotifications() async {
-    if (!AuthGate.isLoggedIn) return;
+    if (!AuthGate.isAuthenticated) return;
     isLoading.value = true;
     try {
       notifications.assignAll(await _service.getNotifications());
@@ -42,7 +42,7 @@ class NotificationController extends GetxController {
   }
 
   /// Kết nối NotificationHub để nhận thông báo realtime khi app đang mở.
-  Future<void> _connectRealtime() async {
+  Future<void> connectRealtime() async {
     try {
       await _signalRService.connectNotification(
         onNotification: _handleIncomingNotification,

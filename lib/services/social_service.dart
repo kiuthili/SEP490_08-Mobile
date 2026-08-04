@@ -257,6 +257,24 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<void> addMembersToRoom(int roomId, List<int> userIds) async {
+    await request(() async {
+      await api.dio.post('${ApiConstants.chat}/rooms/$roomId/members',
+          data: {'userIds': userIds});
+    });
+  }
+
+  Future<List<UserSearchModel>> getRoomMembers(int roomId) async {
+    return request(() async {
+      final response = await api.dio.get('${ApiConstants.chat}/rooms/$roomId/members');
+      final body = response.data;
+      if (body is Map<String, dynamic> && body.containsKey('data')) {
+        return parseList(body['data'], UserSearchModel.fromJson);
+      }
+      return parseList(body, UserSearchModel.fromJson);
+    });
+  }
+
   Future<void> markChatRoomAsRead(int roomId) async {
     await request(() async {
       await api.dio.post('${ApiConstants.chat}/rooms/$roomId/read');
@@ -395,6 +413,34 @@ class SocialService extends GetxService with BaseServiceMixin {
           if (scheduleId != null) 'scheduleId': scheduleId,
           r'$skip': 0,
           r'$top': top,
+        },
+      );
+      final all = parseList(response.data, MomentModel.fromJson);
+      return all.where((m) => m.lat != null && m.lng != null).toList();
+    });
+  }
+
+  /// Viewport-based loading: fetch moments within a geographic bounding box.
+  /// Used when user zooms into a specific region to load more relevant moments.
+  Future<List<MomentModel>> getMomentsInBounds({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+    int? scheduleId,
+    int top = 100,
+  }) async {
+    return request(() async {
+      final response = await api.dio.get(
+        ApiConstants.moments,
+        queryParameters: {
+          if (scheduleId != null) 'scheduleId': scheduleId,
+          r'$skip': 0,
+          r'$top': top,
+          'minLat': minLat,
+          'maxLat': maxLat,
+          'minLng': minLng,
+          'maxLng': maxLng,
         },
       );
       final all = parseList(response.data, MomentModel.fromJson);
