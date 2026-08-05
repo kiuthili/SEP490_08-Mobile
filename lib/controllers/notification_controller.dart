@@ -5,6 +5,7 @@ import 'package:stayhub_mobile/services/notification_service.dart';
 import 'package:stayhub_mobile/services/signalr_service.dart';
 import 'package:stayhub_mobile/utils/snackbar_helper.dart';
 import 'package:stayhub_mobile/utils/auth_gate.dart';
+import 'package:stayhub_mobile/services/social_service.dart' as stayhub_social;
 
 class NotificationController extends GetxController {
   final _service = Get.find<NotificationService>();
@@ -33,7 +34,31 @@ class NotificationController extends GetxController {
     if (!AuthGate.isAuthenticated) return;
     isLoading.value = true;
     try {
-      notifications.assignAll(await _service.getNotifications());
+      final notis = await _service.getNotifications();
+      
+      // Fetch friend requests and merge them like Web FE
+      try {
+        final socialService = Get.find<stayhub_social.SocialService>();
+        final pendingRequests = await socialService.getPendingRequests();
+        final mappedRequests = pendingRequests.map((req) {
+          final senderName = req.senderName?.isNotEmpty == true ? req.senderName : 'common_user'.tr;
+          return NotificationModel(
+            id: -req.id,
+            title: 'sc_fm_friend_request'.tr,
+            message: '$senderName ${'sc_fm_req_sent'.tr.toLowerCase()}',
+            type: 'friend_request',
+            isRead: false,
+            createdAt: req.createdAt ?? DateTime.now(),
+          );
+        }).toList();
+        
+        notis.addAll(mappedRequests);
+        notis.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+      } catch (e) {
+        // Ignore social service error
+      }
+      
+      notifications.assignAll(notis);
     } on ApiError catch (e) {
       SnackbarHelper.error(e.message);
     } finally {
