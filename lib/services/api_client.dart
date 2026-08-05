@@ -328,7 +328,10 @@ class ApiClient {
       return ApiError(
         message: error.message,
         statusCode: error.statusCode,
-        retryAfterSeconds: retryAfter,
+        retryAfterSeconds: retryAfter ?? error.retryAfterSeconds,
+        lockoutMinutes: error.lockoutMinutes,
+        remainingAttempts: error.remainingAttempts,
+        isSilent: error.isSilent,
       );
     }
     if (status == 401) {
