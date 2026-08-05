@@ -126,7 +126,11 @@ class OrderController extends GetxController {
       SnackbarHelper.success('rc_success_msg'.tr);
       return true;
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'PendingCancellationExists') {
+        SnackbarHelper.error('PendingCancellationExists'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
       return false;
     }
   }

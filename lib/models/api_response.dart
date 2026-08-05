@@ -25,17 +25,24 @@ class ApiError {
   final String message;
   final int? statusCode;
   final int? retryAfterSeconds;
+  final int? lockoutMinutes;
+  final int? remainingAttempts;
   final bool isSilent;
 
   ApiError({
     required this.message,
     this.statusCode,
     this.retryAfterSeconds,
+    this.lockoutMinutes,
+    this.remainingAttempts,
     bool? isSilent,
   }) : isSilent = isSilent ?? (statusCode == 401);
 
   factory ApiError.fromJson(Map<String, dynamic>? json, {int? statusCode}) {
     final rawRetryAfter = json?['retryAfterSeconds'];
+    final rawLockout = json?['lockoutMinutes'];
+    final rawRemaining = json?['remainingAttempts'];
+    
     final is401 = statusCode == 401;
     String message = json?['message'] as String? ?? 
         (is401 ? silent401Message : 'Đã xảy ra lỗi');
@@ -57,6 +64,12 @@ class ApiError {
       retryAfterSeconds: rawRetryAfter is int
           ? rawRetryAfter
           : int.tryParse(rawRetryAfter?.toString() ?? ''),
+      lockoutMinutes: rawLockout is int
+          ? rawLockout
+          : int.tryParse(rawLockout?.toString() ?? ''),
+      remainingAttempts: rawRemaining is int
+          ? rawRemaining
+          : int.tryParse(rawRemaining?.toString() ?? ''),
       isSilent: is401,
     );
   }

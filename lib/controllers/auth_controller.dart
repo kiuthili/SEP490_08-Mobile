@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/api_response.dart';
 import '../models/auth_models.dart';
 import '../models/user_model.dart';
@@ -59,6 +60,18 @@ class AuthController extends GetxController {
     } on ApiError catch (e) {
       if (e.message == 'InvalidProvider') {
         SnackbarHelper.error('InvalidProvider'.tr);
+      } else if (e.message == 'AccountInactiveOrInvalid') {
+        SnackbarHelper.error('AccountInactiveOrInvalid'.tr);
+      } else if (e.message == 'AccountLocked') {
+        final minutes = e.lockoutMinutes ?? 15;
+        SnackbarHelper.error('AccountLocked'.trParams({'minutes': minutes.toString()}));
+      } else if (e.message == 'InvalidEmailOrPassword') {
+        final remaining = e.remainingAttempts;
+        if (remaining != null) {
+          SnackbarHelper.error('InvalidEmailOrPassword'.trParams({'remaining': remaining.toString()}));
+        } else {
+          SnackbarHelper.error(e.message);
+        }
       } else {
         SnackbarHelper.error(e.message);
       }
@@ -230,6 +243,9 @@ class AuthController extends GetxController {
     if (Get.isRegistered<WishlistController>()) {
       Get.find<WishlistController>().items.clear();
     }
+    try {
+      await GoogleSignIn().signOut();
+    } catch (_) {}
     await _storage.clearSession();
     currentUser.value = null;
     if (Get.isRegistered<ShellController>()) {
