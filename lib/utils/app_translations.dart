@@ -8,6 +8,8 @@ class AppTranslations extends Translations {
           'tutorial_skip': 'Skip',
           'tutorial_step': 'Step @current / @total',
           'tutorial_got_it': 'Got it',
+          'tutorial_next': 'Next',
+          'tutorial_step': 'Step @current / @total',
           'onboarding_title_1': 'Discover the World',
           'onboarding_desc_1': 'Find and book the best tours, homestays, and apartments with ease.',
           'onboarding_title_2': 'Easy Booking',
@@ -200,6 +202,9 @@ class AppTranslations extends Translations {
           'err_phone_exists': 'This phone number is already used. Please use another one.',
           'err_otp_invalid': 'OTP confirmation code is incorrect or expired.',
           'InvalidProvider': 'This email is registered with a different login method. Please select the correct login method.',
+          'AccountInactiveOrInvalid': 'Account does not exist or has been disabled/inactive.',
+          'InvalidEmailOrPassword': 'Invalid email or password. You have @remaining attempts left.',
+          'AccountLocked': 'Account temporarily locked due to too many failed attempts. Please try again in @minutes minutes.',
 
           // --- General Auth Prompts ---
           'login_required': 'Please login to use this feature',
@@ -863,7 +868,8 @@ class AppTranslations extends Translations {
           
           // Request Cancellation
           'rc_title': 'Request Tour Cancellation',
-          'rc_success_msg': 'Cancellation request submitted successfully',
+          'rc_success_msg': 'Cancellation request sent successfully',
+          'PendingCancellationExists': 'You already have a pending cancellation request for this order.',
           'rc_error_invalid_order': 'Invalid order for cancellation',
           'rc_error_select_bank': 'Please select a refund bank',
           'rc_bank': 'Bank',
@@ -1000,6 +1006,8 @@ class AppTranslations extends Translations {
           'tutorial_skip': 'Bỏ qua',
           'tutorial_step': 'Bước @current / @total',
           'tutorial_got_it': 'Đã hiểu',
+          'tutorial_next': 'Tiếp tục',
+          'tutorial_step': 'Bước @current / @total',
           'onboarding_title_1': 'Khám phá Thế giới',
           'onboarding_desc_1': 'Dễ dàng tìm kiếm và đặt các tour du lịch, homestay và căn hộ tốt nhất.',
           'onboarding_title_2': 'Đặt phòng Dễ dàng',
@@ -1192,6 +1200,9 @@ class AppTranslations extends Translations {
           'err_phone_exists': 'Số điện thoại này đã được sử dụng. Vui lòng sử dụng số khác.',
           'err_otp_invalid': 'Mã xác nhận OTP không chính xác hoặc đã hết hạn.',
           'InvalidProvider': 'Email này đã được đăng ký bằng phương thức khác. Vui lòng chọn đúng phương thức đăng nhập.',
+          'AccountInactiveOrInvalid': 'Tài khoản không tồn tại hoặc đã bị khóa/chưa kích hoạt.',
+          'InvalidEmailOrPassword': 'Email hoặc mật khẩu không hợp lệ. Bạn còn @remaining lần thử.',
+          'AccountLocked': 'Tài khoản đã bị khóa tạm thời do nhập sai quá nhiều lần. Vui lòng thử lại sau @minutes phút.',
 
           // --- General Auth Prompts ---
           'login_required': 'Vui lòng đăng nhập để sử dụng chức năng này',
@@ -1809,7 +1820,8 @@ class AppTranslations extends Translations {
           
           // Request Cancellation
           'rc_title': 'Yêu cầu hủy tour',
-          'rc_success_msg': 'Đã gửi yêu cầu hủy tour',
+          'rc_success_msg': 'Đã gửi yêu cầu hủy thành công',
+          'PendingCancellationExists': 'Bạn đã có một yêu cầu hủy đang chờ xử lý cho đơn hàng này.',
           'rc_error_invalid_order': 'Không xác định được đơn cần hủy',
           'rc_error_select_bank': 'Chọn ngân hàng nhận hoàn tiền',
           'rc_bank': 'Ngân hàng',

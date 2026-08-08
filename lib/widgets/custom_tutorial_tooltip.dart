@@ -121,7 +121,7 @@ class CustomTutorialTooltip extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      currentStep == totalSteps ? 'tutorial_got_it'.tr : 'continue'.tr,
+                      currentStep == totalSteps ? 'tutorial_got_it'.tr : 'tutorial_next'.tr,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                     if (currentStep < totalSteps) ...[
