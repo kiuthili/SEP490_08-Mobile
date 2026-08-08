@@ -6,6 +6,7 @@ class AppTranslations extends Translations {
         'en_US': {
           // --- Tutorial ---
           'tutorial_skip': 'Skip',
+          'tutorial_step': 'Step @current / @total',
           'tutorial_got_it': 'Got it',
           'onboarding_title_1': 'Discover the World',
           'onboarding_desc_1': 'Find and book the best tours, homestays, and apartments with ease.',
@@ -548,6 +549,7 @@ class AppTranslations extends Translations {
           'sc_bk_tap_to_fill': 'Tap to fill information',
           'sc_bk_note': 'Note',
           'sc_bk_note_hint': 'Enter note for order (optional)...',
+          'sc_bk_payment_method': 'Payment Method',
           'bk_payment_title': 'Payment Details',
           'bk_order_created': 'Order created. Complete payment to secure your booking.',
           'pm_cancel_payment': 'Cancel Payment',
@@ -996,6 +998,7 @@ class AppTranslations extends Translations {
         'vi_VN': {
           // --- Tutorial ---
           'tutorial_skip': 'Bỏ qua',
+          'tutorial_step': 'Bước @current / @total',
           'tutorial_got_it': 'Đã hiểu',
           'onboarding_title_1': 'Khám phá Thế giới',
           'onboarding_desc_1': 'Dễ dàng tìm kiếm và đặt các tour du lịch, homestay và căn hộ tốt nhất.',
@@ -1496,6 +1499,7 @@ class AppTranslations extends Translations {
           'sc_bk_tap_to_fill': 'Chạm để điền thông tin',
           'sc_bk_note': 'Ghi chú',
           'sc_bk_note_hint': 'Nhập ghi chú cho đơn hàng (tuỳ chọn)...',
+          'sc_bk_payment_method': 'Phương thức thanh toán',
           'bk_payment_title': 'Thông tin thanh toán',
           'bk_order_created': 'Đã tạo đơn. Hoàn tất thanh toán để xác nhận chỗ.',
           'pm_cancel_payment': 'Hủy thanh toán',
