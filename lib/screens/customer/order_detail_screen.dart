@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 
 import '../../controllers/feature_controllers.dart';
 import '../../models/order_model.dart';
@@ -1390,20 +1392,38 @@ class _ScheduleActivity extends StatelessWidget {
                           ],
                           if (description?.isNotEmpty == true) ...[
                             const SizedBox(height: 7),
-                            Text(
+                            HtmlWidget(
                               description!,
-                              style: Theme.of(context).textTheme.bodySmall,
+                              textStyle: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
                           if (sourceUri != null) ...[
                             const SizedBox(height: 10),
-                            _HeritageSourceLink(
-                              sourceName:
-                                  heritage?.sourceName?.trim().isNotEmpty ==
-                                          true
-                                      ? heritage!.sourceName!.trim()
-                                      : 'td_references'.tr,
-                              uri: sourceUri,
+                            InkWell(
+                              onTap: () => launchUrl(sourceUri),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      heritage?.sourceUrl?.trim() ?? 'td_references'.tr,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppColors.brand,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.open_in_new_rounded,
+                                    size: 14,
+                                    color: AppColors.brand,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ],

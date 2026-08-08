@@ -6,6 +6,7 @@ class AppTranslations extends Translations {
         'en_US': {
           // --- Tutorial ---
           'tutorial_skip': 'Skip',
+          'tutorial_step': 'Step @current / @total',
           'tutorial_got_it': 'Got it',
           'tutorial_next': 'Next',
           'tutorial_step': 'Step @current / @total',
@@ -553,6 +554,7 @@ class AppTranslations extends Translations {
           'sc_bk_tap_to_fill': 'Tap to fill information',
           'sc_bk_note': 'Note',
           'sc_bk_note_hint': 'Enter note for order (optional)...',
+          'sc_bk_payment_method': 'Payment Method',
           'bk_payment_title': 'Payment Details',
           'bk_order_created': 'Order created. Complete payment to secure your booking.',
           'pm_cancel_payment': 'Cancel Payment',
@@ -1002,6 +1004,7 @@ class AppTranslations extends Translations {
         'vi_VN': {
           // --- Tutorial ---
           'tutorial_skip': 'Bỏ qua',
+          'tutorial_step': 'Bước @current / @total',
           'tutorial_got_it': 'Đã hiểu',
           'tutorial_next': 'Tiếp tục',
           'tutorial_step': 'Bước @current / @total',
@@ -1507,6 +1510,7 @@ class AppTranslations extends Translations {
           'sc_bk_tap_to_fill': 'Chạm để điền thông tin',
           'sc_bk_note': 'Ghi chú',
           'sc_bk_note_hint': 'Nhập ghi chú cho đơn hàng (tuỳ chọn)...',
+          'sc_bk_payment_method': 'Phương thức thanh toán',
           'bk_payment_title': 'Thông tin thanh toán',
           'bk_order_created': 'Đã tạo đơn. Hoàn tất thanh toán để xác nhận chỗ.',
           'pm_cancel_payment': 'Hủy thanh toán',
