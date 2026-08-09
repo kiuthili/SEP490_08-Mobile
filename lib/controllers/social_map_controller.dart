@@ -394,6 +394,7 @@ class SocialMapController extends GetxController {
     }
 
     if (isMapReady.value) {
+      await _syncLiveLocations();
       await _syncRoute();
       await _syncMomentsGeoJson();
       await _syncWaypoints();
@@ -756,6 +757,9 @@ class SocialMapController extends GetxController {
     ever(liveLocations, (_) {
       _syncLiveLocations();
       if (heatmapType.value == 'online' && showHeatmap.value) loadHeatmap();
+    });
+    ever(showLiveLocations, (_) {
+      _syncLiveLocations();
     });
     ever(mapMoments, (_) {
       _syncMomentsGeoJson();
@@ -1491,12 +1495,32 @@ class SocialMapController extends GetxController {
   }
 
   Future<void> _syncLiveLocations() async {
-    if (_isSyncing) return;
+    if (_isSyncing || !isMapReady.value || liveLocManager == null) return;
     try {
-      if (liveLocManager == null) return;
-      await liveLocManager!.deleteAll();
+      if (!showLiveLocations.value) {
+        await liveLocManager!.deleteAll();
+        return;
+      }
+      final list = visualLiveLocations;
+      final annotations = <mb.PointAnnotationOptions>[];
+      for (final loc in list) {
+        if (loc.latitude == 0 || loc.longitude == 0) continue;
 
-      // Placeholder for now
+        final markerResult = await MarkerGenerator.createLiveFriendMarker(
+          loc.avatarUrl,
+          loc.role.toLowerCase() == 'staff',
+          name: loc.fullName,
+        );
+        annotations.add(mb.PointAnnotationOptions(
+          geometry: mb.Point(coordinates: mb.Position(loc.longitude, loc.latitude)),
+          image: markerResult.data,
+          iconAnchor: mb.IconAnchor.CENTER,
+        ));
+      }
+      await liveLocManager!.deleteAll();
+      if (annotations.isNotEmpty) {
+        await liveLocManager!.createMulti(annotations);
+      }
     } catch (e, stack) {
       debugPrint('MAP_RENDER_ERROR: Error in _syncLiveLocations: $e\n$stack');
     }
