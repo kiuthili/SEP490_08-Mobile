@@ -51,7 +51,10 @@ class CustomTutorialTooltip extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Bước $currentStep / $totalSteps',
+                  'tutorial_step'.trParams({
+                    'current': currentStep.toString(),
+                    'total': totalSteps.toString(),
+                  }),
                   style: const TextStyle(
                     color: AppColors.brand,
                     fontWeight: FontWeight.bold,
@@ -118,7 +121,7 @@ class CustomTutorialTooltip extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      currentStep == totalSteps ? 'tutorial_got_it'.tr : 'Tiếp tục',
+                      currentStep == totalSteps ? 'tutorial_got_it'.tr : 'tutorial_next'.tr,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                     if (currentStep < totalSteps) ...[

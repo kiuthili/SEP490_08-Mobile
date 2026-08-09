@@ -6,6 +6,7 @@ import 'package:stayhub_mobile/controllers/review_controller.dart';
 import 'package:stayhub_mobile/models/review_model.dart';
 import 'package:stayhub_mobile/models/reviewreply_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import '../controllers/auth_controller.dart';
 import '../controllers/feature_controllers.dart';
 import '../controllers/tour_controller.dart';
@@ -1770,10 +1771,9 @@ class _ItineraryActivityCard extends StatelessWidget {
                           ],
                           if (description?.isNotEmpty == true) ...[
                             const SizedBox(height: 11),
-                            Text(
+                            HtmlWidget(
                               description!,
-                              style:
-                                  AppTextStyles.textTheme.bodySmall?.copyWith(
+                              textStyle: AppTextStyles.textTheme.bodySmall?.copyWith(
                                 height: 1.55,
                                 color: AppColors.textSecondary,
                               ),
@@ -1781,13 +1781,31 @@ class _ItineraryActivityCard extends StatelessWidget {
                           ],
                           if (sourceUri != null) ...[
                             const SizedBox(height: 12),
-                            _HeritageSourceLink(
-                              sourceName:
-                                  heritage?.sourceName?.trim().isNotEmpty ==
-                                          true
-                                      ? heritage!.sourceName!.trim()
-                                      : 'td_references'.tr,
-                              uri: sourceUri,
+                            InkWell(
+                              onTap: () => launchUrl(sourceUri),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      heritage?.sourceUrl?.trim() ?? 'td_references'.tr,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.textTheme.bodySmall?.copyWith(
+                                        color: AppColors.brand,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.open_in_new_rounded,
+                                    size: 14,
+                                    color: AppColors.brand,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                           if (heritage == null && itinerary.hasCoordinates) ...[
@@ -1802,17 +1820,14 @@ class _ItineraryActivityCard extends StatelessWidget {
                                     await launchUrl(uri,
                                         mode: LaunchMode.externalApplication);
                                   } catch (_) {
-                                    // Ignore error, or you can add a snackbar if context is available
                                   }
                                 },
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.xs),
+                                borderRadius: BorderRadius.circular(AppRadius.xs),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 4, horizontal: 2),
                                   child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const Padding(
                                         padding: EdgeInsets.only(top: 2),
@@ -1826,9 +1841,7 @@ class _ItineraryActivityCard extends StatelessWidget {
                                       Expanded(
                                         child: Text(
                                           'td_view_on_map'.tr,
-                                          style: AppTextStyles
-                                              .textTheme.labelSmall
-                                              ?.copyWith(
+                                          style: AppTextStyles.textTheme.labelSmall?.copyWith(
                                             color: AppColors.brandDeep,
                                             fontWeight: FontWeight.w600,
                                           ),

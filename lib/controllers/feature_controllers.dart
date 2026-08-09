@@ -6,6 +6,7 @@ import '../models/api_response.dart';
 import '../models/feature_models.dart';
 import '../models/order_model.dart';
 import '../models/social_models.dart'; // Đã thêm import
+import 'package:uuid/uuid.dart';
 import '../models/tour_model.dart';
 import '../services/feature_services.dart';
 import '../services/catalog_service.dart';
@@ -125,7 +126,11 @@ class OrderController extends GetxController {
       SnackbarHelper.success('rc_success_msg'.tr);
       return true;
     } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
+      if (e.message == 'PendingCancellationExists') {
+        SnackbarHelper.error('PendingCancellationExists'.tr);
+      } else {
+        SnackbarHelper.error(e.message);
+      }
       return false;
     }
   }
@@ -883,6 +888,7 @@ class BookingController extends GetxController {
   final ticketsLoading = false.obs;
   final note = ''.obs;
 
+  String? _idempotencyKey;
   String checkoutTourName = '';
   String? checkoutTourImageUrl;
   String? checkoutTourLocation;
@@ -1130,23 +1136,59 @@ class BookingController extends GetxController {
       });
     }
 
+    _idempotencyKey ??= const Uuid().v4();
+
     isLoading.value = true;
-    try {
-      final order = await _orderService.createOrder(
-        scheduleId: schedule.id,
-        finalAmount: finalAmount,
-        voucherCode: voucherCode.value.isNotEmpty ? voucherCode.value : null,
-        promotionValue: discountAmount.value > 0 ? discountAmount.value : null,
-        note: orderNote,
-        orderDetails: orderDetails,
-      );
-      SnackbarHelper.success('bk_order_created'.tr);
-      return order;
-    } on ApiError catch (e) {
-      SnackbarHelper.error(e.message);
-    } finally {
-      isLoading.value = false;
+    
+    int attempt = 0;
+    const maxAttempts = 3;
+    OrderModel? order;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        order = await _orderService.createOrder(
+          scheduleId: schedule.id,
+          finalAmount: finalAmount,
+          voucherCode: voucherCode.value.isNotEmpty ? voucherCode.value : null,
+          promotionValue: discountAmount.value > 0 ? discountAmount.value : null,
+          note: orderNote,
+          orderDetails: orderDetails,
+          idempotencyKey: _idempotencyKey!,
+        );
+        break; // Success
+      } on ApiError catch (e) {
+        if (e.statusCode == 409) {
+          if (attempt >= maxAttempts) {
+            SnackbarHelper.error('Đơn hàng của bạn đang được xử lý. Vui lòng thử lại sau giây lát.');
+            isLoading.value = false;
+            return null;
+          }
+          await Future.delayed(const Duration(seconds: 2));
+          continue;
+        }
+
+        final isDefinitiveFailure = e.statusCode == 400 || e.statusCode == 422;
+        if (isDefinitiveFailure) {
+          _idempotencyKey = null;
+        }
+
+        SnackbarHelper.error(e.message);
+        isLoading.value = false;
+        return null;
+      } catch (e) {
+        SnackbarHelper.error('Đã xảy ra lỗi kết nối. Vui lòng thử lại.');
+        isLoading.value = false;
+        return null;
+      }
     }
-    return null;
+
+    if (order != null) {
+      _idempotencyKey = null; // Hoàn tất thành công thì xóa key
+      SnackbarHelper.success('bk_order_created'.tr);
+    }
+    
+    isLoading.value = false;
+    return order;
   }
 }
