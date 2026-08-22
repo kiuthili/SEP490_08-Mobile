@@ -99,7 +99,7 @@ class SnackbarHelper {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  message,
+                  message.tr,
                   style: TextStyle(
                     color: subTextColor,
                     fontSize: 13,

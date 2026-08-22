@@ -261,6 +261,7 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
                       controller: _reasonController,
                       label: 'rc_reason'.tr,
                       maxLines: 4,
+                      maxLength: 2500,
                       keyboardType: TextInputType.multiline,
                       enabled: !_submitting,
                       textInputAction: TextInputAction.newline,
@@ -296,7 +297,7 @@ class _RequestCancellationScreenState extends State<RequestCancellationScreen> {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return 'rc_val_reason_empty'.tr;
     if (text.length < 10) return 'rc_val_reason_short'.tr;
-    if (text.length > 500) return 'rc_val_reason_long'.tr;
+    if (text.length > 2500) return 'rc_val_reason_long'.tr;
     return null;
   }
 }

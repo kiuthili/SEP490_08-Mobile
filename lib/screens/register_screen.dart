@@ -83,18 +83,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final fullName = _fullNameController.text.trim();
     final phone = _phoneController.text.trim();
-
-    final fullNameRegex = RegExp(
-      r'^[a-zA-Z0-9\sÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ]+$',
-    );
-    if (!fullNameRegex.hasMatch(fullName)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('fullname_invalid'.tr),
-        ),
-      );
-      return;
-    }
     if (phone.length > 15) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('phone_max_length'.tr)),
@@ -199,6 +187,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hint: 'fullname_hint'.tr,
           icon: Icons.person_outline_rounded,
           textInputAction: TextInputAction.next,
+          maxLength: 100,
           validator: Validators.fullName,
         ),
         const SizedBox(height: 14),
@@ -209,6 +198,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          maxLength: 255,
           validator: Validators.email,
         ),
         const SizedBox(height: 14),
@@ -221,6 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: Icons.lock_outline_rounded,
           obscureText: true,
           textInputAction: TextInputAction.next,
+          maxLength: 100,
           validator: Validators.strongPassword,
         ),
         const SizedBox(height: 14),
@@ -231,6 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: Icons.lock_reset_rounded,
           obscureText: true,
           textInputAction: TextInputAction.done,
+          maxLength: 100,
           validator: (v) =>
               Validators.confirmPassword(v, _passwordController.text),
         ),

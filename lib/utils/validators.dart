@@ -44,11 +44,19 @@ class Validators {
     return null;
   }
 
+  static final _fullNameRegex = RegExp(
+    r'^[\p{L}0-9\s]+$',
+    unicode: true,
+  );
+
   static String? fullName(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return 'val_name_req'.tr;
     if (v.length < 2) return 'val_name_short'.tr;
     if (v.length > 100) return 'val_name_long'.tr;
+    if (!_fullNameRegex.hasMatch(v)) {
+      return 'fullname_invalid'.tr;
+    }
     return null;
   }
 
