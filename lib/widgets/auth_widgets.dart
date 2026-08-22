@@ -20,6 +20,7 @@ class AuthInputField extends StatefulWidget {
     this.validator,
     this.enabled = true,
     this.suffixWidget,
+    this.maxLength,
   });
 
   final TextEditingController controller;
@@ -32,6 +33,7 @@ class AuthInputField extends StatefulWidget {
   final String? Function(String?)? validator;
   final bool enabled;
   final Widget? suffixWidget;
+  final int? maxLength;
 
   @override
   State<AuthInputField> createState() => _AuthInputFieldState();
@@ -67,6 +69,7 @@ class _AuthInputFieldState extends State<AuthInputField> {
       textInputAction: widget.textInputAction,
       validator: widget.validator,
       enabled: widget.enabled,
+      maxLength: widget.maxLength,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       style: const TextStyle(
         fontSize: 15,
