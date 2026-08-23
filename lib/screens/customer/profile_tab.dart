@@ -136,6 +136,9 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 16),
           Text(
             user.fullName,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.textTheme.titleLarge?.copyWith(
               color: textPrimary,
               fontWeight: FontWeight.w800,
