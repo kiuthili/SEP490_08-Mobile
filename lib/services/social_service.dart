@@ -84,6 +84,12 @@ class SocialService extends GetxService with BaseServiceMixin {
     });
   }
 
+  Future<void> cancelFriendRequest(int requestId) async {
+    await request(() async {
+      await api.dio.delete('${ApiConstants.friends}/$requestId/cancel');
+    });
+  }
+
   // ================= MOMENTS & COMMENTS =================
   Future<List<MomentModel>> getMoments(
       {int? scheduleId, int skip = 0, int top = 20}) async {

@@ -453,7 +453,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
   }
 
   Widget _sentCard(FriendRequestModel request) {
-    final busy = social.processingFriendshipIds.contains(request.id) ||
+    final busy = social.processingRequestIds.contains(request.id) ||
         social.processingUserIds.contains(request.receiverId);
     final date = request.createdAt == null
         ? 'sc_fm_req_sent'.tr
@@ -499,8 +499,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     ),
                   );
                   if (confirmed == true) {
-                    await social.unfriend(request.id);
-                    await social.fetchSentRequests();
+                    await social.cancelFriendRequest(request.id);
                   }
                 },
           child: Text('sc_fm_btn_revoke'.tr),

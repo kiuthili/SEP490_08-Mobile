@@ -552,6 +552,24 @@ class SocialController extends GetxController {
     }
   }
 
+  Future<bool> cancelFriendRequest(int requestId) async {
+    if (processingRequestIds.contains(requestId)) return false;
+    processingRequestIds.add(requestId);
+    try {
+      await _service.cancelFriendRequest(requestId);
+      final req = sentRequests.firstWhereOrNull((r) => r.id == requestId);
+      if (req != null) {
+        sentRequestUserIds.remove(req.receiverId);
+        sentRequests.removeWhere((r) => r.id == requestId);
+      }
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      processingRequestIds.remove(requestId);
+    }
+  }
+
   Future<ChatRoomModel?> createDirectChat(int friendId) async {
     try {
       final room = await _service.createDirectChat(friendId);
