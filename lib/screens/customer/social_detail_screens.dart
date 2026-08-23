@@ -2099,6 +2099,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           const SizedBox(height: 14),
           Text(
             user.fullName.isEmpty ? 'StayHub User' : user.fullName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,

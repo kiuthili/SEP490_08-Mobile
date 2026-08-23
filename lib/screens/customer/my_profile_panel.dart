@@ -142,6 +142,8 @@ class _MyProfilePanelState extends State<MyProfilePanel>
           const SizedBox(height: 14),
           Text(
             user.fullName.isEmpty ? 'sc_mp_stayhub_user'.tr : user.fullName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -589,6 +591,8 @@ class _FeedItem extends StatelessWidget {
                     currentUser.fullName.isEmpty
                         ? 'sc_mp_stayhub_user'.tr
                         : currentUser.fullName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.w700,
